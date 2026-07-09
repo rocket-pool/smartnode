@@ -68,7 +68,7 @@ func GetGeneralizedIndexForValidators() uint64 {
 func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 	// Convert the state to a proof tree
-	root, err := state.GetTree()
+	root, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -84,7 +84,7 @@ func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 	}
 
 	// Sanity check that the proof leaf matches the expected validator
-	validatorHashTreeRoot, err := state.Validators[index].HashTreeRoot()
+	validatorHashTreeRoot, err := generic.SSZ.HashTreeRoot(state.Validators[index])
 	if err != nil {
 		return nil, fmt.Errorf("could not get hash tree root for validator: %w", err)
 	}
@@ -114,7 +114,7 @@ func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {
 
 	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
-	root, err := state.LatestBlockHeader.GetTree()
+	root, err := generic.SSZ.GetTree(state.LatestBlockHeader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header tree: %w", err)
 	}
@@ -128,7 +128,7 @@ func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {
 
 func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
-	root, err := blockHeader.GetTree()
+	root, err := generic.SSZ.GetTree(blockHeader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header tree: %w", err)
 	}
@@ -144,7 +144,7 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) 
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -185,7 +185,7 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 	}
 
 	idx := slot % int(generic.SlotsPerHistoricalRoot)
-	tree, err := hsls.GetTree()
+	tree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
 	}
@@ -209,7 +209,7 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}

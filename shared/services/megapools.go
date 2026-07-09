@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	ssz "github.com/ferranbt/fastssz"
+	"github.com/pk910/dynamic-ssz/treeproof"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -165,7 +165,7 @@ func GetWithdrawableEpochProof(c *cli.Command, wallet *wallet.Wallet, eth2Config
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
-	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Size, beaconStateResponse.Fork)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
@@ -722,7 +722,7 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	beaconState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
+	beaconState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Size, stateResponse.Fork)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
@@ -768,7 +768,7 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
-		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Fork)
+		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Size, blockRootsStateResponse.Fork)
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
@@ -778,8 +778,8 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		}
 
 		// Get historical summary proof
-		var tree *ssz.Node
-		tree, err = fuluState.GetTree()
+		var tree *treeproof.Node
+		tree, err = generic.SSZ.GetTree(fuluState)
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get state tree: %w", err)
 		}
@@ -863,7 +863,7 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 		}
 		notFounds = 0
 
-		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
+		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Size, blockResponse.Fork)
 		if err != nil {
 			return 0, nil, 0, nil, nil, err
 		}

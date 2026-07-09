@@ -156,15 +156,18 @@ const (
 
 // SSZ response go into these wrapper types.
 // You can stream Data into a deserializer.
+// Size is the total SSZ payload size from Content-Length; <= 0 if unknown.
 // Fork is the consensus version, e.g, "deneb" or "electra"
 
 type BeaconStateSSZ struct {
 	Data io.ReadCloser
+	Size int64
 	Fork string
 }
 
 type BeaconBlockSSZ struct {
 	Data io.ReadCloser
+	Size int64
 	Fork string
 }
 

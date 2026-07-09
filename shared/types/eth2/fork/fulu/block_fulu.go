@@ -10,7 +10,7 @@ import (
 const BeaconBlockBodyChunksCeil uint64 = 16
 
 func (b *SignedBeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
-	tree, err := b.Block.GetTree()
+	tree, err := generic.SSZ.GetTree(b.Block)
 	if err != nil {
 		return nil, err
 	}

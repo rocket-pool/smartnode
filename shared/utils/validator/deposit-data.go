@@ -20,7 +20,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
 	}
 
 	// Get signing root
-	or, err := dd.HashTreeRoot()
+	or, err := generic.SSZ.HashTreeRoot(&dd)
 	if err != nil {
 		return generic.DepositData{}, common.Hash{}, err
 	}
@@ -31,7 +31,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
 	}
 
 	// Get signing root with domain
-	srHash, err := sr.HashTreeRoot()
+	srHash, err := generic.SSZ.HashTreeRoot(&sr)
 	if err != nil {
 		return generic.DepositData{}, common.Hash{}, err
 	}
@@ -45,7 +45,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
 	}
 
 	// Get deposit data root
-	depositDataRoot, err := depositData.HashTreeRoot()
+	depositDataRoot, err := generic.SSZ.HashTreeRoot(&depositData)
 	if err != nil {
 		return generic.DepositData{}, common.Hash{}, err
 	}
