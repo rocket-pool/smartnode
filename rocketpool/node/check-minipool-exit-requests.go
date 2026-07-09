@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -27,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	rpvalidator "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // TODO: flip to true once the did-not-exit contract method exists
@@ -127,6 +129,12 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
+	// Get node account
+	nodeAccount, err := t.w.GetNodeAccount()
+	if err != nil {
+		return err
+	}
+
 	// Get the pending exit requests
 	exitRequests, err := minipool.GetMinipoolExitRequests(t.rp, opts)
 	if err != nil {
@@ -170,6 +178,16 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		minipoolDetails, exists := minipoolDetailsByPubkey[status.Pubkey]
 		if !exists {
 			t.log.Printlnf("Validator %d does not belong to a known minipool", request.ValidatorIndex)
+			continue
+		}
+
+		// If the minipool belongs to this node, cooperate: sign and submit the voluntary exit
+		if minipoolDetails.NodeAddress == nodeAccount.Address {
+			t.log.Printlnf("Minipool %s (validator %d) belongs to this node; submitting a voluntary exit", minipoolDetails.MinipoolAddress.Hex(), request.ValidatorIndex)
+			err := t.exitOwnMinipool(minipoolDetails, status)
+			if err != nil {
+				t.log.Printlnf("Error exiting minipool %s: %s", minipoolDetails.MinipoolAddress.Hex(), err.Error())
+			}
 			continue
 		}
 
@@ -221,6 +239,50 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 	// Return
 	return nil
 
+}
+
+// Sign and broadcast the voluntary exit for a minipool validator belonging to this node
+func (t *checkMinipoolExitRequests) exitOwnMinipool(mpd *rpstate.NativeMinipoolDetails, status beacon.ValidatorStatus) error {
+
+	// Check the minipool status
+	if mpd.Status != types.Staking {
+		return fmt.Errorf("minipool %s is not in staking status", mpd.MinipoolAddress.Hex())
+	}
+
+	// Get the validator private key
+	validatorKey, err := t.w.GetValidatorKeyByPubkey(mpd.Pubkey)
+	if err != nil {
+		return err
+	}
+
+	// Get beacon head
+	head, err := t.bc.GetBeaconHead()
+	if err != nil {
+		return err
+	}
+
+	// Get voluntary exit signature domain
+	signatureDomain, err := t.bc.GetDomainData(eth2types.DomainVoluntaryExit[:], head.Epoch, false)
+	if err != nil {
+		return err
+	}
+
+	// Get signed voluntary exit message
+	signature, err := rpvalidator.GetSignedExitMessage(validatorKey, status.Index, head.Epoch, signatureDomain)
+	if err != nil {
+		return err
+	}
+
+	// Broadcast voluntary exit message
+	if err := t.bc.ExitValidator(status.Index, head.Epoch, signature); err != nil {
+		return err
+	}
+
+	// Log
+	t.log.Printlnf("Successfully submitted a voluntary exit for validator %s (minipool %s).", status.Index, mpd.MinipoolAddress.Hex())
+
+	// Return
+	return nil
 }
 
 func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) error {
