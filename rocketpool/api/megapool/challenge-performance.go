@@ -20,13 +20,13 @@ import (
 )
 
 // canChallengePerformance checks whether the node can challenge the target-vote
-// performance of a group of megapool validators: the node wallet must hold the
+// performance of a megapool validator: the node wallet must hold the
 // performance_challenge_bond in RPL, and the challengeMegapool call must pass
 // gas estimation with a fresh slot proof.
 func canChallengePerformance(
 	c *cli.Command,
 	megapoolAddress common.Address,
-	validatorIds []uint32,
+	validatorId uint32,
 	startEpoch uint64,
 	participation []*big.Int,
 ) (*api.CanChallengeMegapoolPerformanceResponse, error) {
@@ -75,7 +75,7 @@ func canChallengePerformance(
 		return &response, nil
 	}
 
-	slotTimestamp, slotProof, err := getChallengeSlotProof(c, w, bc, rp, megapoolAddress, validatorIds)
+	slotTimestamp, slotProof, err := getChallengeSlotProof(c, w, bc, rp, megapoolAddress, validatorId)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func canChallengePerformance(
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo, err = megapool.EstimateChallengeMegapoolGas(rp, megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof, opts)
+	response.GasInfo, err = megapool.EstimateChallengeMegapoolGas(rp, megapoolAddress, validatorId, startEpoch, participation, slotTimestamp, slotProof, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error estimating challengeMegapool gas: %w", err)
 	}
@@ -93,12 +93,12 @@ func canChallengePerformance(
 	return &response, nil
 }
 
-// challengePerformance submits the challengeMegapool transaction for a group
-// of megapool validators.
+// challengePerformance submits the challengeMegapool transaction for a
+// megapool validator.
 func challengePerformance(
 	c *cli.Command,
 	megapoolAddress common.Address,
-	validatorIds []uint32,
+	validatorId uint32,
 	startEpoch uint64,
 	participation []*big.Int,
 	opts *bind.TransactOpts,
@@ -133,12 +133,12 @@ func challengePerformance(
 		return nil, err
 	}
 
-	slotTimestamp, slotProof, err := getChallengeSlotProof(c, w, bc, rp, megapoolAddress, validatorIds)
+	slotTimestamp, slotProof, err := getChallengeSlotProof(c, w, bc, rp, megapoolAddress, validatorId)
 	if err != nil {
 		return nil, err
 	}
 
-	response.TxHash, err = megapool.ChallengeMegapool(rp, megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof, opts)
+	response.TxHash, err = megapool.ChallengeMegapool(rp, megapoolAddress, validatorId, startEpoch, participation, slotTimestamp, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func resolveChallengedMegapool(rp *rocketpool.RocketPool, nodeAddress common.Add
 }
 
 // getChallengeSlotProof builds the beacon slot proof and timestamp required by
-// challengeMegapool, anchored on the first challenged validator's pubkey (the
+// challengeMegapool, anchored on the challenged validator's pubkey (the
 // challenge itself only consumes the slot proof, not the validator proof).
 func getChallengeSlotProof(
 	c *cli.Command,
@@ -171,18 +171,15 @@ func getChallengeSlotProof(
 	bc beacon.Client,
 	rp *rocketpool.RocketPool,
 	megapoolAddress common.Address,
-	validatorIds []uint32,
+	validatorId uint32,
 ) (uint64, megapool.SlotProof, error) {
-	if len(validatorIds) == 0 {
-		return 0, megapool.SlotProof{}, fmt.Errorf("no validator ids to challenge")
-	}
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return 0, megapool.SlotProof{}, fmt.Errorf("error creating megapool binding for %s: %w", megapoolAddress.Hex(), err)
 	}
-	pubkey, err := mp.GetValidatorPubkey(validatorIds[0], nil)
+	pubkey, err := mp.GetValidatorPubkey(validatorId, nil)
 	if err != nil {
-		return 0, megapool.SlotProof{}, fmt.Errorf("error getting megapool validator %d pubkey: %w", validatorIds[0], err)
+		return 0, megapool.SlotProof{}, fmt.Errorf("error getting megapool validator %d pubkey: %w", validatorId, err)
 	}
 	eth2Config, err := bc.GetEth2Config()
 	if err != nil {

@@ -402,17 +402,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/can-challenge-performance", func(w http.ResponseWriter, r *http.Request) {
-		megapoolAddr, validatorIds, startEpoch, participation, err := parseChallengePerformanceParams(r)
+		megapoolAddr, validatorId, startEpoch, participation, err := parseChallengePerformanceParams(r)
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canChallengePerformance(c, megapoolAddr, validatorIds, startEpoch, participation)
+		resp, err := canChallengePerformance(c, megapoolAddr, validatorId, startEpoch, participation)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/challenge-performance", func(w http.ResponseWriter, r *http.Request) {
-		megapoolAddr, validatorIds, startEpoch, participation, err := parseChallengePerformanceParams(r)
+		megapoolAddr, validatorId, startEpoch, participation, err := parseChallengePerformanceParams(r)
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
@@ -422,7 +422,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := challengePerformance(c, megapoolAddr, validatorIds, startEpoch, participation, opts)
+		resp, err := challengePerformance(c, megapoolAddr, validatorId, startEpoch, participation, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }
@@ -430,26 +430,26 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 // parseChallengePerformanceParams parses the shared parameters of the
 // can-challenge-performance and challenge-performance routes. megapoolAddress
 // is optional (the zero address means "use the node's own megapool").
-func parseChallengePerformanceParams(r *http.Request) (common.Address, []uint32, uint64, []*big.Int, error) {
+func parseChallengePerformanceParams(r *http.Request) (common.Address, uint32, uint64, []*big.Int, error) {
 	var megapoolAddr common.Address
 	if raw := r.URL.Query().Get("megapoolAddress"); raw != "" {
 		megapoolAddr = common.HexToAddress(raw)
 	} else if raw := r.FormValue("megapoolAddress"); raw != "" {
 		megapoolAddr = common.HexToAddress(raw)
 	}
-	validatorIds, err := parseUint32List(r, "validatorIds")
+	validatorId, err := parseUint32(r, "validatorId")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
 	startEpoch, err := parseUint64(r, "startEpoch")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
 	participation, err := parseBigIntList(r, "participation")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
-	return megapoolAddr, validatorIds, startEpoch, participation, nil
+	return megapoolAddr, validatorId, startEpoch, participation, nil
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {
@@ -482,33 +482,6 @@ func parseBool(r *http.Request, name string) (bool, error) {
 		return false, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
 	}
 	return v, nil
-}
-
-func parseUint32List(r *http.Request, name string) ([]uint32, error) {
-	raw := r.URL.Query().Get(name)
-	if raw == "" {
-		raw = r.FormValue(name)
-	}
-	if raw == "" {
-		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
-	}
-	parts := strings.Split(raw, ",")
-	values := make([]uint32, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		v, err := strconv.ParseUint(part, 10, 32)
-		if err != nil {
-			return nil, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s entry: %s", name, part)}
-		}
-		values = append(values, uint32(v))
-	}
-	if len(values) == 0 {
-		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("no valid entries in parameter '%s'", name)}
-	}
-	return values, nil
 }
 
 func parseBigIntList(r *http.Request, name string) ([]*big.Int, error) {

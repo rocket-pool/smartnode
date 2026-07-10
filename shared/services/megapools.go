@@ -1,6 +1,7 @@
 package services
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -124,22 +125,74 @@ func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Co
 	return proof, slotTimestamp, slotProof, err
 }
 
-// PerformanceDefenseProofs bundles everything the Respond call of a megapool
-// performance challenge needs from the beacon state.
+// PerformanceDefenseProofs bundles everything the RespondWithParticipation
+// call of a megapool performance challenge needs.
 type PerformanceDefenseProofs struct {
-	// ChallengeLeaf is the previous_epoch_participation chunk containing the
-	// validator's flags byte — the merkle leaf of the participation proof — as
-	// a uint256.
+	// Offset is the epoch offset of the disproven epoch from the challenge's
+	// start epoch (challengedEpoch = startEpoch + Offset)
+	Offset uint64
+	// ChallengeLeaf is the word of the challenge participation bitmap that
+	// contains the Offset bit (LSB-first: bit Offset % 256 must be set,
+	// meaning the epoch was challenged as missed)
 	ChallengeLeaf *big.Int
-	// ChallengeWitness holds the branch hashes from ChallengeLeaf up to the
-	// beacon block root anchored at SlotTimestamp via EIP-4788.
+	// ChallengeWitness is the sha256 merkle branch proving ChallengeLeaf is
+	// part of the challenge bitmap root stored on-chain
 	ChallengeWitness []common.Hash
-	// Offset is the validator's byte index within ChallengeLeaf (validatorIndex % 32)
-	Offset        uint64
-	SlotTimestamp uint64
+	SlotTimestamp    uint64
+	// Validator ties the beacon validator index to the challenged validator's
+	// pubkey, anchored to the same slot as the participation proof
+	Validator megapool.ValidatorProof
 	// Participation carries the participation metadata
 	Participation megapool.ParticipationProof
 	Slot          megapool.SlotProof
+}
+
+// Number of epochs encoded per challenge participation bitmap word (a
+// Solidity uint256)
+const bitsPerParticipationWord = 256
+
+// participationBitmapWitness builds the merkle branch proving that the word
+// at leafIndex is part of the challenge participation bitmap tree. It mirrors
+// RocketNetworkParticipation.hashTree/restoreMerkleRoot: the leaves are the
+// raw uint256 bitmap words, zero-padded to the next power of two, hashed
+// pairwise with sha256.
+func participationBitmapWitness(participation []*big.Int, leafIndex uint64) ([]common.Hash, error) {
+	leafCount := uint64(len(participation))
+	if leafCount == 0 {
+		return nil, fmt.Errorf("the participation bitmap is empty")
+	}
+	if leafIndex >= leafCount {
+		return nil, fmt.Errorf("leaf index %d out of bounds of the participation bitmap (%d words)", leafIndex, leafCount)
+	}
+
+	width := uint64(1)
+	for width < leafCount {
+		width *= 2
+	}
+
+	level := make([][32]byte, width)
+	for i, word := range participation {
+		if word.Sign() < 0 || word.BitLen() > bitsPerParticipationWord {
+			return nil, fmt.Errorf("participation bitmap word %d is not a uint256", i)
+		}
+		word.FillBytes(level[i][:])
+	}
+
+	witness := []common.Hash{}
+	index := leafIndex
+	for len(level) > 1 {
+		witness = append(witness, common.Hash(level[index^1]))
+		next := make([][32]byte, len(level)/2)
+		for i := range next {
+			var pair [64]byte
+			copy(pair[:32], level[2*i][:])
+			copy(pair[32:], level[2*i+1][:])
+			next[i] = sha256.Sum256(pair[:])
+		}
+		level = next
+		index /= 2
+	}
+	return witness, nil
 }
 
 // participationProofSlotRange returns the inclusive slot range of epoch E+1,
@@ -153,10 +206,30 @@ func participationProofSlotRange(challengedEpoch uint64, slotsPerEpoch uint64) (
 
 // GetParticipationProof builds the proofs needed to respond to a performance
 // challenge with a validator's timely target vote in challengedEpoch. The
-// proof state is the post-state of the last block in epoch challengedEpoch+1:
+// challenge is identified by its start epoch and participation bitmap
+// (challengedEpoch must be marked as missed in the bitmap). The proof state
+// is the post-state of the last block in epoch challengedEpoch+1:
 // attestations only enter the state via blocks, so that state holds the final
 // previous_epoch_participation flags for the challenged epoch.
-func GetParticipationProof(c *cli.Command, validatorIndex uint64, challengedEpoch uint64) (PerformanceDefenseProofs, error) {
+func GetParticipationProof(c *cli.Command, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, challengedEpoch uint64, startEpoch uint64, participation []*big.Int) (PerformanceDefenseProofs, error) {
+	// Locate the challenged epoch within the challenge participation bitmap
+	if challengedEpoch < startEpoch {
+		return PerformanceDefenseProofs{}, fmt.Errorf("challenged epoch %d is before the challenge start epoch %d", challengedEpoch, startEpoch)
+	}
+	offset := challengedEpoch - startEpoch
+	leafIndex := offset / bitsPerParticipationWord
+	if leafIndex >= uint64(len(participation)) {
+		return PerformanceDefenseProofs{}, fmt.Errorf("epoch %d (offset %d) is out of bounds of the challenge participation bitmap (%d words)", challengedEpoch, offset, len(participation))
+	}
+	challengeLeaf := participation[leafIndex]
+	if challengeLeaf.Bit(int(offset%bitsPerParticipationWord)) != 1 {
+		return PerformanceDefenseProofs{}, fmt.Errorf("epoch %d (offset %d) was not challenged as missed in the participation bitmap", challengedEpoch, offset)
+	}
+	challengeWitness, err := participationBitmapWitness(participation, leafIndex)
+	if err != nil {
+		return PerformanceDefenseProofs{}, fmt.Errorf("error building the challenge bitmap witness: %w", err)
+	}
+
 	bc, err := GetBeaconClient(c)
 	if err != nil {
 		return PerformanceDefenseProofs{}, err
@@ -198,35 +271,58 @@ func GetParticipationProof(c *cli.Command, validatorIndex uint64, challengedEpoc
 		return PerformanceDefenseProofs{}, fmt.Errorf("error parsing beacon state at slot %d: %w", proofSlot, err)
 	}
 
-	participation := beaconState.GetPreviousEpochParticipation()
-	if validatorIndex >= uint64(len(participation)) {
-		return PerformanceDefenseProofs{}, fmt.Errorf("validator index %d out of bounds of the previous epoch participation list (%d entries)", validatorIndex, len(participation))
+	epochParticipation := beaconState.GetPreviousEpochParticipation()
+	if validatorIndex >= uint64(len(epochParticipation)) {
+		return PerformanceDefenseProofs{}, fmt.Errorf("validator index %d out of bounds of the previous epoch participation list (%d entries)", validatorIndex, len(epochParticipation))
 	}
-	flags := participation[validatorIndex]
+	flags := epochParticipation[validatorIndex]
 	if flags&(1<<performance.TimelyTargetFlagIndex) == 0 {
 		return PerformanceDefenseProofs{}, fmt.Errorf("validator %d does not have the timely target flag set for epoch %d", validatorIndex, challengedEpoch)
 	}
 
-	chunk, chunkOffset, participationProofBytes, slotProofBytes, err := beaconState.PreviousEpochParticipationAndSlotProof(validatorIndex)
+	_, _, participationProofBytes, slotProofBytes, err := beaconState.PreviousEpochParticipationAndSlotProof(validatorIndex)
 	if err != nil {
 		return PerformanceDefenseProofs{}, fmt.Errorf("error building participation proof: %w", err)
 	}
+
+	// Build the validator proof from the same state so verifyValidator and
+	// verifyParticipation are anchored to the same slot
+	validatorProofBytes, _, err := beaconState.ValidatorAndSlotProof(validatorIndex)
+	if err != nil {
+		return PerformanceDefenseProofs{}, fmt.Errorf("error building validator proof: %w", err)
+	}
+	validators := beaconState.GetValidators()
+	if validatorIndex >= uint64(len(validators)) {
+		return PerformanceDefenseProofs{}, fmt.Errorf("validator index %d out of bounds of the validator set (%d entries)", validatorIndex, len(validators))
+	}
+	validator := validators[validatorIndex]
+	var withdrawalCredentialsFixed [32]byte
+	copy(withdrawalCredentialsFixed[:], validator.WithdrawalCredentials)
 
 	slotTimestamp, err := GetChildBlockTimestampForSlot(c, beaconState.GetSlot())
 	if err != nil {
 		return PerformanceDefenseProofs{}, fmt.Errorf("error getting the slot timestamp: %w", err)
 	}
 
-	challengeWitness := make([]common.Hash, len(participationProofBytes))
-	for i, h := range participationProofBytes {
-		challengeWitness[i] = common.BytesToHash(h)
-	}
-
 	return PerformanceDefenseProofs{
-		ChallengeLeaf:    new(big.Int).SetBytes(chunk[:]),
+		Offset:           offset,
+		ChallengeLeaf:    challengeLeaf,
 		ChallengeWitness: challengeWitness,
-		Offset:           chunkOffset,
 		SlotTimestamp:    slotTimestamp,
+		Validator: megapool.ValidatorProof{
+			ValidatorIndex: new(big.Int).SetUint64(validatorIndex),
+			Validator: megapool.ProvedValidator{
+				Pubkey:                     validatorPubkey[:],
+				WithdrawalCredentials:      withdrawalCredentialsFixed,
+				EffectiveBalance:           validator.EffectiveBalance,
+				Slashed:                    validator.Slashed,
+				ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
+				ActivationEpoch:            validator.ActivationEpoch,
+				ExitEpoch:                  validator.ExitEpoch,
+				WithdrawableEpoch:          validator.WithdrawableEpoch,
+			},
+			Witnesses: ConvertToFixedSize(validatorProofBytes),
+		},
 		Participation: megapool.ParticipationProof{
 			ParticipationSlot:  beaconState.GetSlot(),
 			ValidatorIndex:     validatorIndex,

@@ -46,7 +46,7 @@ type defendChallengePerformance struct {
 type megapoolPerformanceChallenge struct {
 	challengeId           uint64
 	megapoolAddress       common.Address
-	validatorIds          []uint32
+	validatorId           uint32
 	startEpoch            uint64
 	participationCallData []*big.Int
 	challengeTimestamp    time.Time
@@ -192,6 +192,12 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 		return err
 	}
 
+	// Get the performance measurement period (in epochs)
+	performancePeriod, err := protocol.GetPerformancePeriod(t.rp, opts)
+	if err != nil {
+		return err
+	}
+
 	// TODO: Fetch megapool challenges
 
 	participationCallData := []*big.Int{new(big.Int).Sub(
@@ -203,7 +209,7 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 		{
 			challengeId:           0,
 			megapoolAddress:       megapoolAddress,
-			validatorIds:          []uint32{0, 1, 2},
+			validatorId:           0,
 			participationCallData: participationCallData,
 			startEpoch:            105000,
 			challengeTimestamp:    time.Now(),
@@ -224,57 +230,59 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 		challengedEpochs := challenge.getChallengedEpochs()
 		t.log.Printlnf("Challenged epochs: %v", challengedEpochs)
 
-		// Resolve every challenged validator's pubkey and beacon-chain index up
-		// front so the per-epoch beacon data can be fetched once and shared across
-		// all of them when verifying target-vote participation.
-		validatorsByIndex := make(map[uint64]challengedValidator, len(challenge.validatorIds))
-		validatorIndices := make([]uint64, 0, len(challenge.validatorIds))
-		for _, validatorId := range challenge.validatorIds {
-			pubkey, err := mp.GetValidatorPubkey(validatorId, opts)
-			if err != nil {
-				t.log.Printlnf("error getting pubkey for megapool validator %d: %v", validatorId, err)
-				continue
-			}
-			beaconStatus, err := t.bc.GetValidatorStatus(pubkey, nil)
-			if err != nil {
-				t.log.Printlnf("error getting beacon status for megapool validator %d (%s): %v", validatorId, pubkey.Hex(), err)
-				continue
-			}
-			if !beaconStatus.Exists || beaconStatus.Index == "" {
-				t.log.Printlnf("Megapool validator %d (%s) is not on the beacon chain yet, skipping.", validatorId, pubkey.Hex())
-				continue
-			}
-			validatorIndex, err := strconv.ParseUint(beaconStatus.Index, 10, 64)
-			if err != nil {
-				t.log.Printlnf("error parsing beacon index %q for megapool validator %d: %v", beaconStatus.Index, validatorId, err)
-				continue
-			}
-			validatorsByIndex[validatorIndex] = challengedValidator{
-				validatorId: validatorId,
-				pubkey:      pubkey,
-				index:       validatorIndex,
-			}
-			validatorIndices = append(validatorIndices, validatorIndex)
+		// Resolve the challenged validator's pubkey and beacon-chain index
+		pubkey, err := mp.GetValidatorPubkey(challenge.validatorId, opts)
+		if err != nil {
+			t.log.Printlnf("error getting pubkey for megapool validator %d: %v", challenge.validatorId, err)
+			continue
+		}
+		beaconStatus, err := t.bc.GetValidatorStatus(pubkey, nil)
+		if err != nil {
+			t.log.Printlnf("error getting beacon status for megapool validator %d (%s): %v", challenge.validatorId, pubkey.Hex(), err)
+			continue
+		}
+		if !beaconStatus.Exists || beaconStatus.Index == "" {
+			t.log.Printlnf("Megapool validator %d (%s) is not on the beacon chain yet, skipping.", challenge.validatorId, pubkey.Hex())
+			continue
+		}
+		validatorIndex, err := strconv.ParseUint(beaconStatus.Index, 10, 64)
+		if err != nil {
+			t.log.Printlnf("error parsing beacon index %q for megapool validator %d: %v", beaconStatus.Index, challenge.validatorId, err)
+			continue
+		}
+		defender := challengedValidator{
+			validatorId: challenge.validatorId,
+			pubkey:      pubkey,
+			index:       validatorIndex,
 		}
 
-		// Find the first challenged validator that made a successful target vote
-		// within the challenged range. A single (validator, epoch) proof is enough
-		// to defend the challenge
-		validatorIndex, epoch, found, err := performance.FindFirstTimelyTargetVote(t.bc, state.BeaconConfig, validatorIndices, challengedEpochs)
+		// Find an epoch in the challenged range where the validator made a
+		// timely target vote. A single (validator, epoch) proof is enough to
+		// defend the challenge
+		_, epoch, found, err := performance.FindFirstTimelyTargetVote(t.bc, state.BeaconConfig, []uint64{validatorIndex}, challengedEpochs)
 		if err != nil {
-			return fmt.Errorf("error verifying target-vote participation for challenged megapool validators: %w", err)
+			return fmt.Errorf("error verifying target-vote participation for challenged megapool validator %d: %w", challenge.validatorId, err)
 		}
-		if !found {
-			t.log.Println("No challenged validator made a successful target vote in the challenged epochs.")
+		if found {
+			t.log.Printlnf("Megapool validator %d made a timely target vote in epoch %d; defending the performance challenge.", defender.validatorId, epoch)
+			if err := t.defendChallenge(t.rp, challenge, defender, epoch); err != nil {
+				t.log.Printlnf("error defending performance challenge for megapool validator %d: %v", defender.validatorId, err)
+			}
 			continue
 		}
 
-		// Defend the challenge using that validator id and epoch.
-		defender := validatorsByIndex[validatorIndex]
-		t.log.Printlnf("Megapool validator %d made a timely target vote in epoch %d; defending the performance challenge.", defender.validatorId, epoch)
-		if err := t.defendChallenge(t.rp, challenge, defender, epoch); err != nil {
-			t.log.Printlnf("error defending performance challenge for megapool validator %d: %v", defender.validatorId, err)
+		// No timely target vote found. If the validator was not staking for
+		// the entire challenge window, the challenge can still be defeated
+		// with a validator proof
+		if beaconStatus.ActivationEpoch > challenge.startEpoch || beaconStatus.WithdrawableEpoch <= challenge.startEpoch+performancePeriod {
+			t.log.Printlnf("Megapool validator %d was not staking during the challenge window; responding with a validator proof.", defender.validatorId)
+			if err := t.respondWithValidator(challenge, defender, state); err != nil {
+				t.log.Printlnf("error responding to performance challenge %d with a validator proof: %v", challenge.challengeId, err)
+			}
+			continue
 		}
+
+		t.log.Printlnf("No defense available for performance challenge %d: validator %d made no timely target vote in the challenged epochs and was staking during the challenge window.", challenge.challengeId, defender.validatorId)
 	}
 
 	// Return
@@ -336,6 +344,68 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 	return nil
 }
 
+// respondWithValidator responds to a performance challenge with a validator
+// proof showing the defender was not staking during the challenge window.
+func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerformanceChallenge, defender challengedValidator, state *state.NetworkState) error {
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return err
+	}
+
+	t.log.Printlnf("Creating a validator proof for megapool validator %d.", defender.validatorId)
+
+	// Build a fresh validator proof against the head state to satisfy the
+	// contract's slot recency requirement
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, challenge.megapoolAddress, defender.pubkey, nil)
+	if err != nil {
+		return fmt.Errorf("error creating the validator proof: %w", err)
+	}
+
+	gasInfo, err := megapool.EstimateRespondWithValidatorGas(t.rp, challenge.challengeId, slotTimestamp, validatorProof, slotProof, opts)
+	if err != nil {
+		return err
+	}
+
+	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	// Get the max fee
+	maxFee := t.maxFee
+	if maxFee == nil || maxFee.Uint64() == 0 {
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Print the gas info
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+		return nil
+	}
+
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
+	opts.GasLimit = gas.Uint64()
+
+	t.log.Printlnf("Responding to challenge %d with a validator proof for validator %d.", challenge.challengeId, defender.validatorId)
+	txHash, err := megapool.RespondWithValidator(t.rp, challenge.challengeId, slotTimestamp, validatorProof, slotProof, opts)
+	if err != nil {
+		return err
+	}
+
+	// Print TX info and wait for it to be included in a block
+	err = api.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
+	if err != nil {
+		return err
+	}
+
+	// Log
+	t.log.Printlnf("Successfully responded to the performance challenge for validator %d.", defender.validatorId)
+
+	// Return
+	return nil
+}
+
 // defendChallenge responds to a performance challenge with a participation
 // proof of the defender's timely target vote in challengeEpoch.
 func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, challenge megapoolPerformanceChallenge, defender challengedValidator, challengeEpoch uint64) error {
@@ -348,12 +418,12 @@ func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, 
 
 	t.log.Printlnf("Creating a participation proof that validator index %d made a timely target vote in epoch %d.", defender.index, challengeEpoch)
 
-	proofs, err := services.GetParticipationProof(t.c, defender.index, challengeEpoch)
+	proofs, err := services.GetParticipationProof(t.c, defender.index, defender.pubkey, challengeEpoch, challenge.startEpoch, challenge.participationCallData)
 	if err != nil {
 		return fmt.Errorf("error creating the participation proof: %w", err)
 	}
 
-	gasInfo, err := megapool.EstimateRespondGas(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Participation, proofs.Slot, opts)
+	gasInfo, err := megapool.EstimateRespondWithParticipationGas(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Validator, proofs.Participation, proofs.Slot, opts)
 	if err != nil {
 		return err
 	}
@@ -378,7 +448,7 @@ func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, 
 	opts.GasLimit = gas.Uint64()
 
 	t.log.Printlnf("Responding to challenge %d with the timely target vote of validator %d in epoch %d.", challenge.challengeId, defender.validatorId, challengeEpoch)
-	txHash, err := megapool.Respond(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Participation, proofs.Slot, opts)
+	txHash, err := megapool.RespondWithParticipation(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Validator, proofs.Participation, proofs.Slot, opts)
 	if err != nil {
 		return err
 	}

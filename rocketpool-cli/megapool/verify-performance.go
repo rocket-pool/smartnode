@@ -75,9 +75,10 @@ func verifyMegapoolPerformance(megapoolAddress common.Address, targetValidators 
 
 // challengePerformance drives the on-chain challenge flow for the
 // challengeable validators of a verify-performance run: it groups validators
-// sharing the same missed epochs (one challengeMegapool call covers a whole
-// group), then for each group confirms the RPL bond with the user, checks the
-// node wallet balance, and submits the challenge after the gas confirmation.
+// sharing the same missed epochs so they can be confirmed together, then
+// submits one challengeMegapool call per validator (challenges are
+// per-validator on-chain, each requiring its own RPL bond) after the gas
+// confirmation.
 func challengePerformance(rp *rocketpool.Client, megapoolAddress common.Address, resp api.VerifyPerformanceBatchResponse, yes bool) error {
 	groups := verifyperf.GroupChallengeable(resp.Results)
 	if len(groups) == 0 {
@@ -99,45 +100,47 @@ func challengePerformance(rp *rocketpool.Client, megapoolAddress common.Address,
 		for i, id := range group.ValidatorIds {
 			ids[i] = fmt.Sprint(id)
 		}
-		fmt.Printf("\nValidator id(s) %s missed the same %d target epoch(s) and can be challenged together.\n", strings.Join(ids, ", "), len(group.MissedEpochs))
-		fmt.Printf("Challenging requires a bond of %.6f RPL.\n", bondRpl)
+		fmt.Printf("\nValidator id(s) %s missed the same %d target epoch(s).\n", strings.Join(ids, ", "), len(group.MissedEpochs))
+		fmt.Printf("Each validator is challenged individually and requires a bond of %.6f RPL.\n", bondRpl)
 
-		if prompt.Declined(yes, "Do you want to challenge validator id(s) %s with a bond of %.6f RPL?", strings.Join(ids, ", "), bondRpl) {
+		if prompt.Declined(yes, "Do you want to challenge validator id(s) %s with a bond of %.6f RPL each?", strings.Join(ids, ", "), bondRpl) {
 			fmt.Println("Skipped.")
 			continue
 		}
 
-		can, err := rp.CanChallengeMegapoolPerformance(megapoolAddress, group.ValidatorIds, group.StartEpoch, group.Participation)
-		if err != nil {
-			return err
-		}
-		if can.InsufficientRplBalance {
-			fmt.Printf("The node wallet holds %.6f RPL but the challenge bond requires %.6f RPL. Skipping.\n",
-				math.RoundDown(eth.WeiToEth(can.RplBalance), 6), math.RoundDown(eth.WeiToEth(can.ChallengeBond), 6))
-			continue
-		}
-		if !can.CanChallenge {
-			fmt.Println("The challenge cannot be submitted. Skipping.")
-			continue
-		}
+		for _, validatorId := range group.ValidatorIds {
+			can, err := rp.CanChallengeMegapoolPerformance(megapoolAddress, validatorId, group.StartEpoch, group.Participation)
+			if err != nil {
+				return err
+			}
+			if can.InsufficientRplBalance {
+				fmt.Printf("The node wallet holds %.6f RPL but the challenge bond requires %.6f RPL. Skipping validator %d.\n",
+					math.RoundDown(eth.WeiToEth(can.RplBalance), 6), math.RoundDown(eth.WeiToEth(can.ChallengeBond), 6), validatorId)
+				continue
+			}
+			if !can.CanChallenge {
+				fmt.Printf("The challenge for validator %d cannot be submitted. Skipping.\n", validatorId)
+				continue
+			}
 
-		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(can.GasInfo, rp, yes)
-		if err != nil {
-			return err
-		}
+			// Assign max fees
+			err = gas.AssignMaxFeeAndLimit(can.GasInfo, rp, yes)
+			if err != nil {
+				return err
+			}
 
-		challengeResp, err := rp.ChallengeMegapoolPerformance(megapoolAddress, group.ValidatorIds, group.StartEpoch, group.Participation)
-		if err != nil {
-			return err
-		}
+			challengeResp, err := rp.ChallengeMegapoolPerformance(megapoolAddress, validatorId, group.StartEpoch, group.Participation)
+			if err != nil {
+				return err
+			}
 
-		fmt.Println("Submitting the performance challenge...")
-		cliutils.PrintTransactionHash(rp, challengeResp.TxHash)
-		if _, err = rp.WaitForTransaction(challengeResp.TxHash); err != nil {
-			return err
+			fmt.Printf("Submitting the performance challenge for validator %d...\n", validatorId)
+			cliutils.PrintTransactionHash(rp, challengeResp.TxHash)
+			if _, err = rp.WaitForTransaction(challengeResp.TxHash); err != nil {
+				return err
+			}
+			fmt.Printf("Successfully challenged validator %d.\n", validatorId)
 		}
-		fmt.Printf("Successfully challenged validator id(s) %s.\n", strings.Join(ids, ", "))
 	}
 
 	return nil
