@@ -45,19 +45,15 @@ func (c *Client) VerifyMegapoolValidatorPerformance(megapoolAddress common.Addre
 }
 
 // challengePerformanceValues builds the shared parameters of the
-// can-challenge-performance and challenge-performance calls. validatorIds and
-// participation are serialized as comma-separated decimal strings.
-func challengePerformanceValues(megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int) url.Values {
-	ids := make([]string, len(validatorIds))
-	for i, id := range validatorIds {
-		ids[i] = strconv.FormatUint(uint64(id), 10)
-	}
+// can-challenge-performance and challenge-performance calls. participation is
+// serialized as comma-separated decimal strings.
+func challengePerformanceValues(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) url.Values {
 	words := make([]string, len(participation))
 	for i, word := range participation {
 		words[i] = word.String()
 	}
 	values := url.Values{
-		"validatorIds":  {strings.Join(ids, ",")},
+		"validatorId":   {strconv.FormatUint(uint64(validatorId), 10)},
 		"startEpoch":    {strconv.FormatUint(startEpoch, 10)},
 		"participation": {strings.Join(words, ",")},
 	}
@@ -68,13 +64,13 @@ func challengePerformanceValues(megapoolAddress common.Address, validatorIds []u
 }
 
 // CanChallengeMegapoolPerformance checks whether the node can challenge the
-// target-vote performance of a group of megapool validators, returning the
+// target-vote performance of a megapool validator, returning the
 // challenge bond, the node's RPL balance, and the gas estimate. If
 // megapoolAddress is the zero address the daemon resolves the node's own
 // megapool. This call has no client-side deadline because the gas estimate
 // requires downloading a beacon state to build the slot proof.
-func (c *Client) CanChallengeMegapoolPerformance(megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int) (api.CanChallengeMegapoolPerformanceResponse, error) {
-	values := challengePerformanceValues(megapoolAddress, validatorIds, startEpoch, participation)
+func (c *Client) CanChallengeMegapoolPerformance(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) (api.CanChallengeMegapoolPerformanceResponse, error) {
+	values := challengePerformanceValues(megapoolAddress, validatorId, startEpoch, participation)
 	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/megapool/can-challenge-performance", values)
 	if err != nil {
 		return api.CanChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not get can challenge megapool performance status: %w", err)
@@ -90,11 +86,11 @@ func (c *Client) CanChallengeMegapoolPerformance(megapoolAddress common.Address,
 }
 
 // ChallengeMegapoolPerformance submits a target-vote performance challenge
-// against a group of megapool validators. This call has no client-side
+// against a megapool validator. This call has no client-side
 // deadline because the transaction requires downloading a beacon state to
 // build the slot proof.
-func (c *Client) ChallengeMegapoolPerformance(megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int) (api.ChallengeMegapoolPerformanceResponse, error) {
-	values := challengePerformanceValues(megapoolAddress, validatorIds, startEpoch, participation)
+func (c *Client) ChallengeMegapoolPerformance(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) (api.ChallengeMegapoolPerformanceResponse, error) {
+	values := challengePerformanceValues(megapoolAddress, validatorId, startEpoch, participation)
 	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/megapool/challenge-performance", values)
 	if err != nil {
 		return api.ChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not challenge megapool performance: %w", err)
