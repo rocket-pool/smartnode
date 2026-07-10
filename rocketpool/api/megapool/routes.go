@@ -91,53 +91,26 @@ func parseBool(r *http.Request, name string) (bool, error) {
 // parseChallengePerformanceParams parses the shared parameters of the
 // can-challenge-performance and challenge-performance routes. megapoolAddress
 // is optional (the zero address means "use the node's own megapool").
-func parseChallengePerformanceParams(r *http.Request) (common.Address, []uint32, uint64, []*big.Int, error) {
+func parseChallengePerformanceParams(r *http.Request) (common.Address, uint32, uint64, []*big.Int, error) {
 	var megapoolAddr common.Address
 	if raw := r.URL.Query().Get("megapoolAddress"); raw != "" {
 		megapoolAddr = common.HexToAddress(raw)
 	} else if raw := r.FormValue("megapoolAddress"); raw != "" {
 		megapoolAddr = common.HexToAddress(raw)
 	}
-	validatorIds, err := parseUint32List(r, "validatorIds")
+	validatorId, err := parseUint32(r, "validatorId")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
 	startEpoch, err := parseUint64(r, "startEpoch")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
 	participation, err := parseBigIntList(r, "participation")
 	if err != nil {
-		return common.Address{}, nil, 0, nil, err
+		return common.Address{}, 0, 0, nil, err
 	}
-	return megapoolAddr, validatorIds, startEpoch, participation, nil
-}
-
-func parseUint32List(r *http.Request, name string) ([]uint32, error) {
-	raw := r.URL.Query().Get(name)
-	if raw == "" {
-		raw = r.FormValue(name)
-	}
-	if raw == "" {
-		return nil, &response.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
-	}
-	parts := strings.Split(raw, ",")
-	values := make([]uint32, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		v, err := strconv.ParseUint(part, 10, 32)
-		if err != nil {
-			return nil, &response.BadRequestError{Err: fmt.Errorf("invalid %s entry: %s", name, part)}
-		}
-		values = append(values, uint32(v))
-	}
-	if len(values) == 0 {
-		return nil, &response.BadRequestError{Err: fmt.Errorf("no valid entries in parameter '%s'", name)}
-	}
-	return values, nil
+	return megapoolAddr, validatorId, startEpoch, participation, nil
 }
 
 func parseBigIntList(r *http.Request, name string) ([]*big.Int, error) {
