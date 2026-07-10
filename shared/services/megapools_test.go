@@ -1,6 +1,7 @@
 package services
 
 import (
+	"crypto/sha256"
 	"math/big"
 	"testing"
 
@@ -262,5 +263,121 @@ func TestParticipationProofSlotRange(t *testing.T) {
 					tc.challengedEpoch, tc.slotsPerEpoch, first, last, tc.wantFirst, tc.wantLast)
 			}
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// participationBitmapWitness
+// ---------------------------------------------------------------------------
+
+// testHashTree mirrors RocketNetworkParticipation.hashTree: raw uint256 words
+// as leaves, zero-padded to the next power of two, hashed pairwise with
+// sha256.
+func testHashTree(t *testing.T, leaves []*big.Int) [32]byte {
+	t.Helper()
+	width := 1
+	for width < len(leaves) {
+		width *= 2
+	}
+	tree := make([][32]byte, width)
+	for i, leaf := range leaves {
+		leaf.FillBytes(tree[i][:])
+	}
+	for width > 1 {
+		for i := 0; i < width; i += 2 {
+			var pair [64]byte
+			copy(pair[:32], tree[i][:])
+			copy(pair[32:], tree[i+1][:])
+			tree[i/2] = sha256.Sum256(pair[:])
+		}
+		width /= 2
+	}
+	return tree[0]
+}
+
+// testRestoreMerkleRoot mirrors RocketNetworkParticipation.restoreMerkleRoot:
+// walk the generalized index from the leaf to the root, hashing with the
+// witnesses.
+func testRestoreMerkleRoot(t *testing.T, leaf [32]byte, gindex uint64, witnesses []common.Hash) [32]byte {
+	t.Helper()
+	if 1<<(len(witnesses)+1) <= gindex {
+		t.Fatalf("invalid witness length %d for gindex %d", len(witnesses), gindex)
+	}
+	value := leaf
+	i := 0
+	for gindex != 1 {
+		var pair [64]byte
+		if gindex%2 == 1 {
+			copy(pair[:32], witnesses[i][:])
+			copy(pair[32:], value[:])
+		} else {
+			copy(pair[:32], value[:])
+			copy(pair[32:], witnesses[i][:])
+		}
+		value = sha256.Sum256(pair[:])
+		gindex /= 2
+		i++
+	}
+	return value
+}
+
+func TestParticipationBitmapWitness(t *testing.T) {
+	for _, wordCount := range []int{1, 2, 3, 5, 8} {
+		// Deterministic, distinct bitmap words
+		participation := make([]*big.Int, wordCount)
+		for i := range participation {
+			word := new(big.Int).Lsh(big.NewInt(int64(i)+1), 13)
+			word.Add(word, big.NewInt(int64(i)*7+1))
+			participation[i] = word
+		}
+
+		root := testHashTree(t, participation)
+		width := uint64(1)
+		for width < uint64(wordCount) {
+			width *= 2
+		}
+
+		for leafIndex := uint64(0); leafIndex < uint64(wordCount); leafIndex++ {
+			witness, err := participationBitmapWitness(participation, leafIndex)
+			if err != nil {
+				t.Fatalf("wordCount %d leafIndex %d: unexpected error: %v", wordCount, leafIndex, err)
+			}
+
+			var leaf [32]byte
+			participation[leafIndex].FillBytes(leaf[:])
+
+			// The contract computes the generalized index as
+			// nextPowerOfTwo(leafCount) + leafIndex
+			gindex := width + leafIndex
+			restored := testRestoreMerkleRoot(t, leaf, gindex, witness)
+			if restored != root {
+				t.Fatalf("wordCount %d leafIndex %d: restored root %x does not match tree root %x", wordCount, leafIndex, restored, root)
+			}
+		}
+	}
+}
+
+func TestParticipationBitmapWitnessSingleWord(t *testing.T) {
+	participation := []*big.Int{big.NewInt(0b1011)}
+	witness, err := participationBitmapWitness(participation, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// A single-word bitmap has an empty branch: the root is the word itself
+	if len(witness) != 0 {
+		t.Fatalf("expected empty witness for a single-word bitmap, got %d hashes", len(witness))
+	}
+}
+
+func TestParticipationBitmapWitnessErrors(t *testing.T) {
+	if _, err := participationBitmapWitness([]*big.Int{}, 0); err == nil {
+		t.Fatal("expected an error for an empty bitmap")
+	}
+	if _, err := participationBitmapWitness([]*big.Int{big.NewInt(1)}, 1); err == nil {
+		t.Fatal("expected an error for an out-of-bounds leaf index")
+	}
+	tooBig := new(big.Int).Lsh(big.NewInt(1), 256)
+	if _, err := participationBitmapWitness([]*big.Int{tooBig}, 0); err == nil {
+		t.Fatal("expected an error for a word larger than uint256")
 	}
 }
