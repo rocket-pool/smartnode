@@ -818,20 +818,22 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// RPL collateral
-	pendingBondedEthFloat := eth.WeiToEth(pendingBondedEth)
+	// Use the total staked RPL (legacy + megapool)
+	totalStakedRpl := nodeLegacyStakedRpl + nodeMegapoolStakedRpl
+	totalBondedEthFloat := eth.WeiToEth(pendingBondedEth) + eth.WeiToEth(nd.MegapoolEthBonded)
 	var bondedCollateralRatio float64
-	if pendingBondedEthFloat == 0 {
+	if totalBondedEthFloat == 0 {
 		bondedCollateralRatio = 0
 	} else {
-		bondedCollateralRatio = rplPrice * nodeLegacyStakedRpl / pendingBondedEthFloat
+		bondedCollateralRatio = rplPrice * totalStakedRpl / totalBondedEthFloat
 	}
 
-	pendingBorrowedEthFloat := eth.WeiToEth(pendingBorrowedEth)
+	totalBorrowedEthFloat := eth.WeiToEth(pendingBorrowedEth) + eth.WeiToEth(nd.MegapoolETHBorrowed)
 	var borrowedCollateralRatio float64
-	if pendingBorrowedEthFloat == 0 {
+	if totalBorrowedEthFloat == 0 {
 		borrowedCollateralRatio = 0
 	} else {
-		borrowedCollateralRatio = rplPrice * nodeLegacyStakedRpl / pendingBorrowedEthFloat
+		borrowedCollateralRatio = rplPrice * totalStakedRpl / totalBorrowedEthFloat
 	}
 
 	// Update all the metrics
