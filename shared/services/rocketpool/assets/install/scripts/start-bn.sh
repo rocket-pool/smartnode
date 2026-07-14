@@ -326,12 +326,12 @@ if [ "$CC_CLIENT" = "teku" ]; then
     fi
 
     if [ "$ENABLE_IPV6" = "true" ]; then
-        CMD="$CMD --p2p-interface=0.0.0.0,:: --p2p-port-ipv6=$BN_P2P_PORT --p2p-quic-port-ipv6=$BN_P2P_QUIC_PORT"
+        CMD="$CMD --p2p-interface=0.0.0.0,:: --p2p-port-ipv6=$BN_IPV6_P2P_PORT --p2p-quic-port-ipv6=$BN_IPV6_QUIC_P2P_PORT"
         if [ ! -z "$EXTERNAL_IP6" ]; then
             if [ ! -z "$EXTERNAL_IP" ] && ! expr "$EXTERNAL_IP" : '.*:' >/dev/null; then
-                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP,$EXTERNAL_IP6"
+                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP,$EXTERNAL_IP6 --p2p-advertised-port-ipv6=$BN_IPV6_P2P_PORT"
             else
-                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP6"
+                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP6 --p2p-advertised-port-ipv6=$BN_IPV6_P2P_PORT"
             fi
         fi
     fi
