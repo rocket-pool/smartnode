@@ -1,13 +1,10 @@
 package minipool
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
@@ -31,16 +28,4 @@ func GetMinipoolExitRequests(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]
 			RequestTimestamp: uint64(time.Now().Add(-1 * time.Hour).Unix()),
 		},
 	}, nil
-}
-
-// Estimate the gas to call NotifyMinipoolDidNotExit
-// TODO: placeholder — the contract method does not exist yet
-func EstimateNotifyMinipoolDidNotExitGas(rp *rocketpool.RocketPool, validatorIndex uint64, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return rocketpool.GasInfo{}, fmt.Errorf("not implemented: the minipool did-not-exit contract method is not yet available")
-}
-
-// Report that a minipool validator did not exit within the cooperative exit phase
-// TODO: placeholder — the contract method does not exist yet
-func NotifyMinipoolDidNotExit(rp *rocketpool.RocketPool, validatorIndex uint64, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
-	return nil, fmt.Errorf("not implemented: the minipool did-not-exit contract method is not yet available")
 }
