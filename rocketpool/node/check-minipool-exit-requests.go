@@ -13,6 +13,7 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -30,9 +31,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	rpvalidator "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
-
-// TODO: flip to true once the did-not-exit contract method exists
-const didNotExitTxEnabled = false
 
 // A minipool validator that did not exit within the cooperative exit phase
 type didNotExitValidator struct {
@@ -181,7 +179,7 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 			continue
 		}
 
-		// If the minipool belongs to this node, cooperate: sign and submit the voluntary exit
+		// If the minipool belongs to this node, cooperate signing and submitting a voluntary exit
 		if minipoolDetails.NodeAddress == nodeAccount.Address {
 			t.log.Printlnf("Minipool %s (validator %d) belongs to this node; submitting a voluntary exit", minipoolDetails.MinipoolAddress.Hex(), request.ValidatorIndex)
 			err := t.exitOwnMinipool(minipoolDetails, status)
@@ -195,7 +193,7 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		// did-not-exit path only applies to older delegates
 		if minipoolDetails.Version >= 4 {
 			t.log.Printlnf("Minipool %s (validator %d) uses delegate version %d; submitting ForceExit", minipoolDetails.MinipoolAddress.Hex(), request.ValidatorIndex, minipoolDetails.Version)
-			err := t.forceExitMinipool(minipoolDetails, opts)
+			err := t.forceExitMinipool(minipoolDetails)
 			if err != nil {
 				t.log.Printlnf("Error force-exiting minipool %s: %s", minipoolDetails.MinipoolAddress.Hex(), err.Error())
 			}
@@ -285,17 +283,7 @@ func (t *checkMinipoolExitRequests) exitOwnMinipool(mpd *rpstate.NativeMinipoolD
 	return nil
 }
 
-func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) error {
-
-	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
-	if err != nil {
-		return fmt.Errorf("cannot create binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
-	}
-
-	mpv4, success := minipool.GetMinipoolAsV4(mp)
-	if !success {
-		return fmt.Errorf("minipool %s cannot be converted to v4 (current version: %d)", mpd.MinipoolAddress.Hex(), mp.GetVersion())
-	}
+func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoolDetails) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -304,7 +292,7 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 	}
 
 	// Get the gas limit
-	gasInfo, err := mpv4.EstimateForceExitGas(opts)
+	gasInfo, err := network.EstimateForceMinipoolExitGas(t.rp, mpd.MinipoolAddress, opts)
 	if err != nil {
 		return fmt.Errorf("could not estimate the gas required to force exit minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
@@ -333,8 +321,8 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Force exit the minipool
-	hash, err := mpv4.ForceExit(opts)
+	// Force exit the minipool via rocketNetworkExit
+	hash, err := network.ForceMinipoolExit(t.rp, mpd.MinipoolAddress, opts)
 	if err != nil {
 		return err
 	}
@@ -346,7 +334,7 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted ForceExit for minipool %s.", mpd.MinipoolAddress.Hex())
+	t.log.Printlnf("Successfully submitted ForceMinipoolExit for minipool %s.", mpd.MinipoolAddress.Hex())
 
 	// Return
 	return nil
@@ -365,12 +353,6 @@ func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState
 
 	t.log.Printlnf("[FINISHED] The did-not-exit proof for validator %d has been successfully created (exit epoch %d at slot %d).", validator.validatorIndex, validatorProof.Validator.ExitEpoch, slotProof.Slot)
 
-	if !didNotExitTxEnabled {
-		// TODO: remove this check once the did-not-exit contract method exists
-		t.log.Printlnf("[TODO] The contract method to report that validator %d did not exit is not yet available; skipping the transaction.", validator.validatorIndex)
-		return nil
-	}
-
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
@@ -378,9 +360,9 @@ func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState
 	}
 
 	// Get the gas limit
-	gasInfo, err := minipool.EstimateNotifyMinipoolDidNotExitGas(t.rp, validator.validatorIndex, slotTimestamp, validatorProof, slotProof, opts)
+	gasInfo, err := network.EstimatePenaliseMinipoolGas(t.rp, validator.minipoolAddress, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		t.log.Printlnf("Could not estimate the gas required to report that validator %d did not exit: %s", validator.validatorIndex, err.Error())
+		t.log.Printlnf("Could not estimate the gas required to penalise minipool %s: %s", validator.minipoolAddress.Hex(), err.Error())
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -402,20 +384,20 @@ func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Report that the validator did not exit
-	tx, err := minipool.NotifyMinipoolDidNotExit(t.rp, validator.validatorIndex, slotTimestamp, validatorProof, slotProof, opts)
+	// Penalise the minipool for failing to exit within the cooperative phase
+	hash, err := network.PenaliseMinipool(t.rp, validator.minipoolAddress, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully reported that validator %d did not exit.", validator.validatorIndex)
+	t.log.Printlnf("Successfully penalised minipool %s (validator %d) for not exiting.", validator.minipoolAddress.Hex(), validator.validatorIndex)
 
 	// Return
 	return nil
