@@ -82,8 +82,6 @@ func BenchmarkBeaconStateDecodeBuffered(b *testing.B) {
 	}
 }
 
-// Guards against merkle-tree/proof generation CPU regressions (issue #1103
-// asks for proof generation to be benchmarked)
 func BenchmarkValidatorProof(b *testing.B) {
 	state := &deneb.BeaconState{}
 	if err := generic.SSZ.UnmarshalSSZ(state, testState); err != nil {
