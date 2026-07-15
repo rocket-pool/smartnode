@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -11,7 +12,17 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
+
+// A MinipoolExitRequested event from rocketNetworkExit
+type MinipoolExitRequest struct {
+	MinipoolAddress  common.Address        `json:"minipoolAddress"`
+	Pubkey           types.ValidatorPubkey `json:"pubkey"`
+	RequestTimestamp uint64                `json:"requestTimestamp"`
+	BlockNumber      uint64                `json:"blockNumber"`
+}
 
 // Get the amount of ETH currently requested to exit
 func GetRequestedEth(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
@@ -173,6 +184,69 @@ func ForceMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address
 		return common.Hash{}, fmt.Errorf("error forcing megapool exit for %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
 	}
 	return tx.Hash(), nil
+}
+
+// Get MinipoolExitRequested events emitted during the given block range
+func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MinipoolExitRequest, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	minipoolExitRequestedEvent, exists := rocketNetworkExit.ABI.Events["MinipoolExitRequested"]
+	if !exists {
+		return nil, fmt.Errorf("MinipoolExitRequested event not found in rocketNetworkExit ABI")
+	}
+
+	addressFilter := []common.Address{*rocketNetworkExit.Address}
+	topicFilter := [][]common.Hash{{minipoolExitRequestedEvent.ID}}
+
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(logs) == 0 {
+		return []MinipoolExitRequest{}, nil
+	}
+
+	blockTimestamps := make(map[uint64]uint64, len(logs))
+	requests := make([]MinipoolExitRequest, 0, len(logs))
+	for _, log := range logs {
+		if len(log.Topics) < 2 {
+			return nil, fmt.Errorf("MinipoolExitRequested event had %d topics but at least 2 are required", len(log.Topics))
+		}
+
+		values, err := minipoolExitRequestedEvent.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error unpacking MinipoolExitRequested event data: %w", err)
+		}
+		if len(values) < 1 {
+			return nil, fmt.Errorf("MinipoolExitRequested event had no data values")
+		}
+		pubkeyBytes, ok := values[0].([]byte)
+		if !ok {
+			return nil, fmt.Errorf("MinipoolExitRequested pubkey had unexpected type %T", values[0])
+		}
+
+		timestamp, cached := blockTimestamps[log.BlockNumber]
+		if !cached {
+			header, err := rp.Client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(log.BlockNumber))
+			if err != nil {
+				return nil, fmt.Errorf("error getting header for block %d: %w", log.BlockNumber, err)
+			}
+			timestamp = header.Time
+			blockTimestamps[log.BlockNumber] = timestamp
+		}
+
+		requests = append(requests, MinipoolExitRequest{
+			MinipoolAddress:  common.BytesToAddress(log.Topics[1].Bytes()),
+			Pubkey:           types.BytesToValidatorPubkey(pubkeyBytes),
+			RequestTimestamp: timestamp,
+			BlockNumber:      log.BlockNumber,
+		})
+	}
+
+	return requests, nil
 }
 
 // Get contracts
