@@ -12,7 +12,6 @@ import (
 	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
-	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -52,6 +51,7 @@ type checkMinipoolExitRequests struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
+	intervalSize   *big.Int
 }
 
 // Create check minipool exit requests task
@@ -100,6 +100,12 @@ func newCheckMinipoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
+	// Get the event log interval
+	eventLogInterval, err := cfg.GetEventLogInterval()
+	if err != nil {
+		return nil, err
+	}
+
 	// Return task
 	return &checkMinipoolExitRequests{
 		c:              c,
@@ -113,6 +119,7 @@ func newCheckMinipoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
+		intervalSize:   big.NewInt(int64(eventLogInterval)),
 	}, nil
 
 }
@@ -133,19 +140,31 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Get the pending exit requests
-	exitRequests, err := minipool.GetMinipoolExitRequests(t.rp, opts)
+	// Get the cooperative exit phase duration
+	cooperativeExitPhase, err := protocol.GetCooperativeExitPhase(t.rp, opts)
+	if err != nil {
+		return err
+	}
+
+	// Search MinipoolExitRequested events over a window covering the cooperative exit phase
+	lookbackBlocks := uint64(cooperativeExitPhase / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
+	if lookbackBlocks == 0 {
+		lookbackBlocks = 1
+	}
+	var fromBlock *big.Int
+	if state.ElBlockNumber > lookbackBlocks {
+		fromBlock = big.NewInt(int64(state.ElBlockNumber - lookbackBlocks))
+	} else {
+		fromBlock = big.NewInt(0)
+	}
+	toBlock := big.NewInt(int64(state.ElBlockNumber))
+
+	exitRequests, err := network.GetMinipoolExitRequests(t.rp, t.intervalSize, fromBlock, toBlock, opts)
 	if err != nil {
 		return err
 	}
 	if len(exitRequests) == 0 {
 		return nil
-	}
-
-	// Get the cooperative exit phase duration
-	cooperativeExitPhase, err := protocol.GetCooperativeExitPhase(t.rp, opts)
-	if err != nil {
-		return err
 	}
 
 	// Index the minipool details by validator pubkey
@@ -157,31 +176,37 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 	validatorsToProve := []didNotExitValidator{}
 	for _, request := range exitRequests {
 
-		status, err := t.bc.GetValidatorStatusByIndex(strconv.FormatUint(request.ValidatorIndex, 10), nil)
+		status, err := t.bc.GetValidatorStatus(request.Pubkey, nil)
 		if err != nil {
-			t.log.Printlnf("Error getting the status of validator %d: %s", request.ValidatorIndex, err.Error())
+			t.log.Printlnf("Error getting the status of validator %s: %s", request.Pubkey.Hex(), err.Error())
 			continue
 		}
 		if !status.Exists {
-			t.log.Printlnf("Validator %d not found on the beacon chain", request.ValidatorIndex)
+			t.log.Printlnf("Validator %s not found on the beacon chain", request.Pubkey.Hex())
+			continue
+		}
+
+		validatorIndex, err := strconv.ParseUint(status.Index, 10, 64)
+		if err != nil {
+			t.log.Printlnf("Error parsing validator index %s: %s", status.Index, err.Error())
 			continue
 		}
 
 		// An initiated exit satisfies the request
 		if status.ExitEpoch != FarFutureEpoch {
-			t.log.Printlnf("Validator %d has already exited", request.ValidatorIndex)
+			t.log.Printlnf("Validator %d has already exited", validatorIndex)
 			continue
 		}
 
-		minipoolDetails, exists := minipoolDetailsByPubkey[status.Pubkey]
+		minipoolDetails, exists := minipoolDetailsByPubkey[request.Pubkey]
 		if !exists {
-			t.log.Printlnf("Validator %d does not belong to a known minipool", request.ValidatorIndex)
+			t.log.Printlnf("Validator %d does not belong to a known minipool", validatorIndex)
 			continue
 		}
 
 		// If the minipool belongs to this node, cooperate signing and submitting a voluntary exit
 		if minipoolDetails.NodeAddress == nodeAccount.Address {
-			t.log.Printlnf("Minipool %s (validator %d) belongs to this node; submitting a voluntary exit", minipoolDetails.MinipoolAddress.Hex(), request.ValidatorIndex)
+			t.log.Printlnf("Minipool %s (validator %d) belongs to this node; submitting a voluntary exit", minipoolDetails.MinipoolAddress.Hex(), validatorIndex)
 			err := t.exitOwnMinipool(minipoolDetails, status)
 			if err != nil {
 				t.log.Printlnf("Error exiting minipool %s: %s", minipoolDetails.MinipoolAddress.Hex(), err.Error())
@@ -192,7 +217,7 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		// Delegates from version 4 support a forced exit request, so the
 		// did-not-exit path only applies to older delegates
 		if minipoolDetails.Version >= 4 {
-			t.log.Printlnf("Minipool %s (validator %d) uses delegate version %d; submitting ForceExit", minipoolDetails.MinipoolAddress.Hex(), request.ValidatorIndex, minipoolDetails.Version)
+			t.log.Printlnf("Minipool %s (validator %d) uses delegate version %d; submitting ForceExit", minipoolDetails.MinipoolAddress.Hex(), validatorIndex, minipoolDetails.Version)
 			err := t.forceExitMinipool(minipoolDetails)
 			if err != nil {
 				t.log.Printlnf("Error force-exiting minipool %s: %s", minipoolDetails.MinipoolAddress.Hex(), err.Error())
@@ -206,9 +231,9 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
 		}
 
 		validatorsToProve = append(validatorsToProve, didNotExitValidator{
-			validatorIndex:  request.ValidatorIndex,
-			pubkey:          status.Pubkey,
-			minipoolAddress: minipoolDetails.MinipoolAddress,
+			validatorIndex:  validatorIndex,
+			pubkey:          request.Pubkey,
+			minipoolAddress: request.MinipoolAddress,
 		})
 	}
 
