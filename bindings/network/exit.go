@@ -24,6 +24,15 @@ type MinipoolExitRequest struct {
 	BlockNumber      uint64                `json:"blockNumber"`
 }
 
+// A MegapoolExitRequested event from rocketNetworkExit
+type MegapoolExitRequest struct {
+	MegapoolAddress  common.Address        `json:"megapoolAddress"`
+	ValidatorId      uint32                `json:"validatorId"`
+	Pubkey           types.ValidatorPubkey `json:"pubkey"`
+	RequestTimestamp uint64                `json:"requestTimestamp"`
+	BlockNumber      uint64                `json:"blockNumber"`
+}
+
 // Get the amount of ETH currently requested to exit
 func GetRequestedEth(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
@@ -186,6 +195,28 @@ func ForceMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address
 	return tx.Hash(), nil
 }
 
+// Estimate the gas of PenaliseMegapoolValidator
+func EstimatePenaliseMegapoolValidatorGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNetworkExit.GetTransactionGasInfo(opts, "penaliseMegapool", megapoolAddress, validatorId)
+}
+
+// Penalise a megapool validator that failed to exit within the cooperative exit phase
+func PenaliseMegapoolValidator(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkExit.Transact(opts, "penaliseMegapool", megapoolAddress, validatorId)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error penalising megapool %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get MinipoolExitRequested events emitted during the given block range
 func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MinipoolExitRequest, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
@@ -240,6 +271,70 @@ func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 
 		requests = append(requests, MinipoolExitRequest{
 			MinipoolAddress:  common.BytesToAddress(log.Topics[1].Bytes()),
+			Pubkey:           types.BytesToValidatorPubkey(pubkeyBytes),
+			RequestTimestamp: timestamp,
+			BlockNumber:      log.BlockNumber,
+		})
+	}
+
+	return requests, nil
+}
+
+// Get MegapoolExitRequested events emitted during the given block range
+func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MegapoolExitRequest, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	megapoolExitRequestedEvent, exists := rocketNetworkExit.ABI.Events["MegapoolExitRequested"]
+	if !exists {
+		return nil, fmt.Errorf("MegapoolExitRequested event not found in rocketNetworkExit ABI")
+	}
+
+	addressFilter := []common.Address{*rocketNetworkExit.Address}
+	topicFilter := [][]common.Hash{{megapoolExitRequestedEvent.ID}}
+
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(logs) == 0 {
+		return []MegapoolExitRequest{}, nil
+	}
+
+	blockTimestamps := make(map[uint64]uint64, len(logs))
+	requests := make([]MegapoolExitRequest, 0, len(logs))
+	for _, log := range logs {
+		if len(log.Topics) < 3 {
+			return nil, fmt.Errorf("MegapoolExitRequested event had %d topics but at least 3 are required", len(log.Topics))
+		}
+
+		values, err := megapoolExitRequestedEvent.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error unpacking MegapoolExitRequested event data: %w", err)
+		}
+		if len(values) < 1 {
+			return nil, fmt.Errorf("MegapoolExitRequested event had no data values")
+		}
+		pubkeyBytes, ok := values[0].([]byte)
+		if !ok {
+			return nil, fmt.Errorf("MegapoolExitRequested pubkey had unexpected type %T", values[0])
+		}
+
+		timestamp, cached := blockTimestamps[log.BlockNumber]
+		if !cached {
+			header, err := rp.Client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(log.BlockNumber))
+			if err != nil {
+				return nil, fmt.Errorf("error getting header for block %d: %w", log.BlockNumber, err)
+			}
+			timestamp = header.Time
+			blockTimestamps[log.BlockNumber] = timestamp
+		}
+
+		requests = append(requests, MegapoolExitRequest{
+			MegapoolAddress:  common.BytesToAddress(log.Topics[1].Bytes()),
+			ValidatorId:      uint32(new(big.Int).SetBytes(log.Topics[2].Bytes()).Uint64()),
 			Pubkey:           types.BytesToValidatorPubkey(pubkeyBytes),
 			RequestTimestamp: timestamp,
 			BlockNumber:      log.BlockNumber,
