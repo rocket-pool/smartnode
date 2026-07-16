@@ -52,10 +52,11 @@ services:
       {{- end}}
       {{- end}}
       {{- if eq .ConsensusClient.String "teku"}}
-      {{- if .IsIPv6Enabled}}
-      - "[::]:{{.Teku.P2pQuicPort}}:{{.Teku.P2pQuicPort}}/udp"
-      {{- else}}
       - "{{.Teku.P2pQuicPort}}:{{.Teku.P2pQuicPort}}/udp"
+      {{- if .IsIPv6Enabled}}
+      - "[::]:{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/udp"
+      - "[::]:{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/tcp"
+      - "[::]:{{.Teku.P2pQuicIpv6Port}}:{{.Teku.P2pQuicIpv6Port}}/udp"
       {{- end}}
       {{- end}}
       {{- range $entry := .GetBnOpenPorts}}
@@ -106,7 +107,9 @@ services:
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_JVM_HEAP_SIZE={{.Teku.JvmHeapSize}}
       - TEKU_ARCHIVE_MODE={{.Teku.ArchiveMode}}
+      - BN_IPV6_P2P_PORT={{.Teku.P2pIpv6Port}}
       - BN_P2P_QUIC_PORT={{.Teku.P2pQuicPort}}
+      - BN_IPV6_QUIC_P2P_PORT={{.Teku.P2pQuicIpv6Port}}
       {{- else if eq .ConsensusClient.String "prysm"}}
       - BN_RPC_PORT={{.Prysm.RpcPort}}
       - BN_P2P_QUIC_PORT={{.Prysm.P2pQuicPort}}
