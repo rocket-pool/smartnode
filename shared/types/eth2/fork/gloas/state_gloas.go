@@ -11,10 +11,13 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-// The Gloas BeaconState has 46 fields, so the next power of two is 64.
+// The Gloas BeaconState has 46 fields. Pre-EIP-7688 proofs used power-of-two
+// container layout (ceil 64). Under EIP-7688 BeaconState is a ProgressiveContainer
+// and these g-indices are incorrect for production proofs; they are retained only
+// so helpers keep compiling until progressive g-index support lands.
 const beaconStateChunkCeil uint64 = 64
 
-// New in Gloas (EIP-7732)
+// New in Gloas (EIP-7732). Immutable container (not ProgressiveContainer).
 type Builder struct {
 	Pubkey            []byte   `json:"pubkey" ssz-size:"48"`
 	Version           uint8    `json:"version"`
@@ -24,14 +27,14 @@ type Builder struct {
 	WithdrawableEpoch uint64   `json:"withdrawable_epoch"`
 }
 
-// New in Gloas (EIP-7732)
+// New in Gloas (EIP-7732). Immutable container (not ProgressiveContainer).
 type BuilderPendingWithdrawal struct {
 	FeeRecipient [20]byte `json:"fee_recipient" ssz-size:"20"`
 	Amount       uint64   `json:"amount"`
 	BuilderIndex uint64   `json:"builder_index"`
 }
 
-// New in Gloas (EIP-7732)
+// New in Gloas (EIP-7732). Immutable container (not ProgressiveContainer).
 type BuilderPendingPayment struct {
 	Weight        uint64                    `json:"weight"`
 	Withdrawal    *BuilderPendingWithdrawal `json:"withdrawal"`
@@ -40,67 +43,64 @@ type BuilderPendingPayment struct {
 
 // Adapted from the Fulu BeaconState to the Gloas spec
 // (https://github.com/ethereum/consensus-specs/blob/master/specs/gloas/beacon-chain.md#beaconstate):
-// - Removed LatestExecutionPayloadHeader, replaced (in place) by LatestBlockHash (EIP-7732)
-// - Added the builder/ePBS fields after ProposerLookahead (EIP-7732)
+//   - Removed LatestExecutionPayloadHeader, replaced (in place) by LatestBlockHash (EIP-7732)
+//   - Added the builder/ePBS fields after ProposerLookahead (EIP-7732)
+//   - EIP-7688: ProgressiveContainer + ProgressiveList on evolving fields
 type BeaconState struct {
-	GenesisTime                  uint64                       `json:"genesis_time"`
-	GenesisValidatorsRoot        []byte                       `json:"genesis_validators_root" ssz-size:"32"`
-	Slot                         uint64                       `json:"slot"`
-	Fork                         *generic.Fork                `json:"fork"`
-	LatestBlockHeader            *generic.BeaconBlockHeader   `json:"latest_block_header"`
-	BlockRoots                   [8192][32]byte               `json:"block_roots" ssz-size:"8192,32"`
-	StateRoots                   [8192][32]byte               `json:"state_roots" ssz-size:"8192,32"`
-	HistoricalRoots              [][]byte                     `json:"historical_roots" ssz-max:"16777216" ssz-size:"?,32"`
-	Eth1Data                     *generic.Eth1Data            `json:"eth1_data"`
-	Eth1DataVotes                []*generic.Eth1Data          `json:"eth1_data_votes" ssz-max:"2048"`
-	Eth1DepositIndex             uint64                       `json:"eth1_deposit_index"`
-	Validators                   []*generic.Validator         `json:"validators" ssz-max:"1099511627776"`
-	Balances                     []uint64                     `json:"balances" ssz-max:"1099511627776"`
-	RandaoMixes                  [][]byte                     `json:"randao_mixes" ssz-size:"65536,32"`
-	Slashings                    []uint64                     `json:"slashings" ssz-size:"8192"`
-	PreviousEpochParticipation   []byte                       `json:"previous_epoch_participation" ssz-max:"1099511627776"`
-	CurrentEpochParticipation    []byte                       `json:"current_epoch_participation" ssz-max:"1099511627776"`
-	JustificationBits            [1]byte                      `json:"justification_bits" ssz-size:"1"`
-	PreviousJustifiedCheckpoint  *generic.Checkpoint          `json:"previous_justified_checkpoint"`
-	CurrentJustifiedCheckpoint   *generic.Checkpoint          `json:"current_justified_checkpoint"`
-	FinalizedCheckpoint          *generic.Checkpoint          `json:"finalized_checkpoint"`
-	InactivityScores             []uint64                     `json:"inactivity_scores" ssz-max:"1099511627776"`
-	CurrentSyncCommittee         *generic.SyncCommittee       `json:"current_sync_committee"`
-	NextSyncCommittee            *generic.SyncCommittee       `json:"next_sync_committee"`
-	LatestBlockHash              [32]byte                     `json:"latest_block_hash" ssz-size:"32"` // New in Gloas (EIP-7732), replaces LatestExecutionPayloadHeader
-	NextWithdrawalIndex          uint64                       `json:"next_withdrawal_index"`
-	NextWithdrawalValidatorIndex uint64                       `json:"next_withdrawal_validator_index"`
-	HistoricalSummaries          []*generic.HistoricalSummary `json:"historical_summaries" ssz-max:"16777216"`
+	GenesisTime                  uint64                       `json:"genesis_time" ssz-index:"0"`
+	GenesisValidatorsRoot        []byte                       `json:"genesis_validators_root" ssz-size:"32" ssz-index:"1"`
+	Slot                         uint64                       `json:"slot" ssz-index:"2"`
+	Fork                         *generic.Fork                `json:"fork" ssz-index:"3"`
+	LatestBlockHeader            *generic.BeaconBlockHeader   `json:"latest_block_header" ssz-index:"4"`
+	BlockRoots                   [8192][32]byte               `json:"block_roots" ssz-size:"8192,32" ssz-index:"5"`
+	StateRoots                   [8192][32]byte               `json:"state_roots" ssz-size:"8192,32" ssz-index:"6"`
+	HistoricalRoots              [][]byte                     `json:"historical_roots" ssz-max:"16777216" ssz-size:"?,32" ssz-index:"7"`
+	Eth1Data                     *generic.Eth1Data            `json:"eth1_data" ssz-index:"8"`
+	Eth1DataVotes                []*generic.Eth1Data          `json:"eth1_data_votes" ssz-max:"2048" ssz-index:"9"`
+	Eth1DepositIndex             uint64                       `json:"eth1_deposit_index" ssz-index:"10"`
+	Validators                   []*generic.Validator         `json:"validators" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"11"`
+	Balances                     []uint64                     `json:"balances" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"12"`
+	RandaoMixes                  [][]byte                     `json:"randao_mixes" ssz-size:"65536,32" ssz-index:"13"`
+	Slashings                    []uint64                     `json:"slashings" ssz-size:"8192" ssz-index:"14"`
+	PreviousEpochParticipation   []byte                       `json:"previous_epoch_participation" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"15"`
+	CurrentEpochParticipation    []byte                       `json:"current_epoch_participation" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"16"`
+	JustificationBits            [1]byte                      `json:"justification_bits" ssz-size:"1" ssz-index:"17"`
+	PreviousJustifiedCheckpoint  *generic.Checkpoint          `json:"previous_justified_checkpoint" ssz-index:"18"`
+	CurrentJustifiedCheckpoint   *generic.Checkpoint          `json:"current_justified_checkpoint" ssz-index:"19"`
+	FinalizedCheckpoint          *generic.Checkpoint          `json:"finalized_checkpoint" ssz-index:"20"`
+	InactivityScores             []uint64                     `json:"inactivity_scores" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"21"`
+	CurrentSyncCommittee         *generic.SyncCommittee       `json:"current_sync_committee" ssz-index:"22"`
+	NextSyncCommittee            *generic.SyncCommittee       `json:"next_sync_committee" ssz-index:"23"`
+	LatestBlockHash              [32]byte                     `json:"latest_block_hash" ssz-size:"32" ssz-index:"24"` // New in Gloas (EIP-7732)
+	NextWithdrawalIndex          uint64                       `json:"next_withdrawal_index" ssz-index:"25"`
+	NextWithdrawalValidatorIndex uint64                       `json:"next_withdrawal_validator_index" ssz-index:"26"`
+	HistoricalSummaries          []*generic.HistoricalSummary `json:"historical_summaries" ssz-max:"16777216" ssz-index:"27"`
 
 	// New in Electra
-	DepositRequestsStartIndex     uint64                              `json:"deposit_requests_start_index"`
-	DepositBalanceToConsume       uint64                              `json:"deposit_balance_to_consume"`
-	ExitBalanceToConsume          uint64                              `json:"exit_balance_to_consume"`
-	EarliestExitEpoch             uint64                              `json:"earliest_exit_epoch"`
-	ConsolidationBalanceToConsume uint64                              `json:"consolidation_balance_to_consume"`
-	EarliestConsolidationEpoch    uint64                              `json:"earliest_consolidation_epoch"`
-	PendingDeposits               []*generic.PendingDeposit           `json:"pending_deposits,omitempty" ssz-max:"134217728"`
-	PendingPartialWithdrawals     []*generic.PendingPartialWithdrawal `json:"pending_partial_withdrawals,omitempty" ssz-max:"134217728"`
-	PendingConsolidations         []*generic.PendingConsolidation     `json:"pending_consolidations,omitempty" ssz-max:"262144"`
+	DepositRequestsStartIndex     uint64                              `json:"deposit_requests_start_index" ssz-index:"28"`
+	DepositBalanceToConsume       uint64                              `json:"deposit_balance_to_consume" ssz-index:"29"`
+	ExitBalanceToConsume          uint64                              `json:"exit_balance_to_consume" ssz-index:"30"`
+	EarliestExitEpoch             uint64                              `json:"earliest_exit_epoch" ssz-index:"31"`
+	ConsolidationBalanceToConsume uint64                              `json:"consolidation_balance_to_consume" ssz-index:"32"`
+	EarliestConsolidationEpoch    uint64                              `json:"earliest_consolidation_epoch" ssz-index:"33"`
+	PendingDeposits               []*generic.PendingDeposit           `json:"pending_deposits,omitempty" ssz-type:"progressive-list" ssz-max:"134217728" ssz-index:"34"`
+	PendingPartialWithdrawals     []*generic.PendingPartialWithdrawal `json:"pending_partial_withdrawals,omitempty" ssz-type:"progressive-list" ssz-max:"134217728" ssz-index:"35"`
+	PendingConsolidations         []*generic.PendingConsolidation     `json:"pending_consolidations,omitempty" ssz-type:"progressive-list" ssz-max:"262144" ssz-index:"36"`
 
 	// New in Fulu
-	ProposerLookahead []uint64 `json:"proposer_lookahead,omitempty" ssz-size:"64"`
+	ProposerLookahead []uint64 `json:"proposer_lookahead,omitempty" ssz-size:"64" ssz-index:"37"`
 
 	// New in Gloas (EIP-7732)
-	Builders                     []*Builder `json:"builders,omitempty" ssz-max:"1099511627776"`
-	NextWithdrawalBuilderIndex   uint64     `json:"next_withdrawal_builder_index"`
-	ExecutionPayloadAvailability []byte     `json:"execution_payload_availability" ssz-size:"1024"` // Bitvector[SLOTS_PER_HISTORICAL_ROOT] (8192 bits)
-	// Vector[BuilderPendingPayment, 2 * SLOTS_PER_EPOCH]. fastssz cannot generate code for
-	// vectors of containers, so each element is kept as its 52-byte SSZ encoding, which
-	// serializes identically. Decode an entry with BuilderPendingPayment.UnmarshalSSZ.
-	BuilderPendingPayments     [][]byte                    `json:"builder_pending_payments" ssz-size:"64,52"`
-	BuilderPendingWithdrawals  []*BuilderPendingWithdrawal `json:"builder_pending_withdrawals,omitempty" ssz-max:"134217728"`
-	LatestExecutionPayloadBid  *ExecutionPayloadBid        `json:"latest_execution_payload_bid"`
-	PayloadExpectedWithdrawals []*generic.Withdrawal       `json:"payload_expected_withdrawals,omitempty" ssz-max:"16"`
-	// Vector[Vector[ValidatorIndex, PTC_SIZE], (2 + MIN_SEED_LOOKAHEAD) * SLOTS_PER_EPOCH],
-	// i.e. 96 slots x 512 validator indices. fastssz cannot generate code for 2D uint64
-	// vectors, so it is flattened to 96*512 = 49152 indices, which serializes identically.
-	PtcWindow []uint64 `json:"ptc_window" ssz-size:"49152"`
+	Builders                     []*Builder                  `json:"builders,omitempty" ssz-type:"progressive-list" ssz-max:"1099511627776" ssz-index:"38"`
+	NextWithdrawalBuilderIndex   uint64                      `json:"next_withdrawal_builder_index" ssz-index:"39"`
+	ExecutionPayloadAvailability []byte                      `json:"execution_payload_availability" ssz-size:"1024" ssz-index:"40"` // Bitvector[SLOTS_PER_HISTORICAL_ROOT]
+	BuilderPendingPayments       [64]*BuilderPendingPayment  `json:"builder_pending_payments" ssz-size:"64" ssz-index:"41"`         // Vector[BuilderPendingPayment, 2 * SLOTS_PER_EPOCH]
+	BuilderPendingWithdrawals    []*BuilderPendingWithdrawal `json:"builder_pending_withdrawals,omitempty" ssz-type:"progressive-list" ssz-max:"134217728" ssz-index:"42"`
+	LatestExecutionPayloadBid    *ExecutionPayloadBid        `json:"latest_execution_payload_bid" ssz-index:"43"`
+	PayloadExpectedWithdrawals   []*generic.Withdrawal       `json:"payload_expected_withdrawals,omitempty" ssz-type:"progressive-list" ssz-max:"16" ssz-index:"44"`
+	// Vector[Vector[ValidatorIndex, PTC_SIZE], (2 + MIN_SEED_LOOKAHEAD) * SLOTS_PER_EPOCH]
+	// = 96 slots x 512 validator indices.
+	PtcWindow [96][512]uint64 `json:"ptc_window" ssz-size:"96,512" ssz-index:"45"`
 }
 
 var beaconStateChunkSize atomic.Uint64
@@ -116,12 +116,16 @@ func getStateChunkSize() uint64 {
 	return storedChunkSize
 }
 
+// NOTE: Pre-EIP-7688 power-of-two container indexing. Incorrect for ProgressiveContainer
+// Gloas states; progressive g-indices will replace this in a follow-up.
 func GetGeneralizedIndexForValidators() uint64 {
 	// There's 46 fields, so rounding up to the next power of two is 64, a left-aligned node
 	// BeaconStateValidatorsIndex is the 11th field, so its generalized index is 64 + 11 = 75
 	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
 }
 
+// NOTE: Pre-EIP-7688 power-of-two container indexing. Incorrect for ProgressiveContainer
+// Gloas states; progressive g-indices will replace this in a follow-up.
 func GetGeneralizedIndexForSlot() uint64 {
 	// There's 46 fields, so rounding up to the next power of two is 64, a left-aligned node
 	// BeaconStateSlotIndex is the 2nd field, so its generalized index is 64 + 2 = 66
@@ -129,14 +133,17 @@ func GetGeneralizedIndexForSlot() uint64 {
 }
 
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
-// for the state's current slot
+// for the state's current slot.
+//
+// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
+// proofs until progressive g-index support lands.
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
 
 	if validatorIndex >= uint64(len(state.Validators)) {
 		return nil, nil, errors.New("validator index out of bounds")
 	}
 
-	stateTree, err := state.GetTree()
+	stateTree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -148,7 +155,7 @@ func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte
 	}
 
 	// Sanity check that the proof leaf matches the expected validator
-	validatorHashTreeRoot, err := state.Validators[validatorIndex].HashTreeRoot()
+	validatorHashTreeRoot, err := generic.SSZ.HashTreeRoot(state.Validators[validatorIndex])
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not get hash tree root for validator: %w", err)
 	}
@@ -164,7 +171,7 @@ func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte
 	// Drop the state tree before doing more work so the GC can reclaim it.
 	stateTree = nil
 
-	bhTree, err := state.LatestBlockHeader.GetTree()
+	bhTree, err := generic.SSZ.GetTree(state.LatestBlockHeader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not get block header tree: %w", err)
 	}
@@ -186,7 +193,7 @@ func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte
 
 func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
-	root, err := blockHeader.GetTree()
+	root, err := generic.SSZ.GetTree(blockHeader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header tree: %w", err)
 	}
@@ -197,12 +204,14 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
+// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
+// proofs until progressive g-index support lands.
 func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -240,7 +249,7 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 	}
 
 	idx := slot % int(generic.SlotsPerHistoricalRoot)
-	tree, err := hsls.GetTree()
+	tree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
 	}
@@ -258,13 +267,15 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 	return proof.Hashes, nil
 }
 
+// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
+// proofs until progressive g-index support lands.
 func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if isHistorical {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -288,14 +299,14 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 
 func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 	// Construct block header with state root
-	stateRoot, err := state.HashTreeRoot()
+	stateRoot, err := generic.SSZ.HashTreeRoot(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state root: %w", err)
 	}
 	latestBlockHeader := state.LatestBlockHeader
 	blockHeader := *latestBlockHeader
 	blockHeader.StateRoot = stateRoot[:]
-	blockHeaderTree, err := blockHeader.GetTree()
+	blockHeaderTree, err := generic.SSZ.GetTree(&blockHeader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header tree: %w", err)
 	}

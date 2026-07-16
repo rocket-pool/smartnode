@@ -8,17 +8,20 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/gloas"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 // State type assertions
 var _ BeaconState = &electra.BeaconState{}
 var _ BeaconState = &fulu.BeaconState{}
+var _ BeaconState = &gloas.BeaconState{}
 
 // Block type assertions
 var _ SignedBeaconBlock = &deneb.SignedBeaconBlock{}
 var _ SignedBeaconBlock = &electra.SignedBeaconBlock{}
 var _ SignedBeaconBlock = &fulu.SignedBeaconBlock{}
+var _ SignedBeaconBlock = &gloas.SignedBeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
@@ -76,6 +79,13 @@ func NewBeaconState(data io.ReadCloser, size int64, fork string) (BeaconState, e
 			return nil, err
 		}
 		return out, nil
+	case "gloas":
+		out := &gloas.BeaconState{}
+		err := decodeSSZ(out, data, size)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
 	default:
 		_ = data.Close()
 		return nil, fmt.Errorf("unsupported fork: %s", fork)
@@ -102,6 +112,13 @@ func NewSignedBeaconBlock(data io.ReadCloser, size int64, fork string) (SignedBe
 		return out, nil
 	case "fulu":
 		out := &fulu.SignedBeaconBlock{}
+		err := decodeSSZ(out, data, size)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	case "gloas":
+		out := &gloas.SignedBeaconBlock{}
 		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err

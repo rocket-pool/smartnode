@@ -27,3 +27,7 @@ $DYNSSZ_GEN -package ./shared/types/eth2/fork/electra -with-streaming \
 $DYNSSZ_GEN -package ./shared/types/eth2/fork/fulu -with-streaming \
 	-types "BeaconState,SignedBeaconBlock,BeaconBlock,BeaconBlockBody,Attestation,ExecutionRequests,DepositRequest,WithdrawalRequest,ConsolidationRequest,AttesterSlashing,IndexedAttestation" \
 	-output ./shared/types/eth2/fork/fulu/fulu_generated.go
+
+$DYNSSZ_GEN -package ./shared/types/eth2/fork/gloas -with-streaming \
+	-types "BeaconState,SignedBeaconBlock,BeaconBlock,BeaconBlockBody,Builder,BuilderPendingWithdrawal,BuilderPendingPayment,Attestation,ExecutionPayloadBid,SignedExecutionPayloadBid,PayloadAttestationData,PayloadAttestation,ExecutionRequests,DepositRequest,WithdrawalRequest,ConsolidationRequest,BuilderDepositRequest,BuilderExitRequest,AttesterSlashing,IndexedAttestation" \
+	-output ./shared/types/eth2/fork/gloas/gloas_generated.go
