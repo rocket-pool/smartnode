@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"reflect"
-	"sync/atomic"
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-// The Gloas BeaconState has 46 fields. Pre-EIP-7688 proofs used power-of-two
-// container layout (ceil 64). Under EIP-7688 BeaconState is a ProgressiveContainer
-// and these g-indices are incorrect for production proofs; they are retained only
-// so helpers keep compiling until progressive g-index support lands.
-const beaconStateChunkCeil uint64 = 64
+// Gloas BeaconState field ssz-indices (EIP-7688 ProgressiveContainer).
+// Must stay aligned with the BeaconState struct tags.
+const (
+	beaconStateSlotFieldIndex                = generic.BeaconStateSlotIndex                     // 2
+	beaconStateBlockRootsFieldIndex          = generic.BeaconStateBlockRootsFieldIndex          // 5
+	beaconStateValidatorsFieldIndex          = generic.BeaconStateValidatorsIndex               // 11
+	beaconStateHistoricalSummariesFieldIndex = generic.BeaconStateHistoricalSummariesFieldIndex // 27
+)
 
 // New in Gloas (EIP-7732). Immutable container (not ProgressiveContainer).
 type Builder struct {
@@ -103,40 +103,45 @@ type BeaconState struct {
 	PtcWindow [96][512]uint64 `json:"ptc_window" ssz-size:"96,512" ssz-index:"45"`
 }
 
-var beaconStateChunkSize atomic.Uint64
-
-func getStateChunkSize() uint64 {
-	// Use a static value to avoid multiple reflection calls
-	storedChunkSize := beaconStateChunkSize.Load()
-	if storedChunkSize == 0 {
-		s := reflect.TypeFor[BeaconState]().NumField()
-		beaconStateChunkSize.Store(uint64(s))
-		storedChunkSize = uint64(s)
-	}
-	return storedChunkSize
-}
-
-// NOTE: Pre-EIP-7688 power-of-two container indexing. Incorrect for ProgressiveContainer
-// Gloas states; progressive g-indices will replace this in a follow-up.
+// GetGeneralizedIndexForValidators returns the gindex of the validators field
+// root inside the Gloas ProgressiveContainer BeaconState.
 func GetGeneralizedIndexForValidators() uint64 {
-	// There's 46 fields, so rounding up to the next power of two is 64, a left-aligned node
-	// BeaconStateValidatorsIndex is the 11th field, so its generalized index is 64 + 11 = 75
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
+	return generic.ProgressiveContainerFieldGindex(beaconStateValidatorsFieldIndex)
 }
 
-// NOTE: Pre-EIP-7688 power-of-two container indexing. Incorrect for ProgressiveContainer
-// Gloas states; progressive g-indices will replace this in a follow-up.
+// GetGeneralizedIndexForSlot returns the gindex of the slot field inside the
+// Gloas ProgressiveContainer BeaconState.
 func GetGeneralizedIndexForSlot() uint64 {
-	// There's 46 fields, so rounding up to the next power of two is 64, a left-aligned node
-	// BeaconStateSlotIndex is the 2nd field, so its generalized index is 64 + 2 = 66
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateSlotIndex
+	return generic.ProgressiveContainerFieldGindex(beaconStateSlotFieldIndex)
+}
+
+// GetGeneralizedIndexForBlockRoots returns the gindex of the block_roots field
+// root inside the Gloas ProgressiveContainer BeaconState.
+func GetGeneralizedIndexForBlockRoots() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStateBlockRootsFieldIndex)
+}
+
+// GetGeneralizedIndexForHistoricalSummaries returns the gindex of the
+// historical_summaries field root inside the Gloas ProgressiveContainer BeaconState.
+// historical_summaries remains a normal List (not ProgressiveList) per EIP-7688.
+func GetGeneralizedIndexForHistoricalSummaries() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStateHistoricalSummariesFieldIndex)
+}
+
+// GetGeneralizedIndexForValidator returns the gindex of validators[index] in a
+// Gloas BeaconState (ProgressiveContainer field + ProgressiveList element).
+//
+// Do not use generic.GetGeneralizedIndexForValidator here — that is the classic
+// fixed-capacity List formula for pre-Gloas states (Deneb/Electra/Fulu).
+func GetGeneralizedIndexForValidator(validatorIndex uint64) uint64 {
+	return generic.GetGeneralizedIndexForProgressiveListElement(
+		GetGeneralizedIndexForValidators(),
+		validatorIndex,
+	)
 }
 
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
-// for the state's current slot.
-//
-// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
-// proofs until progressive g-index support lands.
+// for the state's current slot, using EIP-7688 progressive g-indices.
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
 
 	if validatorIndex >= uint64(len(state.Validators)) {
@@ -148,7 +153,7 @@ func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte
 		return nil, nil, fmt.Errorf("could not get state tree: %w", err)
 	}
 
-	validatorGid := generic.GetGeneralizedIndexForValidator(validatorIndex, GetGeneralizedIndexForValidators())
+	validatorGid := GetGeneralizedIndexForValidator(validatorIndex)
 	validatorStateProof, err := stateTree.Prove(int(validatorGid))
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not get proof for validator: %w", err)
@@ -204,8 +209,6 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
-// proofs until progressive g-index support lands.
 func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
@@ -216,13 +219,13 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
 
-	// Navigate to the historical_summaries
-	gid := uint64(1)
-	gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
-
-	// Navigate into the historical summaries vector.
+	// ProgressiveContainer field → historical_summaries (still a fixed-capacity List).
 	arrayIndex := (slot / generic.SlotsPerHistoricalRoot) - capellaOffset
-	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
+	gid := generic.GetGeneralizedIndexForListElement(
+		GetGeneralizedIndexForHistoricalSummaries(),
+		generic.BeaconStateHistoricalSummariesMaxLength,
+		arrayIndex,
+	)
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {
@@ -267,8 +270,6 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 	return proof.Hashes, nil
 }
 
-// NOTE: g-indices still use pre-EIP-7688 formulas; do not use for production Gloas
-// proofs until progressive g-index support lands.
 func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if isHistorical {
@@ -280,14 +281,12 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
 
-	gid := uint64(1)
-
-	// Navigate to the block_roots
-	gid = gid*beaconStateChunkCeil + generic.BeaconStateBlockRootsFieldIndex
-
-	// We're now at the block_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
-	// The index we care about is given by slot % slotsPerHistoricalRoot.
-	gid = gid*generic.BeaconStateBlockRootsMaxLength + (slot % generic.SlotsPerHistoricalRoot)
+	// ProgressiveContainer field → block_roots Vector[Root, SLOTS_PER_HISTORICAL_ROOT].
+	gid := generic.GetGeneralizedIndexForVectorElement(
+		GetGeneralizedIndexForBlockRoots(),
+		generic.BeaconStateBlockRootsMaxLength,
+		slot%generic.SlotsPerHistoricalRoot,
+	)
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {

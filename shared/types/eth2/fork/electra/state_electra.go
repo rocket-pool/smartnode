@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const beaconStateChunkCeil uint64 = 64
@@ -71,15 +70,14 @@ func getStateChunkSize() uint64 {
 }
 
 func GetGeneralizedIndexForValidators() uint64 {
-	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
-	// BeaconStateValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
+	// Classic SSZ Container field gindex (pre-Gloas). Field count rounded up to
+	// the next power of two; validators is field index 11.
+	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStateValidatorsIndex)
 }
 
 func GetGeneralizedIndexForSlot() uint64 {
-	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
-	// BeaconStateValidatorsIndex is the 2nd field, so its generalized index is 32 + 2 = 34
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateSlotIndex
+	// Classic SSZ Container field gindex (pre-Gloas); slot is field index 2.
+	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStateSlotIndex)
 }
 
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
