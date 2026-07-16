@@ -54,9 +54,9 @@ services:
       {{- if eq .ConsensusClient.String "teku"}}
       - "{{.Teku.P2pQuicPort}}:{{.Teku.P2pQuicPort}}/udp"
       {{- if .IsIPv6Enabled}}
-      - "{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/udp"
-      - "{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/tcp"
-      - "{{.Teku.P2pQuicIpv6Port}}:{{.Teku.P2pQuicIpv6Port}}/udp"
+      - "[::]:{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/udp"
+      - "[::]:{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/tcp"
+      - "[::]:{{.Teku.P2pQuicIpv6Port}}:{{.Teku.P2pQuicIpv6Port}}/udp"
       {{- end}}
       {{- end}}
       {{- range $entry := .GetBnOpenPorts}}

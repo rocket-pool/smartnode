@@ -26,7 +26,7 @@ func GetSignedExitMessage(validatorKey *eth2types.BLSPrivateKey, validatorIndex 
 	}
 
 	// Get object root
-	or, err := exitMessage.HashTreeRoot()
+	or, err := generic.SSZ.HashTreeRoot(&exitMessage)
 	if err != nil {
 		return types.ValidatorSignature{}, err
 	}
@@ -37,7 +37,7 @@ func GetSignedExitMessage(validatorKey *eth2types.BLSPrivateKey, validatorIndex 
 		Domain:     signatureDomain,
 	}
 
-	srHash, err := sr.HashTreeRoot()
+	srHash, err := generic.SSZ.HashTreeRoot(&sr)
 	if err != nil {
 		return types.ValidatorSignature{}, err
 	}
