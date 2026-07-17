@@ -13,8 +13,12 @@ import (
 const (
 	beaconStateSlotFieldIndex                = generic.BeaconStateSlotIndex                     // 2
 	beaconStateBlockRootsFieldIndex          = generic.BeaconStateBlockRootsFieldIndex          // 5
+	beaconStateStateRootsFieldIndex          = generic.BeaconStateStateRootsFieldIndex          // 6
 	beaconStateValidatorsFieldIndex          = generic.BeaconStateValidatorsIndex               // 11
 	beaconStateHistoricalSummariesFieldIndex = generic.BeaconStateHistoricalSummariesFieldIndex // 27
+	// New in Gloas (EIP-7732): payload_expected_withdrawals commits to the
+	// withdrawals of the execution payload bid on at this slot.
+	beaconStatePayloadExpectedWithdrawalsFieldIndex = 44
 )
 
 // New in Gloas (EIP-7732). Immutable container (not ProgressiveContainer).
@@ -128,11 +132,30 @@ func GetGeneralizedIndexForHistoricalSummaries() uint64 {
 	return generic.ProgressiveContainerFieldGindex(beaconStateHistoricalSummariesFieldIndex)
 }
 
+// GetGeneralizedIndexForStateRoots returns the gindex of the state_roots field
+// root inside the progressive container.
+func GetGeneralizedIndexForStateRoots() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStateStateRootsFieldIndex)
+}
+
+// GetGeneralizedIndexForPayloadExpectedWithdrawals returns the gindex of the
+// payload_expected_withdrawals field root inside progressive container
+func GetGeneralizedIndexForPayloadExpectedWithdrawals() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStatePayloadExpectedWithdrawalsFieldIndex)
+}
+
+// GetGeneralizedIndexForExpectedWithdrawal returns the gindex of
+// payload_expected_withdrawals[index]
+// (ProgressiveContainer field + ProgressiveList element).
+func GetGeneralizedIndexForExpectedWithdrawal(index uint64) uint64 {
+	return generic.GetGeneralizedIndexForProgressiveListElement(
+		GetGeneralizedIndexForPayloadExpectedWithdrawals(),
+		index,
+	)
+}
+
 // GetGeneralizedIndexForValidator returns the gindex of validators[index] in a
 // Gloas BeaconState (ProgressiveContainer field + ProgressiveList element).
-//
-// Do not use generic.GetGeneralizedIndexForValidator here — that is the classic
-// fixed-capacity List formula for pre-Gloas states (Deneb/Electra/Fulu).
 func GetGeneralizedIndexForValidator(validatorIndex uint64) uint64 {
 	return generic.GetGeneralizedIndexForProgressiveListElement(
 		GetGeneralizedIndexForValidators(),
@@ -291,6 +314,108 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	proof, err := tree.Prove(int(gid))
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for block root: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// StateRootProof proves state_roots[slot % SLOTS_PER_HISTORICAL_ROOT] against
+// this state's root. It is the state_roots counterpart of BlockRootProof and is
+// used to anchor the post-state root of a recent slot inside a later
+// (finalized) state. Used for Gloas withdrawal proofs.
+func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
+	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
+	if isHistorical {
+		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
+	}
+
+	tree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	// ProgressiveContainer field → state_roots Vector[Root, SLOTS_PER_HISTORICAL_ROOT].
+	gid := generic.GetGeneralizedIndexForVectorElement(
+		GetGeneralizedIndexForStateRoots(),
+		generic.BeaconStateStateRootsMaxLength,
+		slot%generic.SlotsPerHistoricalRoot,
+	)
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for state root: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// HistoricalSummaryStateRootProof proves state_roots[slot] against the
+// state_summary_root of the HistoricalSummary for the slot's 8192-slot era. It
+// is the state_roots counterpart of HistoricalSummaryBlockRootProof. The state
+// must be aligned at the end of the era following the slot.
+func (state *BeaconState) HistoricalSummaryStateRootProof(slot int) ([][]byte, error) {
+	// If the state isn't aligned at the end of an 8192 slot era, throw an error
+	if state.Slot%generic.SlotsPerHistoricalRoot != 0 {
+		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
+	}
+
+	hsls := generic.HistoricalSummaryLists{
+		BlockRoots: state.BlockRoots,
+		StateRoots: state.StateRoots,
+	}
+
+	idx := slot % int(generic.SlotsPerHistoricalRoot)
+	tree, err := generic.SSZ.GetTree(&hsls)
+	if err != nil {
+		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
+	}
+
+	gid := uint64(1)
+	gid = gid*2 + 1                            // Now at state_roots
+	gid = gid * generic.SlotsPerHistoricalRoot // Now at the first state_root
+	gid = gid + uint64(idx)                    // Now at the correct state_root
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// ProveExpectedWithdrawal proves payload_expected_withdrawals[index] against
+// the state root. In Gloas the execution payload is no longer part
+// of the beacon block, so withdrawals cannot be proven against a block root.
+// Instead, process_withdrawals commits the withdrawals that the payload for
+// this slot must contain to the state's payload_expected_withdrawals field, and
+// that list is what the withdrawal is proven against.
+//
+// The proof ends at the state root; anchoring the state root to a later
+// finalized state (via StateRootProof for recent slots, or
+// HistoricalSummaryStateRootProof + a historical summary proof for older ones)
+// is left to the caller.
+func (state *BeaconState) ProveExpectedWithdrawal(index uint64) ([][]byte, error) {
+	if index >= uint64(len(state.PayloadExpectedWithdrawals)) {
+		return nil, fmt.Errorf("withdrawal index %d out of bounds: state at slot %d has %d expected withdrawals", index, state.Slot, len(state.PayloadExpectedWithdrawals))
+	}
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	proof, err := stateTree.Prove(int(GetGeneralizedIndexForExpectedWithdrawal(index)))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for expected withdrawal: %w", err)
+	}
+
+	// Sanity check that the proof leaf matches the expected withdrawal
+	withdrawalHashTreeRoot, err := generic.SSZ.HashTreeRoot(state.PayloadExpectedWithdrawals[index])
+	if err != nil {
+		return nil, fmt.Errorf("could not get hash tree root for expected withdrawal: %w", err)
+	}
+	if !bytes.Equal(proof.Leaf, withdrawalHashTreeRoot[:]) {
+		return nil, fmt.Errorf("proof leaf does not match expected withdrawal")
 	}
 
 	return proof.Hashes, nil
