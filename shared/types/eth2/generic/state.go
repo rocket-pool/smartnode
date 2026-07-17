@@ -18,6 +18,8 @@ const BeaconStateHistoricalSummariesFieldIndex uint64 = 27
 const BeaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
 const BeaconStateBlockRootsMaxLength uint64 = 1 << 13
 const BeaconStateBlockRootsFieldIndex uint64 = 5
+const BeaconStateStateRootsMaxLength uint64 = 1 << 13
+const BeaconStateStateRootsFieldIndex uint64 = 6
 
 type PendingDeposit struct {
 	Pubkey                []byte `json:"pubkey" ssz-size:"48"`

@@ -179,6 +179,21 @@ func (p *ExecutionClientManager) HeaderByNumber(ctx context.Context, number *big
 	return result.(*types.Header), err
 }
 
+// BlockByNumber returns a block from the current canonical chain. If number is nil, the latest known block is
+// returned.
+func (p *ExecutionClientManager) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	if p.static != nil {
+		return nil, fmt.Errorf("BlockByNumber is not supported by the static execution client")
+	}
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
+		return client.BlockByNumber(ctx, number)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*types.Block), err
+}
+
 // PendingCodeAt returns the code of the given account in the pending state.
 func (p *ExecutionClientManager) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	if p.static != nil {
