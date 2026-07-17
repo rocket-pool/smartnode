@@ -134,14 +134,14 @@ func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, s
 		state.LatestBlockHeader = &lbh
 	}()
 	// Set the state root in LatestBlockHeader before calculating the hash
-	stateRoot, err := state.HashTreeRoot()
+	stateRoot, err := generic.SSZ.HashTreeRoot(state)
 	if err != nil {
 		t.Fatalf("Failed to get state root: %v", err)
 	}
 	state.LatestBlockHeader.StateRoot = stateRoot[:]
 
 	// The final hash must be the block root
-	finalHash, err := state.LatestBlockHeader.HashTreeRoot()
+	finalHash, err := generic.SSZ.HashTreeRoot(state.LatestBlockHeader)
 	if err != nil {
 		t.Fatalf("Failed to get block root: %v", err)
 	}
@@ -155,7 +155,7 @@ func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, s
 }
 
 func getValidatorLeaf(t *testing.T, validator *generic.Validator) []byte {
-	root, err := validator.HashTreeRoot()
+	root, err := generic.SSZ.HashTreeRoot(validator)
 	if err != nil {
 		t.Fatalf("Failed to get validator root: %v", err)
 	}
@@ -165,7 +165,7 @@ func getValidatorLeaf(t *testing.T, validator *generic.Validator) []byte {
 
 func TestValidatorStateProof(t *testing.T) {
 	state := &deneb.BeaconState{}
-	err := state.UnmarshalSSZ(testState)
+	err := generic.SSZ.UnmarshalSSZ(state, testState)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test state: %v", err)
 	}
@@ -219,7 +219,7 @@ func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64,
 		panic(err)
 	}
 
-	expectedBlockRoot, err := block.Block.HashTreeRoot()
+	expectedBlockRoot, err := generic.SSZ.HashTreeRoot(block.Block)
 	if err != nil {
 		t.Fatalf("Failed to get block root: %v", err)
 	}
@@ -256,7 +256,7 @@ func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64,
 
 func TestWithdrawalProof(t *testing.T) {
 	block := &deneb.SignedBeaconBlock{}
-	err := block.UnmarshalSSZ(testBlock)
+	err := generic.SSZ.UnmarshalSSZ(block, testBlock)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test block: %v", err)
 	}
@@ -278,7 +278,7 @@ func TestWithdrawalProof(t *testing.T) {
 		gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex
 		gid = gid * 2
 		gid = gid*generic.BeaconBlockWithdrawalsArrayMax + uint64(idx)
-		leaf, err := withdrawal.HashTreeRoot()
+		leaf, err := generic.SSZ.HashTreeRoot(withdrawal)
 		if err != nil {
 			t.Fatalf("Failed to get withdrawal leaf: %v", err)
 		}
@@ -320,7 +320,7 @@ func TestBlockRootProof(t *testing.T) {
 		copy(hsls.StateRoots[i][:], stateRootBytes)
 	}
 
-	hslsTree, err := hsls.GetTree()
+	hslsTree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		t.Fatalf("Failed to get historical summary lists tree: %v", err)
 	}

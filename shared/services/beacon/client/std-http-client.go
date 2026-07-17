@@ -1028,6 +1028,7 @@ func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconState
 
 	return &beacon.BeaconStateSSZ{
 		Data: response.Body,
+		Size: response.ContentLength,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, nil
 }
@@ -1050,6 +1051,7 @@ func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlock
 
 	return &beacon.BeaconBlockSSZ{
 		Data: response.Body,
+		Size: response.ContentLength,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, true, nil
 }
@@ -1213,6 +1215,10 @@ func (c *StandardHttpClient) sszRequest(requestPath string) (*http.Response, err
 		return nil, err
 	}
 	request.Header.Set("Accept", RequestSSZContentType)
+	// Disable transparent compression: a compressed response has no
+	// Content-Length, which would force the buffered (non-streaming) SSZ
+	// decode path
+	request.Header.Set("Accept-Encoding", "identity")
 	return http.DefaultClient.Do(request)
 }
 

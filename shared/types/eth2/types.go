@@ -36,73 +36,79 @@ type SignedBeaconBlock interface {
 	Withdrawals() []*generic.Withdrawal
 }
 
-func NewBeaconState(data io.ReadCloser, fork string) (BeaconState, error) {
-	fork = strings.ToLower(fork)
-
+// decodeSSZ deserializes an SSZ payload into target. When the total payload
+// size is known it streams directly from the reader, avoiding holding the
+// whole serialized payload (~310 MB for a mainnet beacon state) in memory
+// alongside the decoded struct. When the size is unknown (e.g. a chunked
+// response without Content-Length) it falls back to buffering, since SSZ
+// offsets cannot be interpreted without the total size.
+func decodeSSZ(target any, data io.ReadCloser, size int64) error {
 	defer func() {
 		_ = data.Close()
 	}()
 
+	if size > 0 {
+		return generic.SSZ.UnmarshalSSZReader(target, data, int(size))
+	}
+
 	dataBytes, err := io.ReadAll(data)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	return generic.SSZ.UnmarshalSSZ(target, dataBytes)
+}
+
+func NewBeaconState(data io.ReadCloser, size int64, fork string) (BeaconState, error) {
+	fork = strings.ToLower(fork)
 
 	switch fork {
 	case "electra":
 		out := &electra.BeaconState{}
-		err := out.UnmarshalSSZ(dataBytes)
+		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "fulu":
 		out := &fulu.BeaconState{}
-		err := out.UnmarshalSSZ(dataBytes)
+		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	default:
+		_ = data.Close()
 		return nil, fmt.Errorf("unsupported fork: %s", fork)
 	}
 }
 
-func NewSignedBeaconBlock(data io.ReadCloser, fork string) (SignedBeaconBlock, error) {
+func NewSignedBeaconBlock(data io.ReadCloser, size int64, fork string) (SignedBeaconBlock, error) {
 	fork = strings.ToLower(fork)
-
-	defer func() {
-		_ = data.Close()
-	}()
-
-	dataBytes, err := io.ReadAll(data)
-	if err != nil {
-		return nil, err
-	}
 
 	switch fork {
 	case "deneb":
 		out := &deneb.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(dataBytes)
+		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "electra":
 		out := &electra.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(dataBytes)
+		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "fulu":
 		out := &fulu.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(dataBytes)
+		err := decodeSSZ(out, data, size)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	default:
+		_ = data.Close()
 		return nil, fmt.Errorf("unsupported fork: %s", fork)
 	}
 }

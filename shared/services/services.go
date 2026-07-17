@@ -231,7 +231,7 @@ func GetBeaconState(bc beacon.Client) (eth2.BeaconState, error) {
 		return nil, err
 	}
 
-	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Size, beaconStateResponse.Fork)
 	if err != nil {
 		return nil, err
 	}

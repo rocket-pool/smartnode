@@ -47,7 +47,7 @@ func GetSignedWithdrawalCredsChangeMessage(withdrawalKey *eth2types.BLSPrivateKe
 	}
 
 	// Get object root
-	or, err := message.HashTreeRoot()
+	or, err := generic.SSZ.HashTreeRoot(&message)
 	if err != nil {
 		return types.ValidatorSignature{}, err
 	}
@@ -58,7 +58,7 @@ func GetSignedWithdrawalCredsChangeMessage(withdrawalKey *eth2types.BLSPrivateKe
 		Domain:     signatureDomain,
 	}
 
-	srHash, err := sr.HashTreeRoot()
+	srHash, err := generic.SSZ.HashTreeRoot(&sr)
 	if err != nil {
 		return types.ValidatorSignature{}, err
 	}
