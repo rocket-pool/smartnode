@@ -1,14 +1,18 @@
 package services
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"math/big"
+	"math/bits"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 // ---------------------------------------------------------------------------
@@ -379,5 +383,272 @@ func TestParticipationBitmapWitnessErrors(t *testing.T) {
 	tooBig := new(big.Int).Lsh(big.NewInt(1), 256)
 	if _, err := participationBitmapWitness([]*big.Int{tooBig}, 0); err == nil {
 		t.Fatal("expected an error for a word larger than uint256")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Participation witness chain assembly
+// ---------------------------------------------------------------------------
+
+// newProofTestFuluState builds a minimal but SSZ-valid fulu beacon state with
+// numValidators validators and per-validator previous-epoch participation
+// flags of (i % 8).
+func newProofTestFuluState(t *testing.T, numValidators int, slot uint64) *fulu.BeaconState {
+	t.Helper()
+
+	validators := make([]*generic.Validator, numValidators)
+	balances := make([]uint64, numValidators)
+	inactivityScores := make([]uint64, numValidators)
+	previousParticipation := make([]byte, numValidators)
+	currentParticipation := make([]byte, numValidators)
+	for i := range validators {
+		validators[i] = &generic.Validator{
+			Pubkey:                make([]byte, 48),
+			WithdrawalCredentials: make([]byte, 32),
+			EffectiveBalance:      32e9,
+		}
+		validators[i].Pubkey[0] = byte(i + 1)
+		balances[i] = 32e9
+		previousParticipation[i] = byte(i % 8)
+		currentParticipation[i] = byte((i + 1) % 8)
+	}
+
+	randaoMixes := make([][]byte, 65536)
+	for i := range randaoMixes {
+		randaoMixes[i] = make([]byte, 32)
+	}
+
+	syncCommittee := func() *generic.SyncCommittee {
+		pubkeys := make([][]byte, 512)
+		for i := range pubkeys {
+			pubkeys[i] = make([]byte, 48)
+		}
+		return &generic.SyncCommittee{PubKeys: pubkeys}
+	}
+
+	parentRoot := make([]byte, 32)
+	parentRoot[0] = 0xaa
+	bodyRoot := make([]byte, 32)
+	bodyRoot[0] = 0xbb
+
+	return &fulu.BeaconState{
+		GenesisValidatorsRoot: make([]byte, 32),
+		Slot:                  slot,
+		Fork: &generic.Fork{
+			PreviousVersion: make([]byte, 4),
+			CurrentVersion:  make([]byte, 4),
+		},
+		LatestBlockHeader: &generic.BeaconBlockHeader{
+			Slot:          slot,
+			ProposerIndex: 1,
+			ParentRoot:    parentRoot,
+			StateRoot:     make([]byte, 32),
+			BodyRoot:      bodyRoot,
+		},
+		HistoricalRoots: [][]byte{},
+		Eth1Data: &generic.Eth1Data{
+			DepositRoot: make([]byte, 32),
+			BlockHash:   make([]byte, 32),
+		},
+		Eth1DataVotes:                []*generic.Eth1Data{},
+		Validators:                   validators,
+		Balances:                     balances,
+		RandaoMixes:                  randaoMixes,
+		Slashings:                    make([]uint64, 8192),
+		PreviousEpochParticipation:   previousParticipation,
+		CurrentEpochParticipation:    currentParticipation,
+		PreviousJustifiedCheckpoint:  &generic.Checkpoint{Root: make([]byte, 32)},
+		CurrentJustifiedCheckpoint:   &generic.Checkpoint{Root: make([]byte, 32)},
+		FinalizedCheckpoint:          &generic.Checkpoint{Root: make([]byte, 32)},
+		InactivityScores:             inactivityScores,
+		CurrentSyncCommittee:         syncCommittee(),
+		NextSyncCommittee:            syncCommittee(),
+		LatestExecutionPayloadHeader: &generic.ExecutionPayloadHeader{},
+		HistoricalSummaries:          []*generic.HistoricalSummary{},
+		ProposerLookahead:            make([]uint64, 64),
+	}
+}
+
+// concatGid appends a child generalized index (rooted at 1 in its own
+// subtree) onto a parent generalized index, mirroring the on-chain SSZ.concat
+// path construction. The combined index exceeds 64 bits for full
+// participation witness chains, hence big.Int.
+func concatGid(parent *big.Int, child uint64) *big.Int {
+	depth := bits.Len64(child) - 1
+	out := new(big.Int).Lsh(parent, uint(depth))
+	return out.Or(out, new(big.Int).SetUint64(child-1<<uint(depth)))
+}
+
+// walkWitnessChain mirrors the on-chain SSZ.restoreMerkleRoot: walk the
+// generalized index from the leaf to the root, consuming the flat witness
+// array leaf-first. Enforces the SSZ.length witness count check.
+func walkWitnessChain(t *testing.T, leaf []byte, gid *big.Int, witnesses [][]byte) []byte {
+	t.Helper()
+	if len(witnesses) != gid.BitLen()-1 {
+		t.Fatalf("witness count %d does not match gindex depth %d", len(witnesses), gid.BitLen()-1)
+	}
+	value := leaf
+	g := new(big.Int).Set(gid)
+	for _, witness := range witnesses {
+		var pair [64]byte
+		if g.Bit(0) == 1 {
+			copy(pair[:32], witness)
+			copy(pair[32:], value)
+		} else {
+			copy(pair[:32], value)
+			copy(pair[32:], witness)
+		}
+		hashed := sha256.Sum256(pair[:])
+		value = hashed[:]
+		g.Rsh(g, 1)
+	}
+	return value
+}
+
+// anchorBlockRoot computes the block root the contract retrieves via
+// EIP-4788: the anchor state's latest block header with its state root
+// filled in.
+func anchorBlockRoot(t *testing.T, state *fulu.BeaconState) []byte {
+	t.Helper()
+	stateRoot, err := state.HashTreeRoot()
+	if err != nil {
+		t.Fatalf("failed to hash anchor state: %v", err)
+	}
+	header := *state.LatestBlockHeader
+	header.StateRoot = stateRoot[:]
+	blockRoot, err := header.HashTreeRoot()
+	if err != nil {
+		t.Fatalf("failed to hash anchor block header: %v", err)
+	}
+	return blockRoot[:]
+}
+
+func TestBuildRecentParticipationWitnesses(t *testing.T) {
+	const numValidators = 100
+	const validatorIndex = uint64(70)
+	const participationSlot = uint64(105003*32 - 1)
+	const anchorSlot = participationSlot + 100
+
+	participationState := newProofTestFuluState(t, numValidators, participationSlot)
+	anchorState := newProofTestFuluState(t, numValidators, anchorSlot)
+
+	// Wire the anchor's state_roots vector to commit to the participation state
+	participationRoot, err := participationState.HashTreeRoot()
+	if err != nil {
+		t.Fatalf("failed to hash participation state: %v", err)
+	}
+	anchorState.StateRoots[participationSlot%generic.SlotsPerHistoricalRoot] = participationRoot
+
+	if err := verifyParticipationStateLink(anchorState, participationState, participationSlot); err != nil {
+		t.Fatalf("state link check failed: %v", err)
+	}
+
+	chunk, chunkProof, err := participationState.PreviousEpochParticipationChunkProof(validatorIndex)
+	if err != nil {
+		t.Fatalf("failed to build the chunk proof: %v", err)
+	}
+	witnesses, err := buildRecentParticipationWitnesses(anchorState, participationSlot, chunkProof)
+	if err != nil {
+		t.Fatalf("failed to build the recent witnesses: %v", err)
+	}
+	if len(witnesses) != 64 {
+		t.Fatalf("recent witness count = %d, want 64", len(witnesses))
+	}
+
+	// Combined gindex, mirroring BeaconStateVerifier.verifyParticipation:
+	// header -> state_root ++ state -> state_roots[n] ++ state -> chunk
+	stateRootsGid := (uint64(1)*64+generic.BeaconStateStateRootsFieldIndex)*generic.BeaconStateBlockRootsMaxLength + participationSlot%generic.SlotsPerHistoricalRoot
+	chunkGid := generic.GetGeneralizedIndexForParticipationChunk(validatorIndex/32, fulu.GetGeneralizedIndexForPreviousEpochParticipation())
+	gid := big.NewInt(int64(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
+	gid = concatGid(gid, stateRootsGid)
+	gid = concatGid(gid, chunkGid)
+
+	root := walkWitnessChain(t, chunk[:], gid, witnesses)
+	if !bytes.Equal(root, anchorBlockRoot(t, anchorState)) {
+		t.Fatalf("restored root %x does not match the anchor block root", root)
+	}
+}
+
+func TestBuildHistoricalParticipationWitnesses(t *testing.T) {
+	const numValidators = 100
+	const validatorIndex = uint64(33)
+	const capellaOffset = uint64(0)
+	// Participation slot in era 1, anchored more than 8192 slots later
+	const participationSlot = uint64(generic.SlotsPerHistoricalRoot + 5000)
+	const eraBoundarySlot = (participationSlot/generic.SlotsPerHistoricalRoot + 1) * generic.SlotsPerHistoricalRoot
+	const anchorSlot = uint64(5*generic.SlotsPerHistoricalRoot + 77)
+	const entry = participationSlot/generic.SlotsPerHistoricalRoot - capellaOffset
+
+	participationState := newProofTestFuluState(t, numValidators, participationSlot)
+	eraState := newProofTestFuluState(t, numValidators, eraBoundarySlot)
+	anchorState := newProofTestFuluState(t, numValidators, anchorSlot)
+
+	// Wire the era boundary state's state_roots vector to commit to the
+	// participation state
+	participationRoot, err := participationState.HashTreeRoot()
+	if err != nil {
+		t.Fatalf("failed to hash participation state: %v", err)
+	}
+	eraState.StateRoots[participationSlot%generic.SlotsPerHistoricalRoot] = participationRoot
+
+	if err := verifyParticipationStateLink(eraState, participationState, participationSlot); err != nil {
+		t.Fatalf("state link check failed: %v", err)
+	}
+
+	// Wire the anchor's historical_summaries to commit to the era boundary
+	// state's roots vectors
+	hsls := generic.HistoricalSummaryLists{
+		BlockRoots: eraState.BlockRoots,
+		StateRoots: eraState.StateRoots,
+	}
+	hslsTree, err := hsls.GetTree()
+	if err != nil {
+		t.Fatalf("failed to get historical summary lists tree: %v", err)
+	}
+	blockSummaryNode, err := hslsTree.Get(2)
+	if err != nil {
+		t.Fatalf("failed to get block summary node: %v", err)
+	}
+	stateSummaryNode, err := hslsTree.Get(3)
+	if err != nil {
+		t.Fatalf("failed to get state summary node: %v", err)
+	}
+	summaries := make([]*generic.HistoricalSummary, entry+1)
+	for i := range summaries {
+		summaries[i] = &generic.HistoricalSummary{}
+		summaries[i].BlockSummaryRoot[0] = byte(i + 1)
+	}
+	copy(summaries[entry].BlockSummaryRoot[:], blockSummaryNode.Hash())
+	copy(summaries[entry].StateSummaryRoot[:], stateSummaryNode.Hash())
+	anchorState.HistoricalSummaries = summaries
+
+	chunk, chunkProof, err := participationState.PreviousEpochParticipationChunkProof(validatorIndex)
+	if err != nil {
+		t.Fatalf("failed to build the chunk proof: %v", err)
+	}
+	witnesses, err := buildHistoricalParticipationWitnesses(anchorState, eraState, participationSlot, capellaOffset, chunkProof)
+	if err != nil {
+		t.Fatalf("failed to build the historical witnesses: %v", err)
+	}
+	if len(witnesses) != 90 {
+		t.Fatalf("historical witness count = %d, want 90", len(witnesses))
+	}
+
+	// Combined gindex, mirroring BeaconStateVerifier.verifyParticipation:
+	// header -> state_root ++ state -> historical_summaries[n] ++
+	// HistoricalSummary -> state_summary_root ++ state_roots -> [n] ++
+	// state -> chunk
+	summaryElementGid := (uint64(1)*64+generic.BeaconStateHistoricalSummariesFieldIndex)*2*generic.BeaconStateHistoricalSummariesMaxLength + entry
+	stateRootsVectorGid := generic.SlotsPerHistoricalRoot + participationSlot%generic.SlotsPerHistoricalRoot
+	chunkGid := generic.GetGeneralizedIndexForParticipationChunk(validatorIndex/32, fulu.GetGeneralizedIndexForPreviousEpochParticipation())
+	gid := big.NewInt(int64(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
+	gid = concatGid(gid, summaryElementGid)
+	gid = concatGid(gid, 3) // HistoricalSummary -> state_summary_root
+	gid = concatGid(gid, stateRootsVectorGid)
+	gid = concatGid(gid, chunkGid)
+
+	root := walkWitnessChain(t, chunk[:], gid, witnesses)
+	if !bytes.Equal(root, anchorBlockRoot(t, anchorState)) {
+		t.Fatalf("restored root %x does not match the anchor block root", root)
 	}
 }
