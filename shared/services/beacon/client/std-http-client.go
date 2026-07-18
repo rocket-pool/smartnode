@@ -149,6 +149,7 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
 		ShardCommitteePeriod:         shardCommitteePeriod,
+		CapellaForkEpoch:             uint64(eth2Config.Data.CapellaForkEpoch),
 	}
 	eth2ConfigCache.Store(&out)
 

@@ -18,6 +18,7 @@ type Eth2Config struct {
 	SecondsPerEpoch              uint64 `json:"seconds_per_epoch"`
 	EpochsPerSyncCommitteePeriod uint64 `json:"epochs_per_sync_committee_period"`
 	ShardCommitteePeriod         uint64 `json:"shard_committee_period"`
+	CapellaForkEpoch             uint64 `json:"capella_fork_epoch"`
 }
 
 func (c *Eth2Config) MarshalJSON() ([]byte, error) {

@@ -21,6 +21,9 @@ const BeaconStateBlockRootsFieldIndex uint64 = 5
 const BeaconStateStateRootsMaxLength uint64 = 1 << 13
 const BeaconStateStateRootsFieldIndex uint64 = 6
 
+// BeaconStateStateRootsFieldIndex is the field offset of the StateRoots field in the BeaconState struct
+const BeaconStateStateRootsFieldIndex uint64 = 6
+
 // BeaconStatePreviousEpochParticipationFieldIndex is the field offset of the
 // PreviousEpochParticipation field in the BeaconState struct
 const BeaconStatePreviousEpochParticipationFieldIndex uint64 = 15
