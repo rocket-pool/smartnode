@@ -38,6 +38,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Usage:   "Number of deposits to make",
 						Value:   0,
 					},
+					&cli.BoolFlag{
+						Name:  "test-invalid-deposit",
+						Usage: "TESTNET ONLY: after the normal megapool deposit, front-run the beacon prestake with zero-address withdrawal credentials to test invalid-deposit dissolve handling",
+					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -47,7 +51,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeMegapoolDeposit(c.Uint64("count"), c.Int64("express-tickets"), c.Bool("yes"))
+					return nodeMegapoolDeposit(c.Uint64("count"), c.Int64("express-tickets"), c.Bool("yes"), c.Bool("test-invalid-deposit"))
 
 				},
 			},

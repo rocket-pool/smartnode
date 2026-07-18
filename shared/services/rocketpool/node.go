@@ -744,13 +744,14 @@ func (c *Client) NodeWithdrawCredit(amountWei *big.Int) (api.NodeWithdrawCreditR
 }
 
 // Check whether the node can make multiple deposits
-func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, expressTickets uint64) (api.CanNodeDepositsResponse, error) {
+func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, expressTickets uint64, testInvalidDeposit bool) (api.CanNodeDepositsResponse, error) {
 	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-deposit", url.Values{
-		"count":          {strconv.FormatUint(count, 10)},
-		"amountWei":      {amountWei.String()},
-		"minFee":         {strconv.FormatFloat(minFee, 'f', -1, 64)},
-		"salt":           {salt.String()},
-		"expressTickets": {strconv.FormatUint(expressTickets, 10)},
+		"count":              {strconv.FormatUint(count, 10)},
+		"amountWei":          {amountWei.String()},
+		"minFee":             {strconv.FormatFloat(minFee, 'f', -1, 64)},
+		"salt":               {salt.String()},
+		"expressTickets":     {strconv.FormatUint(expressTickets, 10)},
+		"testInvalidDeposit": {strconv.FormatBool(testInvalidDeposit)},
 	})
 	if err != nil {
 		return api.CanNodeDepositsResponse{}, fmt.Errorf("Could not get can node deposits status: %w", err)
@@ -766,15 +767,16 @@ func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float6
 }
 
 // Make multiple node deposits
-func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, expressTickets uint64, submit bool) (api.NodeDepositsResponse, error) {
+func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, expressTickets uint64, submit bool, testInvalidDeposit bool) (api.NodeDepositsResponse, error) {
 	responseBytes, err := c.callHTTPAPI("POST", "/api/node/deposit", url.Values{
-		"count":            {strconv.FormatUint(count, 10)},
-		"amountWei":        {amountWei.String()},
-		"minFee":           {strconv.FormatFloat(minFee, 'f', -1, 64)},
-		"salt":             {salt.String()},
-		"expressTickets":   {strconv.FormatUint(expressTickets, 10)},
-		"useCreditBalance": {strconv.FormatBool(useCreditBalance)},
-		"submit":           {strconv.FormatBool(submit)},
+		"count":              {strconv.FormatUint(count, 10)},
+		"amountWei":          {amountWei.String()},
+		"minFee":             {strconv.FormatFloat(minFee, 'f', -1, 64)},
+		"salt":               {salt.String()},
+		"expressTickets":     {strconv.FormatUint(expressTickets, 10)},
+		"useCreditBalance":   {strconv.FormatBool(useCreditBalance)},
+		"submit":             {strconv.FormatBool(submit)},
+		"testInvalidDeposit": {strconv.FormatBool(testInvalidDeposit)},
 	})
 	if err != nil {
 		return api.NodeDepositsResponse{}, fmt.Errorf("Could not make node deposits: %w", err)

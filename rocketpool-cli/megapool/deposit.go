@@ -23,7 +23,7 @@ const (
 	maxCount uint64 = 35
 )
 
-func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
+func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool, testInvalidDeposit bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -182,8 +182,13 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	minNodeFee := 0.0
 
+	if testInvalidDeposit {
+		color.YellowPrintln("WARNING: --test-invalid-deposit is set. A normal megapool deposit will be created, then 1 ETH per validator will be deposited directly to the beacon deposit contract with withdrawal credentials pointing to the zero address. This is for testing invalid-credential dissolve handling only and will not work on mainnet. Ensure the node wallet has an extra 1 ETH per validator for the front-run deposit(s).")
+		fmt.Println()
+	}
+
 	// Check deposit can be made
-	canDeposit, err := rp.CanNodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), uint64(expressTickets))
+	canDeposit, err := rp.CanNodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), uint64(expressTickets), testInvalidDeposit)
 	if err != nil {
 		return err
 	}
@@ -280,7 +285,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Make deposit(s)
 
-	response, err := rp.NodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), useCreditBalance, uint64(expressTickets), true)
+	response, err := rp.NodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), useCreditBalance, uint64(expressTickets), true, testInvalidDeposit)
 	if err != nil {
 		return err
 	}
@@ -302,11 +307,18 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	fmt.Println()
 
 	fmt.Printf("The %d new megapool validators have been created.\n", count)
-	fmt.Println("Once your validators progress through the queue, ETH will be assigned and a 1 ETH prestake submitted for each.")
-	fmt.Printf("After the prestake, your node will automatically perform a stake transaction for each validator, to complete the progress.")
-	fmt.Println("")
-	fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
-	fmt.Println("To monitor the stake transactions use `rocketpool service logs node`")
+	if testInvalidDeposit {
+		color.YellowPrintln("TEST-INVALID-DEPOSIT: 1 ETH per validator was also deposited directly to the beacon deposit contract with zero-address withdrawal credentials.")
+		color.YellowPrintln("When the protocol assigns funds and prestakes, the beacon validators will already have invalid credentials.")
+		fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
+		fmt.Println("To monitor watchtower activity use `rocketpool service logs watchtower`")
+	} else {
+		fmt.Println("Once your validators progress through the queue, ETH will be assigned and a 1 ETH prestake submitted for each.")
+		fmt.Printf("After the prestake, your node will automatically perform a stake transaction for each validator, to complete the progress.")
+		fmt.Println("")
+		fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
+		fmt.Println("To monitor the stake transactions use `rocketpool service logs node`")
+	}
 
 	return nil
 

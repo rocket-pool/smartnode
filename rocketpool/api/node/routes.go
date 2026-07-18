@@ -501,7 +501,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canNodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.expressTickets)
+		resp, err := canNodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.expressTickets, params.testInvalidDeposit)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -516,7 +516,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, opts)
+		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, params.testInvalidDeposit, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -869,13 +869,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 // --- Helper types and functions ---
 
 type depositParams struct {
-	count            uint64
-	amountWei        *big.Int
-	minFee           float64
-	salt             *big.Int
-	expressTickets   int64
-	useCreditBalance bool
-	submit           bool
+	count              uint64
+	amountWei          *big.Int
+	minFee             float64
+	salt               *big.Int
+	expressTickets     int64
+	useCreditBalance   bool
+	submit             bool
+	testInvalidDeposit bool
 }
 
 func parseDepositParams(r *http.Request, includeExecuteParams bool) (depositParams, error) {
@@ -918,6 +919,12 @@ func parseDepositParams(r *http.Request, includeExecuteParams bool) (depositPara
 	if err != nil {
 		return p, fmt.Errorf("invalid count: %w", err)
 	}
+
+	testInvalidDepositStr := r.URL.Query().Get("testInvalidDeposit")
+	if testInvalidDepositStr == "" {
+		testInvalidDepositStr = r.FormValue("testInvalidDeposit")
+	}
+	p.testInvalidDeposit = testInvalidDepositStr == "true"
 
 	if includeExecuteParams {
 		p.useCreditBalance = r.FormValue("useCreditBalance") == "true"

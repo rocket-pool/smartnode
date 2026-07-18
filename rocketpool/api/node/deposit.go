@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
@@ -26,7 +27,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -35,7 +38,34 @@ const (
 	ValidatorEth          float64 = 32.0
 )
 
-func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64) (*api.CanNodeDepositsResponse, error) {
+// Returns withdrawal credentials pointing to the zero address, used to deliberately create an
+// invalid beacon deposit for testing. Refuses to run on mainnet.
+//
+// Note: the Rocket Pool megapool contracts always recompute the deposit data root using the
+// megapool's real withdrawal credentials, so invalid credentials cannot be submitted through
+// depositMulti. Instead, --test-invalid-deposit creates a normal protocol deposit and then
+// front-runs the 1 ETH prestake by depositing directly to the beacon deposit contract with
+// these credentials before assignFunds runs.
+func getTestInvalidWithdrawalCredentials(c *cli.Command) (common.Hash, error) {
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Mainnet {
+		return common.Hash{}, fmt.Errorf("the test-invalid-deposit option cannot be used on mainnet")
+	}
+	return services.CalculateMegapoolWithdrawalCredentials(common.Address{}), nil
+}
+
+func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64, testInvalidDeposit bool) (*api.CanNodeDepositsResponse, error) {
+
+	// Reject mainnet early when the test flag is set. Deposit data for the protocol path still
+	// uses the real megapool withdrawal credentials (the contract requires it).
+	if testInvalidDeposit {
+		if _, err := getTestInvalidWithdrawalCredentials(c); err != nil {
+			return nil, err
+		}
+	}
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -294,7 +324,7 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 
 }
 
-func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, opts *bind.TransactOpts) (*api.NodeDepositsResponse, error) {
+func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, testInvalidDeposit bool, opts *bind.TransactOpts) (*api.NodeDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -386,6 +416,7 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 	depositAmount := uint64(1e9) // 1 ETH in gwei
 	deposits := make([]node.NodeDeposit, count)
 	response.ValidatorPubkeys = make([]rptypes.ValidatorPubkey, count)
+	validatorKeys := make([]*eth2types.BLSPrivateKey, count)
 
 	expressTicketsRequested = min(expressTicketsRequested, int64(expressTicketCount))
 	lastBondAdded := big.NewInt(0)
@@ -413,6 +444,7 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 		if err != nil {
 			return nil, err
 		}
+		validatorKeys[i] = validatorKey
 		// Get validator deposit data and associated parameters
 		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 		if err != nil {
@@ -491,6 +523,23 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 		if err := w.Save(); err != nil {
 			return nil, err
 		}
+
+		// Front-run the beacon prestake with invalid withdrawal credentials so the
+		// validator appears on the beacon chain with credentials that do not match the
+		// megapool. This exercises dissolve-invalid-credentials handling.
+		if testInvalidDeposit {
+			receipt, err := bind.WaitMined(context.Background(), rp.Client, tx)
+			if err != nil {
+				return nil, fmt.Errorf("error waiting for depositMulti tx %s: %w", tx.Hash().Hex(), err)
+			}
+			if receipt.Status == 0 {
+				return nil, fmt.Errorf("depositMulti transaction %s reverted", tx.Hash().Hex())
+			}
+
+			if err := submitTestInvalidBeaconDeposits(c, eth2Config, validatorKeys, response.ValidatorPubkeys, opts); err != nil {
+				return nil, fmt.Errorf("protocol deposit succeeded (tx %s) but failed to submit test-invalid beacon deposit(s): %w", tx.Hash().Hex(), err)
+			}
+		}
 	}
 
 	response.TxHash = tx.Hash()
@@ -498,6 +547,82 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 	// Return response
 	return &response, nil
 
+}
+
+// submitTestInvalidBeaconDeposits deposits 1 ETH per validator directly to the beacon deposit
+// contract with zero-address withdrawal credentials. This is used to test the dissolve-invalid-credentials handling.
+func submitTestInvalidBeaconDeposits(c *cli.Command, eth2Config beacon.Eth2Config, validatorKeys []*eth2types.BLSPrivateKey, pubkeys []rptypes.ValidatorPubkey, opts *bind.TransactOpts) error {
+
+	invalidCredentials, err := getTestInvalidWithdrawalCredentials(c)
+	if err != nil {
+		return err
+	}
+
+	rocketPool, err := services.GetRocketPool(c)
+	if err != nil {
+		return err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return err
+	}
+	// Fresh transactor so Value/gas from depositMulti do not leak into the beacon deposits
+	beaconOpts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return err
+	}
+	// Preserve fee settings from the caller's opts when present
+	if opts != nil {
+		beaconOpts.GasFeeCap = opts.GasFeeCap
+		beaconOpts.GasTipCap = opts.GasTipCap
+		beaconOpts.GasPrice = opts.GasPrice
+	}
+
+	blankAddress := common.Address{}
+	casperAddress, err := rocketPool.GetAddress("casperDeposit", nil)
+	if err != nil {
+		return fmt.Errorf("error getting Beacon deposit contract address: %w", err)
+	}
+	if casperAddress == nil || *casperAddress == blankAddress {
+		return fmt.Errorf("Beacon deposit contract address was empty (0x0)")
+	}
+
+	depositContract, err := contracts.NewBeaconDeposit(*casperAddress, rocketPool.Client)
+	if err != nil {
+		return fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
+	}
+
+	depositAmountGwei := uint64(1e9) // 1 ETH prestake amount
+	beaconOpts.Value = eth.EthToWei(prestakeDepositAmount)
+
+	for i, key := range validatorKeys {
+		// Clear nonce/gas so each deposit gets a fresh pending nonce after the previous mine
+		beaconOpts.Nonce = nil
+		beaconOpts.GasLimit = 0
+
+		depositData, depositDataRoot, err := validator.GetDepositData(key, invalidCredentials, eth2Config, depositAmountGwei)
+		if err != nil {
+			return fmt.Errorf("error creating invalid deposit data for validator %d: %w", i+1, err)
+		}
+		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+		tx, err := depositContract.Deposit(beaconOpts, pubkeys[i][:], invalidCredentials[:], signature[:], depositDataRoot)
+		if err != nil {
+			return fmt.Errorf("error submitting invalid beacon deposit for validator %s: %w", pubkeys[i].Hex(), err)
+		}
+		fmt.Printf("Submitted test-invalid beacon deposit for validator %s (tx %s) with withdrawal credentials %s\n",
+			pubkeys[i].Hex(), tx.Hash().Hex(), invalidCredentials.Hex())
+
+		receipt, err := bind.WaitMined(context.Background(), rocketPool.Client, tx)
+		if err != nil {
+			return fmt.Errorf("error waiting for invalid beacon deposit tx %s: %w", tx.Hash().Hex(), err)
+		}
+		if receipt.Status == 0 {
+			return fmt.Errorf("invalid beacon deposit transaction %s for validator %s reverted", tx.Hash().Hex(), pubkeys[i].Hex())
+		}
+	}
+
+	return nil
 }
 
 func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
