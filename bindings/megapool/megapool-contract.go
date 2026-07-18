@@ -17,10 +17,11 @@ import (
 )
 
 type ParticipationProof struct {
-	ParticipationSlot  uint64
-	ValidatorIndex     uint64
-	ParticipationFlags uint8
-	Witnesses          [][32]byte
+	ParticipationSlot uint64
+	ValidatorIndex    *big.Int
+	// ParticipationFlagsChunk is the 32-byte merkle chunk of previous_epoch_participation
+	ParticipationFlagsChunk [32]byte
+	Witnesses               [][32]byte
 }
 
 type SlotProof struct {

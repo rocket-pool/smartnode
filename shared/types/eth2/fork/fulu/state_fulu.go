@@ -89,61 +89,40 @@ func GetGeneralizedIndexForPreviousEpochParticipation() uint64 {
 	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStatePreviousEpochParticipationFieldIndex
 }
 
-// PreviousEpochParticipationAndSlotProof proves the previous_epoch_participation
-// chunk containing validatorIndex's participation flags, plus the state slot,
-// both anchored at the block-header root. chunk is the 32-byte merkle leaf
-// holding the flags of validators [chunkIndex*32, chunkIndex*32+31];
-// chunkOffset is validatorIndex % 32 (the Respond offset into that leaf).
-func (state *BeaconState) PreviousEpochParticipationAndSlotProof(validatorIndex uint64) ([32]byte, uint64, [][]byte, [][]byte, error) {
+// PreviousEpochParticipationChunkProof proves the previous_epoch_participation
+// chunk containing validatorIndex's participation flags up to the state root
+// (no block-header cap; the proof is anchored via a separate state root proof
+// from a more recent state). chunk is the 32-byte merkle leaf holding the
+// flags of validators [chunkIndex*32, chunkIndex*32+31], with the validator's
+// own flags at byte validatorIndex % 32.
+func (state *BeaconState) PreviousEpochParticipationChunkProof(validatorIndex uint64) ([32]byte, [][]byte, error) {
 	if validatorIndex >= uint64(len(state.PreviousEpochParticipation)) {
-		return [32]byte{}, 0, nil, nil, errors.New("validator index out of bounds of the previous epoch participation list")
+		return [32]byte{}, nil, errors.New("validator index out of bounds of the previous epoch participation list")
 	}
 
 	// Pack the expected leaf chunk locally: 32 participation flag bytes,
 	// zero-padded at the tail of the list.
 	chunkIndex := validatorIndex / 32
-	chunkOffset := validatorIndex % 32
 	var chunk [32]byte
 	copy(chunk[:], state.PreviousEpochParticipation[chunkIndex*32:])
 
 	stateTree, err := state.GetTree()
 	if err != nil {
-		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get state tree: %w", err)
+		return [32]byte{}, nil, fmt.Errorf("could not get state tree: %w", err)
 	}
 
 	chunkGid := generic.GetGeneralizedIndexForParticipationChunk(chunkIndex, GetGeneralizedIndexForPreviousEpochParticipation())
 	participationStateProof, err := stateTree.Prove(int(chunkGid))
 	if err != nil {
-		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get proof for participation chunk: %w", err)
+		return [32]byte{}, nil, fmt.Errorf("could not get proof for participation chunk: %w", err)
 	}
 
 	// Sanity check that the proof leaf matches the locally packed chunk
 	if !bytes.Equal(participationStateProof.Leaf, chunk[:]) {
-		return [32]byte{}, 0, nil, nil, fmt.Errorf("proof leaf does not match expected participation chunk")
+		return [32]byte{}, nil, fmt.Errorf("proof leaf does not match expected participation chunk")
 	}
 
-	slotStateProof, err := stateTree.Prove(int(GetGeneralizedIndexForSlot()))
-	if err != nil {
-		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get proof for slot: %w", err)
-	}
-
-	// Drop the state tree before doing more work so the GC can reclaim it.
-	stateTree = nil
-
-	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
-	if err != nil {
-		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get block header proof: %w", err)
-	}
-
-	participationBranch := make([][]byte, 0, len(participationStateProof.Hashes)+len(blockHeaderProof))
-	participationBranch = append(participationBranch, participationStateProof.Hashes...)
-	participationBranch = append(participationBranch, blockHeaderProof...)
-
-	slotProof := make([][]byte, 0, len(slotStateProof.Hashes)+len(blockHeaderProof))
-	slotProof = append(slotProof, slotStateProof.Hashes...)
-	slotProof = append(slotProof, blockHeaderProof...)
-
-	return chunk, chunkOffset, participationBranch, slotProof, nil
+	return chunk, participationStateProof.Hashes, nil
 }
 
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
@@ -271,6 +250,75 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 	proof, err := tree.Prove(int(gid))
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// HistoricalSummaryStateRootProof proves that the state root of the given
+// slot is part of the HistoricalSummary covering its era, using this state's
+// state_roots vector. The state must be aligned at the end of the 8192 slot
+// era containing slot, so its state_roots vector is the one summarised by
+// historical_summaries[slot / 8192].
+func (state *BeaconState) HistoricalSummaryStateRootProof(slot int) ([][]byte, error) {
+	// If the state isn't aligned at the end of an 8192 slot era, throw an error
+	if state.Slot%generic.SlotsPerHistoricalRoot != 0 {
+		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
+	}
+
+	hsls := generic.HistoricalSummaryLists{
+		BlockRoots: state.BlockRoots,
+		StateRoots: state.StateRoots,
+	}
+
+	idx := slot % int(generic.SlotsPerHistoricalRoot)
+	tree, err := hsls.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
+	}
+
+	gid := uint64(1)
+	gid = gid*2 + 1                            // Now at state_roots
+	gid = gid * generic.SlotsPerHistoricalRoot // Now at the first state_root
+	gid = gid + uint64(idx)                    // Now at the correct state_root
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// StateRootProof proves the state root of a recent past slot from this
+// state's state_roots vector, up to this state's root (no block-header cap).
+func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
+	if slot >= state.Slot {
+		return nil, fmt.Errorf("slot %d is not in the past of the state at slot %d", slot, state.Slot)
+	}
+	// Note: a distance of exactly SlotsPerHistoricalRoot is still recent -
+	// state_roots[slot % 8192] holds the root of slot (state.Slot - 8192)
+	if slot+generic.SlotsPerHistoricalRoot < state.Slot {
+		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
+	}
+
+	tree, err := state.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	gid := uint64(1)
+
+	// Navigate to the state_roots
+	gid = gid*beaconStateChunkCeil + generic.BeaconStateStateRootsFieldIndex
+
+	// We're now at the state_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
+	// The index we care about is given by slot % slotsPerHistoricalRoot.
+	gid = gid*generic.BeaconStateBlockRootsMaxLength + (slot % generic.SlotsPerHistoricalRoot)
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for state root: %w", err)
 	}
 
 	return proof.Hashes, nil

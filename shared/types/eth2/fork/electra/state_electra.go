@@ -262,6 +262,75 @@ func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 	return nil, nil
 }
 
-func (state *BeaconState) PreviousEpochParticipationAndSlotProof(validatorIndex uint64) ([32]byte, uint64, [][]byte, [][]byte, error) {
-	return [32]byte{}, 0, nil, nil, fmt.Errorf("participation proofs are not supported for electra states")
+func (state *BeaconState) PreviousEpochParticipationChunkProof(validatorIndex uint64) ([32]byte, [][]byte, error) {
+	return [32]byte{}, nil, fmt.Errorf("participation proofs are not supported for electra states")
+}
+
+// HistoricalSummaryStateRootProof proves that the state root of the given
+// slot is part of the HistoricalSummary covering its era, using this state's
+// state_roots vector. The state must be aligned at the end of the 8192 slot
+// era containing slot, so its state_roots vector is the one summarised by
+// historical_summaries[slot / 8192].
+func (state *BeaconState) HistoricalSummaryStateRootProof(slot int) ([][]byte, error) {
+	// If the state isn't aligned at the end of an 8192 slot era, throw an error
+	if state.Slot%generic.SlotsPerHistoricalRoot != 0 {
+		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
+	}
+
+	hsls := generic.HistoricalSummaryLists{
+		BlockRoots: state.BlockRoots,
+		StateRoots: state.StateRoots,
+	}
+
+	idx := slot % int(generic.SlotsPerHistoricalRoot)
+	tree, err := hsls.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
+	}
+
+	gid := uint64(1)
+	gid = gid*2 + 1                            // Now at state_roots
+	gid = gid * generic.SlotsPerHistoricalRoot // Now at the first state_root
+	gid = gid + uint64(idx)                    // Now at the correct state_root
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+	}
+
+	return proof.Hashes, nil
+}
+
+// StateRootProof proves the state root of a recent past slot from this
+// state's state_roots vector, up to this state's root (no block-header cap)
+func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
+	if slot >= state.Slot {
+		return nil, fmt.Errorf("slot %d is not in the past of the state at slot %d", slot, state.Slot)
+	}
+	// Note: a distance of exactly SlotsPerHistoricalRoot is still recent -
+	// state_roots[slot % 8192] holds the root of slot (state.Slot - 8192)
+	if slot+generic.SlotsPerHistoricalRoot < state.Slot {
+		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
+	}
+
+	tree, err := state.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	gid := uint64(1)
+
+	// Navigate to the state_roots
+	gid = gid*beaconStateChunkCeil + generic.BeaconStateStateRootsFieldIndex
+
+	// We're now at the state_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
+	// The index we care about is given by slot % slotsPerHistoricalRoot.
+	gid = gid*generic.BeaconStateBlockRootsMaxLength + (slot % generic.SlotsPerHistoricalRoot)
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for state root: %w", err)
+	}
+
+	return proof.Hashes, nil
 }
