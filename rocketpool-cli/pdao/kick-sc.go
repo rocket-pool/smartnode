@@ -21,6 +21,7 @@ func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the list of members
 	membersResponse, err := rp.SecurityMembers()

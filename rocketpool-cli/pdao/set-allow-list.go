@@ -20,6 +20,7 @@ func setAllowListedControllers(addressListStr string, yes bool) error {
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	if addressListStr == "" {
 		// Ask the user how many addresses should be included in the list

@@ -17,6 +17,7 @@ func proposeOneTimeSpend(invoiceIDFlag string, recipientFlag string, amountFlag 
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the invoice ID
 	if invoiceIDFlag == "" {

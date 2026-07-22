@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeAllowListedControllers(c *cli.Command, addressList []common.Address) (*api.PDAOACanProposeAllowListedControllersResponse, error) {
+func canProposeAllowListedControllers(c *cli.Command, addressList []common.Address, testInvalidProposal bool) (*api.PDAOACanProposeAllowListedControllersResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -64,7 +64,7 @@ func canProposeAllowListedControllers(c *cli.Command, addressList []common.Addre
 	}
 
 	// Try proposing
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func canProposeAllowListedControllers(c *cli.Command, addressList []common.Addre
 	return &response, nil
 }
 
-func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeAllowListedControllersResponse, error) {
+func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeAllowListedControllersResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -98,7 +98,7 @@ func proposeAllowListedControllers(c *cli.Command, addressList []common.Address,
 	response := api.PDAOProposeAllowListedControllersResponse{}
 
 	// Propose
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

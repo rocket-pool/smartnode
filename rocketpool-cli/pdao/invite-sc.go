@@ -16,6 +16,7 @@ func proposeSecurityCouncilInvite(id string, addressFlag string, yes bool) error
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the ID
 	if id == "" {

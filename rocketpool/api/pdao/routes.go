@@ -123,7 +123,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		contract := paramVal(r, "contract")
 		setting := paramVal(r, "setting")
 		value := paramVal(r, "value")
-		resp, err := canProposeSetting(c, contract, setting, value)
+		resp, err := canProposeSetting(c, contract, setting, value, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -141,7 +141,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSetting(c, contract, setting, value, blockNumber, opts)
+		resp, err := proposeSetting(c, contract, setting, value, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -156,7 +156,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeRewardsPercentages(c, node, odaoAmt, pdaoAmt)
+		resp, err := canProposeRewardsPercentages(c, node, odaoAmt, pdaoAmt, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -176,7 +176,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeRewardsPercentages(c, node, odaoAmt, pdaoAmt, blockNumber, opts)
+		resp, err := proposeRewardsPercentages(c, node, odaoAmt, pdaoAmt, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -186,7 +186,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeOneTimeSpend(c, invoiceID, recipient, amount, customMessage)
+		resp, err := canProposeOneTimeSpend(c, invoiceID, recipient, amount, customMessage, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -206,7 +206,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, customMessage, opts)
+		resp, err := proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, customMessage, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -216,7 +216,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage)
+		resp, err := canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -236,7 +236,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, opts)
+		resp, err := proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -246,7 +246,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, customMessage)
+		resp, err := canProposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, customMessage, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -266,14 +266,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, customMessage, opts)
+		resp, err := proposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, customMessage, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-invite-to-security-council", func(w http.ResponseWriter, r *http.Request) {
 		id := paramVal(r, "id")
 		addr := common.HexToAddress(paramVal(r, "address"))
-		resp, err := canProposeInviteToSecurityCouncil(c, id, addr)
+		resp, err := canProposeInviteToSecurityCouncil(c, id, addr, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -290,13 +290,13 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeInviteToSecurityCouncil(c, id, addr, blockNumber, opts)
+		resp, err := proposeInviteToSecurityCouncil(c, id, addr, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-kick-from-security-council", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
-		resp, err := canProposeKickFromSecurityCouncil(c, addr)
+		resp, err := canProposeKickFromSecurityCouncil(c, addr, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -312,7 +312,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeKickFromSecurityCouncil(c, addr, blockNumber, opts)
+		resp, err := proposeKickFromSecurityCouncil(c, addr, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -322,7 +322,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeKickMultiFromSecurityCouncil(c, addresses)
+		resp, err := canProposeKickMultiFromSecurityCouncil(c, addresses, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -342,7 +342,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber, opts)
+		resp, err := proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -350,7 +350,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		existing := common.HexToAddress(paramVal(r, "existingAddress"))
 		newID := paramVal(r, "newId")
 		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
-		resp, err := canProposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr)
+		resp, err := canProposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -368,7 +368,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, blockNumber, opts)
+		resp, err := proposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -526,7 +526,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			// Fall back to the raw comma-separated string if address parsing fails
 			addresses = parseRawAddressList(addressList)
 		}
-		resp, err := canProposeAllowListedControllers(c, addresses)
+		resp, err := canProposeAllowListedControllers(c, addresses, parseTestInvalidProposal(r))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -546,7 +546,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeAllowListedControllers(c, addresses, blockNumber, opts)
+		resp, err := proposeAllowListedControllers(c, addresses, blockNumber, parseTestInvalidProposal(r), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }
@@ -557,6 +557,14 @@ func paramVal(r *http.Request, name string) string {
 		v = r.FormValue(name)
 	}
 	return v
+}
+
+// parseTestInvalidProposal reads the sticky "testInvalidProposal" flag from
+// either the query string or the form body. This is a TESTNET-ONLY switch
+// that instructs pollard construction to deterministically corrupt one leaf
+// so the on-chain proposal root will be invalid and can be challenged.
+func parseTestInvalidProposal(r *http.Request) bool {
+	return paramVal(r, "testInvalidProposal") == "true"
 }
 
 func parseUint64Param(r *http.Request, name string) (uint64, error) {

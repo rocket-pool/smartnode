@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, customMessage string) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
+func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, customMessage string, testInvalidProposal bool) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -66,7 +66,7 @@ func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.A
 	}
 
 	// Try proposing
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.A
 	return &response, nil
 }
 
-func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -100,7 +100,7 @@ func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Addr
 	response := api.PDAOProposeOneTimeSpendResponse{}
 
 	// Propose
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ func proposeRecurringSpend(rawEnabled bool, contractName string, recipientString
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the contract name
 	if contractName == "" {

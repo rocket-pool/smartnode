@@ -187,6 +187,22 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 				Name:    "propose",
 				Aliases: []string{"p"},
 				Usage:   "Make a Protocol DAO proposal",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "test-invalid-proposal",
+						Usage: "TESTNET ONLY: corrupt one leaf of the voting power tree so the submitted proposal root is invalid, to exercise the challenge/defeat flow",
+					},
+				},
+				// Before fires before any propose subcommand's Action, so
+				// stash the parent-level --test-invalid-proposal flag into a
+				// package-level sticky. The many propose helpers (including
+				// the ~200 setting wrappers) then read it via
+				// applyTestInvalidProposal without needing an extra boolean
+				// threaded through every signature.
+				Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+					testInvalidProposalFlag = cmd.Bool("test-invalid-proposal")
+					return ctx, nil
+				},
 				Commands: []*cli.Command{
 
 					{

@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, testInvalidProposal bool) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -74,7 +74,7 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddr
 
 	// Try proposing
 	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddr
 	return &response, nil
 }
 
-func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -116,7 +116,7 @@ func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress
 
 	// Propose
 	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

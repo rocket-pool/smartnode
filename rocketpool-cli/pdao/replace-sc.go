@@ -19,6 +19,7 @@ func proposeSecurityCouncilReplace(existingAddressString string, newID string, n
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the list of members
 	membersResponse, err := rp.SecurityMembers()

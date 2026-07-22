@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address) (*api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {
+func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address, testInvalidProposal bool) (*api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -40,7 +40,7 @@ func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.A
 
 	// Try proposing
 	message := "kick multiple members from the security council"
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.A
 	return &response, nil
 }
 
-func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
+func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -75,7 +75,7 @@ func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Addr
 
 	// Propose
 	message := "kick multiple members from the security council"
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

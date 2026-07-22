@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, testInvalidProposal bool) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -83,7 +83,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 
 	// Try proposing
 	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -118,7 +118,7 @@ func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Ad
 
 	// Propose
 	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

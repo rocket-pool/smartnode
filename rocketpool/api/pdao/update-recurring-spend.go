@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeRecurringSpendUpdate(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, customMessage string) (*api.PDAOCanProposeRecurringSpendResponse, error) {
+func canProposeRecurringSpendUpdate(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, customMessage string, testInvalidProposal bool) (*api.PDAOCanProposeRecurringSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -67,7 +67,7 @@ func canProposeRecurringSpendUpdate(c *cli.Command, contractName string, recipie
 	}
 
 	// Try proposing
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func canProposeRecurringSpendUpdate(c *cli.Command, contractName string, recipie
 	return &response, nil
 }
 
-func proposeRecurringSpendUpdate(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpendUpdate(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32, customMessage string, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -101,7 +101,7 @@ func proposeRecurringSpendUpdate(c *cli.Command, contractName string, recipient 
 	response := api.PDAOProposeOneTimeSpendResponse{}
 
 	// Propose
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

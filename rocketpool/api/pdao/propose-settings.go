@@ -20,7 +20,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func canProposeSetting(c *cli.Command, contractName string, settingName string, value string) (*api.CanProposePDAOSettingResponse, error) {
+func canProposeSetting(c *cli.Command, contractName string, settingName string, value string, testInvalidProposal bool) (*api.CanProposePDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -110,7 +110,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 	}
 
 	// Get the latest finalized block number and corresponding pollard
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, fmt.Errorf("error creating pollard: %w", err)
 	}
@@ -941,7 +941,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 
 }
 
-func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, opts *bind.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -967,7 +967,7 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	response := api.ProposePDAOSettingResponse{}
 
 	// Decode the pollard
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, fmt.Errorf("error regenerating pollard: %w", err)
 	}

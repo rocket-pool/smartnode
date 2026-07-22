@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -78,23 +79,79 @@ func (m *ProposalManager) CreateLatestFinalizedTree() (uint32, *NetworkVotingTre
 	return blockNumber, tree, nil
 }
 
-func (m *ProposalManager) CreatePollardForProposal() (uint32, []*types.VotingTreeNode, error) {
+func (m *ProposalManager) CreatePollardForProposal(testInvalidProposal bool) (uint32, []*types.VotingTreeNode, error) {
 	blockNumber, tree, err := m.CreateLatestFinalizedTree()
 	if err != nil {
 		return 0, nil, err
+	}
+
+	if testInvalidProposal {
+		pollard, err := m.buildInvalidPollard(tree)
+		if err != nil {
+			return 0, nil, err
+		}
+		return blockNumber, pollard, nil
 	}
 
 	_, pollard := tree.GetPollardForProposal()
 	return blockNumber, pollard, nil
 }
 
-func (m *ProposalManager) GetPollardForProposal(blockNumber uint32) ([]*types.VotingTreeNode, error) {
+func (m *ProposalManager) GetPollardForProposal(blockNumber uint32, testInvalidProposal bool) ([]*types.VotingTreeNode, error) {
 	tree, err := m.GetNetworkTree(blockNumber, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	if testInvalidProposal {
+		return m.buildInvalidPollard(tree)
+	}
+
 	_, pollard := tree.GetPollardForProposal()
+	return pollard, nil
+}
+
+// buildInvalidPollard rebuilds the network voting tree from the honest tree's
+// leaves after deterministically mutating one leaf, then returns a pollard
+// derived from that corrupted tree. The on-disk network tree is left untouched
+// so the proposing node's own verify-pdao-props duty can still detect the
+// mismatch against the corrupted pollard that was submitted on-chain.
+//
+// This is intended to exercise the invalid-proposal detection / challenge
+// flow and MUST NOT be used on mainnet.
+func (m *ProposalManager) buildInvalidPollard(tree *NetworkVotingTree) ([]*types.VotingTreeNode, error) {
+	// Mainnet guard: refuse to produce a corrupt pollard on mainnet
+	network := m.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+	if network == cfgtypes.Network_Mainnet {
+		return nil, fmt.Errorf("the test-invalid-proposal option cannot be used on mainnet")
+	}
+
+	leafCount := (len(tree.Nodes) + 1) / 2
+	leafStart := leafCount - 1
+	if leafCount == 0 {
+		return nil, fmt.Errorf("cannot build invalid pollard: voting tree has no leaves")
+	}
+
+	// Copy the leaves so we don't mutate the on-disk / in-memory honest tree
+	leaves := make([]*types.VotingTreeNode, leafCount)
+	for i := 0; i < leafCount; i++ {
+		src := tree.Nodes[leafStart+i]
+		leaves[i] = &types.VotingTreeNode{
+			Sum:  big.NewInt(0).Set(src.Sum),
+			Hash: src.Hash,
+		}
+	}
+
+	// Deterministically corrupt the first leaf: bump the sum by 1 and rehash.
+	// This is guaranteed to change both the Sum and Hash of leaf 0, which
+	// propagates up to the root and makes the pollard invalid.
+	leaves[0].Sum = big.NewInt(0).Add(leaves[0].Sum, big.NewInt(1))
+	leaves[0].Hash = getHashForBalance(leaves[0].Sum)
+
+	// Rebuild the tree from the mutated leaves using the same parameters as
+	// the honest tree, then extract the pollard.
+	corruptTree := CreateTreeFromLeaves(tree.BlockNumber, tree.Network, leaves, tree.VirtualRootIndex, tree.DepthPerRound)
+	_, pollard := corruptTree.GetPollardForProposal()
 	return pollard, nil
 }
 

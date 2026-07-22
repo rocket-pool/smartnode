@@ -84,6 +84,11 @@ type Client struct {
 	// It is derived lazily from config on first use.
 	apiURL     string
 	apiURLOnce sync.Once
+
+	// testInvalidProposal, when true, causes pdao propose HTTP calls to
+	// carry `testInvalidProposal=true` so the daemon builds an intentionally
+	// corrupted voting pollard. TESTNET ONLY.
+	testInvalidProposal bool
 }
 
 func getClientStatusString(clientStatus api.ClientStatus) string {
@@ -145,6 +150,16 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 func SetDefaults(g Globals) {
 	Defaults = g
+}
+
+// SetTestInvalidProposal toggles the TESTNET-ONLY sticky flag that causes
+// every subsequent pdao propose HTTP call from this client to carry
+// `testInvalidProposal=true`, telling the daemon to build a corrupted
+// voting pollard so the resulting proposal can be challenged. This should
+// only be enabled by CLI paths that explicitly opt in via
+// `--test-invalid-proposal` and MUST NOT be used on mainnet.
+func (c *Client) SetTestInvalidProposal(v bool) {
+	c.testInvalidProposal = v
 }
 
 // Create new Rocket Pool client from CLI context without checking for sync status
@@ -1337,6 +1352,16 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	}
 
 	target := base + path
+
+	// Propagate the sticky testInvalidProposal flag on both GETs and POSTs
+	// so pdao propose helpers (many of which use different verbs) can share
+	// a single toggle. TESTNET ONLY.
+	if c.testInvalidProposal {
+		if params == nil {
+			params = url.Values{}
+		}
+		params.Set("testInvalidProposal", "true")
+	}
 
 	var req *http.Request
 	var err error

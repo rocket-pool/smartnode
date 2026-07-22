@@ -8,8 +8,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 )
 
-// Constructs a pollard for the latest finalized block and saves it to disk
-func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (uint32, []types.VotingTreeNode, error) {
+// Constructs a pollard for the latest finalized block and saves it to disk.
+// If testInvalidProposal is true, the returned pollard is derived from a tree
+// with one corrupted leaf (see ProposalManager.buildInvalidPollard). Refuses to
+// corrupt on mainnet.
+func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, testInvalidProposal bool) (uint32, []types.VotingTreeNode, error) {
 	// Create a proposal manager
 	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
 	if err != nil {
@@ -17,7 +20,7 @@ func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc b
 	}
 
 	// Create the pollard
-	blockNumber, pollardPtrs, err := propMgr.CreatePollardForProposal()
+	blockNumber, pollardPtrs, err := propMgr.CreatePollardForProposal(testInvalidProposal)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -30,8 +33,11 @@ func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc b
 	return blockNumber, pollard, nil
 }
 
-// Loads (or regenerates) the pollard for a proposal from a block number
-func getPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, blockNumber uint32) ([]types.VotingTreeNode, error) {
+// Loads (or regenerates) the pollard for a proposal from a block number.
+// If testInvalidProposal is true, the returned pollard is derived from a tree
+// with one corrupted leaf, matching the pollard originally submitted via
+// createPollard(..., true) so gas estimation and the actual submit agree.
+func getPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, blockNumber uint32, testInvalidProposal bool) ([]types.VotingTreeNode, error) {
 	// Create a proposal manager
 	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
 	if err != nil {
@@ -39,7 +45,7 @@ func getPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beac
 	}
 
 	// Get the pollard
-	pollardPtrs, err := propMgr.GetPollardForProposal(blockNumber)
+	pollardPtrs, err := propMgr.GetPollardForProposal(blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

@@ -42,7 +42,7 @@ func getRewardsPercentages(c *cli.Command) (*api.PDAOGetRewardsPercentagesRespon
 	return &response, nil
 }
 
-func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
+func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, testInvalidProposal bool) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
 	// Validate sum of percentages == 100%
 	one := eth.EthToWei(1)
 	sum := big.NewInt(0).Set(node)
@@ -110,7 +110,7 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	}
 
 	// Get the latest finalized block number and corresponding pollard
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, fmt.Errorf("error creating pollard: %w", err)
 	}
@@ -127,7 +127,7 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 
 	// Get the account transactor
 	// Decode the pollard
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, fmt.Errorf("error regenerating pollard: %w", err)
 	}

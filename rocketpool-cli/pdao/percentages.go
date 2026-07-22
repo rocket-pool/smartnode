@@ -38,6 +38,7 @@ func proposeRewardsPercentages(rawEnabled bool, nodeFlag string, odaoFlag string
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	// Get the node op percent
 	nodeString := nodeFlag

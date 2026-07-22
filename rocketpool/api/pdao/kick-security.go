@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
+func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address, testInvalidProposal bool) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -67,7 +67,7 @@ func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (
 
 	// Try proposing
 	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (
 	return &response, nil
 }
 
-func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, blockNumber uint32, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -102,7 +102,7 @@ func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, bloc
 
 	// Propose
 	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

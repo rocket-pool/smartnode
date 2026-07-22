@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, customMessage string) (*api.PDAOCanProposeRecurringSpendResponse, error) {
+func canProposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, customMessage string, testInvalidProposal bool) (*api.PDAOCanProposeRecurringSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -67,7 +67,7 @@ func canProposeRecurringSpend(c *cli.Command, contractName string, recipient com
 	}
 
 	// Try proposing
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func canProposeRecurringSpend(c *cli.Command, contractName string, recipient com
 	return &response, nil
 }
 
-func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string, testInvalidProposal bool, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -102,7 +102,7 @@ func proposeRecurringSpend(c *cli.Command, contractName string, recipient common
 
 	// Propose
 
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber, testInvalidProposal)
 	if err != nil {
 		return nil, err
 	}

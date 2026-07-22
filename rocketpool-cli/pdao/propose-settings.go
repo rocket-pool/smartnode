@@ -394,6 +394,7 @@ func proposeSetting(contract string, setting string, value string, yes bool) err
 		return err
 	}
 	defer rp.Close()
+	applyTestInvalidProposal(rp)
 
 	if isHoustonOnlySetting(setting) {
 		fmt.Println("This command no longer available in Saturn.")
