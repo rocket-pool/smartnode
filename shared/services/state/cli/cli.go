@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // A basic CLI tool which can be used to serialize NetworkState objects to files
@@ -100,7 +101,8 @@ func main() {
 		os.Exit(1)
 	}
 	bc := client.NewStandardHttpClient(*bnFlag)
-	sm := state.NewNetworkStateManager(rp, contracts, bc, nil)
+	logger := log.NewColorLogger(0)
+	sm := state.NewNetworkStateManager(rp, contracts, bc, &logger)
 
 	var networkState *state.NetworkState
 
