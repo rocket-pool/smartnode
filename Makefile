@@ -63,7 +63,7 @@ ${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_TARGET}
 # docker-builder container
 .PHONY: docker-builder
 docker-builder: ${BUILD_DIR}/docker-buildx-builder
-	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl builder
+	VERSION=${VERSION} docker buildx --builder smartnode-builder bake -f docker/daemon-bake.hcl builder
 
 bin_deps = ${BIN_DIR}
 ifndef NO_DOCKER
@@ -166,20 +166,20 @@ ${BUILD_DIR}/docker-buildx-builder: ${BUILD_DIR}
 .PHONY: docker
 docker: ${BUILD_DIR}/docker-buildx-builder
 	# override the platform so we can load the resulting image into docker
-	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.platform=${LOCAL_PLATFORM}"
+	VERSION=${VERSION} ${SOURCE} docker buildx --builder smartnode-builder bake -f docker/daemon-bake.hcl smartnode --set "smartnode.platform=${LOCAL_PLATFORM}"
 
 .PHONY: docker-push
 docker-push: ${BUILD_DIR}/docker-buildx-builder
 	@echo -n "Building ${VERSION} and publishing containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub
-	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
+	VERSION=${VERSION} ${SOURCE} docker buildx --builder smartnode-builder bake -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
 	@echo "Done!"
 
 .PHONY: docker-latest
 docker-latest: ${BUILD_DIR}/docker-buildx-builder
 	@echo -n "Building ${VERSION}, tagging as latest, and publishing. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub, and the tags array to tag latest
-	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
+	VERSION=${VERSION} ${SOURCE} docker buildx --builder smartnode-builder bake -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
 
 .PHONY: docker-prune
 docker-prune:
