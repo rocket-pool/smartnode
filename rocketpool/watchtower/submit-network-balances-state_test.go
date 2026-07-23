@@ -15,6 +15,21 @@ import (
 
 const smallStateFixture = "../../shared/services/state/testdata/network_state.json.gz"
 
+// fixtureReducedBond is loaded from network_state.json.gz before any test runs.
+var fixtureReducedBond *big.Int
+
+func init() {
+	provider, err := state.NewStaticNetworkStateProviderFromFile(smallStateFixture)
+	if err != nil {
+		panic("loading state fixture: " + err.Error())
+	}
+	ns, err := provider.GetHeadState()
+	if err != nil {
+		panic("GetHeadState: " + err.Error())
+	}
+	fixtureReducedBond = new(big.Int).Set(ns.NetworkDetails.ReducedBond)
+}
+
 // stubRewardSplitCalculator returns a deterministic 50/50 split between
 // rETH and node rewards, which is sufficient to verify plumbing.
 type stubRewardSplitCalculator struct {
@@ -174,4 +189,59 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	t.Logf("  RETHSupply:              %s", balances.RETHSupply)
 	t.Logf("  NodeCreditBalance:       %s", balances.NodeCreditBalance)
 	t.Logf("  RewardCalc calls:        %d", len(rewardCalc.calls))
+}
+
+// TestGetMegapoolBalanceDetails_FixtureSmoke runs getMegapoolBalanceDetails against
+// every megapool in the real mainnet fixture to catch panics, errors, and invariant
+// violations (negative balances, staking > beacon) that unit tests with synthetic
+// data might miss.
+func TestGetMegapoolBalanceDetails_FixtureSmoke(t *testing.T) {
+	provider, err := state.NewStaticNetworkStateProviderFromFile(smallStateFixture)
+	if err != nil {
+		t.Fatalf("loading state: %v", err)
+	}
+	ns, err := provider.GetHeadState()
+	if err != nil {
+		t.Fatalf("GetHeadState: %v", err)
+	}
+
+	if len(ns.MegapoolDetails) == 0 {
+		t.Fatal("fixture has no MegapoolDetails — regenerate with megapool_details tag")
+	}
+
+	task := &submitNetworkBalances{}
+	rewardCalc := &stubRewardSplitCalculator{}
+	zero := big.NewInt(0)
+
+	var totalBeacon, totalStaking big.Int
+	nonZeroBeacon := 0
+
+	for addr, mpd := range ns.MegapoolDetails {
+		detail, err := task.getMegapoolBalanceDetails(addr, ns, mpd, rewardCalc)
+		if err != nil {
+			t.Errorf("getMegapoolBalanceDetails(%s): %v", addr.Hex(), err)
+			continue
+		}
+		if detail.BeaconBalanceTotal.Cmp(zero) < 0 {
+			t.Errorf("megapool %s: BeaconBalanceTotal is negative: %s", addr.Hex(), detail.BeaconBalanceTotal)
+		}
+		if detail.StakingBalance.Cmp(zero) < 0 {
+			t.Errorf("megapool %s: StakingBalance is negative: %s", addr.Hex(), detail.StakingBalance)
+		}
+		if detail.StakingBalance.Cmp(detail.BeaconBalanceTotal) > 0 {
+			t.Errorf("megapool %s: StakingBalance (%s) > BeaconBalanceTotal (%s)",
+				addr.Hex(), detail.StakingBalance, detail.BeaconBalanceTotal)
+		}
+		if detail.BeaconBalanceTotal.Cmp(zero) > 0 {
+			nonZeroBeacon++
+		}
+		totalBeacon.Add(&totalBeacon, detail.BeaconBalanceTotal)
+		totalStaking.Add(&totalStaking, detail.StakingBalance)
+	}
+
+	t.Logf("Megapools processed:      %d", len(ns.MegapoolDetails))
+	t.Logf("With non-zero beacon bal: %d", nonZeroBeacon)
+	t.Logf("Total beacon balance:     %s", &totalBeacon)
+	t.Logf("Total staking balance:    %s", &totalStaking)
+	t.Logf("RewardCalc calls:         %d", len(rewardCalc.calls))
 }

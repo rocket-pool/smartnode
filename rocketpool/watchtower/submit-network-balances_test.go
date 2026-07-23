@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
@@ -434,6 +435,400 @@ func TestGetMinipoolBalanceDetails_IsStakingFlag_ActiveValidator(t *testing.T) {
 
 	if !result.IsStaking {
 		t.Error("active validator should be marked as staking")
+	}
+}
+
+// ============================================================
+// getMegapoolBalanceDetails
+// ============================================================
+
+// newMegapoolState builds a minimal NetworkState for megapool balance tests.
+func newMegapoolState(blockEpoch uint64) *state.NetworkState {
+	return &state.NetworkState{
+		BeaconSlotNumber:         blockEpoch * 32,
+		BeaconConfig:             beacon.Eth2Config{SlotsPerEpoch: 32},
+		MegapoolValidatorDetails: make(state.ValidatorDetailsMap),
+		MegapoolValidatorInfo:    make(map[rptypes.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex),
+		MegapoolToPubkeysMap:     make(map[common.Address][]rptypes.ValidatorPubkey),
+		NetworkDetails: &rpstate.NetworkDetails{
+			ReducedBond: new(big.Int).Set(fixtureReducedBond),
+		},
+	}
+}
+
+// addMegapoolValidator registers a validator in ns so getMegapoolBalanceDetails can see it.
+func addMegapoolValidator(
+	ns *state.NetworkState,
+	addr common.Address,
+	pubkey rptypes.ValidatorPubkey,
+	info megapool.ValidatorInfo,
+	status beacon.ValidatorStatus,
+) {
+	ns.MegapoolToPubkeysMap[addr] = append(ns.MegapoolToPubkeysMap[addr], pubkey)
+	ns.MegapoolValidatorDetails[pubkey] = status
+	ns.MegapoolValidatorInfo[pubkey] = &megapool.ValidatorInfoFromGlobalIndex{
+		Pubkey:          pubkey[:],
+		ValidatorInfo:   info,
+		MegapoolAddress: addr,
+	}
+}
+
+// newMegapoolContractDetails builds an NativeMegapoolDetails with the fields the
+// balance calculation reads.  All amounts are in ETH (converted to wei internally).
+func newMegapoolContractDetails(userCapitalEth, nodeBondEth, ethBalanceEth, pendingRewardsEth float64) rpstate.NativeMegapoolDetails {
+	return rpstate.NativeMegapoolDetails{
+		UserCapital:    ethToWei(userCapitalEth),
+		NodeBond:       ethToWei(nodeBondEth),
+		EthBalance:     ethToWei(ethBalanceEth),
+		PendingRewards: ethToWei(pendingRewardsEth),
+	}
+}
+
+// TestGetMegapoolBalanceDetails_SkipsDissolvedExitedInQueue verifies that
+// validators in Dissolved, Exited, or InQueue state are skipped entirely.
+func TestGetMegapoolBalanceDetails_SkipsDissolvedExitedInQueue(t *testing.T) {
+	addr := common.HexToAddress("0x1111")
+	ns := newMegapoolState(100)
+	// Each validator also has InPrestake set so that removing the ignore condition
+	// would produce a non-zero beacon contribution.
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01}, megapool.ValidatorInfo{Dissolved: true, InPrestake: true, LastRequestedValue: 1_000}, beacon.ValidatorStatus{})
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x02}, megapool.ValidatorInfo{Exited: true, InPrestake: true, LastRequestedValue: 1_000}, beacon.ValidatorStatus{})
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x03}, megapool.ValidatorInfo{InQueue: true, InPrestake: true, LastRequestedValue: 1_000}, beacon.ValidatorStatus{})
+
+	details := newMegapoolContractDetails(0, 0, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	zero := big.NewInt(0)
+	if result.BeaconBalanceTotal.Cmp(zero) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want 0", result.BeaconBalanceTotal)
+	}
+	if result.StakingBalance.Cmp(zero) != 0 {
+		t.Errorf("StakingBalance: got %s, want 0", result.StakingBalance)
+	}
+	if result.RethRewards.Cmp(zero) != 0 {
+		t.Errorf("RethRewards: got %s, want 0", result.RethRewards)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_InPrestakeUsesLastRequestedValue verifies that
+// InPrestake validators contribute LastRequestedValue (in milli-ETH) to the beacon
+// balance total, not their beacon balance, and do not count toward staking.
+func TestGetMegapoolBalanceDetails_InPrestakeUsesLastRequestedValue(t *testing.T) {
+	addr := common.HexToAddress("0x2222")
+	ns := newMegapoolState(100)
+	// LastRequestedValue = 32 000 milli-ETH = 32 ETH
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{InPrestake: true, LastRequestedValue: 32_000},
+		beacon.ValidatorStatus{},
+	)
+	// UserCapital=28 ETH, NodeBond=4 ETH → beaconBalanceIncrease = 32-28-4 = 0, rewards = 0
+	details := newMegapoolContractDetails(28, 4, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := eth.MilliEthToWei(32_000)
+	if result.BeaconBalanceTotal.Cmp(expected) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s (32 ETH via LastRequestedValue)", result.BeaconBalanceTotal, expected)
+	}
+	if result.StakingBalance.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("StakingBalance: InPrestake should not contribute staking balance, got %s", result.StakingBalance)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_ExitingNonZeroBalanceTreatedAsStaking verifies that
+// an Exiting validator with a non-zero beacon balance is treated like a staking
+// validator: its balance counts toward both beacon and staking totals.
+func TestGetMegapoolBalanceDetails_ExitingNonZeroBalanceTreatedAsStaking(t *testing.T) {
+	addr := common.HexToAddress("0x6666")
+	ns := newMegapoolState(100)
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Exiting: true},
+		beacon.ValidatorStatus{Exists: true, Balance: 32_000_000_000, WithdrawableEpoch: 200},
+	)
+	// UserCapital=24, NodeBond=8 → beaconBalanceIncrease = 32-24-8 = 0, rewards = 0
+	details := newMegapoolContractDetails(24, 8, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedBeacon := eth.GweiToWei(32_000_000_000)
+	if result.BeaconBalanceTotal.Cmp(expectedBeacon) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s", result.BeaconBalanceTotal, expectedBeacon)
+	}
+	// StakingBalance = beaconBalance - ReducedBond
+	expectedStaking := new(big.Int).Sub(expectedBeacon, ns.NetworkDetails.ReducedBond)
+	if result.StakingBalance.Cmp(expectedStaking) != 0 {
+		t.Errorf("StakingBalance: got %s, want %s", result.StakingBalance, expectedStaking)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_StakedFarFutureEpochUsesDepositValue verifies that
+// a Staked validator whose ActivationEpoch is FarFutureEpoch uses DepositValue
+// (milli-ETH) rather than its live beacon balance, and has no staking balance.
+func TestGetMegapoolBalanceDetails_StakedFarFutureEpochUsesDepositValue(t *testing.T) {
+	addr := common.HexToAddress("0x3333")
+	ns := newMegapoolState(100)
+	// DepositValue = 4 000 milli-ETH = 4 ETH
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true, DepositValue: 4_000},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: FarFutureEpoch, ExitEpoch: FarFutureEpoch, Balance: 32_000_000_000},
+	)
+	// UserCapital=0, NodeBond=4 ETH → beaconBalanceIncrease = 4-0-4 = 0, rewards = 0
+	details := newMegapoolContractDetails(0, 4, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := eth.MilliEthToWei(4_000) // 4 ETH
+	if result.BeaconBalanceTotal.Cmp(expected) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s (DepositValue, not beacon balance)", result.BeaconBalanceTotal, expected)
+	}
+	if result.StakingBalance.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("StakingBalance: pre-activation validator should have zero staking balance, got %s", result.StakingBalance)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_StakedFutureActivationUsesDepositValue verifies that
+// a Staked validator whose ActivationEpoch is in the future uses DepositValue and
+// has no staking balance.
+func TestGetMegapoolBalanceDetails_StakedFutureActivationUsesDepositValue(t *testing.T) {
+	addr := common.HexToAddress("0x3334")
+	blockEpoch := uint64(100)
+	ns := newMegapoolState(blockEpoch)
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true, DepositValue: 4_000},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: blockEpoch + 10, ExitEpoch: FarFutureEpoch, Balance: 32_000_000_000},
+	)
+	details := newMegapoolContractDetails(0, 4, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := eth.MilliEthToWei(4_000)
+	if result.BeaconBalanceTotal.Cmp(expected) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s", result.BeaconBalanceTotal, expected)
+	}
+	if result.StakingBalance.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("StakingBalance: got %s, want 0 (not yet active)", result.StakingBalance)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_StakedAndActiveUsesBeaconBalance verifies that
+// an active Staked validator uses its beacon balance and contributes to staking
+// balance (beacon balance minus ReducedBond).
+func TestGetMegapoolBalanceDetails_StakedAndActiveUsesBeaconBalance(t *testing.T) {
+	addr := common.HexToAddress("0x4444")
+	ns := newMegapoolState(100)
+	// Balance = 32 ETH in gwei
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: FarFutureEpoch, Balance: 32_000_000_000},
+	)
+	// UserCapital=24, NodeBond=8 → beaconBalanceIncrease = 32-24-8 = 0, rewards = 0
+	details := newMegapoolContractDetails(24, 8, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedBeacon := eth.GweiToWei(32_000_000_000)
+	if result.BeaconBalanceTotal.Cmp(expectedBeacon) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s", result.BeaconBalanceTotal, expectedBeacon)
+	}
+	// StakingBalance = beaconBalance - ReducedBond
+	expectedStaking := new(big.Int).Sub(expectedBeacon, ns.NetworkDetails.ReducedBond)
+	if result.StakingBalance.Cmp(expectedStaking) != 0 {
+		t.Errorf("StakingBalance: got %s, want %s", result.StakingBalance, expectedStaking)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_StakedExitedEpochNoStakingBalance verifies that a
+// Staked validator whose ExitEpoch has already passed still contributes to
+// BeaconBalanceTotal but not to StakingBalance.
+func TestGetMegapoolBalanceDetails_StakedExitedEpochNoStakingBalance(t *testing.T) {
+	addr := common.HexToAddress("0x5555")
+	blockEpoch := uint64(100)
+	ns := newMegapoolState(blockEpoch)
+	// ExitEpoch = 80 < blockEpoch = 100 → already exited
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: 80, Balance: 32_000_000_000},
+	)
+	details := newMegapoolContractDetails(24, 8, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedBeacon := eth.GweiToWei(32_000_000_000)
+	if result.BeaconBalanceTotal.Cmp(expectedBeacon) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s", result.BeaconBalanceTotal, expectedBeacon)
+	}
+	if result.StakingBalance.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("StakingBalance: exited validator should not count as staking, got %s", result.StakingBalance)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_PositiveRewardsCallsCalculator verifies that when
+// the beacon balance has grown beyond UserCapital+NodeBond, the reward split
+// calculator is invoked with the correct reward amount.
+func TestGetMegapoolBalanceDetails_PositiveRewardsCallsCalculator(t *testing.T) {
+	addr := common.HexToAddress("0x7777")
+	ns := newMegapoolState(100)
+	// Balance = 33 ETH
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: FarFutureEpoch, Balance: 33_000_000_000},
+	)
+	// beaconTotal=33 ETH, UserCapital=28, NodeBond=4 → increase = 33-28-4 = 1 ETH
+	// PendingRewards = 0.5 ETH → rewards = 1.5 ETH
+	details := newMegapoolContractDetails(28, 4, 0, 0.5)
+	rewardCalc := &stubRewardSplitCalculator{}
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, rewardCalc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(rewardCalc.calls) != 1 {
+		t.Fatalf("expected 1 rewardCalc call, got %d", len(rewardCalc.calls))
+	}
+	expectedRewards := ethToWei(1.5)
+	if rewardCalc.calls[0].Rewards.Cmp(expectedRewards) != 0 {
+		t.Errorf("rewardCalc rewards arg: got %s, want %s", rewardCalc.calls[0].Rewards, expectedRewards)
+	}
+	if rewardCalc.calls[0].MegapoolAddress != addr {
+		t.Errorf("rewardCalc address arg: got %s, want %s", rewardCalc.calls[0].MegapoolAddress, addr)
+	}
+	// stub returns 50/50 → rETH gets 0.75 ETH
+	expectedReth := new(big.Int).Div(expectedRewards, big.NewInt(2))
+	if result.RethRewards.Cmp(expectedReth) != 0 {
+		t.Errorf("RethRewards: got %s, want %s", result.RethRewards, expectedReth)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_NegativeRewardsWithinNodeBondNoRethLoss verifies
+// that when rewards are negative but the node bond covers the entire loss, rETH
+// holders receive zero rewards (the node absorbs the shortfall).
+func TestGetMegapoolBalanceDetails_NegativeRewardsWithinNodeBondNoRethLoss(t *testing.T) {
+	addr := common.HexToAddress("0x8888")
+	ns := newMegapoolState(100)
+	// Balance = 31 ETH
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: FarFutureEpoch, Balance: 31_000_000_000},
+	)
+	// beaconTotal=31, UserCapital=28, NodeBond=4 → increase = 31-28-4 = -1 ETH
+	// rewards = -1 ETH.  rewards + nodeBond = 3 ETH ≥ 0 → node absorbs loss
+	details := newMegapoolContractDetails(28, 4, 0, 0)
+	rewardCalc := &stubRewardSplitCalculator{}
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, rewardCalc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(rewardCalc.calls) != 0 {
+		t.Errorf("rewardCalc should not be called for negative rewards, got %d calls", len(rewardCalc.calls))
+	}
+	if result.RethRewards.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("RethRewards: got %s, want 0 (loss within node bond)", result.RethRewards)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_NegativeRewardsBeyondNodeBondSpreadsLoss verifies
+// that when the loss exceeds the node bond, rETH absorbs the excess (RethRewards
+// is negative by the amount beyond the bond).
+func TestGetMegapoolBalanceDetails_NegativeRewardsBeyondNodeBondSpreadsLoss(t *testing.T) {
+	addr := common.HexToAddress("0x9999")
+	ns := newMegapoolState(100)
+	// Balance = 20 ETH (large slashing scenario)
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: FarFutureEpoch, Balance: 20_000_000_000},
+	)
+	// beaconTotal=20, UserCapital=28, NodeBond=4 → increase = 20-28-4 = -12 ETH
+	// rewards = -12 ETH.  rewards + nodeBond = -12+4 = -8 ETH < 0 → rETH absorbs -8 ETH
+	details := newMegapoolContractDetails(28, 4, 0, 0)
+	rewardCalc := &stubRewardSplitCalculator{}
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, rewardCalc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(rewardCalc.calls) != 0 {
+		t.Errorf("rewardCalc should not be called for negative rewards, got %d calls", len(rewardCalc.calls))
+	}
+	expected := new(big.Int).Neg(ethToWei(8))
+	if result.RethRewards.Cmp(expected) != 0 {
+		t.Errorf("RethRewards: got %s, want %s (rETH absorbs excess loss)", result.RethRewards, expected)
+	}
+}
+
+// TestGetMegapoolBalanceDetails_MultipleValidatorsMixedStates verifies that beacon
+// and staking totals are correctly summed across validators in different states.
+func TestGetMegapoolBalanceDetails_MultipleValidatorsMixedStates(t *testing.T) {
+	addr := common.HexToAddress("0xAAAA")
+	ns := newMegapoolState(100)
+	// Active staked: 32 ETH beacon balance
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x01},
+		megapool.ValidatorInfo{Staked: true},
+		beacon.ValidatorStatus{Exists: true, ActivationEpoch: 50, ExitEpoch: FarFutureEpoch, Balance: 32_000_000_000},
+	)
+	// InPrestake: 4 000 milli-ETH = 4 ETH
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x02},
+		megapool.ValidatorInfo{InPrestake: true, LastRequestedValue: 4_000},
+		beacon.ValidatorStatus{},
+	)
+	// Dissolved: contributes nothing
+	addMegapoolValidator(ns, addr, rptypes.ValidatorPubkey{0x03},
+		megapool.ValidatorInfo{Dissolved: true},
+		beacon.ValidatorStatus{},
+	)
+	// beaconTotal = 32+4 = 36 ETH.  UserCapital=28, NodeBond=8 → rewards = 0
+	details := newMegapoolContractDetails(28, 8, 0, 0)
+	task := &submitNetworkBalances{}
+
+	result, err := task.getMegapoolBalanceDetails(addr, ns, details, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// BeaconBalanceTotal = GweiToWei(32e9) + MilliEthToWei(4000)
+	expectedBeacon := new(big.Int).Add(eth.GweiToWei(32_000_000_000), eth.MilliEthToWei(4_000))
+	if result.BeaconBalanceTotal.Cmp(expectedBeacon) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s", result.BeaconBalanceTotal, expectedBeacon)
+	}
+	// Only the active staked validator contributes staking balance: beaconBalance - ReducedBond
+	expectedStaking := new(big.Int).Sub(eth.GweiToWei(32_000_000_000), ns.NetworkDetails.ReducedBond)
+	if result.StakingBalance.Cmp(expectedStaking) != 0 {
+		t.Errorf("StakingBalance: got %s, want %s", result.StakingBalance, expectedStaking)
 	}
 }
 
