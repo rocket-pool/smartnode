@@ -11,7 +11,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
 func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (*api.RecoverWalletResponse, error) {
@@ -71,7 +70,7 @@ func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorK
 	response.AccountAddress = nodeAccount.Address
 
 	if !skipValidatorKeyRecovery {
-		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = recoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +167,7 @@ func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, addre
 	response.AccountAddress = nodeAccount.Address
 
 	if !skipValidatorKeyRecovery {
-		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = recoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}

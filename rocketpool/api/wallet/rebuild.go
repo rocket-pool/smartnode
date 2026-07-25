@@ -5,7 +5,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
 func rebuildWallet(c *cli.Command) (*api.RebuildWalletResponse, error) {
@@ -40,7 +39,7 @@ func rebuildWallet(c *cli.Command) (*api.RebuildWalletResponse, error) {
 	}
 
 	// Recover validator keys
-	response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
+	response.ValidatorKeys, err = recoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 	if err != nil {
 		return nil, err
 	}
