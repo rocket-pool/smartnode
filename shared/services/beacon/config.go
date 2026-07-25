@@ -102,6 +102,11 @@ func (c *Eth2Config) EpochToSlot(epoch uint64) uint64 {
 	return epoch * c.SlotsPerEpoch
 }
 
+func (c *Eth2Config) EpochAt(time time.Time) uint64 {
+	ts := uint64(time.Unix())
+	return c.GenesisEpoch + (ts-c.GenesisTime)/c.SecondsPerEpoch
+}
+
 func (c *Eth2Config) SlotOfEpoch(epoch uint64, slot uint64) (uint64, error) {
 	if slot > c.SlotsPerEpoch-1 {
 		return 0, fmt.Errorf("slot %d is not in range 0 - %d", slot, c.SlotsPerEpoch-1)

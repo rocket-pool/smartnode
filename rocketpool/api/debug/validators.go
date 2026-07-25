@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -47,7 +47,7 @@ func ExportValidators(c *cli.Command) error {
 	var addresses []common.Address
 	var eth2Config beacon.Eth2Config
 	var beaconHead beacon.BeaconHead
-	var blockTime uint64
+	var blockTime time.Time
 
 	// Get minipool addresses
 	wg1.Go(func() error {
@@ -74,7 +74,7 @@ func ExportValidators(c *cli.Command) error {
 	wg1.Go(func() error {
 		header, err := ec.HeaderByNumber(context.Background(), opts.BlockNumber)
 		if err == nil {
-			blockTime = header.Time
+			blockTime = time.Unix(int64(header.Time), 0)
 		}
 		return err
 	})
@@ -85,7 +85,7 @@ func ExportValidators(c *cli.Command) error {
 	}
 
 	// Get & check epoch at block
-	blockEpoch := eth2.EpochAt(eth2Config, blockTime)
+	blockEpoch := eth2Config.EpochAt(blockTime)
 	if blockEpoch > beaconHead.Epoch {
 		return fmt.Errorf("Epoch %d at block %s is higher than current epoch %d", blockEpoch, opts.BlockNumber.String(), beaconHead.Epoch)
 	}
