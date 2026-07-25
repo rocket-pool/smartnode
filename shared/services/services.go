@@ -31,7 +31,6 @@ import (
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -253,7 +252,7 @@ func getConfig(c *cli.Command) (*config.RocketPoolConfig, error) {
 			}
 		}
 		expanded := os.ExpandEnv(settingsFile)
-		cfg, err = rp.LoadConfigFromFile(expanded)
+		cfg, err = config.LoadFromFile(expanded)
 		if cfg == nil && err == nil {
 			err = fmt.Errorf("settings file [%s] not found", expanded)
 		}

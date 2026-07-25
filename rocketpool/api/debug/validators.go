@@ -18,7 +18,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
+
+	mpApi "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 )
 
 const MinipoolBalanceDetailsBatchSize = 20
@@ -91,7 +92,7 @@ func ExportValidators(c *cli.Command) error {
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
+	validators, err := mpApi.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
 		return err
 	}

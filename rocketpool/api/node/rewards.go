@@ -21,11 +21,11 @@ import (
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
+	mpApi "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Settings
@@ -41,7 +41,7 @@ type minipoolBalanceDetails struct {
 func getBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
 	// Get minipool validator statuses
-	validators, err := rputils.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
+	validators, err := mpApi.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
 	if err != nil {
 		return []minipoolBalanceDetails{}, err
 	}

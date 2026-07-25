@@ -1,13 +1,17 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func checkCollateral(c *cli.Command) (*api.CheckCollateralResponse, error) {
@@ -34,7 +38,7 @@ func checkCollateral(c *cli.Command) (*api.CheckCollateralResponse, error) {
 	}
 
 	// Check collateral
-	response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+	response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = CheckCollateral(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +49,14 @@ func checkCollateral(c *cli.Command) (*api.CheckCollateralResponse, error) {
 	response.InsufficientCollateral = (remainingBorrow.Cmp(big.NewInt(0)) < 0)
 
 	return &response, nil
+}
+
+// Checks the given node's current borrowed ETH, its limit on borrowed ETH, and how much ETH is preparing to be borrowed by pending bond reductions
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethBorrowed *big.Int, ethBorrowedLimit *big.Int, pendingBorrowAmount *big.Int, err error) {
+	ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
+	}
+
+	return
 }

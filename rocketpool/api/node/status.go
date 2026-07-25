@@ -24,12 +24,12 @@ import (
 
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
+	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
@@ -276,7 +276,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = CheckCollateral(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -364,7 +364,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		feeRecipientInfo, err := rputils.GetFeeRecipientInfoWithoutState(rp, bc, nodeAccount.Address, nil)
+		feeRecipientInfo, err := feerecipient.GetDetailsWithoutState(rp, bc, nodeAccount.Address, nil)
 		if err == nil {
 			response.FeeRecipientInfo = *feeRecipientInfo
 			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), feeRecipientInfo.FeeDistributorAddress, nil)
