@@ -16,10 +16,10 @@ import (
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test/assets"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
