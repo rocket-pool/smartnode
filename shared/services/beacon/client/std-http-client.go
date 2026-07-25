@@ -23,8 +23,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	hexutil "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config

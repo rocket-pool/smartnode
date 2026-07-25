@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	hexutil "github.com/rocket-pool/smartnode/shared/hex"
 )
 
 // Request types
