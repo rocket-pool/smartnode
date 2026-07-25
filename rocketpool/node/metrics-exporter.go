@@ -14,8 +14,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {

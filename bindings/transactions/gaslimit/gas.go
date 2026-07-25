@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 

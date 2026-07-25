@@ -18,6 +18,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/connectivity"
@@ -27,7 +28,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Config
