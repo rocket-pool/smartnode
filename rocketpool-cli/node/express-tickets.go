@@ -3,8 +3,8 @@ package node
 import (
 	"fmt"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func provisionExpressTickets() error {

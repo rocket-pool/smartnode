@@ -12,9 +12,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	bindtypes "github.com/rocket-pool/smartnode/bindings/types"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // RegisterRoutes registers the pdao module's HTTP routes onto mux.

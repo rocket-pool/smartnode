@@ -15,8 +15,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 

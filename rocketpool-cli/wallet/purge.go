@@ -3,9 +3,9 @@ package wallet
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	promptcli "github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func purge(composeFiles []string) error {

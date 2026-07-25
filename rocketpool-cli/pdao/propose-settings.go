@@ -9,11 +9,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 )
 
 func proposeSettingAuctionIsCreateLotEnabled(value bool, yes bool) error {

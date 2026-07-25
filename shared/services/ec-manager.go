@@ -15,10 +15,10 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	clicolor "github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	clicolor "github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 

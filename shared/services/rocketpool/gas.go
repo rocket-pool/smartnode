@@ -5,8 +5,8 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 // Print a warning about the gas estimate for operations that have multiple transactions

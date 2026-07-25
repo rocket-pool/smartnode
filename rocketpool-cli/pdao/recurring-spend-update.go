@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeRecurringSpendUpdate(rawEnabled bool, contractName string, recipientString string, amountString string, periodLengthString string, numPeriods uint64, customMessage string, yes bool) error {

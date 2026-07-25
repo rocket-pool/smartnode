@@ -14,7 +14,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 )
 
 // IPInfo API
