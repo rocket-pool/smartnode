@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -22,7 +23,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // Stake megapool validator task
