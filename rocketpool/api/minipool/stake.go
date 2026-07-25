@@ -13,9 +13,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanStakeMinipoolResponse, error) {
