@@ -32,7 +32,6 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -432,7 +431,7 @@ func (t *submitNetworkBalances) printMessage(message string) {
 func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
+	client, err := utils.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
 	if err != nil {
 		return networkBalances{}, err
 	}

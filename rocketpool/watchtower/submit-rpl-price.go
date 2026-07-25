@@ -33,7 +33,6 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -601,7 +600,7 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	}
 
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	client, err := utils.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}

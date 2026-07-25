@@ -31,7 +31,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -291,7 +290,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		t.lock.Unlock()
 
 		// Get an appropriate client
-		client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
+		client, err := utils.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
 		if err != nil {
 			t.handleError(err)
 			return
