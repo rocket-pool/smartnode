@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
@@ -21,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 )
 
 // Represents the collector for the user's node
@@ -791,21 +789,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-	}
-	minipoolDetails, err := eth2.GetBeaconBalancesFromState(collector.rp, minipools, state, beaconHead, opts)
-	if err != nil {
-		collector.logError(err)
-		return
-	}
 	totalDepositBalance := float64(0)
 	totalNodeShare := float64(0)
 	totalBeaconBalance := float64(0)
-	for _, minipool := range minipoolDetails {
-		totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
-		totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
-		totalBeaconBalance += eth.WeiToEth(minipool.TotalBalance)
+	for _, minipool := range minipools {
+		validator, exists := state.MinipoolValidatorDetails[minipool.Pubkey]
+		if exists {
+			totalBeaconBalance += eth.GweiToEth(validator.Balance)
+		}
+		totalDepositBalance += eth.WeiToEth(minipool.NodeDepositBalance) + eth.WeiToEth(minipool.UserDepositBalance)
+		totalNodeShare += eth.WeiToEth(minipool.NodeDepositBalance)
 	}
 
 	totalMinipoolBalance := float64(0)
