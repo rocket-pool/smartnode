@@ -23,7 +23,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
@@ -163,7 +162,7 @@ func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 		var wg2 errgroup.Group
 		wg2.Go(func() error {
 			var err error
-			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = CheckCollateral(rp, nodeAccount.Address, nil)
 			return err
 		})
 
