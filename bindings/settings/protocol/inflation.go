@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -26,7 +26,7 @@ func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalRate"); err != nil {
 		return 0, fmt.Errorf("error getting inflation rate: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // RPL inflation rate per interval

@@ -3,11 +3,9 @@ package queue
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func getStatus() error {
@@ -26,7 +24,7 @@ func getStatus() error {
 	}
 
 	// Print & return
-	fmt.Printf("The deposit pool has a balance of %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.DepositPoolBalance), 6))
+	fmt.Printf("The deposit pool has a balance of %.6f ETH.\n", math.RoundDown(math.WeiToEth(status.DepositPoolBalance), 6))
 
 	var queueDetails api.GetQueueDetailsResponse
 	// Get the express ticket count

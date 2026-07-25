@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -234,7 +234,7 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 	// Store map in the api response
 	response.MegapoolValidatorMap = statusValidators
 
-	weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
+	weiPerGwei := big.NewInt(int64(math.WeiPerGwei))
 	totalBeaconBalanceWei := new(big.Int).SetUint64(totalBeaconBalance)
 	totalEffectiveBeaconBalanceWei := new(big.Int).SetUint64(totalEffectiveBeaconBalance)
 	totalBeaconBalanceWei = totalBeaconBalanceWei.Mul(totalBeaconBalanceWei, weiPerGwei)

@@ -5,14 +5,13 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func recoverRplFromLot(lot string, yes bool) error {
@@ -78,7 +77,7 @@ func recoverRplFromLot(lot string, yes bool) error {
 		options := make([]string, len(recoverableLots)+1)
 		options[0] = "All available lots"
 		for li, lot := range recoverableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
+			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(math.WeiToEth(lot.Details.RemainingRPLAmount), 6))
 		}
 		selected, _ := prompt.Select("Please select a lot to recover unclaimed RPL from:", options)
 

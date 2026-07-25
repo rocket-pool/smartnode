@@ -3,9 +3,9 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
@@ -25,9 +25,9 @@ func getRewardsPercentages() error {
 	}
 
 	// Print the settings
-	fmt.Printf("Node Operators: %.2f%% (%s)\n", eth.WeiToEth(response.Node)*100, response.Node.String())
-	fmt.Printf("Oracle DAO:     %.2f%% (%s)\n", eth.WeiToEth(response.OracleDao)*100, response.OracleDao.String())
-	fmt.Printf("Protocol DAO:   %.2f%% (%s)\n", eth.WeiToEth(response.ProtocolDao)*100, response.ProtocolDao.String())
+	fmt.Printf("Node Operators: %.2f%% (%s)\n", math.WeiToEth(response.Node)*100, response.Node.String())
+	fmt.Printf("Oracle DAO:     %.2f%% (%s)\n", math.WeiToEth(response.OracleDao)*100, response.OracleDao.String())
+	fmt.Printf("Protocol DAO:   %.2f%% (%s)\n", math.WeiToEth(response.ProtocolDao)*100, response.ProtocolDao.String())
 	return nil
 }
 

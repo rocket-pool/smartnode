@@ -13,8 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
@@ -377,7 +377,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 		if !validator.Exists {
 			beaconBalances[i] = big.NewInt(0)
 		} else {
-			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
+			beaconBalances[i] = math.GweiToWei(float64(validator.Balance))
 		}
 	}
 	err = rpstate.CalculateCompleteMinipoolShares(m.rp, contracts, mpds, beaconBalances)
@@ -561,8 +561,8 @@ func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 			continue
 		}
 
-		validatorTotalEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-		validatorBondedEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+		validatorTotalEth := big.NewInt(0).Set(math.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+		validatorBondedEth := big.NewInt(0).Set(math.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
 		validatorUserEth := big.NewInt(0).Sub(validatorTotalEth, validatorBondedEth)
 		eligibleBorrowedEth.Sub(eligibleBorrowedEth, validatorUserEth)
 	}

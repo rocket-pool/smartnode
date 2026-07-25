@@ -3,9 +3,8 @@ package gaslimit
 import (
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Response for gas limits from network and from user request
@@ -31,11 +30,11 @@ func (l Limits) Check(checkThreshold bool, gasThresholdGwei float64, logger *log
 		return true
 	}
 
-	gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)
+	gasThresholdWei := math.RoundUp(gasThresholdGwei*math.WeiPerGwei, 0)
 	gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
 	if maxFeeWei.Cmp(gasThreshold) != -1 {
 		logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. "+
-			"Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
+			"Aborting the transaction.", math.WeiToGwei(maxFeeWei), gasThresholdGwei)
 		return false
 	}
 
@@ -57,9 +56,9 @@ func (l Limits) Print(logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint
 	totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
 	totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
 	logger.Printlnf("This transaction will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
-		eth.WeiToGwei(maxFeeWei),
-		math.RoundDown(eth.WeiToEth(totalGasWei), 6),
-		math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
+		math.WeiToGwei(maxFeeWei),
+		math.RoundDown(math.WeiToEth(totalGasWei), 6),
+		math.RoundDown(math.WeiToEth(totalSafeGasWei), 6))
 }
 
 func (l Limits) PrintAndCheck(checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {

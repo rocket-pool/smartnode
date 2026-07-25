@@ -11,8 +11,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 const (
@@ -203,9 +203,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 
 	details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
 	details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
-	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
-	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
-	details.NodeFee = eth.WeiToEth(nodeFee)
+	details.ETHUtilizationRate = math.WeiToEth(ethUtilizationRate)
+	details.RETHExchangeRate = math.WeiToEth(rETHExchangeRate)
+	details.NodeFee = math.WeiToEth(nodeFee)
 	details.BalancesBlock = balancesBlock.Uint64()
 	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
 	details.PromotionScrubPeriod = convertToDuration(promotionScrubPeriodSeconds)

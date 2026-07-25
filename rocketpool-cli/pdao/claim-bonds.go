@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -71,7 +71,7 @@ func claimBonds(proposal string, yes bool) error {
 		options := make([]string, len(claimableBonds)+1)
 		options[0] = "All available proposals"
 		for pi, bond := range claimableBonds {
-			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, eth.WeiToEth(bond.UnlockAmount), eth.WeiToEth(bond.RewardAmount))
+			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, math.WeiToEth(bond.UnlockAmount), math.WeiToEth(bond.RewardAmount))
 		}
 		selected, _ := prompt.Select("Please select a proposal to unlock bonds / claim rewards from:", options)
 

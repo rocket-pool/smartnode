@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -51,7 +51,7 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	if err := networkSettingsContract.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
 		return 0, fmt.Errorf("error getting trusted node consensus threshold: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it
@@ -159,7 +159,7 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	if err := networkSettingsContract.Call(opts, value, "getMinimumNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting minimum node fee: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // Minimum node commission rate
@@ -191,7 +191,7 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
 	if err := networkSettingsContract.Call(opts, value, "getTargetNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting target node fee: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // Target node commission rate
@@ -223,7 +223,7 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	if err := networkSettingsContract.Call(opts, value, "getMaximumNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting maximum node fee: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // Maximum node commission rate
@@ -274,7 +274,7 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	if err := networkSettingsContract.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
 		return 0, fmt.Errorf("error getting target rETH contract collateralization rate: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The target collateralization rate for the rETH contract as a fraction
@@ -306,7 +306,7 @@ func GetNetworkPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := networkSettingsContract.Call(opts, value, "getNodePenaltyThreshold"); err != nil {
 		return 0, fmt.Errorf("error getting network penalty threshold: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The number of oDAO members that have to vote for a penalty expressed as a percentage
@@ -338,7 +338,7 @@ func GetNetworkPenaltyPerRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := networkSettingsContract.Call(opts, value, "getPerPenaltyRate"); err != nil {
 		return 0, fmt.Errorf("error getting network penalty per rate: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The amount a node operator is penalised for each penalty as a percentage

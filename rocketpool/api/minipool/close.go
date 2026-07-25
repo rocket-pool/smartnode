@@ -15,8 +15,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/flashbots"
@@ -240,7 +240,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		}
 
 		// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
-		eight := eth.EthToWei(8)
+		eight := math.EthToWei(8)
 		if effectiveBalance.Cmp(eight) == -1 {
 			details.CanClose = false
 			return details, nil

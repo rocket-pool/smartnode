@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -106,7 +106,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	}
 
 	// Check data
-	validatorEthWei := eth.EthToWei(ValidatorEth)
+	validatorEthWei := math.EthToWei(ValidatorEth)
 	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
 

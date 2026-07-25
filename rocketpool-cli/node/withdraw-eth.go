@@ -5,13 +5,11 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func nodeWithdrawEth(amount string, yes bool) error {
@@ -43,7 +41,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
-		amountWei = eth.EthToWei(withdrawalAmount)
+		amountWei = math.EthToWei(withdrawalAmount)
 
 	} else {
 
@@ -56,7 +54,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.EthOnBehalfBalance
 		// Prompt for maximum amount
-		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6)) {
+		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(math.WeiToEth(maxAmount), 6)) {
 			amountWei = maxAmount
 		} else {
 
@@ -66,7 +64,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
-			amountWei = eth.EthToWei(withdrawalAmount)
+			amountWei = math.EthToWei(withdrawalAmount)
 
 		}
 
@@ -94,7 +92,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(math.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -112,7 +110,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(math.WeiToEth(amountWei), 6))
 	return nil
 
 }

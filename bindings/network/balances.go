@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Info for a balances updated event
@@ -99,7 +99,7 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	if err := rocketNetworkBalances.Call(opts, ethUtilizationRate, "getETHUtilizationRate"); err != nil {
 		return 0, fmt.Errorf("error getting network ETH utilization rate: %w", err)
 	}
-	return eth.WeiToEth(*ethUtilizationRate), nil
+	return math.WeiToEth(*ethUtilizationRate), nil
 }
 
 // Estimate the gas of SubmitBalances

@@ -5,13 +5,12 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func getStatus() error {
@@ -96,30 +95,30 @@ func getStatus() error {
 	if !status.Megapool.DelegateExpired {
 		totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(8))
 		rpBond := new(big.Int).Sub(totalBond, status.Megapool.NodeBond)
-		fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
-		fmt.Printf("The megapool has %6f of protocol bonded ETH for a total of %6f of ETH capital.\n", math.RoundDown(eth.WeiToEth(rpBond), 6), math.RoundDown(eth.WeiToEth(totalBond), 6))
-		fmt.Printf("Megapool balance (EL): %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.Balances.ETH), 6))
+		fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(math.WeiToEth(status.Megapool.NodeBond), 6))
+		fmt.Printf("The megapool has %6f of protocol bonded ETH for a total of %6f of ETH capital.\n", math.RoundDown(math.WeiToEth(rpBond), 6), math.RoundDown(math.WeiToEth(totalBond), 6))
+		fmt.Printf("Megapool balance (EL): %6f ETH\n", math.RoundDown(math.WeiToEth(status.Megapool.Balances.ETH), 6))
 		if status.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeDebt), 6))
+			fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(math.WeiToEth(status.Megapool.NodeDebt), 6))
 		}
 		if status.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
+			fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(math.WeiToEth(status.Megapool.RefundValue), 6))
 		}
 		if status.Megapool.ExitingValidatorCount > 0 {
 			fmt.Printf("The megapool has %d validators exiting. You'll be able to see claimable rewards once the exit process is completed.", status.Megapool.ExitingValidatorCount)
 			fmt.Println()
 		} else {
 			if status.Megapool.PendingRewards.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The megapool has %.6f ETH in pending rewards to claim.\n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewardSplit.NodeRewards), 6))
+				fmt.Printf("The megapool has %.6f ETH in pending rewards to claim.\n", math.RoundDown(math.WeiToEth(status.Megapool.PendingRewardSplit.NodeRewards), 6))
 			} else {
 				fmt.Println("The megapool does not have any pending rewards to claim.")
 			}
 		}
-		fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(eth.WeiToEth(beaconBalances.TotalBeaconBalance), 6))
-		fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(beaconBalances.NodeShareOfCLBalance), 6))
+		fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(math.WeiToEth(beaconBalances.TotalBeaconBalance), 6))
+		fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(math.WeiToEth(beaconBalances.NodeShareOfCLBalance), 6))
 
-		networkCommission := math.RoundDown(eth.WeiToEth(status.Megapool.NodeShare)*100, 6)
-		effectiveNodeShare := math.RoundDown(eth.WeiToEth(status.Megapool.RevenueSplit.NodeShare)*100, 6)
+		networkCommission := math.RoundDown(math.WeiToEth(status.Megapool.NodeShare)*100, 6)
+		effectiveNodeShare := math.RoundDown(math.WeiToEth(status.Megapool.RevenueSplit.NodeShare)*100, 6)
 
 		fmt.Printf("Current network commission: %.6f%%\n", networkCommission)
 		if networkCommission != effectiveNodeShare {
@@ -224,7 +223,7 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Validator active:             no\n")
 	}
 
-	beaconBalance := math.RoundDown(eth.WeiToEth(big.NewInt(int64(validator.BeaconStatus.Balance*uint64(eth.WeiPerGwei)))), 6)
+	beaconBalance := math.RoundDown(math.WeiToEth(big.NewInt(int64(validator.BeaconStatus.Balance*uint64(math.WeiPerGwei)))), 6)
 
 	if status == "Staking" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)

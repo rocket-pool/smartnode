@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 const namespace = "rocketpool"
@@ -83,10 +83,10 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
-	balanceFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolBalance)
-	excessFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolExcess)
-	totalFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Total)
-	effectiveFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Effective)
+	balanceFloat := math.WeiToEth(state.NetworkDetails.DepositPoolBalance)
+	excessFloat := math.WeiToEth(state.NetworkDetails.DepositPoolExcess)
+	totalFloat := math.WeiToEth(state.NetworkDetails.QueueCapacity.Total)
+	effectiveFloat := math.WeiToEth(state.NetworkDetails.QueueCapacity.Effective)
 	queueLength := float64(state.NetworkDetails.QueueLength.Uint64())
 
 	channel <- prometheus.MustNewConstMetric(

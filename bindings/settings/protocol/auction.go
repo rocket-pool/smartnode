@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -133,7 +133,7 @@ func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := auctionSettingsContract.Call(opts, value, "getStartingPriceRatio"); err != nil {
 		return 0, fmt.Errorf("error getting lot starting price ratio: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The starting price relative to current ETH price, as a fraction
@@ -165,7 +165,7 @@ func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (fl
 	if err := auctionSettingsContract.Call(opts, value, "getReservePriceRatio"); err != nil {
 		return 0, fmt.Errorf("error getting lot reserve price ratio: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The reserve price relative to current ETH price, as a fraction

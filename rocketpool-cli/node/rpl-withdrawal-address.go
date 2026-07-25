@@ -7,10 +7,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
@@ -122,7 +122,7 @@ func setRPLWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool) err
 
 	// Prompt for confirmation
 	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
-		color.YellowPrintf("NOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!\n", eth.WeiToEth(canResponse.RPLStake))
+		color.YellowPrintf("NOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!\n", math.WeiToEth(canResponse.RPLStake))
 	}
 	if prompt.Declined(yes, "Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString) {
 		fmt.Println("Cancelled.")

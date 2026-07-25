@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 const (
@@ -248,7 +248,7 @@ func (mp *minipool_v3) GetNodeFee(opts *bind.CallOpts) (float64, error) {
 	if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting minipool %s node fee: %w", mp.Address.Hex(), err)
 	}
-	return eth.WeiToEth(*nodeFee), nil
+	return math.WeiToEth(*nodeFee), nil
 }
 func (mp *minipool_v3) GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error) {
 	nodeFee := new(*big.Int)
