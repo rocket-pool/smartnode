@@ -139,9 +139,9 @@ func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanS
 
 		// Get the gas limit
 		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
-		gasInfo, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
+		gasLimits, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 	}
 

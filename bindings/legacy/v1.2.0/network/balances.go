@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
@@ -91,10 +92,10 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts, legac
 }
 
 // Estimate the gas of SubmitBalances
-func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts, legacyRocketNetworkBalancesAddress *common.Address) (rocketpool.GasInfo, error) {
+func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts, legacyRocketNetworkBalancesAddress *common.Address) (gaslimit.Limits, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, legacyRocketNetworkBalancesAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
 }

@@ -84,7 +84,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

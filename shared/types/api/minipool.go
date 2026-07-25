@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
@@ -60,15 +60,15 @@ type MinipoolBalanceDistributionDetails struct {
 	Status             types.MinipoolStatus `json:"status"`
 	IsFinalized        bool                 `json:"isFinalized"`
 	CanDistribute      bool                 `json:"canDistribute"`
-	GasInfo            rocketpool.GasInfo   `json:"gasInfo"`
+	GasLimits          gaslimit.Limits      `json:"gasLimits"`
 }
 
 type CanRefundMinipoolResponse struct {
-	Status                    string             `json:"status"`
-	Error                     string             `json:"error"`
-	CanRefund                 bool               `json:"canRefund"`
-	InsufficientRefundBalance bool               `json:"insufficientRefundBalance"`
-	GasInfo                   rocketpool.GasInfo `json:"gasInfo"`
+	Status                    string          `json:"status"`
+	Error                     string          `json:"error"`
+	CanRefund                 bool            `json:"canRefund"`
+	InsufficientRefundBalance bool            `json:"insufficientRefundBalance"`
+	GasLimits                 gaslimit.Limits `json:"gasLimits"`
 }
 type RefundMinipoolResponse struct {
 	Status string      `json:"status"`
@@ -77,11 +77,11 @@ type RefundMinipoolResponse struct {
 }
 
 type CanDissolveMinipoolResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanDissolve   bool               `json:"canDissolve"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanDissolve   bool            `json:"canDissolve"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type DissolveMinipoolResponse struct {
 	Status string      `json:"status"`
@@ -116,11 +116,11 @@ type ImportKeyResponse struct {
 }
 
 type CanProcessWithdrawalResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanWithdraw   bool               `json:"canWithdraw"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanWithdraw   bool            `json:"canWithdraw"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ProcessWithdrawalResponse struct {
 	Status string      `json:"status"`
@@ -129,11 +129,11 @@ type ProcessWithdrawalResponse struct {
 }
 
 type CanProcessWithdrawalAndFinaliseResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanWithdraw   bool               `json:"canWithdraw"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanWithdraw   bool            `json:"canWithdraw"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ProcessWithdrawalAndFinaliseResponse struct {
 	Status string      `json:"status"`
@@ -153,7 +153,7 @@ type MinipoolCloseDetails struct {
 	UserDepositBalance *big.Int              `json:"userDepositBalance"`
 	BeaconState        beacon.ValidatorState `json:"beaconState"`
 	NodeShare          *big.Int              `json:"nodeShare"`
-	GasInfo            rocketpool.GasInfo    `json:"gasInfo"`
+	GasLimits          gaslimit.Limits       `json:"gasLimits"`
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {
@@ -181,12 +181,12 @@ type CanDistributeBalanceResponse struct {
 	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
 	Balance         *big.Int             `json:"balance"`
 	CanDistribute   bool                 `json:"canDistribute"`
-	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
+	GasLimits       gaslimit.Limits      `json:"gasLimits"`
 }
 type EstimateDistributeBalanceGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type DistributeBalanceResponse struct {
 	Status string      `json:"status"`
@@ -195,9 +195,9 @@ type DistributeBalanceResponse struct {
 }
 
 type CanFinaliseMinipoolResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type FinaliseMinipoolResponse struct {
 	Status string      `json:"status"`
@@ -206,10 +206,10 @@ type FinaliseMinipoolResponse struct {
 }
 
 type CanDelegateUpgradeResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	LatestDelegateAddress common.Address     `json:"latestDelegateAddress"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
+	Status                string          `json:"status"`
+	Error                 string          `json:"error"`
+	LatestDelegateAddress common.Address  `json:"latestDelegateAddress"`
+	GasLimits             gaslimit.Limits `json:"gasLimits"`
 }
 type DelegateUpgradeResponse struct {
 	Status string      `json:"status"`
@@ -218,9 +218,9 @@ type DelegateUpgradeResponse struct {
 }
 
 type CanSetUseLatestDelegateResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetUseLatestDelegateResponse struct {
 	Status string      `json:"status"`
@@ -229,10 +229,10 @@ type SetUseLatestDelegateResponse struct {
 }
 
 type CanStakeMinipoolResponse struct {
-	Status   string             `json:"status"`
-	Error    string             `json:"error"`
-	CanStake bool               `json:"canStake"`
-	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanStake  bool            `json:"canStake"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type StakeMinipoolResponse struct {
 	Status string      `json:"status"`
@@ -241,10 +241,10 @@ type StakeMinipoolResponse struct {
 }
 
 type CanPromoteMinipoolResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPromote bool               `json:"canPromote"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanPromote bool            `json:"canPromote"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type PromoteMinipoolResponse struct {
 	Status string      `json:"status"`
@@ -295,7 +295,7 @@ type CanBeginReduceBondAmountResponse struct {
 	BeaconState           beacon.ValidatorState `json:"beaconState"`
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`
-	GasInfo               rocketpool.GasInfo    `json:"gasInfo"`
+	GasLimits             gaslimit.Limits       `json:"gasLimits"`
 }
 type BeginReduceBondAmountResponse struct {
 	Status string      `json:"status"`
@@ -304,11 +304,11 @@ type BeginReduceBondAmountResponse struct {
 }
 
 type CanReduceBondAmountResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	MinipoolVersion uint8              `json:"minipoolVersion"`
-	CanReduce       bool               `json:"canReduce"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status          string          `json:"status"`
+	Error           string          `json:"error"`
+	MinipoolVersion uint8           `json:"minipoolVersion"`
+	CanReduce       bool            `json:"canReduce"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type ReduceBondAmountResponse struct {
 	Status string      `json:"status"`
@@ -324,7 +324,7 @@ type MinipoolRescueDissolvedDetails struct {
 	MinipoolVersion uint8                 `json:"minipoolVersion"`
 	BeaconBalance   *big.Int              `json:"beaconBalance"`
 	BeaconState     beacon.ValidatorState `json:"beaconState"`
-	GasInfo         rocketpool.GasInfo    `json:"gasInfo"`
+	GasLimits       gaslimit.Limits       `json:"gasLimits"`
 }
 
 type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {

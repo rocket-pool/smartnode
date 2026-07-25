@@ -72,11 +72,11 @@ func canClaimRefund(c *cli.Command) (*api.CanClaimRefundResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateClaimRefundGas(opts)
+	gasLimits, err := mp.EstimateClaimRefundGas(opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanClaim = true
 
 	return &response, nil

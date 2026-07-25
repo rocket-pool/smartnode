@@ -32,7 +32,7 @@ func setSignallingAddress(signallingAddress common.Address, signature string, ye
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(resp.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func clearSignallingAddress(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(resp.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

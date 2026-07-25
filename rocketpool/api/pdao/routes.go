@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	bindtypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -21,102 +21,102 @@ import (
 func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/pdao/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/proposals", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getProposals(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/proposal-details", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := getProposal(c, id)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, voteDir, err := parseProposalVoteParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canVoteOnProposal(c, id, voteDir)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, voteDir, err := parseProposalVoteParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := voteOnProposal(c, id, voteDir, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-override-vote", func(w http.ResponseWriter, r *http.Request) {
 		id, voteDir, err := parseProposalVoteParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canOverrideVote(c, id, voteDir)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/override-vote", func(w http.ResponseWriter, r *http.Request) {
 		id, voteDir, err := parseProposalVoteParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := overrideVote(c, id, voteDir, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canExecuteProposal(c, id)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := executeProposal(c, id, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/get-settings", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getSettings(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-setting", func(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +124,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		setting := paramVal(r, "setting")
 		value := paramVal(r, "value")
 		resp, err := canProposeSetting(c, contract, setting, value)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-setting", func(w http.ResponseWriter, r *http.Request) {
@@ -133,148 +133,148 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		value := paramVal(r, "value")
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeSetting(c, contract, setting, value, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/get-rewards-percentages", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getRewardsPercentages(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-rewards-percentages", func(w http.ResponseWriter, r *http.Request) {
 		node, odaoAmt, pdaoAmt, err := parseRewardPercentages(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canProposeRewardsPercentages(c, node, odaoAmt, pdaoAmt)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-rewards-percentages", func(w http.ResponseWriter, r *http.Request) {
 		node, odaoAmt, pdaoAmt, err := parseRewardPercentages(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeRewardsPercentages(c, node, odaoAmt, pdaoAmt, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-one-time-spend", func(w http.ResponseWriter, r *http.Request) {
 		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canProposeOneTimeSpend(c, invoiceID, recipient, amount, customMessage)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-one-time-spend", func(w http.ResponseWriter, r *http.Request) {
 		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, customMessage, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-recurring-spend", func(w http.ResponseWriter, r *http.Request) {
 		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-recurring-spend", func(w http.ResponseWriter, r *http.Request) {
 		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-recurring-spend-update", func(w http.ResponseWriter, r *http.Request) {
 		contractName, recipient, amountPerPeriod, periodLength, _, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, true)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canProposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, customMessage)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-recurring-spend-update", func(w http.ResponseWriter, r *http.Request) {
 		contractName, recipient, amountPerPeriod, periodLength, _, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, true)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, customMessage, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-invite-to-security-council", func(w http.ResponseWriter, r *http.Request) {
 		id := paramVal(r, "id")
 		addr := common.HexToAddress(paramVal(r, "address"))
 		resp, err := canProposeInviteToSecurityCouncil(c, id, addr)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-invite-to-security-council", func(w http.ResponseWriter, r *http.Request) {
@@ -282,68 +282,68 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeInviteToSecurityCouncil(c, id, addr, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-kick-from-security-council", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		resp, err := canProposeKickFromSecurityCouncil(c, addr)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-kick-from-security-council", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeKickFromSecurityCouncil(c, addr, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-kick-multi-from-security-council", func(w http.ResponseWriter, r *http.Request) {
 		addresses, err := parseAddressList(r, "addresses")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canProposeKickMultiFromSecurityCouncil(c, addresses)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-kick-multi-from-security-council", func(w http.ResponseWriter, r *http.Request) {
 		addresses, err := parseAddressList(r, "addresses")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-replace-member-of-security-council", func(w http.ResponseWriter, r *http.Request) {
@@ -351,7 +351,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		newID := paramVal(r, "newId")
 		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
 		resp, err := canProposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-replace-member-of-security-council", func(w http.ResponseWriter, r *http.Request) {
@@ -360,136 +360,136 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/get-claimable-bonds", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getClaimableBonds(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-claim-bonds", func(w http.ResponseWriter, r *http.Request) {
 		proposalID, indices, err := parseClaimBondsParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canClaimBonds(c, proposalID, indices)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/claim-bonds", func(w http.ResponseWriter, r *http.Request) {
 		proposalID, indices, err := parseClaimBondsParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		isProposer := paramVal(r, "isProposer") == "true"
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := claimBonds(c, isProposer, proposalID, indices, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-defeat-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		index, err := parseUint64Param(r, "index")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canDefeatProposal(c, id, index)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/defeat-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		index, err := parseUint64Param(r, "index")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := defeatProposal(c, id, index, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-finalize-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canFinalizeProposal(c, id)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/finalize-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64Param(r, "id")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := finalizeProposal(c, id, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/estimate-set-voting-delegate-gas", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		resp, err := estimateSetVotingDelegateGas(c, addr)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/set-voting-delegate", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := setVotingDelegate(c, addr, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/get-current-voting-delegate", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getCurrentVotingDelegate(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-set-signalling-address", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(paramVal(r, "address"))
 		sig := paramVal(r, "signature")
 		resp, err := canSetSignallingAddress(c, addr, sig)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/set-signalling-address", func(w http.ResponseWriter, r *http.Request) {
@@ -497,26 +497,26 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		sig := paramVal(r, "signature")
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := setSignallingAddress(c, addr, sig, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-clear-signalling-address", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canClearSignallingAddress(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/clear-signalling-address", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := clearSignallingAddress(c, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/can-propose-allow-listed-controllers", func(w http.ResponseWriter, r *http.Request) {
@@ -527,7 +527,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			addresses = parseRawAddressList(addressList)
 		}
 		resp, err := canProposeAllowListedControllers(c, addresses)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/pdao/propose-allow-listed-controllers", func(w http.ResponseWriter, r *http.Request) {
@@ -538,16 +538,16 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		blockNumber, err := parseUint32Param(r, "blockNumber")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := proposeAllowListedControllers(c, addresses, blockNumber, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 }
 

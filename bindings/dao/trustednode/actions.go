@@ -8,15 +8,16 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas of Join
-func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionJoin")
 }
@@ -36,10 +37,10 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 }
 
 // Estimate the gas of Leave
-func EstimateLeaveGas(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateLeaveGas(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionLeave", rplBondRefundAddress)
 }
@@ -59,10 +60,10 @@ func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts 
 }
 
 // Estimate the gas of MakeChallenge
-func EstimateMakeChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateMakeChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeMake", memberAddress)
 }
@@ -81,10 +82,10 @@ func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts
 }
 
 // Estimate the gas of DecideChallenge
-func EstimateDecideChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDecideChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeDecide", memberAddress)
 }
@@ -114,7 +115,7 @@ func GetLatestMemberCountChangedBlock(rp *rocketpool.RocketPool, fromBlock uint6
 	topicFilter := [][]common.Hash{{rocketDaoNodeTrustedActions.ABI.Events["ActionJoined"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionLeave"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionKick"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].ID}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
 	if err != nil {
 		return 0, err
 	}

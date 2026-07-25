@@ -41,7 +41,7 @@ func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo, err = node.EstimateClaimUnclaimedRewards(rp, nodeAddress, opts)
+	response.GasLimits, err = node.EstimateClaimUnclaimedRewards(rp, nodeAddress, opts)
 	if err != nil {
 		return nil, err
 	}

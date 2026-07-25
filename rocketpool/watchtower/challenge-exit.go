@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
@@ -16,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -139,21 +139,21 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 		}
 
 		// Challenge the validators
-		gasInfo, err := megapool.EstimateChallengeExitGas(t.rp, exitChallenges, opts)
+		gasLimits, err := megapool.EstimateChallengeExitGas(t.rp, exitChallenges, opts)
 		if err != nil {
 			return fmt.Errorf("error calling estimate challenge exit: %w", err)
 		}
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
 		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasLimit = gasLimits.Safe
 
 		// Challenge
 		tx, err := megapool.ChallengeExit(t.rp, exitChallenges, opts)
@@ -162,7 +162,7 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 		if err != nil {
 			return err
 		}

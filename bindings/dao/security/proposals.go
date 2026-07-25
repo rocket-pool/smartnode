@@ -10,17 +10,18 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas of ProposeSetUint
-func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
+		return gaslimit.Limits{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -39,14 +40,14 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 // Estimate the gas of ProposeSetBool
-func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalSettingBool", contractName, settingPath, value)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set bool setting proposal payload: %w", err)
+		return gaslimit.Limits{}, fmt.Errorf("error encoding set bool setting proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -65,10 +66,10 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 // Estimate the gas of a proposal submission
-func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityProposals.GetTransactionGasInfo(opts, "propose", message, payload)
 }
@@ -92,10 +93,10 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 }
 
 // Estimate the gas of VoteOnProposal
-func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, support bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, support bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityProposals.GetTransactionGasInfo(opts, "vote", big.NewInt(int64(proposalId)), support)
 }
@@ -114,10 +115,10 @@ func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, support bool, 
 }
 
 // Estimate the gas of CancelProposal
-func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityProposals.GetTransactionGasInfo(opts, "cancel", big.NewInt(int64(proposalId)))
 }
@@ -136,10 +137,10 @@ func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tra
 }
 
 // Estimate the gas of ExecuteProposal
-func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityProposals.GetTransactionGasInfo(opts, "execute", big.NewInt(int64(proposalId)))
 }

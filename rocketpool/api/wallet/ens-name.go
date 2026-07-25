@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v3"
 	ens "github.com/wealdtech/go-ens/v3"
 
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -71,17 +71,17 @@ func setEnsName(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.Tr
 		Address: account.Address,
 		EnsName: name,
 		TxHash:  tx.Hash(),
-		GasInfo: rocketpool.GasInfo{
-			EstGasLimit:  tx.Gas(),
-			SafeGasLimit: uint64(float64(tx.Gas()) * GasLimitMultiplier),
+		GasLimits: gaslimit.Limits{
+			Estimated: tx.Gas(),
+			Safe:      uint64(float64(tx.Gas()) * GasLimitMultiplier),
 		},
 	}
 
-	if response.GasInfo.EstGasLimit > MaxGasLimit {
-		return nil, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", response.GasInfo.EstGasLimit, MaxGasLimit)
+	if response.GasLimits.Estimated > MaxGasLimit {
+		return nil, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", response.GasLimits.Estimated, MaxGasLimit)
 	}
-	if response.GasInfo.SafeGasLimit > MaxGasLimit {
-		response.GasInfo.SafeGasLimit = MaxGasLimit
+	if response.GasLimits.Safe > MaxGasLimit {
+		response.GasLimits.Safe = MaxGasLimit
 	}
 
 	return &response, nil

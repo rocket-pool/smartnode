@@ -34,7 +34,7 @@ func proposeLeave(yes bool) error {
 		return nil
 	}
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -145,11 +145,11 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	balanceWei.Mul(balanceWei, big.NewInt(1e9))
 
 	// Run the deposit gas estimator
-	gasInfo, err := node.EstimateCreateVacantMinipoolGas(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)
+	gasLimits, err := node.EstimateCreateVacantMinipoolGas(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 

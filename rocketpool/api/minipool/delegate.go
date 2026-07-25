@@ -51,9 +51,9 @@ func canDelegateUpgrade(c *cli.Command, minipoolAddress common.Address) (*api.Ca
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateDelegateUpgradeGas(opts)
+	gasLimits, err := mp.EstimateDelegateUpgradeGas(opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Return response
@@ -149,9 +149,9 @@ func canSetUseLatestDelegate(c *cli.Command, minipoolAddress common.Address) (*a
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateSetUseLatestDelegateGas(opts)
+	gasLimits, err := mp.EstimateSetUseLatestDelegateGas(opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Return response

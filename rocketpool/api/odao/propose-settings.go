@@ -65,12 +65,12 @@ func canProposeSettingMembersQuorum(c *cli.Command, quorum float64) (*api.CanPro
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeQuorumGas(rp, quorum, opts)
+	gasLimits, err := trustednode.EstimateProposeQuorumGas(rp, quorum, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -128,12 +128,12 @@ func canProposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int) (*a
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeRPLBondGas(rp, bondAmountWei, opts)
+	gasLimits, err := trustednode.EstimateProposeRPLBondGas(rp, bondAmountWei, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -191,12 +191,12 @@ func canProposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax ui
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeMinipoolUnbondedMaxGas(rp, unbondedMinipoolMax, opts)
+	gasLimits, err := trustednode.EstimateProposeMinipoolUnbondedMaxGas(rp, unbondedMinipoolMax, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -254,12 +254,12 @@ func canProposeSettingProposalCooldown(c *cli.Command, proposalCooldownTimespan 
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeProposalCooldownTimeGas(rp, proposalCooldownTimespan, opts)
+	gasLimits, err := trustednode.EstimateProposeProposalCooldownTimeGas(rp, proposalCooldownTimespan, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -317,12 +317,12 @@ func canProposeSettingProposalVoteTimespan(c *cli.Command, proposalVoteTimespan 
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeProposalVoteTimeGas(rp, proposalVoteTimespan, opts)
+	gasLimits, err := trustednode.EstimateProposeProposalVoteTimeGas(rp, proposalVoteTimespan, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -380,12 +380,12 @@ func canProposeSettingProposalVoteDelayTimespan(c *cli.Command, proposalDelayTim
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeProposalVoteDelayTimeGas(rp, proposalDelayTimespan, opts)
+	gasLimits, err := trustednode.EstimateProposeProposalVoteDelayTimeGas(rp, proposalDelayTimespan, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -443,12 +443,12 @@ func canProposeSettingProposalExecuteTimespan(c *cli.Command, proposalExecuteTim
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeProposalExecuteTimeGas(rp, proposalExecuteTimespan, opts)
+	gasLimits, err := trustednode.EstimateProposeProposalExecuteTimeGas(rp, proposalExecuteTimespan, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -506,12 +506,12 @@ func canProposeSettingProposalActionTimespan(c *cli.Command, proposalActionTimes
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeProposalActionTimeGas(rp, proposalActionTimespan, opts)
+	gasLimits, err := trustednode.EstimateProposeProposalActionTimeGas(rp, proposalActionTimespan, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -569,12 +569,12 @@ func canProposeSettingScrubPeriod(c *cli.Command, scrubPeriod uint64) (*api.CanP
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeScrubPeriodGas(rp, scrubPeriod, opts)
+	gasLimits, err := trustednode.EstimateProposeScrubPeriodGas(rp, scrubPeriod, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -632,12 +632,12 @@ func canProposeSettingPromotionScrubPeriod(c *cli.Command, promotionScrubPeriod 
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposePromotionScrubPeriodGas(rp, promotionScrubPeriod, opts)
+	gasLimits, err := trustednode.EstimateProposePromotionScrubPeriodGas(rp, promotionScrubPeriod, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -695,12 +695,12 @@ func canProposeSettingScrubPenaltyEnabled(c *cli.Command, enabled bool) (*api.Ca
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeScrubPenaltyEnabledGas(rp, enabled, opts)
+	gasLimits, err := trustednode.EstimateProposeScrubPenaltyEnabledGas(rp, enabled, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -758,12 +758,12 @@ func canProposeSettingBondReductionWindowStart(c *cli.Command, bondReductionWind
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeBondReductionWindowStartGas(rp, bondReductionWindowStart, opts)
+	gasLimits, err := trustednode.EstimateProposeBondReductionWindowStartGas(rp, bondReductionWindowStart, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }
@@ -821,12 +821,12 @@ func canProposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWin
 		return nil, err
 	}
 
-	gasInfo, err := trustednode.EstimateProposeBondReductionWindowLengthGas(rp, bondReductionWindowLength, opts)
+	gasLimits, err := trustednode.EstimateProposeBondReductionWindowLengthGas(rp, bondReductionWindowLength, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return response, nil
 
 }

@@ -262,7 +262,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canDeposit.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ func join(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canJoin.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canJoin.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

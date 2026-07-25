@@ -53,11 +53,11 @@ func canNodeSwapRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeSwapRplResp
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
+	gasLimits, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	response.CanSwap = !response.InsufficientBalance
@@ -137,11 +137,11 @@ func getSwapApprovalGas(c *cli.Command, amountWei *big.Int) (*api.NodeSwapRplApp
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := tokens.EstimateApproveFixedSupplyRPLGas(rp, *rocketTokenRPLAddress, amountWei, opts)
+	gasLimits, err := tokens.EstimateApproveFixedSupplyRPLGas(rp, *rocketTokenRPLAddress, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

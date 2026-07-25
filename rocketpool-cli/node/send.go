@@ -86,7 +86,7 @@ func nodeSend(amountRaw float64, sendAll bool, token string, toAddressOrENS stri
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSend.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -144,12 +144,12 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 		fmt.Printf("For sending all ETH, we need to estimate the gas costs first.\n")
 		// For ETH, determine gas settings first so we can subtract the gas cost from the balance.
 		// This may prompt the user to select a gas price.
-		g, err := gas.GetMaxFeeAndLimit(canSend.GasInfo, rp, yes)
+		g, err := gas.GetMaxFeeAndLimit(canSend.GasLimits, rp, yes)
 		if err != nil {
 			return err
 		}
 
-		gasCost := g.GetMaxGasCostEth(canSend.GasInfo)
+		gasCost := g.GetMaxGasCostEth(canSend.GasLimits)
 		amountRaw = canSend.Balance - gasCost
 
 		if amountRaw <= 0 {
@@ -205,7 +205,7 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSend.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

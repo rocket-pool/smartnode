@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -94,21 +94,21 @@ func claimFromLot(lot string, yes bool) error {
 	// Get the total gas limit estimate
 	var totalGas uint64
 	var totalSafeGas uint64
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, lot := range selectedLots {
 		canResponse, err := rp.CanClaimFromLot(lot.Details.Index)
 		if err != nil {
 			return fmt.Errorf("Error checking if claiming lot %d is possible: %w", lot.Details.Index, err)
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = canResponse.GasLimits
+		totalGas += canResponse.GasLimits.Estimated
+		totalSafeGas += canResponse.GasLimits.Safe
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
+	gasLimits.Estimated = totalGas
+	gasLimits.Safe = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
+	g, err := gas.GetMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

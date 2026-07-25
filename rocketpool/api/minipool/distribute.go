@@ -172,7 +172,7 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 				if !success {
 					return fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", address.Hex(), minipoolDetails.MinipoolVersion)
 				}
-				minipoolDetails.GasInfo, err = mpv3.EstimateDistributeBalanceGas(true, opts)
+				minipoolDetails.GasLimits, err = mpv3.EstimateDistributeBalanceGas(true, opts)
 				if err != nil {
 					return fmt.Errorf("error estimating gas to distribute minipool %s: %w", address.Hex(), err)
 				}

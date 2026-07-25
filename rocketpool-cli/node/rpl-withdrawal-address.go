@@ -89,7 +89,7 @@ func setRPLWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool) err
 			}
 
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(canSendResponse.GasInfo, rp, yes)
+			err = gas.AssignMaxFeeAndLimit(canSendResponse.GasLimits, rp, yes)
 			if err != nil {
 				return err
 			}
@@ -115,7 +115,7 @@ func setRPLWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool) err
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func confirmRPLWithdrawalAddress(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

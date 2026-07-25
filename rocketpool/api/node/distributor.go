@@ -87,11 +87,11 @@ func getInitializeFeeDistributorGas(c *cli.Command) (*api.NodeInitializeFeeDistr
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateInitializeFeeDistributorGas(rp, opts)
+	gasLimits, err := node.EstimateInitializeFeeDistributorGas(rp, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil
@@ -187,8 +187,8 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := distributor.EstimateDistributeGas(opts)
-		response.GasInfo = gasInfo
+		gasLimits, err := distributor.EstimateDistributeGas(opts)
+		response.GasLimits = gasLimits
 		return err
 	})
 

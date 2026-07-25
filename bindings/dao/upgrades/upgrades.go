@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
 )
@@ -89,10 +90,10 @@ func GetUpgradeProposalName(rp *rocketpool.RocketPool, upgradeProposalId uint64,
 }
 
 // Estimate the gas of ExecuteUpgrade
-func EstimateExecuteUpgradeGas(rp *rocketpool.RocketPool, upgradeProposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateExecuteUpgradeGas(rp *rocketpool.RocketPool, upgradeProposalId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedUpgrade, err := getRocketDAONodeTrustedUpgrade(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAONodeTrustedUpgrade.GetTransactionGasInfo(opts, "execute", big.NewInt(int64(upgradeProposalId)))
 }

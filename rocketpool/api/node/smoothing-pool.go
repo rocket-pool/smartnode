@@ -105,9 +105,9 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateSetSmoothingPoolRegistrationStateGas(rp, status, opts)
+	gasLimits, err := node.EstimateSetSmoothingPoolRegistrationStateGas(rp, status, opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	return &response, err

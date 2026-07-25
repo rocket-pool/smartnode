@@ -18,6 +18,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
@@ -30,7 +32,6 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -762,15 +763,14 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	}
 
 	// Get the gas limit
-	var gasInfo rocketpool.GasInfo
-	gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, balances.ClampedTotalBalanceWei, balances.TotalStaking, balances.RETHSupply, opts)
+	gasLimits, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, balances.ClampedTotalBalanceWei, balances.TotalStaking, balances.RETHSupply, opts)
 
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
 			// Override the gas info to force a submission
-			gasInfo = rocketpool.GasInfo{
-				EstGasLimit:  utils.BalanceSubmissionForcedGas,
-				SafeGasLimit: utils.BalanceSubmissionForcedGas,
+			gasLimits = gaslimit.Limits{
+				Estimated: utils.BalanceSubmissionForcedGas,
+				Safe:      utils.BalanceSubmissionForcedGas,
 			}
 			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
@@ -780,14 +780,14 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
+	opts.GasLimit = gasLimits.Safe
 	var hash common.Hash
 	// Submit balances
 	hash, err = network.SubmitBalances(t.rp, balances.Block, balances.SlotTimestamp, balances.ClampedTotalBalanceWei, balances.TotalStaking, balances.RETHSupply, opts)
@@ -796,7 +796,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}

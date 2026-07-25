@@ -84,11 +84,11 @@ func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecut
 		if err != nil {
 			return nil, err
 		}
-		gasInfo, err := upgrades.EstimateExecuteUpgradeGas(rp, upgradeProposalId, opts)
+		gasLimits, err := upgrades.EstimateExecuteUpgradeGas(rp, upgradeProposalId, opts)
 		if err != nil {
 			return nil, err
 		}
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 	return &response, nil
 

@@ -71,14 +71,14 @@ func canProposeRecurringSpendUpdate(c *cli.Command, contractName string, recipie
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeRecurringTreasurySpendUpdateGas(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeRecurringTreasurySpendUpdateGas(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

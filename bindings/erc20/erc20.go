@@ -1,4 +1,4 @@
-package eth
+package erc20
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 const (
@@ -192,7 +193,7 @@ func (c *Erc20Contract) BalanceOf(address common.Address, opts *bind.CallOpts) (
 }
 
 // Estimate the gas for transferring an ERC20 to another address
-func (c *Erc20Contract) EstimateTransferGas(to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (c *Erc20Contract) EstimateTransferGas(to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return c.contract.GetTransactionGasInfo(opts, "transfer", to, amount)
 }
 

@@ -4,7 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type TNDAOUpgradeStatusResponse struct {
@@ -22,13 +22,13 @@ type TNDAOGetUpgradeProposalsResponse struct {
 }
 
 type CanExecuteUpgradeProposalResponse struct {
-	Status             string             `json:"status"`
-	Error              string             `json:"error"`
-	CanExecute         bool               `json:"canExecute"`
-	DoesNotExist       bool               `json:"doesNotExist"`
-	InvalidTrustedNode bool               `json:"invalidTrustedNode"`
-	InvalidState       bool               `json:"invalidState"`
-	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+	Status             string          `json:"status"`
+	Error              string          `json:"error"`
+	CanExecute         bool            `json:"canExecute"`
+	DoesNotExist       bool            `json:"doesNotExist"`
+	InvalidTrustedNode bool            `json:"invalidTrustedNode"`
+	InvalidState       bool            `json:"invalidState"`
+	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type ExecuteUpgradeProposalResponse struct {
 	Status string      `json:"status"`

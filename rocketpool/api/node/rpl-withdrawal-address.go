@@ -93,11 +93,11 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	}
 
 	// Check withdrawal address setting
-	gasInfo, err := node.EstimateSetRPLWithdrawalAddressGas(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
+	gasLimits, err := node.EstimateSetRPLWithdrawalAddressGas(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil
@@ -178,11 +178,11 @@ func canConfirmRPLWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodeRPLWithd
 	}
 
 	// Check withdrawal address setting
-	gasInfo, err := node.EstimateConfirmRPLWithdrawalAddressGas(rp, nodeAccount.Address, opts)
+	gasLimits, err := node.EstimateConfirmRPLWithdrawalAddressGas(rp, nodeAccount.Address, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil

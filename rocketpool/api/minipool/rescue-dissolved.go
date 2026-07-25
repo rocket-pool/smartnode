@@ -12,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
@@ -206,9 +207,9 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 		safeGasLimit = rocketpool.MaxGasLimit
 	}
 
-	details.GasInfo = rocketpool.GasInfo{
-		EstGasLimit:  gasLimit,
-		SafeGasLimit: safeGasLimit,
+	details.GasLimits = gaslimit.Limits{
+		Estimated: gasLimit,
+		Safe:      safeGasLimit,
 	}
 
 	return details, nil

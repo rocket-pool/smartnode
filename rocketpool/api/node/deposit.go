@@ -284,11 +284,11 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 		return nil, fmt.Errorf("count must be greater than 0")
 	}
 
-	gasInfo, err := node.EstimateDepositMultiGas(rp, deposits, opts)
+	gasLimits, err := node.EstimateDepositMultiGas(rp, deposits, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error estimating gas for depositMulti: %w", err)
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 

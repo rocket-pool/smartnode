@@ -67,7 +67,7 @@ func reduceBond(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canReduceBond.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canReduceBond.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

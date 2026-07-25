@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Check if the given node has already claimed rewards for the given interval
@@ -38,10 +39,10 @@ func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOp
 }
 
 // Estimate claim rewards gas
-func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
 }
@@ -60,10 +61,10 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int
 }
 
 // Estimate claim and restake rewards gas
-func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
 }

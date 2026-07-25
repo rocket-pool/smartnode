@@ -72,7 +72,7 @@ func dissolveValidator(validatorId uint64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDissolve.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canDissolve.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

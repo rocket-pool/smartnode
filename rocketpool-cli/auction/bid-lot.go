@@ -138,7 +138,7 @@ func bidOnLot(lot, amount string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canBid.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canBid.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -78,14 +78,14 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddr
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeReplaceSecurityCouncilMemberGas(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeReplaceSecurityCouncilMemberGas(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

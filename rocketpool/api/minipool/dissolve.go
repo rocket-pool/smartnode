@@ -57,9 +57,9 @@ func canDissolveMinipool(c *cli.Command, minipoolAddress common.Address) (*api.C
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateDissolveGas(opts)
+	gasLimits, err := mp.EstimateDissolveGas(opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Update & return response

@@ -95,7 +95,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 			return err
 		}
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
+		err = gas.AssignMaxFeeAndLimit(approvalGas.GasLimits, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 	fmt.Println("RPL Swap Gas Info:")
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSwap.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

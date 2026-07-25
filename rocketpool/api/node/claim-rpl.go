@@ -67,11 +67,11 @@ func canNodeClaimRpl(c *cli.Command) (*api.CanNodeClaimRplResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(rp, opts, &legacyClaimNodeAddress)
+	gasLimits, err := rewards.EstimateClaimNodeRewardsGas(rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 }

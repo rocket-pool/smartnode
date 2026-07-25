@@ -138,7 +138,7 @@ func voteOnProposal(proposal string, supportFlag string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canVote.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

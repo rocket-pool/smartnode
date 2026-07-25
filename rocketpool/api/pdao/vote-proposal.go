@@ -109,11 +109,11 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.Vo
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
+	gasLimits, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	return &response, nil

@@ -7,9 +7,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/utils"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterWaitRoute registers the /api/wait endpoint on mux.
@@ -19,11 +19,11 @@ func RegisterWaitRoute(mux *http.ServeMux, c *cli.Command) {
 		hash := common.HexToHash(r.URL.Query().Get("txHash"))
 		rp, err := services.GetRocketPool(c)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
-		response := apitypes.APIResponse{}
+		resp := apitypes.APIResponse{}
 		_, err = utils.WaitForTransactionWithContext(r.Context(), rp.Client, hash)
-		apiutils.WriteResponse(w, &response, err)
+		response.WriteResponse(w, &resp, err)
 	})
 }

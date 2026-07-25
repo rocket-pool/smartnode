@@ -13,6 +13,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
@@ -21,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -280,7 +280,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteScrubGas(opts)
+	gasLimits, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("could not estimate the gas required to scrub the minipool: %s", err.Error()))
 		return
@@ -288,14 +288,14 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
+	opts.GasLimit = gasLimits.Safe
 
 	// Cancel the reduction
 	hash, err := mp.VoteScrub(opts)
@@ -305,7 +305,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
 		return

@@ -8,7 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
@@ -101,10 +103,10 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 }
 
 // Estimate the gas of SubmitBalances
-func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), totalEth, stakingEth, rethSupply)
 }
@@ -134,7 +136,7 @@ func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}, {common.BytesToHash(nodeAddress.Bytes())}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +165,7 @@ func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, i
 	topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +197,7 @@ func GetBalancesUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts
 	topicFilter := [][]common.Hash{{balancesUpdatedEvent.ID}, {indexBytes}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
 	if err != nil {
 		return false, BalancesUpdatedEvent{}, err
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
@@ -148,10 +149,10 @@ func GetCurrentVotingDelegate(rp *rocketpool.RocketPool, address common.Address,
 }
 
 // Estimate the gas of SetVotingDelegate
-func EstimateSetVotingDelegateGas(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetVotingDelegateGas(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkVoting.GetTransactionGasInfo(opts, "setDelegate", newDelegate)
 }

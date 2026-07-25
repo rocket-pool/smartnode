@@ -105,9 +105,9 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateWithdrawRPLGas(rp, opts)
+		gasLimits, err := node.EstimateWithdrawRPLGas(rp, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})
@@ -267,9 +267,9 @@ func canNodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.CanNodeW
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node131.EstimateWithdrawRPLGas(rp, nodeAccount.Address, amountWei, opts)
+		gasLimits, err := node131.EstimateWithdrawRPLGas(rp, nodeAccount.Address, amountWei, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

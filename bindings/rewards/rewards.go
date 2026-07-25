@@ -13,8 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 const (
@@ -211,10 +212,10 @@ func GetTrustedNodeSubmittedSpecificRewards(rp *rocketpool.RocketPool, nodeAddre
 }
 
 // Estimate the gas for submitting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", submission)
 }
@@ -276,7 +277,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	topicFilter := [][]common.Hash{{rewardsSnapshotEvent.ID}, {indexBytes}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
@@ -251,14 +251,13 @@ func closeMinipools(minipool string, confirmSlashing, yes, bundle bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, minipool := range selectedMinipools {
-		gasInfo.EstGasLimit += minipool.GasInfo.EstGasLimit
-		gasInfo.SafeGasLimit += minipool.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(minipool.GasLimits)
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

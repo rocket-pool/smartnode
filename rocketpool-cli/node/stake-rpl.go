@@ -83,7 +83,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 					return err
 				}
 				// Assign max fees
-				err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
+				err = gas.AssignMaxFeeAndLimit(approvalGas.GasLimits, rp, yes)
 				if err != nil {
 					return err
 				}
@@ -127,7 +127,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 			}
 			fmt.Println("RPL Swap Gas Info:")
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, yes)
+			err = gas.AssignMaxFeeAndLimit(canSwap.GasLimits, rp, yes)
 			if err != nil {
 				return err
 			}
@@ -270,7 +270,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 			return err
 		}
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
+		err = gas.AssignMaxFeeAndLimit(approvalGas.GasLimits, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -315,7 +315,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 
 	fmt.Println("RPL Stake Gas Info:")
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canStake.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canStake.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

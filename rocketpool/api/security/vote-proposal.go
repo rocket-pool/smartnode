@@ -90,9 +90,9 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanVoteO
 		if err != nil {
 			return err
 		}
-		gasInfo, err := security.EstimateVoteOnProposalGas(rp, proposalId, false, opts)
+		gasLimits, err := security.EstimateVoteOnProposalGas(rp, proposalId, false, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

@@ -208,7 +208,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(selectedMinipool.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(selectedMinipool.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

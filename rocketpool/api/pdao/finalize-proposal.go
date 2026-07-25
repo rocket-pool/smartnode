@@ -77,13 +77,13 @@ func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinaliz
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateFinalizeGas(rp, proposalId, opts)
+	gasLimits, err := protocol.EstimateFinalizeGas(rp, proposalId, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

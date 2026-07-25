@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
@@ -205,19 +205,13 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64
-	var totalSafeGas uint64
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, minipool := range selectedMinipools {
-		gasInfo = minipool.GasInfo
-		totalGas += gasInfo.EstGasLimit
-		totalSafeGas += gasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(minipool.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -234,7 +228,7 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	for _, minipool := range selectedMinipools {
 		// to avoid a second eth_estimateGas
 		if userGasLimit == 0 {
-			rp.AssignGasSettings(maxFee, maxPrioFee, minipool.GasInfo.SafeGasLimit)
+			rp.AssignGasSettings(maxFee, maxPrioFee, minipool.GasLimits.Safe)
 		}
 
 		response, err := rp.DistributeBalance(minipool.Address)

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -85,24 +85,18 @@ func claimBonds(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas = uint64(0)
-	var totalSafeGas = uint64(0)
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, bond := range selectedClaims {
 		indices := getClaimIndicesForBond(bond)
 		canResponse, err := rp.PDAOCanClaimBonds(bond.ProposalID, indices)
 		if err != nil {
 			return fmt.Errorf("error simulating claim-bond on proposal %d: %s", bond.ProposalID, err.Error())
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(canResponse.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

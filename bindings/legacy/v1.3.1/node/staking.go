@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get the version of the Node Staking contract
@@ -137,10 +138,10 @@ func GetNodeEthMatchedLimit(rp *rocketpool.RocketPool, nodeAddress common.Addres
 }
 
 // Estimate the gas of Stake
-func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "stakeRPL", rplAmount)
 }
@@ -159,10 +160,10 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 }
 
 // Estimate the gas of Burn RPL
-func EstimateBurnRpl(rp *rocketpool.RocketPool, from common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateBurnRpl(rp *rocketpool.RocketPool, from common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "burnRPL", from, rplAmount)
 }
@@ -182,10 +183,10 @@ func BurnRPL(rp *rocketpool.RocketPool, from common.Address, rplAmount *big.Int,
 }
 
 // Estimate the gas of set RPL locking allowed
-func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "setRPLLockingAllowed", caller, allowed)
 }
@@ -217,10 +218,10 @@ func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 }
 
 // Estimate the gas of set stake RPL for allowed
-func EstimateSetStakeRPLForAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetStakeRPLForAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "setStakeRPLForAllowed", caller, allowed)
 }
@@ -239,10 +240,10 @@ func SetStakeRPLForAllowed(rp *rocketpool.RocketPool, caller common.Address, all
 }
 
 // Estimate the gas of WithdrawRPL
-func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", nodeAddress, rplAmount)
 }

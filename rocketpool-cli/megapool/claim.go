@@ -52,7 +52,7 @@ func claim(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canRepay.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canRepay.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

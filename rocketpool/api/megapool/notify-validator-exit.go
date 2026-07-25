@@ -76,13 +76,13 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
+	gasLimits, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanExit = !response.InvalidStatus
 	return &response, nil
 

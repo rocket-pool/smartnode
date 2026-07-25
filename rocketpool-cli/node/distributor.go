@@ -42,7 +42,7 @@ func initializeFeeDistributor(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func distribute(yes bool) error {
 	fmt.Printf("\trETH pool stakers will receive %.6f ETH.\n\n", rEthShare)
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDistributeResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canDistributeResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

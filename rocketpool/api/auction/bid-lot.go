@@ -81,9 +81,9 @@ func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanB
 			return err
 		}
 		opts.Value = amountWei
-		gasInfo, err := auction.EstimatePlaceBidGas(rp, lotIndex, opts)
+		gasLimits, err := auction.EstimatePlaceBidGas(rp, lotIndex, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
@@ -78,7 +79,7 @@ func getClaimingContractTotalClaimed(rp *rocketpool.RocketPool, claimsContract s
 }
 
 // Estimate the gas of claim
-func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return claimsContract.GetTransactionGasInfo(opts, "claim")
 }
 

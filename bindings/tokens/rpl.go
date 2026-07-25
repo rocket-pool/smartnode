@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 //
@@ -44,10 +45,10 @@ func GetRPLAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, o
 }
 
 // Estimate the gas of TransferRPL
-func EstimateTransferRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateTransferRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateTransferGas(rocketTokenRPL, "RPL", to, amount, opts)
 }
@@ -62,10 +63,10 @@ func TransferRPL(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, 
 }
 
 // Estimate the gas of ApproveRPL
-func EstimateApproveRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateApproveRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateApproveGas(rocketTokenRPL, "RPL", spender, amount, opts)
 }
@@ -80,10 +81,10 @@ func ApproveRPL(rp *rocketpool.RocketPool, spender common.Address, amount *big.I
 }
 
 // Estimate the gas of TransferFromRPL
-func EstimateTransferFromRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateTransferFromRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateTransferFromGas(rocketTokenRPL, "RPL", from, to, amount, opts)
 }
@@ -102,10 +103,10 @@ func TransferFromRPL(rp *rocketpool.RocketPool, from, to common.Address, amount 
 //
 
 // Estimate the gas of MintInflationRPL
-func EstimateMintInflationRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateMintInflationRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketTokenRPL.GetTransactionGasInfo(opts, "inflationMintTokens")
 }
@@ -124,10 +125,10 @@ func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 }
 
 // Estimate the gas of SwapFixedSupplyRPLForRPL
-func EstimateSwapFixedSupplyRPLForRPLGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSwapFixedSupplyRPLForRPLGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketTokenRPL.GetTransactionGasInfo(opts, "swapTokens", amount)
 }

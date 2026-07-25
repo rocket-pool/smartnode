@@ -46,7 +46,7 @@ func sendMessage(toAddressOrENS string, message []byte, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSend.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

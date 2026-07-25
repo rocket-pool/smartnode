@@ -100,7 +100,7 @@ func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) erro
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(response.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

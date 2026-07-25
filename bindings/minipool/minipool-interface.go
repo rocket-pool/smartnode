@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -75,19 +76,19 @@ type Minipool interface {
 	GetUserDepositBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDepositAssigned(opts *bind.CallOpts) (bool, error)
 	GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error)
-	EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateRefundGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Refund(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error)
-	EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateDissolveGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Dissolve(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateCloseGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Close(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateFinaliseGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Finalise(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateSetUseLatestDelegateGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateSetUseLatestDelegateGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	SetUseLatestDelegate(opts *bind.TransactOpts) (common.Hash, error)
 	GetUseLatestDelegate(opts *bind.CallOpts) (bool, error)
 	GetDelegate(opts *bind.CallOpts) (common.Address, error)
@@ -95,7 +96,7 @@ type Minipool interface {
 	GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error)
 	CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error)
 	CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error)
-	EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateVoteScrubGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	VoteScrub(opts *bind.TransactOpts) (common.Hash, error)
 	GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error)
 }

@@ -68,7 +68,7 @@ func notifyValidatorExit(validatorId uint64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(response.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

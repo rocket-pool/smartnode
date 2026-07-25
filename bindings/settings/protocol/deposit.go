@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -42,7 +43,7 @@ func GetDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, er
 func ProposeDepositEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", DepositEnabledSettingPath), DepositSettingsContractName, DepositEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", DepositEnabledSettingPath), DepositSettingsContractName, DepositEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -61,7 +62,7 @@ func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
 func ProposeAssignDepositsEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", AssignDepositsEnabledSettingPath), DepositSettingsContractName, AssignDepositsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeAssignDepositsEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeAssignDepositsEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", AssignDepositsEnabledSettingPath), DepositSettingsContractName, AssignDepositsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -80,7 +81,7 @@ func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
 func ProposeMinimumDeposit(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumDepositSettingPath), DepositSettingsContractName, MinimumDepositSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinimumDepositGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinimumDepositGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumDepositSettingPath), DepositSettingsContractName, MinimumDepositSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -99,7 +100,7 @@ func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 func ProposeMaximumDepositPoolSize(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumDepositPoolSizeSettingPath), DepositSettingsContractName, MaximumDepositPoolSizeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumDepositPoolSizeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumDepositPoolSizeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumDepositPoolSizeSettingPath), DepositSettingsContractName, MaximumDepositPoolSizeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -118,7 +119,7 @@ func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts
 func ProposeMaximumDepositAssignments(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumDepositAssignmentsSettingPath), DepositSettingsContractName, MaximumDepositAssignmentsSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumDepositAssignmentsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumDepositAssignmentsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumDepositAssignmentsSettingPath), DepositSettingsContractName, MaximumDepositAssignmentsSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -137,7 +138,7 @@ func GetMaximumSocializedDepositAssignments(rp *rocketpool.RocketPool, opts *bin
 func ProposeMaximumSocializedDepositAssignments(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumSocializedDepositAssignmentsSettingPath), DepositSettingsContractName, MaximumSocializedDepositAssignmentsSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumSocializedDepositAssignmentsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumSocializedDepositAssignmentsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumSocializedDepositAssignmentsSettingPath), DepositSettingsContractName, MaximumSocializedDepositAssignmentsSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -156,7 +157,7 @@ func GetDepositFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, er
 func ProposeDepositFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", DepositFeeSettingPath), DepositSettingsContractName, DepositFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeDepositFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeDepositFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositFeeSettingPath), DepositSettingsContractName, DepositFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -175,7 +176,7 @@ func GetExpressQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 func ProposeExpressQueueRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ExpressQueueRatePath), DepositSettingsContractName, ExpressQueueRatePath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeExpressQueueRateGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeExpressQueueRateGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExpressQueueRatePath), DepositSettingsContractName, ExpressQueueRatePath, value, blockNumber, treeNodes, opts)
 }
 
@@ -194,7 +195,7 @@ func GetExpressQueueTicketsBaseProvision(rp *rocketpool.RocketPool, opts *bind.C
 func ProposeExpressQueueTicketsBaseProvision(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ExpressQueueTicketsBaseProvisionPath), DepositSettingsContractName, ExpressQueueTicketsBaseProvisionPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeExpressQueueTicketsBaseProvisionGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeExpressQueueTicketsBaseProvisionGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExpressQueueTicketsBaseProvisionPath), DepositSettingsContractName, ExpressQueueTicketsBaseProvisionPath, value, blockNumber, treeNodes, opts)
 }
 

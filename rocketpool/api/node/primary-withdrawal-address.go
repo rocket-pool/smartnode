@@ -44,11 +44,11 @@ func canSetPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Add
 	}
 
 	// Check withdrawal address setting
-	gasInfo, err := storage.EstimateSetWithdrawalAddressGas(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
+	gasLimits, err := storage.EstimateSetWithdrawalAddressGas(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	response.CanSet = true
@@ -138,11 +138,11 @@ func canConfirmPrimaryWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodePrim
 	}
 
 	// Check withdrawal address setting
-	gasInfo, err := storage.EstimateConfirmWithdrawalAddressGas(rp, nodeAccount.Address, opts)
+	gasLimits, err := storage.EstimateConfirmWithdrawalAddressGas(rp, nodeAccount.Address, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	response.CanConfirm = (pendingAddress != nodeAccount.Address)

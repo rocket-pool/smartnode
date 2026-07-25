@@ -8,8 +8,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
@@ -101,9 +101,9 @@ type QueueDetails struct {
 }
 
 type MegapoolCanDelegateUpgradeResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type MegapoolDelegateUpgradeResponse struct {
 	Status string      `json:"status"`
@@ -118,10 +118,10 @@ type MegapoolGetDelegateResponse struct {
 }
 
 type MegapoolCanSetUseLatestDelegateResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
-	MatchesCurrentSetting bool               `json:"matchesCurrentSetting"`
+	Status                string          `json:"status"`
+	Error                 string          `json:"error"`
+	GasLimits             gaslimit.Limits `json:"gasLimits"`
+	MatchesCurrentSetting bool            `json:"matchesCurrentSetting"`
 }
 type MegapoolSetUseLatestDelegateResponse struct {
 	Status string      `json:"status"`
@@ -142,16 +142,16 @@ type MegapoolGetEffectiveDelegateResponse struct {
 }
 
 type CanDistributeMegapoolResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	MegapoolAddress       common.Address     `json:"megapoolAddress"`
-	MegapoolNotDeployed   bool               `json:"megapoolNotDeployed"`
-	LastDistributionTime  uint64             `json:"lastDistributionTime"`
-	LockedValidatorCount  uint32             `json:"lockedValidatorCount"`
-	ExitingValidatorCount uint32             `json:"exitingValidatorCount"`
-	CanDistribute         bool               `json:"canDistribute"`
-	Details               MegapoolDetails    `json:"details"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
+	Status                string          `json:"status"`
+	Error                 string          `json:"error"`
+	MegapoolAddress       common.Address  `json:"megapoolAddress"`
+	MegapoolNotDeployed   bool            `json:"megapoolNotDeployed"`
+	LastDistributionTime  uint64          `json:"lastDistributionTime"`
+	LockedValidatorCount  uint32          `json:"lockedValidatorCount"`
+	ExitingValidatorCount uint32          `json:"exitingValidatorCount"`
+	CanDistribute         bool            `json:"canDistribute"`
+	Details               MegapoolDetails `json:"details"`
+	GasLimits             gaslimit.Limits `json:"gasLimits"`
 }
 
 type DistributeMegapoolResponse struct {

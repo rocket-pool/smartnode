@@ -47,11 +47,11 @@ func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *
 		return nil, err
 	}
 
-	gasInfo, err := megapool.EstimatePenaliseGas(rp, megapoolAddress, block, amount, opts)
+	gasLimits, err := megapool.EstimatePenaliseGas(rp, megapoolAddress, block, amount, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanPenalise = true
 
 	return &response, nil

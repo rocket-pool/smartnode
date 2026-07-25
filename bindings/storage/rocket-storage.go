@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get a node's withdrawal address
@@ -30,7 +31,7 @@ func GetNodePendingWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress comm
 }
 
 // Estimate the gas of SetWithdrawalAddress
-func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return rp.RocketStorageContract.GetTransactionGasInfo(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
 }
 
@@ -44,7 +45,7 @@ func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 // Estimate the gas of ConfirmWithdrawalAddress
-func EstimateConfirmWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateConfirmWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return rp.RocketStorageContract.GetTransactionGasInfo(opts, "confirmWithdrawalAddress", nodeAddress)
 }
 

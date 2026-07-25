@@ -32,7 +32,7 @@ func setEnsName(name string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

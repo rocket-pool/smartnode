@@ -71,14 +71,14 @@ func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeKickFromSecurityCouncilGas(rp, message, address, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeKickFromSecurityCouncilGas(rp, message, address, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

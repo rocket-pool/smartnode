@@ -8,13 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas required to exit the validator queue
-func EstimateExitQueueGas(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateExitQueueGas(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	validatorIndexBig := big.NewInt(int64(validatorIndex))
 	return rocketDepositPool.GetTransactionGasInfo(opts, "exitQueue", validatorIndexBig, expressQueue)

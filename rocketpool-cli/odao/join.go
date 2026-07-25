@@ -65,7 +65,7 @@ func join(yes bool, swap bool) error {
 					return err
 				}
 				// Assign max fees
-				err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
+				err = gas.AssignMaxFeeAndLimit(approvalGas.GasLimits, rp, yes)
 				if err != nil {
 					return err
 				}
@@ -109,7 +109,7 @@ func join(yes bool, swap bool) error {
 			}
 			fmt.Println("RPL Swap Gas Info:")
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, yes)
+			err = gas.AssignMaxFeeAndLimit(canSwap.GasLimits, rp, yes)
 			if err != nil {
 				return err
 			}
@@ -164,7 +164,7 @@ func join(yes bool, swap bool) error {
 
 	// Display gas estimate
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canJoin.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canJoin.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

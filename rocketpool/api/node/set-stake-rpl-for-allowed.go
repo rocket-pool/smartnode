@@ -34,11 +34,11 @@ func canSetStakeRplForAllowed(c *cli.Command, caller common.Address, allowed boo
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateSetStakeRPLForAllowedGas(rp, caller, allowed, opts)
+	gasLimits, err := node.EstimateSetStakeRPLForAllowedGas(rp, caller, allowed, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	response.CanSet = true

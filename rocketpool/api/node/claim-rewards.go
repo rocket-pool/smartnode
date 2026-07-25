@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -226,17 +227,16 @@ func canClaimRewards(c *cli.Command, indicesString string) (*api.CanNodeClaimRew
 		return nil, err
 	}
 
-	var gasInfo rocketpool.GasInfo
+	var gasLimits gaslimit.Limits
 	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+	gasLimits, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 
@@ -323,11 +323,11 @@ func canClaimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
+	gasLimits, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 

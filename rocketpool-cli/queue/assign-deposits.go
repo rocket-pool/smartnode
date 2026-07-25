@@ -86,7 +86,7 @@ func assignDeposits(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canAssign.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canAssign.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

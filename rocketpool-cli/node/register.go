@@ -40,7 +40,7 @@ func registerNode(timezoneLocation string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canRegister.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canRegister.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

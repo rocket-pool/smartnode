@@ -35,7 +35,7 @@ func createLot(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canCreate.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canCreate.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

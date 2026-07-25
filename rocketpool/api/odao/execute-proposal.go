@@ -62,9 +62,9 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.CanExecuteTNDAO
 		if err != nil {
 			return err
 		}
-		gasInfo, err := trustednode.EstimateExecuteProposalGas(rp, proposalId, opts)
+		gasLimits, err := trustednode.EstimateExecuteProposalGas(rp, proposalId, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

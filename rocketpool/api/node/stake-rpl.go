@@ -52,11 +52,11 @@ func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateStakeGas(rp, amountWei, opts)
+	gasLimits, err := node.EstimateStakeGas(rp, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	response.CanStake = !(response.InsufficientBalance)
@@ -95,11 +95,11 @@ func getStakeApprovalGas(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplA
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
+	gasLimits, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

@@ -53,13 +53,13 @@ func canProposeLeave(c *cli.Command) (*api.SecurityCanProposeLeaveResponse, erro
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := security.EstimateRequestLeaveGas(rp, opts)
+	gasLimits, err := security.EstimateRequestLeaveGas(rp, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 
 }

@@ -43,7 +43,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPenalise.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPenalise.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -48,7 +48,7 @@ func processQueue(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canProcess.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canProcess.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -42,7 +43,7 @@ func GetMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, opts *bind.CallOpt
 func ProposeMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolTimeBeforeDissolveSettingsPath), MegapoolSettingsContractName, MegapoolTimeBeforeDissolveSettingsPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolTimeBeforeDissolveSettingsPath), MegapoolSettingsContractName, MegapoolTimeBeforeDissolveSettingsPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -62,7 +63,7 @@ func GetMaximumEthPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 func ProposeMaximumEthPenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolMaximumMegapoolEthPenaltyPath), MegapoolSettingsContractName, MegapoolMaximumMegapoolEthPenaltyPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumEthPenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumEthPenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolMaximumMegapoolEthPenaltyPath), MegapoolSettingsContractName, MegapoolMaximumMegapoolEthPenaltyPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -82,7 +83,7 @@ func GetNotifyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64,
 func ProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolNotifyThresholdPath), MegapoolSettingsContractName, MegapoolNotifyThresholdPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolNotifyThresholdPath), MegapoolSettingsContractName, MegapoolNotifyThresholdPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -102,7 +103,7 @@ func GetLateNotifyFine(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
 func ProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
 }
 
@@ -122,7 +123,7 @@ func GetMegapoolDissolvePenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 func ProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -142,7 +143,7 @@ func GetUserDistributeDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 func ProposeUserDistributeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeUserDistributeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeUserDistributeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -162,7 +163,7 @@ func GetUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, opts *bind.C
 func ProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayShortfallPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayShortfallPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayShortfallPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayShortfallPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -182,7 +183,7 @@ func GetPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.I
 func ProposePenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolPenaltyThreshold), MegapoolSettingsContractName, MegapoolPenaltyThreshold, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposePenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposePenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolPenaltyThreshold), MegapoolSettingsContractName, MegapoolPenaltyThreshold, value, blockNumber, treeNodes, opts)
 }
 

@@ -49,7 +49,7 @@ func claimUnclaimedRewards(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canClaim.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

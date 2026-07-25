@@ -14,8 +14,13 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	utils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
+
+func zeroIfNil(in **big.Int) {
+	if *in == nil {
+		*in = big.NewInt(0)
+	}
+}
 
 // Get node status
 func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
@@ -30,30 +35,30 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	if response.Error != "" {
 		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %s", response.Error)
 	}
-	utils.ZeroIfNil(&response.TotalRplStake)
-	utils.ZeroIfNil(&response.RplStakeMegapool)
-	utils.ZeroIfNil(&response.RplStakeLegacy)
-	utils.ZeroIfNil(&response.RplStakeThreshold)
-	utils.ZeroIfNil(&response.AccountBalances.ETH)
-	utils.ZeroIfNil(&response.AccountBalances.RPL)
-	utils.ZeroIfNil(&response.AccountBalances.RETH)
-	utils.ZeroIfNil(&response.AccountBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.ETH)
-	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RPL)
-	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RETH)
-	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.NodeRPLLocked)
-	utils.ZeroIfNil(&response.RPLWithdrawalBalances.ETH)
-	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RPL)
-	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RETH)
-	utils.ZeroIfNil(&response.RPLWithdrawalBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.PendingMinimumRplStake)
-	utils.ZeroIfNil(&response.PendingMaximumRplStake)
-	utils.ZeroIfNil(&response.EthBorrowed)
-	utils.ZeroIfNil(&response.EthBorrowedLimit)
-	utils.ZeroIfNil(&response.PendingBorrowAmount)
-	utils.ZeroIfNil(&response.CreditBalance)
-	utils.ZeroIfNil(&response.FeeDistributorBalance)
+	zeroIfNil(&response.TotalRplStake)
+	zeroIfNil(&response.RplStakeMegapool)
+	zeroIfNil(&response.RplStakeLegacy)
+	zeroIfNil(&response.RplStakeThreshold)
+	zeroIfNil(&response.AccountBalances.ETH)
+	zeroIfNil(&response.AccountBalances.RPL)
+	zeroIfNil(&response.AccountBalances.RETH)
+	zeroIfNil(&response.AccountBalances.FixedSupplyRPL)
+	zeroIfNil(&response.PrimaryWithdrawalBalances.ETH)
+	zeroIfNil(&response.PrimaryWithdrawalBalances.RPL)
+	zeroIfNil(&response.PrimaryWithdrawalBalances.RETH)
+	zeroIfNil(&response.PrimaryWithdrawalBalances.FixedSupplyRPL)
+	zeroIfNil(&response.NodeRPLLocked)
+	zeroIfNil(&response.RPLWithdrawalBalances.ETH)
+	zeroIfNil(&response.RPLWithdrawalBalances.RPL)
+	zeroIfNil(&response.RPLWithdrawalBalances.RETH)
+	zeroIfNil(&response.RPLWithdrawalBalances.FixedSupplyRPL)
+	zeroIfNil(&response.PendingMinimumRplStake)
+	zeroIfNil(&response.PendingMaximumRplStake)
+	zeroIfNil(&response.EthBorrowed)
+	zeroIfNil(&response.EthBorrowedLimit)
+	zeroIfNil(&response.PendingBorrowAmount)
+	zeroIfNil(&response.CreditBalance)
+	zeroIfNil(&response.FeeDistributorBalance)
 	return response, nil
 }
 

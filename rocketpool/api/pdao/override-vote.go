@@ -95,11 +95,11 @@ func canOverrideVote(c *cli.Command, proposalId uint64, voteDirection types.Vote
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateOverrideVoteGas(rp, proposalId, voteDirection, opts)
+	gasLimits, err := protocol.EstimateOverrideVoteGas(rp, proposalId, voteDirection, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	return &response, nil

@@ -36,11 +36,11 @@ func canSetTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.CanSe
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateSetTimezoneLocationGas(rp, timezoneLocation, opts)
+	gasLimits, err := node.EstimateSetTimezoneLocationGas(rp, timezoneLocation, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanSet = true
 	return &response, nil
 

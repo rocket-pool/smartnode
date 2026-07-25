@@ -41,9 +41,9 @@ func canDelegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Me
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mega.EstimateDelegateUpgradeGas(opts)
+	gasLimits, err := mega.EstimateDelegateUpgradeGas(opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Return response
@@ -176,9 +176,9 @@ func canSetUseLatestDelegate(c *cli.Command, useLatest bool) (*api.MegapoolCanSe
 		return nil, err
 	}
 
-	gasInfo, err := mega.EstimateSetUseLatestDelegateGas(useLatest, opts)
+	gasLimits, err := mega.EstimateSetUseLatestDelegateGas(useLatest, opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Return response

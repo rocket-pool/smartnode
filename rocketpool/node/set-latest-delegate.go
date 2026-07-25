@@ -12,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -22,7 +23,6 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -208,7 +208,7 @@ func (t *setUseLatestDelegate) setUseLatestDelegate(mpd *rpstate.NativeMinipoolD
 	if !success {
 		return false, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", mpd.MinipoolAddress.Hex(), mp.GetVersion())
 	}
-	gasInfo, err := mpv3.EstimateSetUseLatestDelegateGas(opts)
+	gasLimits, err := mpv3.EstimateSetUseLatestDelegateGas(opts)
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to distribute minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
@@ -216,7 +216,7 @@ func (t *setUseLatestDelegate) setUseLatestDelegate(mpd *rpstate.NativeMinipoolD
 	if t.gasLimit != 0 {
 		gas = new(big.Int).SetUint64(t.gasLimit)
 	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+		gas = new(big.Int).SetUint64(gasLimits.Safe)
 	}
 
 	// Get the max fee
@@ -229,7 +229,7 @@ func (t *setUseLatestDelegate) setUseLatestDelegate(mpd *rpstate.NativeMinipoolD
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return false, nil
 	}
 
@@ -244,7 +244,7 @@ func (t *setUseLatestDelegate) setUseLatestDelegate(mpd *rpstate.NativeMinipoolD
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return false, err
 	}

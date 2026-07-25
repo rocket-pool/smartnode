@@ -8,8 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get whether node reward claims are enabled
@@ -49,10 +50,10 @@ func GetNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.
 }
 
 // Estimate the gas of ClaimNodeRewards
-func EstimateClaimNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimNodeAddress *common.Address) (rocketpool.GasInfo, error) {
+func EstimateClaimNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimNodeAddress *common.Address) (gaslimit.Limits, error) {
 	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateClaimGas(rocketClaimNode, opts)
 }
@@ -87,7 +88,7 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
 	}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
 	if err != nil {
 		return nil, err
 	}

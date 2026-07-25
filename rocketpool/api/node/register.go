@@ -66,9 +66,9 @@ func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterN
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateRegisterNodeGas(rp, timezoneLocation, opts)
+		gasLimits, err := node.EstimateRegisterNodeGas(rp, timezoneLocation, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

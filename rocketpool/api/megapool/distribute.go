@@ -82,13 +82,13 @@ func canDistributeMegapool(c *cli.Command) (*api.CanDistributeMegapoolResponse, 
 		return &response, nil
 	}
 
-	gasInfo, err := mp.EstimateDistributeGas(opts)
+	gasLimits, err := mp.EstimateDistributeGas(opts)
 	if err != nil {
 		return nil, err
 	}
 	// Return response
 	response.CanDistribute = true
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

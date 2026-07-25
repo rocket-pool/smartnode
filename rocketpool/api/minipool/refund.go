@@ -58,9 +58,9 @@ func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Can
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateRefundGas(opts)
+	gasLimits, err := mp.EstimateRefundGas(opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	// Update & return response

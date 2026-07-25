@@ -44,7 +44,7 @@ func pdaoSetVotingDelegate(nameOrAddress string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasEstimate.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasEstimate.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Settings
@@ -505,10 +506,10 @@ func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder c
 }
 
 // Estimate the gas of CreateLot
-func EstimateCreateLotGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateCreateLotGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketAuctionManager, err := getRocketAuctionManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketAuctionManager.GetTransactionGasInfo(opts, "createLot")
 }
@@ -531,10 +532,10 @@ func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, comm
 }
 
 // Estimate the gas of PlaceBid
-func EstimatePlaceBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimatePlaceBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketAuctionManager, err := getRocketAuctionManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketAuctionManager.GetTransactionGasInfo(opts, "placeBid", big.NewInt(int64(lotIndex)))
 }
@@ -553,10 +554,10 @@ func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 }
 
 // Estimate the gas of ClaimBid
-func EstimateClaimBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketAuctionManager, err := getRocketAuctionManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketAuctionManager.GetTransactionGasInfo(opts, "claimBid", big.NewInt(int64(lotIndex)))
 }
@@ -575,10 +576,10 @@ func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 }
 
 // Estimate the gas of RecoverUnclaimedRPL
-func EstimateRecoverUnclaimedRPLGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRecoverUnclaimedRPLGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketAuctionManager, err := getRocketAuctionManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketAuctionManager.GetTransactionGasInfo(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
 }
