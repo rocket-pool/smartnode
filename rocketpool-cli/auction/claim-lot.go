@@ -5,14 +5,13 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func claimFromLot(lot string, yes bool) error {
@@ -78,7 +77,7 @@ func claimFromLot(lot string, yes bool) error {
 		options := make([]string, len(claimableLots)+1)
 		options[0] = "All available lots"
 		for li, lot := range claimableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.AddressBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+			options[li+1] = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(math.WeiToEth(lot.Details.AddressBidAmount), 6), math.RoundDown(math.WeiToEth(lot.Details.CurrentPrice), 6))
 		}
 		selected, _ := prompt.Select("Please select a lot to claim RPL from:", options)
 

@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 type NodeDeposit struct {
@@ -134,7 +134,7 @@ func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount *big.
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 }
 
 // Make a vacant minipool for solo staker migration
@@ -143,7 +143,7 @@ func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, minimu
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 	if err != nil {
 		return nil, fmt.Errorf("error creating vacant minipool: %w", err)
 	}

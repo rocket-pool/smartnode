@@ -13,8 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
@@ -73,7 +73,7 @@ func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLat
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
@@ -81,9 +81,9 @@ func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLat
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)

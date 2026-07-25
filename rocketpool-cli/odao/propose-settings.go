@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
@@ -74,7 +73,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	defer rp.Close()
 
 	// Check if proposal can be made
-	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
+	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}
@@ -99,7 +98,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Submit proposal
-	response, err := rp.ProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
+	response, err := rp.ProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}

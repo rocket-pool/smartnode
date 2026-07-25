@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -32,7 +32,7 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
 		return 0, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 func ProposeMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
@@ -64,7 +64,7 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
 		return 0, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 func ProposeMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)

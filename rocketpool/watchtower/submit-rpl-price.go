@@ -24,17 +24,16 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -503,7 +502,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		}
 
 		// Log
-		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+		t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(math.WeiToEth(rplPrice), 6))
 
 		submissionTimestamp := uint64(nextSubmissionTime.Unix())
 
@@ -635,8 +634,8 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	tick := big.NewInt(0).Sub(response.TickCumulatives[1], response.TickCumulatives[0])
 	tick.Div(tick, big.NewInt(int64(interval))) // tick = (cumulative[1] - cumulative[0]) / interval
 
-	base := eth.EthToWei(1.0001) // 1.0001e18
-	one := eth.EthToWei(1)       // 1e18
+	base := math.EthToWei(1.0001) // 1.0001e18
+	one := math.EthToWei(1)       // 1e18
 
 	numerator := big.NewInt(0).Exp(base, tick, nil) // 1.0001e18 ^ tick
 	numerator.Mul(numerator, one)
@@ -675,14 +674,14 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasLimits.Safe
 
 	var hash common.Hash
@@ -795,14 +794,14 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Optimism...")
@@ -916,14 +915,14 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Polygon...")
@@ -1032,7 +1031,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		bufferMultiplier := big.NewInt(4)
 		dataLength := big.NewInt(36)
 		arbitrumGasLimit := big.NewInt(40000)
-		arbitrumMaxFeePerGas := eth.GweiToWei(0.1)
+		arbitrumMaxFeePerGas := math.GweiToWei(0.1)
 
 		// Gas limit calculation on Arbitrum
 		maxSubmissionCost := big.NewInt(6)
@@ -1060,14 +1059,14 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Arbitrum %s...", priceMessengerAddress)
@@ -1170,10 +1169,10 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 
 		// Constants for zkSync Era
 		l1GasPerPubdataByte := big.NewInt(17)
-		fairL2GasPrice := eth.GweiToWei(0.5)
+		fairL2GasPrice := math.GweiToWei(0.5)
 		l2GasLimit := big.NewInt(750000)
 		gasPerPubdataByte := big.NewInt(800)
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 
 		// Value calculation on zkSync Era
 		pubdataPrice := big.NewInt(0).Mul(l1GasPerPubdataByte, maxFee)
@@ -1206,7 +1205,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to zkSync Era...")
@@ -1320,14 +1319,14 @@ func (t *submitRplPrice) submitBasePrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Base...")
@@ -1466,14 +1465,14 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Scroll...")

@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
@@ -95,10 +95,10 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
-	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
-	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)
-	totalNetworkLegacyStakedRpl := eth.WeiToEth(state.NetworkDetails.TotalLegacyStakedRpl)
-	totalNetworkMegapoolStakedRpl := eth.WeiToEth(state.NetworkDetails.TotalNetworkMegapoolStakedRpl)
+	rplPriceFloat := math.WeiToEth(state.NetworkDetails.RplPrice)
+	totalValueStakedFloat := math.WeiToEth(state.NetworkDetails.TotalRPLStake)
+	totalNetworkLegacyStakedRpl := math.WeiToEth(state.NetworkDetails.TotalLegacyStakedRpl)
+	totalNetworkMegapoolStakedRpl := math.WeiToEth(state.NetworkDetails.TotalNetworkMegapoolStakedRpl)
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000

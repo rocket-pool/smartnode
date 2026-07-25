@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -14,9 +13,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Settings
@@ -474,7 +473,7 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
 		return 0, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
-	return eth.WeiToEth(*avgFee), nil
+	return math.WeiToEth(*avgFee), nil
 }
 
 // Get a node's average minipool fee
@@ -761,7 +760,7 @@ func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
 		return 0, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
 	}
-	return eth.WeiToEth(*unclaimedRewards), nil
+	return math.WeiToEth(*unclaimedRewards), nil
 }
 
 // Get the amount of unclaimed ETH rewards for a given node operator

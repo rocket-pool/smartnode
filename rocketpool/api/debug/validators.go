@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -182,7 +182,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	}
 
 	// Get user balance at block
-	blockBalance := eth.GweiToWei(float64(validator.Balance))
+	blockBalance := math.GweiToWei(float64(validator.Balance))
 	userBalance, err := mp.CalculateUserShare(blockBalance, opts)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	if status == types.Initialized || status == types.Prelaunch {
 		// Use user deposit balance if initialized or prelaunch
 		userBalance = userDepositBalance
-		blockBalance = eth.EthToWei(32)
+		blockBalance = math.EthToWei(32)
 		nodeBalance.Sub(blockBalance, userBalance)
 	} else if status == types.Dissolved {
 		userBalance = big.NewInt(0)
@@ -210,7 +210,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	} else if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		// Use user deposit balance if validator not yet active on beacon chain at block
 		userBalance = userDepositBalance
-		blockBalance = eth.EthToWei(32)
+		blockBalance = math.EthToWei(32)
 		nodeBalance.Sub(blockBalance, userBalance)
 	}
 
@@ -219,9 +219,9 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		validator.Pubkey.Hex(),
 		validator.ActivationEpoch,
 		nodeFee,
-		eth.WeiToEth(blockBalance),
-		eth.WeiToEth(nodeBalance),
-		eth.WeiToEth(userBalance),
+		math.WeiToEth(blockBalance),
+		math.WeiToEth(nodeBalance),
+		math.WeiToEth(userBalance),
 		types.MinipoolStatuses[status],
 		finalised,
 		validator.ExitEpoch > blockEpoch,

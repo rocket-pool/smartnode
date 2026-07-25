@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -173,20 +173,20 @@ func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 		}
 
 		// bonded eth = total validators * 32 - borrowed
-		totalBorrowedEth := eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount)
+		totalBorrowedEth := math.WeiToEth(response.EthBorrowed) + math.WeiToEth(response.PendingBorrowAmount)
 		totalBondedEth := float64(totalActiveValidators)*32.0 - totalBorrowedEth
 
 		// Calculate collateral ratios
 		if totalBondedEth <= 0 {
 			response.BondedCollateralRatio = 0
 		} else {
-			response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBondedEth
+			response.BondedCollateralRatio = math.WeiToEth(response.RplPrice) * math.WeiToEth(response.RplStake) / totalBondedEth
 		}
 
 		if totalBorrowedEth <= 0 {
 			response.BorrowedCollateralRatio = 0
 		} else {
-			response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBorrowedEth
+			response.BorrowedCollateralRatio = math.WeiToEth(response.RplPrice) * math.WeiToEth(response.RplStake) / totalBorrowedEth
 		}
 	}
 

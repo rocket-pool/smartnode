@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Estimate the gas of Deposit
@@ -21,7 +21,7 @@ func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumN
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 }
 
 // Make a node deposit
@@ -30,7 +30,7 @@ func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee floa
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit: %w", err)
 	}
@@ -43,7 +43,7 @@ func EstimateDepositWithCreditGas(rp *rocketpool.RocketPool, bondAmount *big.Int
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositWithCredit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositWithCredit", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 }
 
 // Make a node deposit by using the credit balance
@@ -52,7 +52,7 @@ func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNo
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "depositWithCredit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "depositWithCredit", bondAmount, math.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit with credit: %w", err)
 	}

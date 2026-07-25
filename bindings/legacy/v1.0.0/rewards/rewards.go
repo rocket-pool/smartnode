@@ -11,7 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Get whether a claims contract is enabled
@@ -39,7 +39,7 @@ func getClaimRewardsPerc(claimsContract *rocketpool.Contract, claimsName string,
 	if err := claimsContract.Call(opts, claimRewardsPerc, "getClaimRewardsPerc", claimerAddress); err != nil {
 		return 0, fmt.Errorf("error getting %s claim rewards percent for %s: %w", claimsName, claimerAddress.Hex(), err)
 	}
-	return eth.WeiToEth(*claimRewardsPerc), nil
+	return math.WeiToEth(*claimRewardsPerc), nil
 }
 
 // Get the total amount of rewards available to a claimer
@@ -128,7 +128,7 @@ func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
 		return 0, fmt.Errorf("error getting node operator rewards percent: %w", err)
 	}
-	return eth.WeiToEth(*perc), nil
+	return math.WeiToEth(*perc), nil
 }
 
 // Get the percent of checkpoint rewards that goes to ODAO members
@@ -141,7 +141,7 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
 		return 0, fmt.Errorf("error getting trusted node operator rewards percent: %w", err)
 	}
-	return eth.WeiToEth(*perc), nil
+	return math.WeiToEth(*perc), nil
 }
 
 // Get contracts

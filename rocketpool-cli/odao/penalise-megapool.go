@@ -7,12 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) error {
@@ -31,7 +30,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 		return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
 	}
 
-	amountWei := eth.EthToWei(amount)
+	amountWei := math.EthToWei(amount)
 	// Check megapool debt can be repaid
 	canPenalise, err := rp.CanPenaliseMegapool(megapoolAddress, block, amountWei)
 	if err != nil {
@@ -49,7 +48,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block) {
+	if prompt.Declined(yes, "Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(math.WeiToEth(amountWei), 6), megapoolAddress, block) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -67,7 +66,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Log & return
-	fmt.Printf("Successfully penalised megapool %s with %.6f debt.\n", megapoolAddress, math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully penalised megapool %s with %.6f debt.\n", megapoolAddress, math.RoundDown(math.WeiToEth(amountWei), 6))
 	return nil
 
 }

@@ -10,8 +10,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -176,7 +176,7 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 		if err != nil {
 			return fmt.Errorf("error getting node share for distributor %s: %w", distributorAddress.Hex(), err)
 		}
-		response.NodeShare = eth.WeiToEth(nodeShareRaw)
+		response.NodeShare = math.WeiToEth(nodeShareRaw)
 		return nil
 	})
 

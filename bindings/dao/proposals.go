@@ -11,8 +11,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Settings
@@ -537,7 +537,7 @@ func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts
 	if err := rocketDAOProposal.Call(opts, votesRequired, "getVotesRequired", big.NewInt(int64(proposalId))); err != nil {
 		return 0, fmt.Errorf("error getting proposal %d votes required: %w", proposalId, err)
 	}
-	return eth.WeiToEth(*votesRequired), nil
+	return math.WeiToEth(*votesRequired), nil
 }
 func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
 	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
@@ -548,7 +548,7 @@ func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 	if err := rocketDAOProposal.Call(opts, votesFor, "getVotesFor", big.NewInt(int64(proposalId))); err != nil {
 		return 0, fmt.Errorf("error getting proposal %d votes for: %w", proposalId, err)
 	}
-	return eth.WeiToEth(*votesFor), nil
+	return math.WeiToEth(*votesFor), nil
 }
 func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
 	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
@@ -559,7 +559,7 @@ func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts 
 	if err := rocketDAOProposal.Call(opts, votesAgainst, "getVotesAgainst", big.NewInt(int64(proposalId))); err != nil {
 		return 0, fmt.Errorf("error getting proposal %d votes against: %w", proposalId, err)
 	}
-	return eth.WeiToEth(*votesAgainst), nil
+	return math.WeiToEth(*votesAgainst), nil
 }
 func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
 	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)

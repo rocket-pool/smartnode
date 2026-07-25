@@ -15,8 +15,8 @@ import (
 	"github.com/fatih/color"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test/assets"
@@ -64,15 +64,15 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	nodeSummary := history.GetNodeSummary()
 	customBalanceNodes := nodeSummary.MustGetClass(tt, "single_eight_eth_opted_in_quarter")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
+		node.Minipools[0].SPWithdrawals = math.EthToWei(0.75)
 	}
 	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_eight_eth_opted_out_three_quarters")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
+		node.Minipools[0].SPWithdrawals = math.EthToWei(0.75)
 	}
 	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_bond_reduction")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.5)
+		node.Minipools[0].SPWithdrawals = math.EthToWei(0.5)
 	}
 
 	history.SetWithdrawals(t.bc)

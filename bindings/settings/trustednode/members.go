@@ -11,7 +11,7 @@ import (
 	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -36,13 +36,13 @@ func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) 
 	if err := membersSettingsContract.Call(opts, value, "getQuorum"); err != nil {
 		return 0, fmt.Errorf("error getting member quorum threshold: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 func ProposeQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, math.EthToWei(value), opts)
 }
 func EstimateProposeQuorumGas(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, math.EthToWei(value), opts)
 }
 
 // RPL bond required for a member

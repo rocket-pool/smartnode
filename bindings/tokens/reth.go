@@ -10,7 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 //
@@ -147,7 +147,7 @@ func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float6
 	if err := rocketTokenRETH.Call(opts, exchangeRate, "getExchangeRate"); err != nil {
 		return 0, fmt.Errorf("error getting rETH exchange rate: %w", err)
 	}
-	return eth.WeiToEth(*exchangeRate), nil
+	return math.WeiToEth(*exchangeRate), nil
 }
 
 // Get the total amount of ETH collateral available for rETH trades
@@ -173,7 +173,7 @@ func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	if err := rocketTokenRETH.Call(opts, collateralRate, "getCollateralRate"); err != nil {
 		return 0, fmt.Errorf("error getting rETH collateral rate: %w", err)
 	}
-	return eth.WeiToEth(*collateralRate), nil
+	return math.WeiToEth(*collateralRate), nil
 }
 
 // Estimate the gas of BurnRETH

@@ -3,9 +3,9 @@ package node
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
@@ -98,7 +98,7 @@ func distribute(yes bool) error {
 		return err
 	}
 
-	balance := eth.WeiToEth(canDistributeResponse.Balance)
+	balance := math.WeiToEth(canDistributeResponse.Balance)
 	if balance == 0 {
 		fmt.Printf("Your fee distributor does not have any ETH.")
 		return nil

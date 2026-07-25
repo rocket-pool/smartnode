@@ -1,4 +1,4 @@
-package eth
+package math
 
 import (
 	"math"

@@ -15,9 +15,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
@@ -71,12 +71,12 @@ func makeParentBeaconRoot(slot uint64) common.Hash {
 func TestApplyMaxRethDelta_NoClampNeeded(t *testing.T) {
 	b := newNetworkBalances()
 	b.OriginalTotalBalanceWei = ethToWei(1000)
-	b.OriginalRatioWei = eth.EthToWei(1.05)
+	b.OriginalRatioWei = math.EthToWei(1.05)
 
 	// Last rate is 1.04, new is 1.05: delta = 0.01
 	lastRate := 1.04
 	// Max delta is 0.02 ETH in wei — larger than actual change, so no clamp
-	maxDelta := eth.EthToWei(0.02)
+	maxDelta := math.EthToWei(0.02)
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -92,15 +92,15 @@ func TestApplyMaxRethDelta_ClampUpwardIncrease(t *testing.T) {
 	b := newNetworkBalances()
 	// Ratio jumped from 1.00 to 1.10 — a 0.10 increase
 	lastRate := 1.00
-	b.OriginalRatioWei = eth.EthToWei(1.10)
+	b.OriginalRatioWei = math.EthToWei(1.10)
 	b.OriginalTotalBalanceWei = ethToWei(1100) // arbitrary consistent total
 
 	// Max allowed delta is 0.05
-	maxDelta := eth.EthToWei(0.05)
+	maxDelta := math.EthToWei(0.05)
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
-	expectedClampedRatio := new(big.Int).Add(eth.EthToWei(lastRate), maxDelta) // 1.05
+	expectedClampedRatio := new(big.Int).Add(math.EthToWei(lastRate), maxDelta) // 1.05
 	if b.ClampedRatioWei.Cmp(expectedClampedRatio) != 0 {
 		t.Errorf("clamped ratio: got %s, want %s", b.ClampedRatioWei, expectedClampedRatio)
 	}
@@ -114,15 +114,15 @@ func TestApplyMaxRethDelta_ClampDownwardDecrease(t *testing.T) {
 	b := newNetworkBalances()
 	// Ratio dropped from 1.10 to 1.00 — a 0.10 decrease
 	lastRate := 1.10
-	b.OriginalRatioWei = eth.EthToWei(1.00)
+	b.OriginalRatioWei = math.EthToWei(1.00)
 	b.OriginalTotalBalanceWei = ethToWei(1000)
 
 	// Max allowed delta is 0.05
-	maxDelta := eth.EthToWei(0.05)
+	maxDelta := math.EthToWei(0.05)
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
-	expectedClampedRatio := new(big.Int).Sub(eth.EthToWei(lastRate), maxDelta) // 1.05
+	expectedClampedRatio := new(big.Int).Sub(math.EthToWei(lastRate), maxDelta) // 1.05
 	if b.ClampedRatioWei.Cmp(expectedClampedRatio) != 0 {
 		t.Errorf("clamped ratio: got %s, want %s", b.ClampedRatioWei, expectedClampedRatio)
 	}
@@ -136,9 +136,9 @@ func TestApplyMaxRethDelta_ExactlyAtBoundary(t *testing.T) {
 	// Delta == maxDelta exactly: should NOT clamp (boundary is exclusive via >)
 	b := newNetworkBalances()
 	lastRate := 1.00
-	b.OriginalRatioWei = eth.EthToWei(1.05)
+	b.OriginalRatioWei = math.EthToWei(1.05)
 	b.OriginalTotalBalanceWei = ethToWei(1050)
-	maxDelta := eth.EthToWei(0.05) // exactly matches the change
+	maxDelta := math.EthToWei(0.05) // exactly matches the change
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -150,9 +150,9 @@ func TestApplyMaxRethDelta_ExactlyAtBoundary(t *testing.T) {
 func TestApplyMaxRethDelta_ZeroRatioChange(t *testing.T) {
 	b := newNetworkBalances()
 	lastRate := 1.05
-	b.OriginalRatioWei = eth.EthToWei(1.05)
+	b.OriginalRatioWei = math.EthToWei(1.05)
 	b.OriginalTotalBalanceWei = ethToWei(1050)
-	maxDelta := eth.EthToWei(0.01)
+	maxDelta := math.EthToWei(0.01)
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -181,7 +181,7 @@ func TestCalculateTotalEthAndRethRate_BasicSummation(t *testing.T) {
 	// Expected total = 100+200+150+50+30+20 - 10 = 540
 	expectedTotal := ethToWei(540)
 
-	maxDelta := eth.EthToWei(999) // large enough to never clamp
+	maxDelta := math.EthToWei(999) // large enough to never clamp
 	b.calculateTotalEthAndRethRate(maxDelta, 0)
 
 	if b.OriginalTotalBalanceWei.Cmp(expectedTotal) != 0 {
@@ -195,7 +195,7 @@ func TestCalculateTotalEthAndRethRate_NodeCreditIsSubtracted(t *testing.T) {
 	b.RETHSupply = ethToWei(400)
 	b.NodeCreditBalance = ethToWei(100)
 
-	maxDelta := eth.EthToWei(999)
+	maxDelta := math.EthToWei(999)
 	b.calculateTotalEthAndRethRate(maxDelta, 0)
 
 	// 500 - 100 = 400
@@ -211,7 +211,7 @@ func TestCalculateTotalEthAndRethRate_TotalStakingAggregated(t *testing.T) {
 	b.MegapoolStaking = ethToWei(200)
 	b.RETHSupply = ethToWei(1)
 
-	maxDelta := eth.EthToWei(999)
+	maxDelta := math.EthToWei(999)
 	b.calculateTotalEthAndRethRate(maxDelta, 0)
 
 	expected := ethToWei(500)
@@ -226,10 +226,10 @@ func TestCalculateTotalEthAndRethRate_RatioCalculation(t *testing.T) {
 	b.DepositPool = ethToWei(1100)
 	b.RETHSupply = ethToWei(1000)
 
-	maxDelta := eth.EthToWei(999) // no clamp
+	maxDelta := math.EthToWei(999) // no clamp
 	b.calculateTotalEthAndRethRate(maxDelta, 1.0)
 
-	expectedRatio := eth.EthToWei(1.1)
+	expectedRatio := math.EthToWei(1.1)
 	// Allow 1 wei of rounding tolerance
 	diff := new(big.Int).Abs(new(big.Int).Sub(b.OriginalRatioWei, expectedRatio))
 	if diff.Cmp(big.NewInt(2)) > 0 {

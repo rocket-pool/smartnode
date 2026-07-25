@@ -13,8 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/math"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -93,7 +93,7 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
@@ -101,9 +101,9 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -116,9 +116,9 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 		bc:                  bc,
 		d:                   d,
 		gasThreshold:        gasThreshold,
-		distributeThreshold: eth.EthToWei(distributeThreshold),
+		distributeThreshold: math.EthToWei(distributeThreshold),
 		disabled:            disabled,
-		eight:               eth.EthToWei(8),
+		eight:               math.EthToWei(8),
 		maxFee:              maxFee,
 		maxPriorityFee:      priorityFee,
 		gasLimit:            0,
@@ -214,7 +214,7 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), eth.WeiToEth(mpd.Balance))
+	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), math.WeiToEth(mpd.Balance))
 
 	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {

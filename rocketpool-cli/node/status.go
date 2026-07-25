@@ -10,13 +10,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -80,17 +78,17 @@ func getStatus() error {
 	fmt.Printf(
 		"The node %s has a balance of %.6f ETH, %.6f RPL, and %.6f rETH.\n",
 		color.LightBlue(status.AccountAddressFormatted),
-		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
-		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6),
-		math.RoundDown(eth.WeiToEth(status.AccountBalances.RETH), 6))
+		math.RoundDown(math.WeiToEth(status.AccountBalances.ETH), 6),
+		math.RoundDown(math.WeiToEth(status.AccountBalances.RPL), 6),
+		math.RoundDown(math.WeiToEth(status.AccountBalances.RETH), 6))
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(math.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
 	fmt.Printf(
 		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new validators.\n",
-		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
+		math.RoundDown(math.WeiToEth(status.CreditBalance), 6),
+		math.RoundDown(math.WeiToEth(status.EthOnBehalfBalance), 6),
+		math.RoundDown(math.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
 	)
 
 	// Registered node details
@@ -108,10 +106,10 @@ func getStatus() error {
 			fmt.Printf("The node has a megapool deployed at %s.\n", color.LightBlue(status.MegapoolAddress.Hex()))
 			fmt.Printf("The megapool has %d validators.\n", status.MegapoolActiveValidatorCount)
 			if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
+				fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(math.WeiToEth(status.MegapoolNodeDebt), 6))
 			}
 			if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
+				fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(math.WeiToEth(status.MegapoolRefundValue), 6))
 			}
 		} else {
 			fmt.Println("The node does not have a megapool deployed yet.")
@@ -210,7 +208,7 @@ func getStatus() error {
 			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
 			if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
 				fmt.Printf("The node currently has %.6f RPL locked.\n",
-					math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
+					math.RoundDown(math.WeiToEth(status.NodeRPLLocked), 6))
 			}
 
 		} else {
@@ -224,8 +222,8 @@ func getStatus() error {
 			fmt.Printf(
 				"The node's primary withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
 				color.LightBlue(status.PrimaryWithdrawalAddressFormatted),
-				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.ETH), 6),
-				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.RPL), 6))
+				math.RoundDown(math.WeiToEth(status.PrimaryWithdrawalBalances.ETH), 6),
+				math.RoundDown(math.WeiToEth(status.PrimaryWithdrawalBalances.RPL), 6))
 		} else {
 			color.YellowPrintln("The node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.")
 			color.YellowPrintln("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.")
@@ -249,8 +247,8 @@ func getStatus() error {
 			fmt.Printf(
 				"The node's RPL withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
 				color.LightBlue(status.RPLWithdrawalAddressFormatted),
-				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
-				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
+				math.RoundDown(math.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
+				math.RoundDown(math.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
 		}
 		fmt.Println("")
 		if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
@@ -261,7 +259,7 @@ func getStatus() error {
 
 		// Fee distributor details
 		color.GreenPrintln("=== Fee Distributor and Smoothing Pool ===")
-		fmt.Printf("The node's fee distributor %s has a balance of %.6f ETH.\n", color.LightBlue(status.FeeRecipientInfo.FeeDistributorAddress.Hex()), math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+		fmt.Printf("The node's fee distributor %s has a balance of %.6f ETH.\n", color.LightBlue(status.FeeRecipientInfo.FeeDistributorAddress.Hex()), math.RoundDown(math.WeiToEth(status.FeeDistributorBalance), 6))
 		if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
 			color.YellowPrintln("NOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!")
 		}
@@ -309,18 +307,18 @@ func getStatus() error {
 		color.GreenPrintln("=== RPL Stake ===")
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
-		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
+		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(math.WeiToEth(status.TotalRplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
 			fmt.Printf("This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n", status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 		}
 
-		fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
+		fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(math.WeiToEth(status.RplStakeMegapool), 6))
 		if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
-			fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
-			fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
+			fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(math.WeiToEth(status.RplStakeLegacy), 6))
+			fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(math.WeiToEth(status.TotalRplStake), 6))
 			if status.RplStakeLegacy.Cmp(status.RplStakeThreshold) > 1 {
 				fmt.Printf(
-					"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
+					"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(math.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
 			}
 		}
 		var unstakingPeriodEnd time.Time
@@ -337,9 +335,9 @@ func getStatus() error {
 			// Check if unstaking period passed considering the last unstake time
 			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
 			if unstakingPeriodEnd.After(status.LatestBlockTime) {
-				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat))
+				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(math.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat))
 			} else {
-				fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
+				fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(math.WeiToEth(status.UnstakingRPL), 6))
 			}
 		}
 
@@ -358,7 +356,7 @@ func getStatus() error {
 			maxAmount.Set(status.RplStakeMegapool)
 		}
 
-		fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
+		fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(math.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(math.WeiToEth(&maxAmount), 6))
 
 		fmt.Println()
 

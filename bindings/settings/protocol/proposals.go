@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -174,7 +174,7 @@ func GetProposalQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalQuorum"); err != nil {
 		return 0, fmt.Errorf("error getting proposal quorum: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The minimum amount of voting power a proposal needs to succeed
@@ -206,7 +206,7 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalVetoQuorum"); err != nil {
 		return 0, fmt.Errorf("error getting proposal veto quorum: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The amount of voting power vetoing a proposal require to veto it

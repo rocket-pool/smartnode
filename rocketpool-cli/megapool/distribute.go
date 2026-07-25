@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -76,7 +76,7 @@ func distribute(yes bool) error {
 		return nil
 	}
 	// Print rewards
-	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), eth.WeiToEth(pendingRewards.RefundValue))
+	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", math.WeiToEth(pendingRewards.RewardSplit.NodeRewards), math.WeiToEth(pendingRewards.RefundValue))
 	fmt.Println()
 
 	// Assign max fees

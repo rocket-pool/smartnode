@@ -14,8 +14,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
@@ -174,7 +174,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	details.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
 
 	// Make sure it doesn't already have 32 ETH in it
-	requiredBalance := eth.EthToWei(32)
+	requiredBalance := math.EthToWei(32)
 	if details.BeaconBalance.Cmp(requiredBalance) >= 0 {
 		details.CanRescue = false
 		return details, nil
@@ -184,7 +184,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	one := eth.EthToWei(1)
+	one := math.EthToWei(1)
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err
