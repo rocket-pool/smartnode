@@ -15,9 +15,9 @@ import (
 	_ "embed"
 	"testing"
 
+	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Test state - deneb fork. Hoodi genesis state.

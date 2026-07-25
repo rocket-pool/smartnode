@@ -15,11 +15,11 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
+	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Prompt for a wallet password
