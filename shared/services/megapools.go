@@ -15,6 +15,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pk910/dynamic-ssz/treeproof"
 	"github.com/urfave/cli/v3"
@@ -1091,13 +1092,19 @@ func FindGloasWithdrawalSlotAndArrayPosition(slot uint64, validatorIndex uint64,
 				Address:        elWithdrawal.Address,
 				Amount:         elWithdrawal.Amount,
 			}
-			// Payload timestamps equal the slot time of the consensus slot
-			// whose bid committed to them, so the slot conversion is exact.
-			withdrawalSlot := eth2Config.FirstSlotAtLeast(int64(blockTime))
+			withdrawalSlot := slotOfExecutionBlock(block, eth2Config)
 			return withdrawalSlot, i, withdrawal, nil
 		}
 	}
 	return 0, 0, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
+}
+
+// slotOfExecutionBlock returns the consensus slot an execution block belongs to.
+func slotOfExecutionBlock(block *ethtypes.Block, eth2Config beacon.Eth2Config) uint64 {
+	if slotNumber := block.Header().SlotNumber; slotNumber != nil {
+		return *slotNumber
+	}
+	return eth2Config.FirstSlotAtLeast(int64(block.Time()))
 }
 
 // findExecutionBlockByTime returns the number of the first execution block with

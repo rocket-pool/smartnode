@@ -1,6 +1,7 @@
 package megapool
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/urfave/cli/v3"
@@ -19,6 +20,10 @@ func getLatestBlockWithdrawals(c *cli.Command) (*api.LatestBlockWithdrawalsRespo
 		return nil, err
 	}
 	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +56,15 @@ func getLatestBlockWithdrawals(c *cli.Command) (*api.LatestBlockWithdrawalsRespo
 		blockToRequest = fmt.Sprintf("%d", nextSlot)
 	}
 
+	// Gloas blocks only commit to the EL block hash, so the number has to be resolved
+	elBlockNumber, _, err := beacon.ResolveExecutionBlockNumber(context.Background(), ec, block)
+	if err != nil {
+		return nil, err
+	}
+
 	response := &api.LatestBlockWithdrawalsResponse{
 		Slot:        block.Slot,
-		BlockNumber: block.ExecutionBlockNumber,
+		BlockNumber: elBlockNumber,
 		Withdrawals: block.Withdrawals,
 	}
 	return response, nil

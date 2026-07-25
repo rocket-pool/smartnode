@@ -21,8 +21,9 @@ const (
 	kurtosisDevnetStorageAddressDefault        string = "0xb4B46bdAA835F8E4b4d8e208B6559cD267851051"
 	kurtosisDevnetRplAddressDefault            string = "0x2b45cD38B213Bbd3A1A848bf2467927c976877Cb"
 	kurtosisDevnetRethAddressDefault           string = "0x80741a37E3644612F0465145C9709a90B6D77Ee3"
-	kurtosisDevnetMulticallAddressDefault      string = "0xdC9B41F5aCEc76f842A1d31CDeC3EE528a0aD57c"
-	kurtosisDevnetBalanceBatcherAddressDefault string = "0xf55541A0b20a571Fe3Af8Bbc158D2bf735332f29"
+	kurtosisDevnetMulticallAddressDefault      string = "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
+	kurtosisDevnetBalanceBatcherAddressDefault string = "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
+	kurtosisDevnetSignerRegistryAddressDefault string = "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
 
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
@@ -464,8 +465,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			// Not deployed on the local Kurtosis stack by default.
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  kurtosisDevnetSignerRegistryAddressDefault,
 			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 		},
 
@@ -1023,15 +1023,9 @@ func getNetworkOptions() []config.ParameterOption {
 			Value:       config.Network_Testnet,
 		},
 		{
-			Name: "Devnet (local Kurtosis)",
-			Description: fmt.Sprintf(
-				"Local Rocket Pool development network driven by Kurtosis (ethpandaops/ethereum-package / glamsterdam-devnet-7).\n"+
-					"Defaults: chain ID %d, RocketStorage %s.\n"+
-					"Use Externally Managed EL/CL with EL_HTTP / CL_HTTP from that env file.",
-				kurtosisDevnetChainIDDefault,
-				kurtosisDevnetStorageAddressDefault,
-			),
-			Value: config.Network_Devnet,
+			Name:        "Devnet",
+			Description: "Rocket Pool development network. This is a local network that is used for development and testing. It uses free fake ETH and free fake RPL to make fake validators.",
+			Value:       config.Network_Devnet,
 		},
 	}
 

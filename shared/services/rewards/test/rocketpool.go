@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -35,6 +36,7 @@ type MockRocketPool struct {
 	t                    *testing.T
 	rewardSnapshotEvents map[uint64]rewards.RewardsEvent
 	headers              map[uint64]*types.Header
+	headersByHash        map[common.Hash]*types.Header
 }
 
 func NewMockRocketPool(t *testing.T, index uint64) *MockRocketPool {
@@ -57,6 +59,21 @@ func (mock *MockRocketPool) SetHeaderByNumber(number *big.Int, header *types.Hea
 		mock.headers = make(map[uint64]*types.Header)
 	}
 	mock.headers[number.Uint64()] = header
+}
+
+// Used to resolve Gloas payload bids, which only commit to the EL block hash.
+func (mock *MockRocketPool) HeaderByHash(_ context.Context, hash common.Hash) (*types.Header, error) {
+	if header, ok := mock.headersByHash[hash]; ok {
+		return header, nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (mock *MockRocketPool) SetHeaderByHash(hash common.Hash, header *types.Header) {
+	if mock.headersByHash == nil {
+		mock.headersByHash = make(map[common.Hash]*types.Header)
+	}
+	mock.headersByHash[hash] = header
 }
 
 func (mock *MockRocketPool) GetRewardsEvent(index uint64, _ []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {

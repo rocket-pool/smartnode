@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -187,8 +188,16 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 			return nil, fmt.Errorf("beacon block at slot %d was missing", startSlot)
 		}
 
-		// Get the EL block for this slot
-		startBlock = big.NewInt(int64(block.ExecutionBlockNumber))
+		// Get the EL block for this slot. Gloas blocks only commit to the EL block hash, so the
+		// number has to be resolved.
+		elBlockNumber, hasElBlock, err := beacon.ResolveExecutionBlockNumber(context.Background(), t.rp.Client, block)
+		if err != nil {
+			return nil, err
+		}
+		if !hasElBlock {
+			return nil, fmt.Errorf("beacon block at slot %d has no execution block", startSlot)
+		}
+		startBlock = big.NewInt(int64(elBlockNumber))
 	} else {
 		startBlock = big.NewInt(0).Add(t.lastScannedBlock, common.Big1)
 	}

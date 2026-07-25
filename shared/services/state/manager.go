@@ -125,7 +125,7 @@ func (m *NetworkStateManager) getHeadSlot() (uint64, error) {
 	return targetSlot, nil
 }
 
-// Gets the target Beacon block, or if it was missing, the first one under it that wasn't missing
+// Gets the target Beacon block, or if it was missing, the first one under it that wasn't missing.
 func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (beacon.BeaconBlock, error) {
 	for {
 		// Try to get the current block
@@ -138,9 +138,25 @@ func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (b
 		if !exists {
 			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
 			targetSlot--
-		} else {
-			return block, nil
+			continue
 		}
+
+		// Gloas blocks only carry the payload bid's block hash, so resolve the number here
+		elBlockNumber, found, err := beacon.ResolveExecutionBlockNumber(context.Background(), m.rp.Client, block)
+		if err != nil {
+			return beacon.BeaconBlock{}, err
+		}
+
+		// The block bid for a payload that was never revealed, so it has no EL block; try the
+		// previous slot.
+		if !found && block.HasExecutionPayload {
+			m.logLine("Slot %d bid for a payload that was never revealed, trying the previous one...", targetSlot)
+			targetSlot--
+			continue
+		}
+
+		block.ExecutionBlockNumber = elBlockNumber
+		return block, nil
 	}
 }
 

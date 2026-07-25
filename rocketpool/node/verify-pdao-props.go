@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -254,7 +255,7 @@ func (t *verifyPdaoProps) getChallengesandDefeats(ns *state.NetworkState, opts *
 	artifactChecker := &liveChallengeArtifactChecker{propMgr: t.propMgr}
 
 	return getChallengesFromState(
-		ns, t.nodeAddress, t.log, t.bc,
+		ns, t.nodeAddress, t.log, t.bc, t.rp.Client,
 		nodeGetter, treeProvider, stateGetter, eventProvider, artifactChecker,
 		t.validPropCache, t.rootSubmissionCache, t.lastScannedBlock,
 	)
@@ -268,6 +269,7 @@ func getChallengesFromState(
 	nodeAddress common.Address,
 	log *log.ColorLogger,
 	bc beacon.Client,
+	ec beacon.ExecutionHeaderSource,
 	nodeGetter proposalNodeGetter,
 	treeProvider networkTreeProvider,
 	stateGetter challengeStateGetter,
@@ -346,8 +348,16 @@ func getChallengesFromState(
 			return nil, nil, fmt.Errorf("Beacon block at slot %d was missing", startSlot)
 		}
 
-		// Get the EL block for this slot
-		startBlock = big.NewInt(int64(block.ExecutionBlockNumber))
+		// Get the EL block for this slot. Gloas blocks only commit to the EL block hash, so the
+		// number has to be resolved.
+		elBlockNumber, hasElBlock, err := beacon.ResolveExecutionBlockNumber(context.Background(), ec, block)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !hasElBlock {
+			return nil, nil, fmt.Errorf("Beacon block at slot %d has no execution block", startSlot)
+		}
+		startBlock = big.NewInt(int64(elBlockNumber))
 	} else {
 		startBlock = big.NewInt(0).Add(lastScannedBlock, common.Big1)
 	}

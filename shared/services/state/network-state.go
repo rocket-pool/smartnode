@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -197,8 +198,14 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 		return nil, fmt.Errorf("slot %d did not have a Beacon block", slotNumber)
 	}
 
-	// Get the corresponding block on the EL
-	elBlockNumber := beaconBlock.ExecutionBlockNumber
+	// Get the corresponding block on the EL.
+	elBlockNumber, found, err := beacon.ResolveExecutionBlockNumber(context.Background(), m.rp.Client, beaconBlock)
+	if err != nil {
+		return nil, err
+	}
+	if !found && beaconBlock.HasExecutionPayload {
+		return nil, fmt.Errorf("slot %d has an execution payload association but no resolvable EL block number", slotNumber)
+	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}

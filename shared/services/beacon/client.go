@@ -63,6 +63,7 @@ type BeaconBlock struct {
 	Attestations         []AttestationInfo
 	FeeRecipient         common.Address
 	ExecutionBlockNumber uint64
+	ExecutionBlockHash   common.Hash
 	Withdrawals          []WithdrawalInfo
 }
 type BeaconBlockHeader struct {

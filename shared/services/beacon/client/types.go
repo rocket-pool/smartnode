@@ -100,6 +100,14 @@ type BeaconBlockResponse struct {
 					BlockNumber  uinteger     `json:"block_number"`
 					Withdrawals  []Withdrawal `json:"withdrawals"`
 				} `json:"execution_payload"`
+				// Gloas (EIP-7732 ePBS): execution payload is no longer embedded
+				// in the beacon block; only a signed bid with the payload hash.
+				SignedExecutionPayloadBid *struct {
+					Message *struct {
+						FeeRecipient byteArray `json:"fee_recipient"`
+						BlockHash    byteArray `json:"block_hash"`
+					} `json:"message"`
+				} `json:"signed_execution_payload_bid"`
 			} `json:"body"`
 		} `json:"message"`
 	} `json:"data"`

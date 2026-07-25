@@ -1,10 +1,13 @@
 package node
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	log "github.com/rocket-pool/smartnode/shared/logger"
@@ -26,6 +29,14 @@ type stubBeaconClient struct {
 
 func (s *stubBeaconClient) GetBeaconBlock(_ string) (beacon.BeaconBlock, bool, error) {
 	return s.block, true, nil
+}
+
+// stubExecutionHeaderSource stands in for the EC when resolving a Gloas payload hash. The
+// fixtures all use blocks that already carry an EL block number, so this should never be hit.
+type stubExecutionHeaderSource struct{}
+
+func (s *stubExecutionHeaderSource) HeaderByHash(_ context.Context, _ common.Hash) (*ethtypes.Header, error) {
+	return nil, ethereum.NotFound
 }
 
 // stubNodeGetter returns a fixed on-chain root for every proposal.
@@ -119,6 +130,7 @@ func TestChallengePathNoEligible(t *testing.T) {
 	challenges, defeats, err := getChallengesFromState(
 		ns, proposerAddr, &logger,
 		&stubBeaconClient{block: beacon.BeaconBlock{ExecutionBlockNumber: ns.ElBlockNumber}},
+		&stubExecutionHeaderSource{},
 		&stubNodeGetter{root: makeLocalRoot()},
 		&stubTreeProvider{},
 		&stubChallengeStateGetter{},
@@ -162,6 +174,7 @@ func TestChallengePathMatchingRoot(t *testing.T) {
 	challenges, defeats, err := getChallengesFromState(
 		ns, nodeAddr, &logger,
 		&stubBeaconClient{block: beacon.BeaconBlock{ExecutionBlockNumber: ns.ElBlockNumber}},
+		&stubExecutionHeaderSource{},
 		&stubNodeGetter{root: localRoot},
 		&stubTreeProvider{tree: localTree},
 		&stubChallengeStateGetter{},
@@ -240,6 +253,7 @@ func TestChallengePathMismatchProducesChallenge(t *testing.T) {
 	challenges, defeats, err := getChallengesFromState(
 		ns, nodeAddr, &logger,
 		&stubBeaconClient{block: beacon.BeaconBlock{ExecutionBlockNumber: ns.ElBlockNumber}},
+		&stubExecutionHeaderSource{},
 		&stubNodeGetter{root: makeMismatchedOnChainRoot()},
 		&stubTreeProvider{tree: localTree},
 		&stubChallengeStateGetter{},
@@ -320,6 +334,7 @@ func TestChallengePathAlreadyChallengedWaits(t *testing.T) {
 	challenges, defeats, err := getChallengesFromState(
 		ns, nodeAddr, &logger,
 		&stubBeaconClient{block: beacon.BeaconBlock{ExecutionBlockNumber: ns.ElBlockNumber}},
+		&stubExecutionHeaderSource{},
 		&stubNodeGetter{root: makeMismatchedOnChainRoot()},
 		&stubTreeProvider{tree: localTree},
 		csGetter,
@@ -401,6 +416,7 @@ func TestChallengePathRespondedDelveDeeper(t *testing.T) {
 	challenges, defeats, err := getChallengesFromState(
 		ns, nodeAddr, &logger,
 		&stubBeaconClient{block: beacon.BeaconBlock{ExecutionBlockNumber: ns.ElBlockNumber}},
+		&stubExecutionHeaderSource{},
 		&stubNodeGetter{root: makeMismatchedOnChainRoot()},
 		&stubTreeProvider{tree: localTree},
 		csGetter,

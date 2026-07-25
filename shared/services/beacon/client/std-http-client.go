@@ -652,13 +652,23 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 		ProposerIndex: block.Data.Message.ProposerIndex,
 	}
 
-	// Execution payload only exists after the merge, so check for its existence
-	if block.Data.Message.Body.ExecutionPayload == nil {
-		beaconBlock.HasExecutionPayload = false
-	} else {
+	// Pre-Gloas: execution payload is embedded in the block body.
+	// Gloas (EIP-7732 ePBS): payload is uncoupled; the body only carries a
+	// signed_execution_payload_bid with fee_recipient + block_hash.
+	executionPayload := block.Data.Message.Body.ExecutionPayload
+	payloadBid := block.Data.Message.Body.SignedExecutionPayloadBid
+	if executionPayload != nil {
 		beaconBlock.HasExecutionPayload = true
-		beaconBlock.FeeRecipient = common.BytesToAddress(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
-		beaconBlock.ExecutionBlockNumber = uint64(block.Data.Message.Body.ExecutionPayload.BlockNumber)
+		beaconBlock.FeeRecipient = common.BytesToAddress(executionPayload.FeeRecipient)
+		beaconBlock.ExecutionBlockNumber = uint64(executionPayload.BlockNumber)
+	} else if payloadBid != nil && payloadBid.Message != nil {
+		beaconBlock.HasExecutionPayload = true
+		beaconBlock.FeeRecipient = common.BytesToAddress(payloadBid.Message.FeeRecipient)
+		if len(payloadBid.Message.BlockHash) > 0 {
+			beaconBlock.ExecutionBlockHash = common.BytesToHash(payloadBid.Message.BlockHash)
+		}
+	} else {
+		beaconBlock.HasExecutionPayload = false
 	}
 
 	// Add attestation info
@@ -684,20 +694,25 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
 	}
 
-	// Add withdrawals
-	beaconBlock.Withdrawals = make([]beacon.WithdrawalInfo, 0, len(block.Data.Message.Body.ExecutionPayload.Withdrawals))
-	for _, withdrawal := range block.Data.Message.Body.ExecutionPayload.Withdrawals {
-		amount, ok := new(big.Int).SetString(withdrawal.Amount, 10)
-		if !ok {
-			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding withdrawal amount for withdrawal for address %s of block %s: %s", withdrawal.Address, blockId, withdrawal.Amount)
+	// Withdrawals only exist on the embedded execution payload (pre-Gloas).
+	// Gloas withdrawals live on the EL block / beacon state expected_withdrawals.
+	if executionPayload != nil {
+		beaconBlock.Withdrawals = make([]beacon.WithdrawalInfo, 0, len(executionPayload.Withdrawals))
+		for _, withdrawal := range executionPayload.Withdrawals {
+			amount, ok := new(big.Int).SetString(withdrawal.Amount, 10)
+			if !ok {
+				return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding withdrawal amount for withdrawal for address %s of block %s: %s", withdrawal.Address, blockId, withdrawal.Amount)
+			}
+			// amount is in Gwei, but we want wei
+			amount.Mul(amount, big.NewInt(1e9))
+			beaconBlock.Withdrawals = append(beaconBlock.Withdrawals, beacon.WithdrawalInfo{
+				ValidatorIndex: withdrawal.ValidatorIndex,
+				Address:        common.BytesToAddress(withdrawal.Address),
+				Amount:         amount,
+			})
 		}
-		// amount is in Gwei, but we want wei
-		amount.Mul(amount, big.NewInt(1e9))
-		beaconBlock.Withdrawals = append(beaconBlock.Withdrawals, beacon.WithdrawalInfo{
-			ValidatorIndex: withdrawal.ValidatorIndex,
-			Address:        common.BytesToAddress(withdrawal.Address),
-			Amount:         amount,
-		})
+	} else {
+		beaconBlock.Withdrawals = []beacon.WithdrawalInfo{}
 	}
 
 	return beaconBlock, true, nil

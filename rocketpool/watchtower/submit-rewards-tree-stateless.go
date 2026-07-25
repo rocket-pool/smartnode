@@ -494,9 +494,20 @@ func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *s
 			continue
 		}
 
+		// Gloas blocks only commit to the EL block hash, so the number has to be resolved
+		elBlockNumber, hasElBlock, err := beacon.ResolveExecutionBlockNumber(context.Background(), t.ec, block)
+		if err != nil {
+			return nil, err
+		}
+		if !hasElBlock {
+			t.log.Printlnf("Slot %d has no execution block, trying the previous one...", targetSlot)
+			targetSlot--
+			continue
+		}
+
 		// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
 		out.ConsensusBlock = targetSlot
-		out.ExecutionBlock = block.ExecutionBlockNumber
+		out.ExecutionBlock = elBlockNumber
 		break
 	}
 
