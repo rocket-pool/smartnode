@@ -85,6 +85,8 @@ type AlertmanagerConfig struct {
 	AlertEnabled_BeaconClientSyncComplete    config.Parameter `yaml:"alertEnabled_BeaconClientSyncComplete,omitempty"`
 	// Whether to periodically check if the eth1 and eth2 P2P ports are open to the internet
 	AlertEnabled_PortConnectivityCheck config.Parameter `yaml:"alertEnabled_PortConnectivityCheck,omitempty"`
+	// Whether to alert while the node/watchtower daemon is running in observe (masquerade) mode
+	AlertEnabled_ObserveModeActive config.Parameter `yaml:"alertEnabled_ObserveModeActive,omitempty"`
 }
 
 func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
@@ -286,6 +288,10 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			"LowETHBalance",
 			"Low ETH Balance"),
 
+		AlertEnabled_ObserveModeActive: createParameterForAlertEnablement(
+			"ObserveModeActive",
+			"the node/watchtower daemon is running in observe mode"),
+
 		LowETHBalanceThreshold: config.Parameter{
 			ID:                 "lowETHBalanceThreshold",
 			Name:               "Low ETH Balance Threshold",
@@ -344,6 +350,7 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
 		&cfg.AlertEnabled_PortConnectivityCheck,
 		&cfg.AlertEnabled_LowETHBalance,
+		&cfg.AlertEnabled_ObserveModeActive,
 		&cfg.LowETHBalanceThreshold,
 	}
 }

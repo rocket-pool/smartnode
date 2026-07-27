@@ -25,6 +25,7 @@ var alertingParametersNativeMode = map[string]interface{}{
 	"alertEnabled_BeaconClientSyncComplete":    nil,
 	"alertEnabled_PortConnectivityCheck":       nil,
 	"alertEnabled_LowETHBalance":               nil,
+	"alertEnabled_ObserveModeActive":           nil,
 	"lowETHBalanceThreshold":                   nil,
 }
 
@@ -56,6 +57,7 @@ var alertingParametersDockerMode = map[string]interface{}{
 	"alertEnabled_BeaconClientSyncComplete":    nil,
 	"alertEnabled_PortConnectivityCheck":       nil,
 	"alertEnabled_LowETHBalance":               nil,
+	"alertEnabled_ObserveModeActive":           nil,
 	"lowETHBalanceThreshold":                   nil,
 }
 

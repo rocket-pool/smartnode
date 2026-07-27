@@ -256,6 +256,31 @@ const (
 	ClientKindBeacon    ClientKind = "Beacon"
 )
 
+// Sends an alert while the node/watchtower daemon is running in observe (masquerade) mode.
+// Called on every task loop iteration for as long as observe mode is active.
+// If alerting/metrics are disabled, this function does nothing.
+func AlertObserveModeActive(cfg *config.RocketPoolConfig, observedAddress common.Address) error {
+	if !isAlertingEnabled(cfg) {
+		logMessage("alerting is disabled, not sending AlertObserveModeActive.")
+		return nil
+	}
+
+	if cfg.Alertmanager.AlertEnabled_ObserveModeActive.Value != true {
+		logMessage("alert for ObserveModeActive is disabled, not sending.")
+		return nil
+	}
+
+	alert := createAlert(
+		fmt.Sprintf("ObserveModeActive-%s", observedAddress.Hex()),
+		"Node is running in observe mode",
+		fmt.Sprintf("The node/watchtower daemon is observing address %s and will not submit transactions. Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing.", observedAddress.Hex()),
+		SeverityWarning,
+		strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo)),
+		map[string]string{"address": observedAddress.Hex()},
+	)
+	return sendAlert(alert, cfg)
+}
+
 func alertClientSyncComplete(cfg *config.RocketPoolConfig, client ClientKind) error {
 	alertName := fmt.Sprintf("%sClientSyncComplete", client)
 	if !isAlertingEnabled(cfg) {
