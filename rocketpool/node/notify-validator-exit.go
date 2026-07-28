@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -171,14 +172,36 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
+	finalizedValidators := beaconState.GetValidators()
 
 	for validatorId, validatorDetails := range validatorDetailsToProve {
+		pubkey := types.ValidatorPubkey(validatorDetails.Pubkey)
 
 		// Log
 		t.log.Printlnf("The validator id %d needs an exit proof", validatorId)
 
+		// Check the exit is visible on the finalized state before proof generation
+		validatorIndexStr, err := t.bc.GetValidatorIndex(pubkey)
+		if err != nil {
+			t.log.Printlnf("Error getting beacon index for validator id %d: %w", validatorId, err)
+			continue
+		}
+		validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
+		if err != nil {
+			t.log.Printlnf("Error parsing beacon index for validator id %d: %w", validatorId, err)
+			continue
+		}
+		if validatorIndex >= uint64(len(finalizedValidators)) {
+			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
+			continue
+		}
+		if finalizedValidators[validatorIndex].WithdrawableEpoch >= FarFutureEpoch {
+			t.log.Printlnf("Validator id %d (beacon index %d) exit is not yet reflected in the finalized beacon state (withdrawable_epoch still FAR_FUTURE). Will retry on next cycle.", validatorId, validatorIndex)
+			continue
+		}
+
 		// Call Notify Exit
-		err := t.createExitProof(t.rp, beaconState, mp, validatorId, state, types.ValidatorPubkey(validatorDetails.Pubkey), opts)
+		err = t.createExitProof(t.rp, beaconState, mp, validatorId, state, pubkey, opts)
 		// dont return if there was an error, just log it so we can continue with the next validator
 		if err != nil {
 			t.log.Printlnf("Error creating exit proof for validator %d: %w", validatorId, err)
