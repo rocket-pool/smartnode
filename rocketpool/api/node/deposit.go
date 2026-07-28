@@ -112,7 +112,7 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 	})
 
 	wg1.Go(func() error {
-		status, err = services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
+		status, err = services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil, false)
 		if err != nil {
 			return err
 		}
@@ -356,7 +356,7 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 		return nil, err
 	}
 
-	status, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
+	status, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil, false)
 	if err != nil {
 		return nil, err
 	}

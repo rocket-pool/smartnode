@@ -21,7 +21,7 @@ func getExitedValidator() (uint64, bool, error) {
 		return 0, false, err
 	}
 	defer rp.Close()
-	// Get Megapool status
+	fmt.Println("Loading megapool validators at the finalized beacon state...")
 	status, err := rp.MegapoolStatus(true)
 	if err != nil {
 		return 0, false, err
@@ -30,22 +30,38 @@ func getExitedValidator() (uint64, bool, error) {
 	activeValidators := []api.MegapoolValidatorDetails{}
 
 	for _, validator := range status.Megapool.Validators {
-		if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
-			activeValidators = append(activeValidators, validator)
+		if !validator.Activated || validator.Exiting || validator.Exited {
+			continue
 		}
+		if !validator.BeaconStatus.Exists {
+			continue
+		}
+		if validator.BeaconStatus.ExitEpoch == FarFutureEpoch {
+			continue
+		}
+		if validator.BeaconStatus.WithdrawableEpoch == FarFutureEpoch {
+			continue
+		}
+		activeValidators = append(activeValidators, validator)
 	}
 	if len(activeValidators) > 0 {
 		sort.Sort(ByIndex(activeValidators))
 		options := make([]string, len(activeValidators))
 		for vi, v := range activeValidators {
-			options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
+			options[vi] = fmt.Sprintf(
+				"ID: %d - Index: %d - exit_epoch: %d - withdrawable_epoch: %d - Pubkey: 0x%s",
+				v.ValidatorId, v.ValidatorIndex,
+				v.BeaconStatus.ExitEpoch, v.BeaconStatus.WithdrawableEpoch,
+				v.PubKey.String(),
+			)
 		}
 		selected, _ := prompt.Select("Please select a validator to notify the exit:", options)
 
 		// Get validators
 		return uint64(activeValidators[selected].ValidatorId), true, nil
 	}
-	fmt.Println("Can't notify the exit of any validators")
+	fmt.Println("No validators are ready to notify exit.")
+	fmt.Println("A validator is only listed once its exit_epoch is set on the *finalized* beacon state")
 	return 0, false, nil
 }
 
@@ -58,13 +74,28 @@ func notifyValidatorExit(validatorId uint64, yes bool) error {
 	}
 	defer rp.Close()
 
+	fmt.Printf("Checking whether validator id %d can be notified...\n", validatorId)
+
 	response, err := rp.CanNotifyValidatorExit(validatorId)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not check notify-validator-exit for id %d: %w", validatorId, err)
 	}
 
 	if !response.CanExit {
-		return nil
+		fmt.Printf("Cannot notify the exit of validator id %d.\n", validatorId)
+		if response.InvalidStatus {
+			fmt.Println("  The validator is not in a staked state.")
+		}
+		if response.AlreadyExiting {
+			fmt.Println("  Exit has already been notified for this validator.")
+		}
+		if response.AlreadyExited {
+			fmt.Println("  The validator has already been fully exited on the megapool.")
+		}
+		if response.ExitNotFinalized {
+			fmt.Println("  The validator exit is not yet reflected in the finalized beacon state.")
+		}
+		return fmt.Errorf("cannot notify exit of validator id %d", validatorId)
 	}
 
 	// Assign max fees
@@ -79,10 +110,12 @@ func notifyValidatorExit(validatorId uint64, yes bool) error {
 		return nil
 	}
 
+	fmt.Printf("Submitting notify-exit for validator id %d ...\n", validatorId)
+
 	// Exit the validator
 	resp, err := rp.NotifyValidatorExit(validatorId)
 	if err != nil {
-		return err
+		return fmt.Errorf("notify-validator-exit failed for id %d: %w", validatorId, err)
 	}
 
 	fmt.Printf("Notifying validator exit...\n")

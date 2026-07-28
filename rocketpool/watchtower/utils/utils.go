@@ -55,8 +55,7 @@ func FindLastBlockWithExecutionPayload(bc beacon.Client, ec rocketpool.Execution
 			continue
 		}
 
-		// Resolve the EL block number. A Gloas block whose bid was never revealed has no EL
-		// block, so keep walking back rather than reporting block 0.
+		// Resolve the EL block number
 		elBlockNumber, found, err := beacon.ResolveExecutionBlockNumber(context.Background(), ec, beaconBlock)
 		if err != nil {
 			return beacon.BeaconBlock{}, err

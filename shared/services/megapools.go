@@ -236,7 +236,7 @@ func CalculateMegapoolWithdrawalCredentials(megapoolAddress common.Address) comm
 }
 
 // Get all node megapool details
-func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAccount common.Address, opts *bind.CallOpts) (api.MegapoolDetails, error) {
+func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAccount common.Address, opts *bind.CallOpts, useFinalizedBeaconState bool) (api.MegapoolDetails, error) {
 
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
 	if err != nil {
@@ -401,7 +401,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, err
 	}
 
-	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount), opts)
+	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount), opts, useFinalizedBeaconState)
 	if err != nil {
 		return details, err
 	}
@@ -487,7 +487,7 @@ func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount co
 
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32, opts *bind.CallOpts) ([]api.MegapoolValidatorDetails, error) {
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32, opts *bind.CallOpts, useFinalizedBeaconState bool) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
 
@@ -500,12 +500,17 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 		return details, fmt.Errorf("Error getting the megapool queue details: %w", err)
 	}
 
+	// Beacon view: head by default, or the finalized epoch when the caller requested the finalized state
+	var statusOpts *beacon.ValidatorStatusOptions
 	head, err := bc.GetBeaconHead()
-	if err == nil {
-		currentEpoch = head.Epoch
-	}
-	if opts != nil {
+	if useFinalizedBeaconState {
+		if err != nil {
+			return details, fmt.Errorf("Error getting the beacon head: %w", err)
+		}
 		currentEpoch = head.FinalizedEpoch
+		statusOpts = &beacon.ValidatorStatusOptions{Epoch: &currentEpoch}
+	} else if err == nil {
+		currentEpoch = head.Epoch
 	}
 
 	for i := uint32(0); i < validatorCount; i++ {
@@ -534,7 +539,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			}
 
 			// Try to fetch the validator status. If it fails, we assume the first deposit was not processed yet
-			validator.BeaconStatus, _ = bc.GetValidatorStatus(validator.PubKey, nil)
+			validator.BeaconStatus, _ = bc.GetValidatorStatus(validator.PubKey, statusOpts)
 			if validator.Staked {
 				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
 					validator.Activated = true
