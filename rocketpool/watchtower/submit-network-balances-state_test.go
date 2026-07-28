@@ -163,17 +163,27 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 		t.Fatal("MegapoolDetails is empty — fixture may not have been regenerated with the megapool_details json tag")
 	}
 
-	// MegapoolsUserShareTotal should equal the sum of UserCapital for megapools
-	// that appear in MegapoolDetails AND have validators in MegapoolToPubkeysMap
-	// (the balance loop iterates MegapoolDetails, which is keyed by address).
-	expectedUserCapital := big.NewInt(0)
+	// MegapoolsUserShareTotal should equal the sum of UserCapital + RethRewards for megapools
+	// that appear in MegapoolDetails AND have validators in MegapoolToPubkeysMap (the balance
+	// loop iterates MegapoolDetails, which is keyed by address). RethRewards is included
+	// because it's the rETH holders' share of accrued-but-unrealized staking rewards, which
+	// getNetworkBalancesFromState adds on top of UserCapital. It's recomputed here via the same
+	// getMegapoolBalanceDetails call the code under test uses, so this only verifies the
+	// aggregation step rather than duplicating the reward-split math.
+	expectedUserShareTotal := big.NewInt(0)
 	for addr, mp := range ns.MegapoolDetails {
-		if _, hasPubkeys := ns.MegapoolToPubkeysMap[addr]; hasPubkeys {
-			expectedUserCapital.Add(expectedUserCapital, mp.UserCapital)
+		if _, hasPubkeys := ns.MegapoolToPubkeysMap[addr]; !hasPubkeys {
+			continue
 		}
+		detail, err := task.getMegapoolBalanceDetails(addr, ns, mp, rewardCalc)
+		if err != nil {
+			t.Fatalf("getMegapoolBalanceDetails(%s): %v", addr, err)
+		}
+		expectedUserShareTotal.Add(expectedUserShareTotal, detail.UserCapital)
+		expectedUserShareTotal.Add(expectedUserShareTotal, detail.RethRewards)
 	}
-	if balances.MegapoolsUserShareTotal.Cmp(expectedUserCapital) != 0 {
-		t.Errorf("MegapoolsUserShareTotal: got %s, want %s (sum of UserCapital for megapools with validators)", balances.MegapoolsUserShareTotal, expectedUserCapital)
+	if balances.MegapoolsUserShareTotal.Cmp(expectedUserShareTotal) != 0 {
+		t.Errorf("MegapoolsUserShareTotal: got %s, want %s (sum of UserCapital+RethRewards for megapools with validators)", balances.MegapoolsUserShareTotal, expectedUserShareTotal)
 	}
 
 	t.Logf("Balances summary:")
