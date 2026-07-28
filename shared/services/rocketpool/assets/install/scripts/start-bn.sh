@@ -42,8 +42,8 @@ else
     exit 1
 fi
 
-# Check for the JWT auth file
-if [ ! -f "/secrets/jwtsecret" ]; then
+# Check for the JWT auth file (must be non-empty; a zero-byte file is unusable)
+if [ ! -s "/secrets/jwtsecret" ]; then
     echo "JWT secret file not found, please try again when the Execution Client has created one."
     exit 1
 fi
