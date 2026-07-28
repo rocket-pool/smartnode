@@ -271,8 +271,8 @@ if [ "$CLIENT" = "besu" ]; then
     fi
 
     # Create the JWT secret
-    if [ ! -f "/secrets/jwtsecret" ]; then
-        openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
+    if [ ! -s "/secrets/jwtsecret" ]; then
+        echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
     # Check for the prune flag and run that first if requested
@@ -355,7 +355,8 @@ fi
 if [ "$CLIENT" = "reth" ]; then
 
     # Create the JWT secret
-    if [ ! -f "/secrets/jwtsecret" ]; then
+    # Use -s so a zero-byte leftover is repaired on restart.
+    if [ ! -s "/secrets/jwtsecret" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
