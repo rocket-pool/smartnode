@@ -135,6 +135,10 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 	}
 
 	// Save the result
+	shardCommitteePeriod := uint64(eth2Config.Data.ShardCommitteePeriod)
+	if shardCommitteePeriod == 0 {
+		shardCommitteePeriod = 256
+	}
 	out := beacon.Eth2Config{
 		GenesisForkVersion:           genesis.Data.GenesisForkVersion,
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
@@ -144,6 +148,7 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SlotsPerEpoch:                uint64(eth2Config.Data.SlotsPerEpoch),
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
+		ShardCommitteePeriod:         shardCommitteePeriod,
 	}
 	eth2ConfigCache.Store(&out)
 

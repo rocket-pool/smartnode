@@ -66,6 +66,16 @@ func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse
 	}
 	response.BeaconHead = beaconHead
 
+	// Beacon SHARD_COMMITTEE_PERIOD (for exit eligibility)
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting eth2 config: %w", err)
+	}
+	response.ShardCommitteePeriod = eth2Config.ShardCommitteePeriod
+	if response.ShardCommitteePeriod == 0 {
+		response.ShardCommitteePeriod = 256
+	}
+
 	// Get latest delegate address
 	delegate, err := rp.GetContract("rocketMegapoolDelegate", opts)
 	if err != nil {

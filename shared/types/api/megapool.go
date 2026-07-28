@@ -20,6 +20,8 @@ type MegapoolStatusResponse struct {
 	Megapool       MegapoolDetails   `json:"megapoolDetails"`
 	LatestDelegate common.Address    `json:"latestDelegate"`
 	BeaconHead     beacon.BeaconHead `json:"beaconHead"`
+	// ShardCommitteePeriod is the number of epochs after activation before voluntary exit is allowed
+	ShardCommitteePeriod uint64 `json:"shardCommitteePeriod"`
 }
 
 type MegapoolDetails struct {

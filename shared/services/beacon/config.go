@@ -17,6 +17,7 @@ type Eth2Config struct {
 	SlotsPerEpoch                uint64 `json:"slots_per_epoch"`
 	SecondsPerEpoch              uint64 `json:"seconds_per_epoch"`
 	EpochsPerSyncCommitteePeriod uint64 `json:"epochs_per_sync_committee_period"`
+	ShardCommitteePeriod         uint64 `json:"shard_committee_period"`
 }
 
 func (c *Eth2Config) MarshalJSON() ([]byte, error) {

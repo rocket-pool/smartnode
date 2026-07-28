@@ -135,10 +135,16 @@ func getExitableValidator(fetchExitQueueEstimate bool) (uint64, bool, error) {
 	activeValidators := []api.MegapoolValidatorDetails{}
 	exitingValidators := []api.MegapoolValidatorDetails{}
 
+	// Voluntary exits require activation_epoch + SHARD_COMMITTEE_PERIOD.
+	shardCommitteePeriod := status.ShardCommitteePeriod
+	if shardCommitteePeriod == 0 {
+		shardCommitteePeriod = 256
+	}
+
 	for _, validator := range status.Megapool.Validators {
 		if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.Status != beacon.ValidatorState_ActiveExiting {
 			// Check if validator is old enough to exit
-			earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + 256
+			earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + shardCommitteePeriod
 			if status.BeaconHead.Epoch >= earliestExitEpoch {
 				activeValidators = append(activeValidators, validator)
 			}
