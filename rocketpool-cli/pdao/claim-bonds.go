@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strconv"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func claimBonds(proposal string, yes bool) error {
@@ -71,7 +71,7 @@ func claimBonds(proposal string, yes bool) error {
 		options := make([]string, len(claimableBonds)+1)
 		options[0] = "All available proposals"
 		for pi, bond := range claimableBonds {
-			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, eth.WeiToEth(bond.UnlockAmount), eth.WeiToEth(bond.RewardAmount))
+			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, math.WeiToEth(bond.UnlockAmount), math.WeiToEth(bond.RewardAmount))
 		}
 		selected, _ := prompt.Select("Please select a proposal to unlock bonds / claim rewards from:", options)
 
@@ -85,24 +85,18 @@ func claimBonds(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas = uint64(0)
-	var totalSafeGas = uint64(0)
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, bond := range selectedClaims {
 		indices := getClaimIndicesForBond(bond)
 		canResponse, err := rp.PDAOCanClaimBonds(bond.ProposalID, indices)
 		if err != nil {
 			return fmt.Errorf("error simulating claim-bond on proposal %d: %s", bond.ProposalID, err.Error())
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(canResponse.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

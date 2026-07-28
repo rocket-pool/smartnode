@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 //
@@ -42,10 +43,10 @@ func GetFixedSupplyRPLAllowance(rp *rocketpool.RocketPool, owner, spender common
 }
 
 // Estimate the gas of TransferFixedSupplyRPL
-func EstimateTransferFixedSupplyRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateTransferFixedSupplyRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateTransferGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", to, amount, opts)
 }
@@ -60,10 +61,10 @@ func TransferFixedSupplyRPL(rp *rocketpool.RocketPool, to common.Address, amount
 }
 
 // Estimate the gas of ApproveFixedSupplyRPL
-func EstimateApproveFixedSupplyRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateApproveFixedSupplyRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateApproveGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", spender, amount, opts)
 }
@@ -78,10 +79,10 @@ func ApproveFixedSupplyRPL(rp *rocketpool.RocketPool, spender common.Address, am
 }
 
 // Estimate the gas of TransferFromFixedSupplyRPL
-func EstimateTransferFromFixedSupplyRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateTransferFromFixedSupplyRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateTransferFromGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", from, to, amount, opts)
 }

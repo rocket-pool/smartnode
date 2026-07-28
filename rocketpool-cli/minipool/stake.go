@@ -6,13 +6,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
-
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func stakeMinipools(minipool string, yes bool) error {
@@ -84,24 +83,18 @@ func stakeMinipools(minipool string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas = uint64(0)
-	var totalSafeGas = uint64(0)
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanStakeMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for stake transaction (%s)", err)
 			break
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(canResponse.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

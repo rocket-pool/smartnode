@@ -8,13 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas of Join
-func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionJoin")
 }
@@ -34,10 +35,10 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 }
 
 // Estimate the gas of Kick
-func EstimateKickGas(rp *rocketpool.RocketPool, address common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateKickGas(rp *rocketpool.RocketPool, address common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionKick", address)
 }
@@ -56,10 +57,10 @@ func Kick(rp *rocketpool.RocketPool, address common.Address, opts *bind.Transact
 }
 
 // Estimate the gas of KickMulti
-func EstimateKickMultiGas(rp *rocketpool.RocketPool, addresses []common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateKickMultiGas(rp *rocketpool.RocketPool, addresses []common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionKickMulti", addresses)
 }
@@ -78,10 +79,10 @@ func KickMulti(rp *rocketpool.RocketPool, addresses []common.Address, opts *bind
 }
 
 // Estimate the gas of RequestLeave
-func EstimateRequestLeaveGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRequestLeaveGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionRequestLeave")
 }
@@ -100,10 +101,10 @@ func RequestLeave(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Ha
 }
 
 // Estimate the gas of Leave
-func EstimateLeaveGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateLeaveGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionLeave")
 }

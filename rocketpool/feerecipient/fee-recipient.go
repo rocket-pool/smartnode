@@ -1,4 +1,4 @@
-package rp
+package feerecipient
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 
-type FeeRecipientInfo struct {
+type Details struct {
 	SmoothingPoolAddress  common.Address `json:"smoothingPoolAddress"`
 	FeeDistributorAddress common.Address `json:"feeDistributorAddress"`
 	MegapoolAddress       common.Address `json:"megapoolAddress"`
@@ -25,9 +25,9 @@ type FeeRecipientInfo struct {
 	OptOutEpoch           uint64         `json:"optOutEpoch"`
 }
 
-func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkState) (*FeeRecipientInfo, error) {
+func GetDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkState) (*Details, error) {
 
-	info := &FeeRecipientInfo{
+	info := &Details{
 		IsInOptOutCooldown: false,
 		OptOutEpoch:        0,
 	}
@@ -77,8 +77,8 @@ func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddres
 
 }
 
-func GetFeeRecipientInfoWithoutState(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, opts *bind.CallOpts) (*FeeRecipientInfo, error) {
-	info := &FeeRecipientInfo{
+func GetDetailsWithoutState(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, opts *bind.CallOpts) (*Details, error) {
+	info := &Details{
 		IsInOptOutCooldown: false,
 		OptOutEpoch:        0,
 	}

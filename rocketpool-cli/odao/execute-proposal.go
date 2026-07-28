@@ -5,13 +5,13 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func executeProposal(proposal string, yes bool) error {
@@ -91,24 +91,18 @@ func executeProposal(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64
-	var totalSafeGas uint64
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, proposal := range selectedProposals {
 		canResponse, err := rp.CanExecuteTNDAOProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
 			break
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(canResponse.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
+	g, err := gas.GetMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

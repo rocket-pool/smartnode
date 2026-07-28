@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get the version of the Node Staking contract
@@ -242,10 +243,10 @@ func GetNodeMinipoolETHBonded(rp *rocketpool.RocketPool, nodeAddress common.Addr
 }
 
 // Estimate the gas of Stake
-func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "stakeRPL", rplAmount)
 }
@@ -264,10 +265,10 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 }
 
 // Estimate the gas of UnstakeRPL
-func EstimateUnstakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateUnstakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "unstakeRPL", rplAmount)
 }
@@ -286,10 +287,10 @@ func UnstakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transa
 }
 
 // Estimate the gas of set RPL locking allowed
-func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "setRPLLockingAllowed", caller, allowed)
 }
@@ -321,10 +322,10 @@ func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 }
 
 // Estimate the gas of set stake RPL for allowed
-func EstimateSetStakeRPLForAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetStakeRPLForAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "setStakeRPLForAllowed", caller, allowed)
 }
@@ -356,10 +357,10 @@ func SetNodeStakeRPLForAllowed(rp *rocketpool.RocketPool, nodeAddress common.Add
 }
 
 // Estimate the gas of WithdrawRPL
-func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL")
 }
@@ -378,10 +379,10 @@ func WithdrawRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Has
 }
 
 // Estimate the gas of UnstakeLegacyRPL
-func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeStaking.GetTransactionGasInfo(opts, "unstakeLegacyRPL", rplAmount)
 }

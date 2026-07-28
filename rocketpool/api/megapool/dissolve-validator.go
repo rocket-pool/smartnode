@@ -71,11 +71,11 @@ func canDissolveValidator(c *cli.Command, validatorId uint32) (*api.CanDissolveV
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateDissolveValidatorGas(validatorId, opts)
+	gasLimits, err := mp.EstimateDissolveValidatorGas(validatorId, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanDissolve = true
 
 	return &response, nil

@@ -3,18 +3,16 @@ package pdao
 import (
 	"encoding/hex"
 	"fmt"
-	"math"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	utilsStrings "github.com/rocket-pool/smartnode/bindings/utils/strings"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	utilsMath "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func filterProposalState(state string, stateFilter string) bool {
@@ -162,14 +160,14 @@ func getProposal(id uint64) error {
 	}
 
 	// Vote details
-	votingPowerFor := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerFor), 2)
-	votingPowerRequired := utilsMath.RoundUp(eth.WeiToEth(proposal.VotingPowerRequired), 2)
-	votingPowerToVeto := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerToVeto), 2)
-	vetoQuorum := utilsMath.RoundUp(eth.WeiToEth(proposal.VetoQuorum), 2)
+	votingPowerFor := math.RoundDown(math.WeiToEth(proposal.VotingPowerFor), 2)
+	votingPowerRequired := math.RoundUp(math.WeiToEth(proposal.VotingPowerRequired), 2)
+	votingPowerToVeto := math.RoundDown(math.WeiToEth(proposal.VotingPowerToVeto), 2)
+	vetoQuorum := math.RoundUp(math.WeiToEth(proposal.VetoQuorum), 2)
 	fmt.Printf("Voting power for:       %.2f / %.2f (%.2f%%)\n", votingPowerFor, votingPowerRequired, votingPowerFor/votingPowerRequired*100)
-	fmt.Printf("Voting power against:   %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAgainst), 2))
+	fmt.Printf("Voting power against:   %.2f\n", math.RoundDown(math.WeiToEth(proposal.VotingPowerAgainst), 2))
 	fmt.Printf("Against with veto:      %.2f / %2.f (%.2f%%)\n", votingPowerToVeto, vetoQuorum, votingPowerToVeto/vetoQuorum*100)
-	fmt.Printf("Voting power abstained: %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAbstained), 2))
+	fmt.Printf("Voting power abstained: %.2f\n", math.RoundDown(math.WeiToEth(proposal.VotingPowerAbstained), 2))
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {

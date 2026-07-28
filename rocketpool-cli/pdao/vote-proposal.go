@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
@@ -90,11 +90,11 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 				proposal.Message,
 				proposal.PayloadStr,
 				endTime,
-				eth.WeiToEth(proposal.VotingPowerRequired),
-				eth.WeiToEth(proposal.VotingPowerFor),
-				eth.WeiToEth(proposal.VotingPowerAgainst),
-				eth.WeiToEth(proposal.VotingPowerAbstained),
-				eth.WeiToEth(proposal.VotingPowerToVeto),
+				math.WeiToEth(proposal.VotingPowerRequired),
+				math.WeiToEth(proposal.VotingPowerFor),
+				math.WeiToEth(proposal.VotingPowerAgainst),
+				math.WeiToEth(proposal.VotingPowerAbstained),
+				math.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
 		selected, _ := prompt.Select("Please select a proposal to vote on:", options)
@@ -162,10 +162,10 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", eth.WeiToEth(canVote.VotingPower))
+	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", math.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canVote.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

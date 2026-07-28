@@ -22,19 +22,18 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
-	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -503,7 +502,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		}
 
 		// Log
-		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+		t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(math.WeiToEth(rplPrice), 6))
 
 		submissionTimestamp := uint64(nextSubmissionTime.Unix())
 
@@ -600,7 +599,7 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	}
 
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	client, err := utils.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -635,8 +634,8 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	tick := big.NewInt(0).Sub(response.TickCumulatives[1], response.TickCumulatives[0])
 	tick.Div(tick, big.NewInt(int64(interval))) // tick = (cumulative[1] - cumulative[0]) / interval
 
-	base := eth.EthToWei(1.0001) // 1.0001e18
-	one := eth.EthToWei(1)       // 1e18
+	base := math.EthToWei(1.0001) // 1.0001e18
+	one := math.EthToWei(1)       // 1e18
 
 	numerator := big.NewInt(0).Exp(base, tick, nil) // 1.0001e18 ^ tick
 	numerator.Mul(numerator, one)
@@ -668,24 +667,22 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 		return err
 	}
 
-	var gasInfo rocketpool.GasInfo
-
 	// Get the gas limit
-	gasInfo, err = network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
+	gasLimits, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
+	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasLimit = gasLimits.Safe
 
 	var hash common.Hash
 	// Submit RPL price
@@ -695,7 +692,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
 	}
@@ -791,21 +788,21 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitOptimismPrice: %w", err)
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Optimism...")
 
@@ -816,7 +813,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -912,21 +909,21 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitPolygonPrice: %w", err)
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Polygon...")
 
@@ -937,7 +934,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1034,7 +1031,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		bufferMultiplier := big.NewInt(4)
 		dataLength := big.NewInt(36)
 		arbitrumGasLimit := big.NewInt(40000)
-		arbitrumMaxFeePerGas := eth.GweiToWei(0.1)
+		arbitrumMaxFeePerGas := math.GweiToWei(0.1)
 
 		// Gas limit calculation on Arbitrum
 		maxSubmissionCost := big.NewInt(6)
@@ -1056,21 +1053,21 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		}
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitArbitrumPrice: %w", err)
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Arbitrum %s...", priceMessengerAddress)
 
@@ -1081,7 +1078,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1172,10 +1169,10 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 
 		// Constants for zkSync Era
 		l1GasPerPubdataByte := big.NewInt(17)
-		fairL2GasPrice := eth.GweiToWei(0.5)
+		fairL2GasPrice := math.GweiToWei(0.5)
 		l2GasLimit := big.NewInt(750000)
 		gasPerPubdataByte := big.NewInt(800)
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 
 		// Value calculation on zkSync Era
 		pubdataPrice := big.NewInt(0).Mul(l1GasPerPubdataByte, maxFee)
@@ -1196,20 +1193,20 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitZkSyncEraPrice: %w", err)
 		}
 
 		// Print the gas info
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to zkSync Era...")
 
@@ -1220,7 +1217,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1316,21 +1313,21 @@ func (t *submitRplPrice) submitBasePrice() error {
 		}
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitBasePrice: %w", err)
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Base...")
 
@@ -1341,7 +1338,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1462,21 +1459,21 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		opts.Value = messageFee
 
 		// Estimate gas limit
-		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
+		gasLimits, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitScrollPrice: %w", err)
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasLimits.Safe
 
 		t.log.Println("Submitting rate to Scroll...")
 
@@ -1487,7 +1484,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1501,7 +1498,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 }
 
 // estimateGasLimit estimates gas limit for a transaction
-func (t *submitRplPrice) estimateGasLimit(opts *bind.TransactOpts, contractAddress *common.Address, input []byte) (rocketpool.GasInfo, error) {
+func (t *submitRplPrice) estimateGasLimit(opts *bind.TransactOpts, contractAddress *common.Address, input []byte) (gaslimit.Limits, error) {
 	// Estimate gas limit
 	gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
 		From:     opts.From,
@@ -1511,7 +1508,7 @@ func (t *submitRplPrice) estimateGasLimit(opts *bind.TransactOpts, contractAddre
 		Data:     input,
 	})
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 
 	// Get the safe gas limit
@@ -1519,8 +1516,8 @@ func (t *submitRplPrice) estimateGasLimit(opts *bind.TransactOpts, contractAddre
 	gasLimit = min(gasLimit, rocketpool.MaxGasLimit)
 	safeGasLimit = min(safeGasLimit, rocketpool.MaxGasLimit)
 
-	return rocketpool.GasInfo{
-		EstGasLimit:  gasLimit,
-		SafeGasLimit: safeGasLimit,
+	return gaslimit.Limits{
+		Estimated: gasLimit,
+		Safe:      safeGasLimit,
 	}, nil
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	strutils "github.com/rocket-pool/smartnode/bindings/utils/strings"
 )
@@ -579,14 +580,14 @@ func GetAddressVoteDirection(rp *rocketpool.RocketPool, proposalId uint64, addre
 // ====================
 
 // Estimate the gas of a proposal submission
-func estimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func estimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	err = simulateProposalExecution(rp, payload)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error simulating proposal execution: %w", err)
+		return gaslimit.Limits{}, fmt.Errorf("error simulating proposal execution: %w", err)
 	}
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "propose", message, payload, blockNumber, treeNodes)
 }
@@ -610,10 +611,10 @@ func submitProposal(rp *rocketpool.RocketPool, message string, payload []byte, b
 }
 
 // Estimate the gas of VoteOnProposal
-func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "vote", big.NewInt(int64(proposalId)), voteDirection, votingPower, big.NewInt(int64(nodeIndex)), witness)
 }
@@ -632,10 +633,10 @@ func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, voteDirection 
 }
 
 // Estimate the gas of OverrideVote
-func EstimateOverrideVoteGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateOverrideVoteGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "overrideVote", big.NewInt(int64(proposalId)), voteDirection)
 }
@@ -654,10 +655,10 @@ func OverrideVote(rp *rocketpool.RocketPool, proposalId uint64, voteDirection ty
 }
 
 // Estimate the gas of Finalize
-func EstimateFinalizeGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateFinalizeGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "finalise", big.NewInt(int64(proposalId)))
 }
@@ -676,10 +677,10 @@ func Finalize(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactO
 }
 
 // Estimate the gas of ExecuteProposal
-func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "execute", big.NewInt(int64(proposalId)))
 }

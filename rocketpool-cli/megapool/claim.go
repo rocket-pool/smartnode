@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func claim(yes bool) error {
@@ -27,9 +26,9 @@ func claim(yes bool) error {
 	}
 
 	if megapoolDetails.Megapool.RefundValue != nil && megapoolDetails.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.RefundValue), 6))
+		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(math.WeiToEth(megapoolDetails.Megapool.RefundValue), 6))
 		if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("You have %.6f ETH of node debt to repay. This will be deducted from your refund.\n\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+			fmt.Printf("You have %.6f ETH of node debt to repay. This will be deducted from your refund.\n\n", math.RoundDown(math.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
 		}
 	} else {
 		fmt.Println("You have no megapool refund to claim.")
@@ -52,7 +51,7 @@ func claim(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canRepay.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canRepay.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

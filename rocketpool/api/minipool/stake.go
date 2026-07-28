@@ -13,9 +13,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanStakeMinipoolResponse, error) {
@@ -139,9 +139,9 @@ func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanS
 
 		// Get the gas limit
 		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
-		gasInfo, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
+		gasLimits, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get the deposit pool balance
@@ -51,10 +52,10 @@ func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 }
 
 // Estimate the gas of Deposit
-func EstimateDepositGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDepositGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDepositPool.GetTransactionGasInfo(opts, "deposit")
 }
@@ -73,10 +74,10 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas of AssignDeposits
-func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, m *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, m *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDepositPool.GetTransactionGasInfo(opts, "assignDeposits", m)
 }

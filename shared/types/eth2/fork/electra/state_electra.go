@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"sync/atomic"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const beaconStateChunkCeil uint64 = 64

@@ -92,14 +92,14 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 		if err != nil {
 			return err
 		}
-		approveGasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
+		approveGasLimits, err := tokens.EstimateApproveRPLGas(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
 		if err != nil {
 			return err
 		}
 		//joinGasInfo, err := tndao.EstimateJoinGas(rp, opts)
 		if err == nil {
-			response.GasInfo = approveGasInfo
-			//response.GasInfo.EstGasLimit += joinGasInfo.EstGasLimit
+			response.GasLimits = approveGasLimits
+			//response.GasLimits.EstGasLimit += joinGasInfo.EstGasLimit
 		}
 		return err
 	})

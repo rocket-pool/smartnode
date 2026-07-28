@@ -53,9 +53,9 @@ func canProcessQueue(c *cli.Command, m int64) (*api.CanProcessQueueResponse, err
 		if err != nil {
 			return err
 		}
-		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(m), opts)
+		gasLimits, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(m), opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

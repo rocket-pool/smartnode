@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 )
 
 const (

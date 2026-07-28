@@ -68,14 +68,14 @@ func canProposeAllowListedControllers(c *cli.Command, addressList []common.Addre
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeAllowListedControllersGas(rp, addressList, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeAllowListedControllersGas(rp, addressList, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

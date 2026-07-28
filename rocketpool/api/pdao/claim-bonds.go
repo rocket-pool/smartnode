@@ -7,7 +7,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -88,19 +88,19 @@ func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PD
 	if err != nil {
 		return nil, err
 	}
-	var gasInfo rocketpool.GasInfo
+	var gasLimits gaslimit.Limits
 
 	if response.IsProposer {
-		gasInfo, err = protocol.EstimateClaimBondProposerGas(rp, proposalId, indices, opts)
+		gasLimits, err = protocol.EstimateClaimBondProposerGas(rp, proposalId, indices, opts)
 	} else {
-		gasInfo, err = protocol.EstimateClaimBondChallengerGas(rp, proposalId, indices, opts)
+		gasLimits, err = protocol.EstimateClaimBondChallengerGas(rp, proposalId, indices, opts)
 	}
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

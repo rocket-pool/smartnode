@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type AuctionStatusResponse struct {
@@ -36,12 +36,12 @@ type LotDetails struct {
 }
 
 type CanCreateLotResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanCreate           bool               `json:"canCreate"`
-	InsufficientBalance bool               `json:"insufficientBalance"`
-	CreateLotDisabled   bool               `json:"createLotDisabled"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanCreate           bool            `json:"canCreate"`
+	InsufficientBalance bool            `json:"insufficientBalance"`
+	CreateLotDisabled   bool            `json:"createLotDisabled"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type CreateLotResponse struct {
 	Status string      `json:"status"`
@@ -51,14 +51,14 @@ type CreateLotResponse struct {
 }
 
 type CanBidOnLotResponse struct {
-	Status           string             `json:"status"`
-	Error            string             `json:"error"`
-	CanBid           bool               `json:"canBid"`
-	DoesNotExist     bool               `json:"doesNotExist"`
-	BiddingEnded     bool               `json:"biddingEnded"`
-	RPLExhausted     bool               `json:"rplExhausted"`
-	BidOnLotDisabled bool               `json:"bidOnLotDisabled"`
-	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
+	Status           string          `json:"status"`
+	Error            string          `json:"error"`
+	CanBid           bool            `json:"canBid"`
+	DoesNotExist     bool            `json:"doesNotExist"`
+	BiddingEnded     bool            `json:"biddingEnded"`
+	RPLExhausted     bool            `json:"rplExhausted"`
+	BidOnLotDisabled bool            `json:"bidOnLotDisabled"`
+	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type BidOnLotResponse struct {
 	Status string      `json:"status"`
@@ -67,13 +67,13 @@ type BidOnLotResponse struct {
 }
 
 type CanClaimFromLotResponse struct {
-	Status           string             `json:"status"`
-	Error            string             `json:"error"`
-	CanClaim         bool               `json:"canClaim"`
-	DoesNotExist     bool               `json:"doesNotExist"`
-	NoBidFromAddress bool               `json:"noBidFromAddress"`
-	NotCleared       bool               `json:"notCleared"`
-	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
+	Status           string          `json:"status"`
+	Error            string          `json:"error"`
+	CanClaim         bool            `json:"canClaim"`
+	DoesNotExist     bool            `json:"doesNotExist"`
+	NoBidFromAddress bool            `json:"noBidFromAddress"`
+	NotCleared       bool            `json:"notCleared"`
+	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type ClaimFromLotResponse struct {
 	Status string      `json:"status"`
@@ -82,14 +82,14 @@ type ClaimFromLotResponse struct {
 }
 
 type CanRecoverRPLFromLotResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanRecover          bool               `json:"canRecover"`
-	DoesNotExist        bool               `json:"doesNotExist"`
-	BiddingNotEnded     bool               `json:"biddingNotEnded"`
-	NoUnclaimedRPL      bool               `json:"noUnclaimedRpl"`
-	RPLAlreadyRecovered bool               `json:"rplAlreadyRecovered"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanRecover          bool            `json:"canRecover"`
+	DoesNotExist        bool            `json:"doesNotExist"`
+	BiddingNotEnded     bool            `json:"biddingNotEnded"`
+	NoUnclaimedRPL      bool            `json:"noUnclaimedRpl"`
+	RPLAlreadyRecovered bool            `json:"rplAlreadyRecovered"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type RecoverRPLFromLotResponse struct {
 	Status string      `json:"status"`

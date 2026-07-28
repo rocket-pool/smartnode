@@ -3,8 +3,8 @@ package network
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 func getStats() error {

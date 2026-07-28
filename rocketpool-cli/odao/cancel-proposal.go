@@ -8,10 +8,10 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func cancelProposal(proposal string, yes bool) error {
@@ -90,7 +90,7 @@ func cancelProposal(proposal string, yes bool) error {
 		return err
 	}
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

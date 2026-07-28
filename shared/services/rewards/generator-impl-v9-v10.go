@@ -16,14 +16,14 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	sszbig "github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Implementation for tree generator ruleset v9
@@ -259,7 +259,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRplRewards(
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
-	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
+	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), math.WeiToEth(pendingRewards))
 	if pendingRewards.Cmp(common.Big0) == 0 {
 		return fmt.Errorf("there are no pending RPL rewards, so this interval cannot be used for rewards submission")
 	}
@@ -269,14 +269,14 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	pDaoRewards := big.NewInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(pDaoRewards, oneEth)
-	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(pDaoRewards))
+	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), math.WeiToEth(pDaoRewards))
 
 	// Get node operator rewards
 	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, oneEth)
-	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
+	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), math.WeiToEth(totalNodeRewards))
 
 	// Calculate the RPIP-30 weight of each node, scaling by their participation in this interval
 	nodeWeights, totalNodeWeight, err := r.networkState.CalculateNodeWeights()
@@ -346,7 +346,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	} else {
 		// In this situation, none of the nodes in the network had eligible rewards so send it all to the pDAO
 		pDaoRewards.Add(pDaoRewards, totalNodeRewards)
-		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(pDaoRewards))
+		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), math.WeiToEth(pDaoRewards))
 	}
 
 	// Handle Oracle DAO rewards
@@ -354,7 +354,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, oneEth)
-	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
+	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), math.WeiToEth(totalODaoRewards))
 
 	oDaoDetails := r.networkState.OracleDaoMemberDetails
 
@@ -450,7 +450,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
-	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
+	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), math.WeiToEth(r.smoothingPoolBalance))
 
 	if r.rewardsFile.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
@@ -770,10 +770,10 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *
 	// Calculate the staking pool share and the node op share
 	poolStakerShareBeforeBonuses := big.NewInt(0).Sub(r.smoothingPoolBalance, totalNodeOpShare)
 
-	r.log.Printlnf("%s Pool staker ETH before bonuses:    %s (%.3f)", r.logPrefix, poolStakerShareBeforeBonuses.String(), eth.WeiToEth(poolStakerShareBeforeBonuses))
-	r.log.Printlnf("%s Pool staker ETH after bonuses:     %s (%.3f)", r.logPrefix, truePoolStakerAmount.String(), eth.WeiToEth(truePoolStakerAmount))
-	r.log.Printlnf("%s Node Op ETH before bonuses:        %s (%.3f)", r.logPrefix, totalNodeOpShare.String(), eth.WeiToEth(totalNodeOpShare))
-	r.log.Printlnf("%s Node Op ETH after bonuses:         %s (%.3f)", r.logPrefix, totalEthForMinipools.String(), eth.WeiToEth(totalEthForMinipools))
+	r.log.Printlnf("%s Pool staker ETH before bonuses:    %s (%.3f)", r.logPrefix, poolStakerShareBeforeBonuses.String(), math.WeiToEth(poolStakerShareBeforeBonuses))
+	r.log.Printlnf("%s Pool staker ETH after bonuses:     %s (%.3f)", r.logPrefix, truePoolStakerAmount.String(), math.WeiToEth(truePoolStakerAmount))
+	r.log.Printlnf("%s Node Op ETH before bonuses:        %s (%.3f)", r.logPrefix, totalNodeOpShare.String(), math.WeiToEth(totalNodeOpShare))
+	r.log.Printlnf("%s Node Op ETH after bonuses:         %s (%.3f)", r.logPrefix, totalEthForMinipools.String(), math.WeiToEth(totalEthForMinipools))
 	r.log.Printlnf("%s (error = %s wei)", r.logPrefix, delta.String())
 	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 

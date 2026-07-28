@@ -60,9 +60,9 @@ func canCreateLot(c *cli.Command) (*api.CanCreateLotResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := auction.EstimateCreateLotGas(rp, opts)
+		gasLimits, err := auction.EstimateCreateLotGas(rp, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

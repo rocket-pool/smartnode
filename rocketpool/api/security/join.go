@@ -62,9 +62,9 @@ func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := security.EstimateJoinGas(rp, opts)
+		gasLimits, err := security.EstimateJoinGas(rp, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

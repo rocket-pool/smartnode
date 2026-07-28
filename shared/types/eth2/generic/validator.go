@@ -1,7 +1,7 @@
 package generic
 
 import (
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 func GetGeneralizedIndexForValidator(index uint64, validatorsArrayIndex uint64) uint64 {

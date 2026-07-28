@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -392,7 +393,7 @@ func (mp *megapoolV1) GetNodeAddress(opts *bind.CallOpts) (common.Address, error
 }
 
 // Estimate the gas required to create a new validator as part of a megapool
-func (mp *megapoolV1) EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "newValidator", validatorId, validatorSignature[:], depositDataRoot)
 }
 
@@ -406,7 +407,7 @@ func (mp *megapoolV1) NewValidator(bondAmount *big.Int, useExpressTicket bool, v
 }
 
 // Estimate the gas required to remove a validator from the deposit queue
-func (mp *megapoolV1) EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "dequeue", validatorId)
 }
 
@@ -420,7 +421,7 @@ func (mp *megapoolV1) Dequeue(validatorId uint32, opts *bind.TransactOpts) (comm
 }
 
 // Estimate the gas required to accept requested funds from the deposit pool
-func (mp *megapoolV1) EstimateAssignFundsGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateAssignFundsGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "assignFunds", validatorId)
 }
 
@@ -434,7 +435,7 @@ func (mp *megapoolV1) AssignFunds(validatorId uint32, opts *bind.TransactOpts) (
 }
 
 // Estimate the gas required to dissolve a validator that has not staked within the required period
-func (mp *megapoolV1) EstimateDissolveValidatorGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateDissolveValidatorGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "dissolveValidator", validatorId)
 }
 
@@ -448,7 +449,7 @@ func (mp *megapoolV1) DissolveValidator(validatorId uint32, opts *bind.TransactO
 }
 
 // Estimate the gas required to repay megapool debt
-func (mp *megapoolV1) EstimateRepayDebtGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateRepayDebtGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "repayDebt")
 }
 
@@ -462,7 +463,7 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas required to reduce a megapool bond
-func (mp *megapoolV1) EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "reduceBond", amount)
 }
 
@@ -476,7 +477,7 @@ func (mp *megapoolV1) ReduceBond(amount *big.Int, opts *bind.TransactOpts) (comm
 }
 
 // Estimate the gas required to claim a megapool refund
-func (mp *megapoolV1) EstimateClaimRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateClaimRefundGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "claim")
 }
 
@@ -508,7 +509,7 @@ func (mp *megapoolV1) GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.
 }
 
 // Estimate the gas required to Request RPL previously staked on this megapool to be unstaked
-func (mp *megapoolV1) EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "requestUnstakeRPL")
 }
 
@@ -523,7 +524,7 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas required to distribute megapool rewards
-func (mp *megapoolV1) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateDistributeGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distribute")
 }
 
@@ -537,7 +538,7 @@ func (mp *megapoolV1) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of SetUseLatestDelegate
-func (mp *megapoolV1) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
 }
 
@@ -587,7 +588,7 @@ func (mp *megapoolV1) GetDelegateExpired(rp *rocketpool.RocketPool, opts *bind.C
 }
 
 // Estimate the gas of DelegateUpgrade
-func (mp *megapoolV1) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
 }
 

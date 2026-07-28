@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 )
 
 // Register commands

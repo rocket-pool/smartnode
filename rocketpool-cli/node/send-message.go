@@ -6,10 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func sendMessage(toAddressOrENS string, message []byte, yes bool) error {
@@ -46,7 +46,7 @@ func sendMessage(toAddressOrENS string, message []byte, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSend.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

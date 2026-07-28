@@ -64,9 +64,9 @@ func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, me
 			return err
 		}
 		message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)
-		gasInfo, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberUrl, opts)
+		gasLimits, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberUrl, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

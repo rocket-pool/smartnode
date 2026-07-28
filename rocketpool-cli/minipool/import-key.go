@@ -5,10 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func importKey(mnemonic string, noRestart, yes bool, minipoolAddress common.Address) error {

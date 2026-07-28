@@ -2,29 +2,162 @@ package node
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/math"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
+	mpApi "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 )
+
+// Settings
+const minipoolBalanceDetailsBatchSize = 20
+
+// Beacon chain balance info for a minipool
+type minipoolBalanceDetails struct {
+	nodeDeposit *big.Int
+	nodeBalance *big.Int
+}
+
+// Get the balances of the minipools on the beacon chain
+func getBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+
+	// Get minipool validator statuses
+	validators, err := mpApi.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
+	if err != nil {
+		return []minipoolBalanceDetails{}, err
+	}
+
+	// Load details in batches
+	details := make([]minipoolBalanceDetails, len(addresses))
+	for bsi := 0; bsi < len(addresses); bsi += minipoolBalanceDetailsBatchSize {
+
+		// Get batch start & end index
+		msi := bsi
+		mei := min(bsi+minipoolBalanceDetailsBatchSize, len(addresses))
+
+		// Load details
+		var wg errgroup.Group
+		for mi := msi; mi < mei; mi++ {
+			mi := mi
+			wg.Go(func() error {
+				address := addresses[mi]
+				validator := validators[address]
+				mpDetails, err := getMinipoolBalanceDetails(rp, address, opts, validator, beaconHead.Epoch)
+				if err == nil {
+					details[mi] = mpDetails
+				}
+				return err
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			return []minipoolBalanceDetails{}, err
+		}
+
+	}
+
+	// Return
+	return details, nil
+}
+
+// Get minipool balance details
+func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, blockEpoch uint64) (minipoolBalanceDetails, error) {
+
+	// Create minipool
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, opts)
+	if err != nil {
+		return minipoolBalanceDetails{}, err
+	}
+	blockBalance := math.GweiToWei(float64(validator.Balance))
+
+	// Data
+	var wg errgroup.Group
+	var status types.MinipoolStatus
+	var nodeDepositBalance *big.Int
+	var finalized bool
+
+	// Load data
+	wg.Go(func() error {
+		var err error
+		status, err = mp.GetStatus(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		nodeDepositBalance, err = mp.GetNodeDepositBalance(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		finalized, err = mp.GetFinalised(opts)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return minipoolBalanceDetails{}, err
+	}
+
+	// Deal with pools that haven't received deposits yet so their balance is still 0
+	if nodeDepositBalance == nil {
+		nodeDepositBalance = big.NewInt(0)
+	}
+
+	// Ignore finalized minipools
+	if finalized {
+		return minipoolBalanceDetails{
+			nodeDeposit: big.NewInt(0),
+			nodeBalance: big.NewInt(0),
+		}, nil
+	}
+
+	// Use node deposit balance if initialized or prelaunch
+	if status == types.Initialized || status == types.Prelaunch {
+		return minipoolBalanceDetails{
+			nodeDeposit: nodeDepositBalance,
+			nodeBalance: nodeDepositBalance,
+		}, nil
+	}
+
+	// Use node deposit balance if validator not yet active on beacon chain at block
+	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
+		return minipoolBalanceDetails{
+			nodeDeposit: nodeDepositBalance,
+			nodeBalance: nodeDepositBalance,
+		}, nil
+	}
+
+	// Get node balance at block
+	nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
+	if err != nil {
+		return minipoolBalanceDetails{}, err
+	}
+
+	// Return
+	return minipoolBalanceDetails{
+		nodeDeposit: nodeDepositBalance,
+		nodeBalance: nodeBalance,
+	}, nil
+
+}
 
 func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 
@@ -151,10 +284,10 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		}
 
 		if err == nil {
-			response.CumulativeRplRewards = eth.WeiToEth(rplRewards)
-			response.UnclaimedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
-			response.CumulativeEthRewards = eth.WeiToEth(ethRewards)
-			response.UnclaimedEthRewards = eth.WeiToEth(unclaimedEthRewardsWei)
+			response.CumulativeRplRewards = math.WeiToEth(rplRewards)
+			response.UnclaimedRplRewards = math.WeiToEth(unclaimedRplRewardsWei)
+			response.CumulativeEthRewards = math.WeiToEth(ethRewards)
+			response.UnclaimedEthRewards = math.WeiToEth(unclaimedEthRewardsWei)
 		}
 		return err
 	})
@@ -181,7 +314,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		stake, err := node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		if err == nil {
-			response.TotalRplStake = eth.WeiToEth(stake)
+			response.TotalRplStake = math.WeiToEth(stake)
 		}
 		return err
 	})
@@ -224,7 +357,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	// Get the node operator rewards percent
 	wg.Go(func() error {
 		nodeOperatorRewardsPercentRaw, err := rewards.GetNodeOperatorRewardsPercent(rp, nil)
-		nodeOperatorRewardsPercent = eth.WeiToEth(nodeOperatorRewardsPercentRaw)
+		nodeOperatorRewardsPercent = math.WeiToEth(nodeOperatorRewardsPercentRaw)
 		if err != nil {
 			return err
 		}
@@ -257,26 +390,26 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
-	minipoolDetails, err := eth2.GetBeaconBalances(rp, bc, addresses, beaconHead, nil)
+	minipoolDetails, err := getBeaconBalances(rp, bc, addresses, beaconHead, nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, minipool := range minipoolDetails {
-		totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
-		totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
+		totalDepositBalance += math.WeiToEth(minipool.nodeDeposit)
+		totalNodeShare += math.WeiToEth(minipool.nodeBalance)
 	}
 	response.BeaconRewards = totalNodeShare - totalDepositBalance
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := response.RewardsInterval.Seconds() / (60 * 60 * 24)
-	inflationPerDay := eth.WeiToEth(inflationInterval)
-	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+	inflationPerDay := math.WeiToEth(inflationInterval)
+	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * math.WeiToEth(totalRplSupply)
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
 
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		response.EstimatedRewards = response.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		response.EstimatedRewards = response.EffectiveRplStake / math.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	if response.Trusted {
@@ -322,8 +455,8 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 			}
 
 			if err == nil {
-				response.CumulativeTrustedRplRewards = eth.WeiToEth(rplRewards)
-				response.UnclaimedTrustedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
+				response.CumulativeTrustedRplRewards = math.WeiToEth(rplRewards)
+				response.UnclaimedTrustedRplRewards = math.WeiToEth(unclaimedRplRewardsWei)
 			}
 			return err
 		})
@@ -341,7 +474,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		// Get the trusted node operator rewards percent
 		wg2.Go(func() error {
 			trustedNodeOperatorRewardsPercentRaw, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
-			trustedNodeOperatorRewardsPercent = eth.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
+			trustedNodeOperatorRewardsPercent = math.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
 			if err != nil {
 				return err
 			}
@@ -352,7 +485,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
 			if err == nil {
-				response.TrustedRplBond = eth.WeiToEth(bond)
+				response.TrustedRplBond = math.WeiToEth(bond)
 			}
 			return err
 		})

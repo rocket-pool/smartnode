@@ -35,11 +35,11 @@ func estimateSetVotingDelegateGas(c *cli.Command, address common.Address) (*api.
 	}
 
 	// Get the gas info
-	gasInfo, err := network.EstimateSetVotingDelegateGas(rp, address, opts)
+	gasLimits, err := network.EstimateSetVotingDelegateGas(rp, address, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil

@@ -9,11 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/eip712"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 
 	"github.com/urfave/cli/v3"
 )
@@ -91,17 +91,18 @@ func canSetSignallingAddress(c *cli.Command, signallingAddress common.Address, s
 	}
 
 	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
-	sig, err := apiutils.ParseEIP712(signature)
+	sig := eip712.Components{}
+	err = sig.UnmarshalText([]byte(signature))
 	if err != nil {
 		fmt.Println("Error parsing signature", err)
 	}
 
 	// Get the gas info
-	gasInfo, err := contract.GetTransactionGasInfo(opts, "setSigner", signallingAddress, sig.V, sig.R, sig.S)
+	gasLimits, err := contract.GetTransactionGasInfo(opts, "setSigner", signallingAddress, sig.V, sig.R, sig.S)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil
@@ -129,7 +130,8 @@ func setSignallingAddress(c *cli.Command, signallingAddress common.Address, sign
 	response := api.PDAOSetSignallingAddressResponse{}
 
 	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
-	sig, err := apiutils.ParseEIP712(signature)
+	sig := eip712.Components{}
+	err = sig.UnmarshalText([]byte(signature))
 	if err != nil {
 		fmt.Println("Error parsing signature", err)
 	}
@@ -218,11 +220,11 @@ func canClearSignallingAddress(c *cli.Command) (*api.PDAOCanClearSignallingAddre
 	}
 
 	// Get the gas info
-	gasInfo, err := contract.GetTransactionGasInfo(opts, "clearSigner")
+	gasLimits, err := contract.GetTransactionGasInfo(opts, "clearSigner")
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 }

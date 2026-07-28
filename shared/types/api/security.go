@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type SecurityStatusResponse struct {
@@ -46,11 +46,11 @@ type SecurityProposalResponse struct {
 }
 
 type SecurityCanProposeInviteResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanPropose          bool               `json:"canPropose"`
-	MemberAlreadyExists bool               `json:"memberAlreadyExists"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanPropose          bool            `json:"canPropose"`
+	MemberAlreadyExists bool            `json:"memberAlreadyExists"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeInviteResponse struct {
 	Status     string      `json:"status"`
@@ -60,11 +60,11 @@ type SecurityProposeInviteResponse struct {
 }
 
 type SecurityCanProposeLeaveResponse struct {
-	Status            string             `json:"status"`
-	Error             string             `json:"error"`
-	CanPropose        bool               `json:"canPropose"`
-	MemberDoesntExist bool               `json:"memberDoesntExist"`
-	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	Status            string          `json:"status"`
+	Error             string          `json:"error"`
+	CanPropose        bool            `json:"canPropose"`
+	MemberDoesntExist bool            `json:"memberDoesntExist"`
+	GasLimits         gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeLeaveResponse struct {
 	Status string      `json:"status"`
@@ -73,10 +73,10 @@ type SecurityProposeLeaveResponse struct {
 }
 
 type SecurityCanProposeKickResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPropose bool               `json:"canPropose"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanPropose bool            `json:"canPropose"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeKickResponse struct {
 	Status     string      `json:"status"`
@@ -86,10 +86,10 @@ type SecurityProposeKickResponse struct {
 }
 
 type SecurityCanProposeKickMultiResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPropose bool               `json:"canPropose"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanPropose bool            `json:"canPropose"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeKickMultiResponse struct {
 	Status     string      `json:"status"`
@@ -99,10 +99,10 @@ type SecurityProposeKickMultiResponse struct {
 }
 
 type SecurityCanProposeSettingResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPropose bool               `json:"canPropose"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanPropose bool            `json:"canPropose"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeSettingResponse struct {
 	Status     string      `json:"status"`
@@ -112,12 +112,12 @@ type SecurityProposeSettingResponse struct {
 }
 
 type SecurityCanProposeReplaceResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	OldMemberDoesntExist   bool               `json:"oldMemberDoesntExist"`
-	NewMemberAlreadyExists bool               `json:"newMemberAlreadyExists"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	OldMemberDoesntExist   bool            `json:"oldMemberDoesntExist"`
+	NewMemberAlreadyExists bool            `json:"newMemberAlreadyExists"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeReplaceResponse struct {
 	Status     string      `json:"status"`
@@ -127,13 +127,13 @@ type SecurityProposeReplaceResponse struct {
 }
 
 type SecurityCanCancelProposalResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanCancel       bool               `json:"canCancel"`
-	DoesNotExist    bool               `json:"doesNotExist"`
-	InvalidState    bool               `json:"invalidState"`
-	InvalidProposer bool               `json:"invalidProposer"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status          string          `json:"status"`
+	Error           string          `json:"error"`
+	CanCancel       bool            `json:"canCancel"`
+	DoesNotExist    bool            `json:"doesNotExist"`
+	InvalidState    bool            `json:"invalidState"`
+	InvalidProposer bool            `json:"invalidProposer"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityCancelProposalResponse struct {
 	Status string      `json:"status"`
@@ -142,14 +142,14 @@ type SecurityCancelProposalResponse struct {
 }
 
 type SecurityCanVoteOnProposalResponse struct {
-	Status             string             `json:"status"`
-	Error              string             `json:"error"`
-	CanVote            bool               `json:"canVote"`
-	DoesNotExist       bool               `json:"doesNotExist"`
-	InvalidState       bool               `json:"invalidState"`
-	JoinedAfterCreated bool               `json:"joinedAfterCreated"`
-	AlreadyVoted       bool               `json:"alreadyVoted"`
-	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+	Status             string          `json:"status"`
+	Error              string          `json:"error"`
+	CanVote            bool            `json:"canVote"`
+	DoesNotExist       bool            `json:"doesNotExist"`
+	InvalidState       bool            `json:"invalidState"`
+	JoinedAfterCreated bool            `json:"joinedAfterCreated"`
+	AlreadyVoted       bool            `json:"alreadyVoted"`
+	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityVoteOnProposalResponse struct {
 	Status string      `json:"status"`
@@ -158,12 +158,12 @@ type SecurityVoteOnProposalResponse struct {
 }
 
 type SecurityCanExecuteProposalResponse struct {
-	Status       string             `json:"status"`
-	Error        string             `json:"error"`
-	CanExecute   bool               `json:"canExecute"`
-	DoesNotExist bool               `json:"doesNotExist"`
-	InvalidState bool               `json:"invalidState"`
-	GasInfo      rocketpool.GasInfo `json:"gasInfo"`
+	Status       string          `json:"status"`
+	Error        string          `json:"error"`
+	CanExecute   bool            `json:"canExecute"`
+	DoesNotExist bool            `json:"doesNotExist"`
+	InvalidState bool            `json:"invalidState"`
+	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityExecuteProposalResponse struct {
 	Status string      `json:"status"`
@@ -172,12 +172,12 @@ type SecurityExecuteProposalResponse struct {
 }
 
 type SecurityCanJoinResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanJoin         bool               `json:"canJoin"`
-	ProposalExpired bool               `json:"proposalExpired"`
-	AlreadyMember   bool               `json:"alreadyMember"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status          string          `json:"status"`
+	Error           string          `json:"error"`
+	CanJoin         bool            `json:"canJoin"`
+	ProposalExpired bool            `json:"proposalExpired"`
+	AlreadyMember   bool            `json:"alreadyMember"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityJoinResponse struct {
 	Status string      `json:"status"`
@@ -186,11 +186,11 @@ type SecurityJoinResponse struct {
 }
 
 type SecurityCanLeaveResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanLeave        bool               `json:"canLeave"`
-	ProposalExpired bool               `json:"proposalExpired"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status          string          `json:"status"`
+	Error           string          `json:"error"`
+	CanLeave        bool            `json:"canLeave"`
+	ProposalExpired bool            `json:"proposalExpired"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityLeaveResponse struct {
 	Status string      `json:"status"`

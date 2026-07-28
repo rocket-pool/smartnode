@@ -10,8 +10,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -41,7 +42,7 @@ func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 func ProposeNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", NodeRegistrationEnabledSettingPath), NodeSettingsContractName, NodeRegistrationEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNodeRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNodeRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", NodeRegistrationEnabledSettingPath), NodeSettingsContractName, NodeRegistrationEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -60,7 +61,7 @@ func GetSmoothingPoolRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.C
 func ProposeSmoothingPoolRegistrationEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", SmoothingPoolRegistrationEnabledSettingPath), NodeSettingsContractName, SmoothingPoolRegistrationEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSmoothingPoolRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSmoothingPoolRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SmoothingPoolRegistrationEnabledSettingPath), NodeSettingsContractName, SmoothingPoolRegistrationEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -79,7 +80,7 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
 func ProposeNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", NodeDepositEnabledSettingPath), NodeSettingsContractName, NodeDepositEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNodeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNodeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", NodeDepositEnabledSettingPath), NodeSettingsContractName, NodeDepositEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -98,7 +99,7 @@ func GetVacantMinipoolsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 func ProposeVacantMinipoolsEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", VacantMinipoolsEnabledSettingPath), NodeSettingsContractName, VacantMinipoolsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeVacantMinipoolsEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeVacantMinipoolsEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", VacantMinipoolsEnabledSettingPath), NodeSettingsContractName, VacantMinipoolsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -112,12 +113,12 @@ func GetMinimumLegacyRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumLegacyRPLStake"); err != nil {
 		return 0, fmt.Errorf("error getting minimum legacy RPL stake per node: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 func ProposeMinimumLecacyRPLStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumLegacyRplStakePath), NodeSettingsContractName, MinimumLegacyRplStakePath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinimumLecacyRPLStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinimumLecacyRPLStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumLegacyRplStakePath), NodeSettingsContractName, MinimumLegacyRplStakePath, value, blockNumber, treeNodes, opts)
 }
 
@@ -144,12 +145,12 @@ func GetReducedBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, er
 	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
 		return 0, fmt.Errorf("error getting reduced bond variable: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 func ProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -181,7 +182,7 @@ func GetNodeUnstakingPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 func ProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeUnstakingPeriodSettingPath), NodeSettingsContractName, NodeUnstakingPeriodSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeUnstakingPeriodSettingPath), NodeSettingsContractName, NodeUnstakingPeriodSettingPath, value, blockNumber, treeNodes, opts)
 }
 

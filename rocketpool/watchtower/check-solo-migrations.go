@@ -13,16 +13,16 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 const (
@@ -141,7 +141,7 @@ func (t *checkSoloMigrations) run(state *state.NetworkState) error {
 func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
-	oneGwei := eth.GweiToWei(1)
+	oneGwei := math.GweiToWei(1)
 	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
 
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
@@ -158,7 +158,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 
 	// Go through each minipool
 	threshold := uint64(32000000000)
-	buffer := uint64(migrationBalanceBuffer * eth.WeiPerGwei)
+	buffer := uint64(migrationBalanceBuffer * math.WeiPerGwei)
 	for _, mpd := range state.MinipoolDetails {
 		if mpd.Status == types.Dissolved {
 			// Ignore minipools that are already dissolved
@@ -280,22 +280,22 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteScrubGas(opts)
+	gasLimits, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("could not estimate the gas required to scrub the minipool: %s", err.Error()))
 		return
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
+	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasLimit = gasLimits.Safe
 
 	// Cancel the reduction
 	hash, err := mp.VoteScrub(opts)
@@ -305,7 +305,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
 		return

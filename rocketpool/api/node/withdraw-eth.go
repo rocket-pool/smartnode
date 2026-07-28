@@ -63,9 +63,9 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateWithdrawEthGas(rp, nodeAccount.Address, amountWei, opts)
+		gasLimits, err := node.EstimateWithdrawEthGas(rp, nodeAccount.Address, amountWei, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

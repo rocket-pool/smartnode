@@ -79,9 +79,9 @@ func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeR
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateUnstakeGas(rp, amountWei, opts)
+		gasLimits, err := node.EstimateUnstakeGas(rp, amountWei, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

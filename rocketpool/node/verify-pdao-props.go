@@ -11,8 +11,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -20,8 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 type challenge struct {
@@ -109,7 +109,7 @@ func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProp
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested priority fee
@@ -117,9 +117,9 @@ func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProp
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Get the event interval size
@@ -474,11 +474,11 @@ func (t *verifyPdaoProps) submitChallenge(challenge challenge) error {
 	}
 
 	// Get the gas limit
-	gasInfo, err := protocol.EstimateCreateChallengeGas(t.rp, propID, challengedIndex, challenge.challengedNode, challenge.witness, opts)
+	gasLimits, err := protocol.EstimateCreateChallengeGas(t.rp, propID, challengedIndex, challenge.challengedNode, challenge.witness, opts)
 	if err != nil {
 		return fmt.Errorf("error estimating the gas required to submit challenge against proposal %d, index %d: %w", propID, challengedIndex, err)
 	}
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasLimits.Safe))
 
 	// Get the max fee
 	maxFee := t.maxFee
@@ -490,7 +490,7 @@ func (t *verifyPdaoProps) submitChallenge(challenge challenge) error {
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -505,7 +505,7 @@ func (t *verifyPdaoProps) submitChallenge(challenge challenge) error {
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
 	}
@@ -530,11 +530,11 @@ func (t *verifyPdaoProps) submitDefeat(defeat defeat) error {
 	}
 
 	// Get the gas limit
-	gasInfo, err := protocol.EstimateDefeatProposalGas(t.rp, propID, challengedIndex, opts)
+	gasLimits, err := protocol.EstimateDefeatProposalGas(t.rp, propID, challengedIndex, opts)
 	if err != nil {
 		return fmt.Errorf("error estimating the gas required to defeat proposal %d with index %d: %w", propID, challengedIndex, err)
 	}
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasLimits.Safe))
 
 	// Get the max fee
 	maxFee := t.maxFee
@@ -546,7 +546,7 @@ func (t *verifyPdaoProps) submitDefeat(defeat defeat) error {
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -561,7 +561,7 @@ func (t *verifyPdaoProps) submitDefeat(defeat defeat) error {
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
 	}

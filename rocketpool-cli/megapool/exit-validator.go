@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 type ByIndex []api.MegapoolValidatorDetails

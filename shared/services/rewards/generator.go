@@ -10,11 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
 
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Settings

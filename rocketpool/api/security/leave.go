@@ -52,9 +52,9 @@ func canLeave(c *cli.Command) (*api.SecurityCanLeaveResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := security.EstimateLeaveGas(rp, opts)
+		gasLimits, err := security.EstimateLeaveGas(rp, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

@@ -103,11 +103,11 @@ func canProvisionExpressTickets(c *cli.Command) (*api.CanProvisionExpressTickets
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateProvisionExpressTicketsGas(rp, nodeAccount.Address, opts)
+	gasLimits, err := node.EstimateProvisionExpressTicketsGas(rp, nodeAccount.Address, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Check data
 	response.CanProvision = !(response.AlreadyProvisioned)

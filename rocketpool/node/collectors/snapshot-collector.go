@@ -12,8 +12,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
@@ -280,7 +280,7 @@ func getVotingPower(propMgr *proposals.ProposalManager, blockNumber uint32, addr
 		return 0, fmt.Errorf("error getting voting power: %w", err)
 	}
 
-	return eth.WeiToEth(totalDelegatedVP), nil
+	return math.WeiToEth(totalDelegatedVP), nil
 }
 
 func (collector *SnapshotCollector) collectVotes(votedProposals *api.SnapshotVotedProposals) {

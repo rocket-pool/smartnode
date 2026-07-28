@@ -74,9 +74,9 @@ func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotRespo
 		if err != nil {
 			return err
 		}
-		gasInfo, err := auction.EstimateClaimBidGas(rp, lotIndex, opts)
+		gasLimits, err := auction.EstimateClaimBidGas(rp, lotIndex, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

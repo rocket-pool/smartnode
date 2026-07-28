@@ -15,8 +15,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/flashbots"
@@ -240,7 +240,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		}
 
 		// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
-		eight := eth.EthToWei(8)
+		eight := math.EthToWei(8)
 		if effectiveBalance.Cmp(eight) == -1 {
 			details.CanClose = false
 			return details, nil
@@ -256,11 +256,11 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	// If it's dissolved, just close it
 	if details.MinipoolStatus == types.Dissolved {
 		// Get gas estimate
-		gasInfo, err := mp.EstimateCloseGas(opts)
+		gasLimits, err := mp.EstimateCloseGas(opts)
 		if err != nil {
 			return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating close gas for MP %s: %w", minipoolAddress.Hex(), err)
 		}
-		details.GasInfo = gasInfo
+		details.GasLimits = gasLimits
 	} else {
 		// Check if it's an upgraded Atlas-era minipool
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
@@ -290,18 +290,18 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
 			if details.Distributed {
 				// It's already been distributed so just finalize it
-				gasInfo, err := mpv3.EstimateFinaliseGas(opts)
+				gasLimits, err := mpv3.EstimateFinaliseGas(opts)
 				if err != nil {
 					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating finalise gas for MP %s: %w", minipoolAddress.Hex(), err)
 				}
-				details.GasInfo = gasInfo
+				details.GasLimits = gasLimits
 			} else {
 				// Do a distribution, which will finalize it
-				gasInfo, err := mpv3.EstimateDistributeBalanceGas(false, opts)
+				gasLimits, err := mpv3.EstimateDistributeBalanceGas(false, opts)
 				if err != nil {
 					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating distribute balance gas for MP %s: %w", minipoolAddress.Hex(), err)
 				}
-				details.GasInfo = gasInfo
+				details.GasLimits = gasLimits
 			}
 		} else {
 			return api.MinipoolCloseDetails{}, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mp.GetVersion())

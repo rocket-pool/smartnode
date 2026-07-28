@@ -15,11 +15,11 @@ import (
 	odaoroutes "github.com/rocket-pool/smartnode/rocketpool/api/odao"
 	pdaoroutes "github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	queueroutes "github.com/rocket-pool/smartnode/rocketpool/api/queue"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	securityroutes "github.com/rocket-pool/smartnode/rocketpool/api/security"
 	serviceroutes "github.com/rocket-pool/smartnode/rocketpool/api/service"
 	upgraderoutes "github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
 	walletroutes "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers all HTTP API routes onto mux.
@@ -47,7 +47,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	// Catch-all: any path not matched by a specific route gets a JSON 404.
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		apiutils.WriteErrorResponse(w, &apiutils.NotFoundError{Path: r.URL.Path})
+		response.WriteErrorResponse(w, &response.NotFoundError{Path: r.URL.Path})
 	})
 
 }

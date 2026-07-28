@@ -16,7 +16,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	rpSettings "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -31,7 +31,6 @@ import (
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -105,12 +104,12 @@ func GetNodeAccountTransactorFromRequest(c *cli.Command, r *http.Request) (*bind
 	}
 	if maxFeeStr := r.FormValue("maxFee"); maxFeeStr != "" {
 		if maxFeeGwei, parseErr := strconv.ParseFloat(maxFeeStr, 64); parseErr == nil && maxFeeGwei > 0 {
-			opts.GasFeeCap = eth.GweiToWei(maxFeeGwei)
+			opts.GasFeeCap = math.GweiToWei(maxFeeGwei)
 		}
 	}
 	if maxPrioFeeStr := r.FormValue("maxPrioFee"); maxPrioFeeStr != "" {
 		if maxPrioFeeGwei, parseErr := strconv.ParseFloat(maxPrioFeeStr, 64); parseErr == nil && maxPrioFeeGwei > 0 {
-			opts.GasTipCap = eth.GweiToWei(maxPrioFeeGwei)
+			opts.GasTipCap = math.GweiToWei(maxPrioFeeGwei)
 		}
 	}
 	if gasLimitStr := r.FormValue("gasLimit"); gasLimitStr != "" {
@@ -253,7 +252,7 @@ func getConfig(c *cli.Command) (*config.RocketPoolConfig, error) {
 			}
 		}
 		expanded := os.ExpandEnv(settingsFile)
-		cfg, err = rp.LoadConfigFromFile(expanded)
+		cfg, err = config.LoadFromFile(expanded)
 		if cfg == nil && err == nil {
 			err = fmt.Errorf("settings file [%s] not found", expanded)
 		}
@@ -282,7 +281,7 @@ func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
 	}
 	if maxFeeFloat != 0 {
-		maxFee = eth.GweiToWei(maxFeeFloat)
+		maxFee = math.GweiToWei(maxFeeFloat)
 	}
 
 	var maxPriorityFee *big.Int
@@ -291,7 +290,7 @@ func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
 	}
 	if maxPriorityFeeFloat != 0 {
-		maxPriorityFee = eth.GweiToWei(maxPriorityFeeFloat)
+		maxPriorityFee = math.GweiToWei(maxPriorityFeeFloat)
 	}
 
 	chainId := cfg.Smartnode.GetChainID()

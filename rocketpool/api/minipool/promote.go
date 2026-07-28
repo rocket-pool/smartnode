@@ -99,11 +99,11 @@ func canPromoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Ca
 		}
 
 		// Get the gas limit
-		gasInfo, err := mpv3.EstimatePromoteGas(opts)
+		gasLimits, err := mpv3.EstimatePromoteGas(opts)
 		if err != nil {
 			return nil, fmt.Errorf("Could not estimate the gas required to promote the minipool: %w", err)
 		}
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 
 	}
 

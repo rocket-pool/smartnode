@@ -9,12 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
-func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolPenalties, err := getRocketMegapoolPenalties(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return megapoolPenalties.GetTransactionGasInfo(opts, "penalise", megapoolAddress, block, amount)
 }

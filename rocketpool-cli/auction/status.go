@@ -3,10 +3,8 @@ package auction
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func getStatus() error {
@@ -27,9 +25,9 @@ func getStatus() error {
 	// Print & return
 	fmt.Printf(
 		"A total of %.6f RPL is up for auction, with %.6f RPL currently allotted and %.6f RPL remaining.\n",
-		math.RoundDown(eth.WeiToEth(status.TotalRPLBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.AllottedRPLBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.RemainingRPLBalance), 6))
+		math.RoundDown(math.WeiToEth(status.TotalRPLBalance), 6),
+		math.RoundDown(math.WeiToEth(status.AllottedRPLBalance), 6),
+		math.RoundDown(math.WeiToEth(status.RemainingRPLBalance), 6))
 	if status.LotCounts.ClaimAvailable > 0 {
 		fmt.Printf("%d lot(s) you have bid on have RPL available to claim!\n", status.LotCounts.ClaimAvailable)
 	}

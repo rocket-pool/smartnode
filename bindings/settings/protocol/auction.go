@@ -11,8 +11,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -42,7 +43,7 @@ func GetCreateLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, 
 func ProposeCreateLotEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", CreateLotEnabledSettingPath), AuctionSettingsContractName, CreateLotEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeCreateLotEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeCreateLotEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", CreateLotEnabledSettingPath), AuctionSettingsContractName, CreateLotEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -61,7 +62,7 @@ func GetBidOnLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, e
 func ProposeBidOnLotEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", BidOnLotEnabledSettingPath), AuctionSettingsContractName, BidOnLotEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeBidOnLotEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeBidOnLotEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", BidOnLotEnabledSettingPath), AuctionSettingsContractName, BidOnLotEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -80,7 +81,7 @@ func GetLotMinimumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 func ProposeLotMinimumEthValue(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotMinimumEthValueSettingPath), AuctionSettingsContractName, LotMinimumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLotMinimumEthValueGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLotMinimumEthValueGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotMinimumEthValueSettingPath), AuctionSettingsContractName, LotMinimumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -99,7 +100,7 @@ func GetLotMaximumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 func ProposeLotMaximumEthValue(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotMaximumEthValueSettingPath), AuctionSettingsContractName, LotMaximumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLotMaximumEthValueGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLotMaximumEthValueGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotMaximumEthValueSettingPath), AuctionSettingsContractName, LotMaximumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -118,7 +119,7 @@ func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Durati
 func ProposeLotDuration(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotDurationSettingPath), AuctionSettingsContractName, LotDurationSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLotDurationGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLotDurationGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotDurationSettingPath), AuctionSettingsContractName, LotDurationSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -132,7 +133,7 @@ func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := auctionSettingsContract.Call(opts, value, "getStartingPriceRatio"); err != nil {
 		return 0, fmt.Errorf("error getting lot starting price ratio: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The starting price relative to current ETH price, as a fraction
@@ -150,7 +151,7 @@ func GetLotStartingPriceRatioRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 func ProposeLotStartingPriceRatio(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotStartingPriceRatioSettingPath), AuctionSettingsContractName, LotStartingPriceRatioSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLotStartingPriceRatioGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLotStartingPriceRatioGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotStartingPriceRatioSettingPath), AuctionSettingsContractName, LotStartingPriceRatioSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -164,7 +165,7 @@ func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (fl
 	if err := auctionSettingsContract.Call(opts, value, "getReservePriceRatio"); err != nil {
 		return 0, fmt.Errorf("error getting lot reserve price ratio: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The reserve price relative to current ETH price, as a fraction
@@ -182,7 +183,7 @@ func GetLotReservePriceRatioRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 func ProposeLotReservePriceRatio(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotReservePriceRatioSettingPath), AuctionSettingsContractName, LotReservePriceRatioSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeLotReservePriceRatioGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeLotReservePriceRatioGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotReservePriceRatioSettingPath), AuctionSettingsContractName, LotReservePriceRatioSettingPath, value, blockNumber, treeNodes, opts)
 }
 

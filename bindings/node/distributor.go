@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Distributor contract
@@ -50,7 +51,7 @@ func GetDistributorAddress(rp *rocketpool.RocketPool, nodeAddress common.Address
 }
 
 // Estimate the gas of a distribute
-func (d *Distributor) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (d *Distributor) EstimateDistributeGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return d.Contract.GetTransactionGasInfo(opts, "distribute")
 }
 

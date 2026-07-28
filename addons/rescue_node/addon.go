@@ -10,9 +10,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/rocket-pool/smartnode/addons/rescue_node/pb"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/types/addons"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (

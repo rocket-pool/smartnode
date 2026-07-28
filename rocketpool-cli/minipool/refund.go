@@ -6,15 +6,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func refundMinipools(minipool string, yes bool) error {
@@ -54,7 +53,7 @@ func refundMinipools(minipool string, yes bool) error {
 		options := make([]string, len(refundableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range refundableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(math.WeiToEth(minipool.Node.RefundBalance), 6))
 		}
 		selected, _ := prompt.Select("Please select a minipool to refund ETH from:", options)
 
@@ -86,24 +85,18 @@ func refundMinipools(minipool string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64
-	var totalSafeGas uint64
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanRefundMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for refund transaction (%s)", err.Error())
 			break
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = gasLimits.Add(canResponse.GasLimits)
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
+	g, err := gas.GetMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Get the current network node demand in ETH
@@ -34,7 +34,7 @@ func GetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error)
 	if err := rocketNetworkFees.Call(opts, nodeFee, "getNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting network node fee: %w", err)
 	}
-	return eth.WeiToEth(*nodeFee), nil
+	return math.WeiToEth(*nodeFee), nil
 }
 
 // Get the network node fee for a node demand value
@@ -47,7 +47,7 @@ func GetNodeFeeByDemand(rp *rocketpool.RocketPool, nodeDemand *big.Int, opts *bi
 	if err := rocketNetworkFees.Call(opts, nodeFee, "getNodeFeeByDemand", nodeDemand); err != nil {
 		return 0, fmt.Errorf("error getting node fee by node demand: %w", err)
 	}
-	return eth.WeiToEth(*nodeFee), nil
+	return math.WeiToEth(*nodeFee), nil
 }
 
 // Get contracts

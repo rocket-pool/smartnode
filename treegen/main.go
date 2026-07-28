@@ -10,7 +10,7 @@ import (
 	"github.com/felixge/fgprof"
 	"github.com/urfave/cli/v3"
 
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 )
 
 const (

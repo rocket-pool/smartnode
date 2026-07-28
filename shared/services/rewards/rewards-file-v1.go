@@ -12,7 +12,7 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 type MinipoolPerformanceFile_v1 struct {
@@ -111,7 +111,7 @@ func (p *MinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
 	return p.MissingAttestationSlots
 }
 func (p *MinipoolPerformance_v1) GetEthEarned() *big.Int {
-	return eth.EthToWei(p.EthEarned)
+	return math.EthToWei(p.EthEarned)
 }
 func (p *MinipoolPerformance_v1) GetBonusEthEarned() *big.Int {
 	return big.NewInt(0)

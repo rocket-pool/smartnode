@@ -9,26 +9,25 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // pendingClaim represents a single category of rewards that can be claimed.
 type pendingClaim struct {
-	id       int
-	name     string
-	ethValue *big.Int // node's ETH value (wei), nil if none
-	rplValue *big.Int // node's RPL value (wei), nil if none
-	gasInfo  rocketpoolapi.GasInfo
-	execute  func() error
+	id        int
+	name      string
+	ethValue  *big.Int // node's ETH value (wei), nil if none
+	rplValue  *big.Int // node's RPL value (wei), nil if none
+	gasLimits gaslimit.Limits
+	execute   func() error
 }
 
 // valueString returns a human-readable summary of the claim's ETH and/or RPL value.
@@ -38,12 +37,12 @@ func (c pendingClaim) valueString() string {
 	switch {
 	case hasRpl && hasEth:
 		return fmt.Sprintf("%.6f RPL + %.6f ETH",
-			math.RoundDown(eth.WeiToEth(c.rplValue), 6),
-			math.RoundDown(eth.WeiToEth(c.ethValue), 6))
+			math.RoundDown(math.WeiToEth(c.rplValue), 6),
+			math.RoundDown(math.WeiToEth(c.ethValue), 6))
 	case hasEth:
-		return fmt.Sprintf("%.6f ETH", math.RoundDown(eth.WeiToEth(c.ethValue), 6))
+		return fmt.Sprintf("%.6f ETH", math.RoundDown(math.WeiToEth(c.ethValue), 6))
 	case hasRpl:
-		return fmt.Sprintf("%.6f RPL", math.RoundDown(eth.WeiToEth(c.rplValue), 6))
+		return fmt.Sprintf("%.6f RPL", math.RoundDown(math.WeiToEth(c.rplValue), 6))
 	default:
 		return ""
 	}
@@ -117,21 +116,21 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 		} else {
 			megapoolTotal := new(big.Int).Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
 			if megapoolTotal.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), 6))
+				fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(math.WeiToEth(pendingRewards.RewardSplit.NodeRewards), 6))
 				if pendingRewards.RefundValue.Cmp(big.NewInt(0)) > 0 {
-					fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RefundValue), 6))
-					fmt.Printf("  Total:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
+					fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(math.WeiToEth(pendingRewards.RefundValue), 6))
+					fmt.Printf("  Total:         %.6f ETH\n", math.RoundDown(math.WeiToEth(megapoolTotal), 6))
 				}
 				fmt.Println()
 
 				totalEthWei.Add(totalEthWei, megapoolTotal)
 
-				gasInfo := canDistribute.GasInfo
+				gasLimits := canDistribute.GasLimits
 				claims = append(claims, pendingClaim{
-					id:       id,
-					name:     "Megapool EL Rewards (distribute)",
-					ethValue: megapoolTotal,
-					gasInfo:  gasInfo,
+					id:        id,
+					name:      "Megapool EL Rewards (distribute)",
+					ethValue:  megapoolTotal,
+					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
 						response, err := rp.DistributeMegapool()
@@ -174,7 +173,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			color.YellowPrintf("  Could not check fee distributor balance: %s\n", err)
 			fmt.Println()
 		} else {
-			balance := eth.WeiToEth(canDistResp.Balance)
+			balance := math.WeiToEth(canDistResp.Balance)
 			if balance == 0 {
 				fmt.Println("  No balance in fee distributor.")
 				fmt.Println()
@@ -185,15 +184,15 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				fmt.Printf("  rETH stakers share:  %.6f ETH\n", math.RoundDown(rEthShare, 6))
 				fmt.Println()
 
-				nodeShareWei := eth.EthToWei(canDistResp.NodeShare)
+				nodeShareWei := math.EthToWei(canDistResp.NodeShare)
 				totalEthWei.Add(totalEthWei, nodeShareWei)
 
-				gasInfo := canDistResp.GasInfo
+				gasLimits := canDistResp.GasLimits
 				claims = append(claims, pendingClaim{
-					id:       feeDistID,
-					name:     "Fee Distributor (distribute)",
-					ethValue: nodeShareWei,
-					gasInfo:  gasInfo,
+					id:        feeDistID,
+					name:      "Fee Distributor (distribute)",
+					ethValue:  nodeShareWei,
+					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
 						response, err := rp.Distribute()
@@ -242,14 +241,14 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				second := eligibleMinipools[j]
 				var firstAmt, secondAmt float64
 				if first.Status == types.Dissolved {
-					firstAmt = eth.WeiToEth(first.Balance)
+					firstAmt = math.WeiToEth(first.Balance)
 				} else {
-					firstAmt = eth.WeiToEth(first.NodeShareOfBalance) + eth.WeiToEth(first.Refund)
+					firstAmt = math.WeiToEth(first.NodeShareOfBalance) + math.WeiToEth(first.Refund)
 				}
 				if second.Status == types.Dissolved {
-					secondAmt = eth.WeiToEth(second.Balance)
+					secondAmt = math.WeiToEth(second.Balance)
 				} else {
-					secondAmt = eth.WeiToEth(second.NodeShareOfBalance) + eth.WeiToEth(second.Refund)
+					secondAmt = math.WeiToEth(second.NodeShareOfBalance) + math.WeiToEth(second.Refund)
 				}
 				return firstAmt > secondAmt
 			})
@@ -257,39 +256,34 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			mpTotalEth := new(big.Int)
 			for _, mp := range eligibleMinipools {
 				if mp.Status == types.Dissolved {
-					fmt.Printf("  %s: %.6f ETH (dissolved, all to you)\n", mp.Address.Hex(), math.RoundDown(eth.WeiToEth(mp.Balance), 6))
+					fmt.Printf("  %s: %.6f ETH (dissolved, all to you)\n", mp.Address.Hex(), math.RoundDown(math.WeiToEth(mp.Balance), 6))
 					mpTotalEth.Add(mpTotalEth, mp.Balance)
 				} else {
 					nodeAmount := new(big.Int).Add(mp.NodeShareOfBalance, mp.Refund)
 					fmt.Printf("  %s: %.6f ETH (your share) + %.6f ETH (refund)\n",
 						mp.Address.Hex(),
-						math.RoundDown(eth.WeiToEth(mp.NodeShareOfBalance), 6),
-						math.RoundDown(eth.WeiToEth(mp.Refund), 6))
+						math.RoundDown(math.WeiToEth(mp.NodeShareOfBalance), 6),
+						math.RoundDown(math.WeiToEth(mp.Refund), 6))
 					mpTotalEth.Add(mpTotalEth, nodeAmount)
 				}
 			}
-			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n", len(eligibleMinipools), math.RoundDown(eth.WeiToEth(mpTotalEth), 6))
+			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n", len(eligibleMinipools), math.RoundDown(math.WeiToEth(mpTotalEth), 6))
 			fmt.Println()
 			totalEthWei.Add(totalEthWei, mpTotalEth)
 
 			// Accumulate gas
-			var totalGasEst, totalGasSafe uint64
-			var mpGasInfo rocketpoolapi.GasInfo
+			var mpGasLimits gaslimit.Limits
 			for _, mp := range eligibleMinipools {
-				mpGasInfo = mp.GasInfo
-				totalGasEst += mp.GasInfo.EstGasLimit
-				totalGasSafe += mp.GasInfo.SafeGasLimit
+				mpGasLimits = mpGasLimits.Add(mp.GasLimits)
 			}
-			mpGasInfo.EstGasLimit = totalGasEst
-			mpGasInfo.SafeGasLimit = totalGasSafe
 
 			// Capture for closure
 			mps := eligibleMinipools
 			claims = append(claims, pendingClaim{
-				id:       minipoolID,
-				name:     fmt.Sprintf("Minipool Balance Distribution (%d minipool(s))", len(mps)),
-				ethValue: mpTotalEth,
-				gasInfo:  mpGasInfo,
+				id:        minipoolID,
+				name:      fmt.Sprintf("Minipool Balance Distribution (%d minipool(s))", len(mps)),
+				ethValue:  mpTotalEth,
+				gasLimits: mpGasLimits,
 				execute: func() error {
 					failCount := 0
 					for _, mp := range mps {
@@ -387,12 +381,12 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				rpl := new(big.Int).Add(&interval.CollateralRplAmount.Int, &interval.ODaoRplAmount.Int)
 				ethAmt := new(big.Int).Add(&interval.SmoothingPoolEthAmount.Int, &interval.VoterShareEth.Int)
 				fmt.Printf("    Interval %d: %.6f RPL, %.6f ETH\n", interval.Index,
-					math.RoundDown(eth.WeiToEth(rpl), 6),
-					math.RoundDown(eth.WeiToEth(ethAmt), 6))
+					math.RoundDown(math.WeiToEth(rpl), 6),
+					math.RoundDown(math.WeiToEth(ethAmt), 6))
 			}
 			fmt.Printf("  Total: %.6f RPL + %.6f ETH\n\n",
-				math.RoundDown(eth.WeiToEth(prTotalRpl), 6),
-				math.RoundDown(eth.WeiToEth(prTotalEth), 6))
+				math.RoundDown(math.WeiToEth(prTotalRpl), 6),
+				math.RoundDown(math.WeiToEth(prTotalEth), 6))
 
 			totalRplWei.Add(totalRplWei, prTotalRpl)
 			totalEthWei.Add(totalEthWei, prTotalEth)
@@ -406,7 +400,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			} else if restakeAmount != "" {
 				stakeAmt, parseErr := strconv.ParseFloat(restakeAmount, 64)
 				if parseErr == nil && stakeAmt > 0 {
-					periodicRestakeAmount = eth.EthToWei(stakeAmt)
+					periodicRestakeAmount = math.EthToWei(stakeAmt)
 					if periodicRestakeAmount.Cmp(prTotalRpl) > 0 {
 						periodicRestakeAmount = prTotalRpl
 					}
@@ -419,20 +413,20 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			}
 
 			// Get preliminary gas estimate (restake prompt deferred, so use claim-only estimate)
-			var gasInfo rocketpoolapi.GasInfo
+			var gasLimits gaslimit.Limits
 			canClaim, canErr := rp.CanNodeClaimRewards(intervalIndices)
 			if canErr != nil {
 				color.YellowPrintf("  Warning: could not estimate gas for periodic rewards: %s\n", canErr)
 			} else {
-				gasInfo = canClaim.GasInfo
+				gasLimits = canClaim.GasLimits
 			}
 
 			claims = append(claims, pendingClaim{
-				id:       periodicID,
-				name:     "Periodic Rewards (RPL + ETH)",
-				ethValue: prTotalEth,
-				rplValue: prTotalRpl,
-				gasInfo:  gasInfo,
+				id:        periodicID,
+				name:      "Periodic Rewards (RPL + ETH)",
+				ethValue:  prTotalEth,
+				rplValue:  prTotalRpl,
+				gasLimits: gasLimits,
 				execute: func() error {
 					fmt.Println("  Submitting transaction...")
 					var txHash common.Hash
@@ -455,7 +449,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 					}
 					if periodicRestakeAmount != nil {
-						color.GreenPrintf("Successfully claimed rewards and restaked %.6f RPL.\n", eth.WeiToEth(periodicRestakeAmount))
+						color.GreenPrintf("Successfully claimed rewards and restaked %.6f RPL.\n", math.WeiToEth(periodicRestakeAmount))
 					} else {
 						color.GreenPrintln("Successfully claimed periodic rewards.")
 					}
@@ -494,30 +488,30 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			fmt.Println("  No unclaimed rewards.")
 			fmt.Println()
 		} else {
-			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(eth.WeiToEth(nodeStatus.UnclaimedRewards), 6))
+			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(math.WeiToEth(nodeStatus.UnclaimedRewards), 6))
 			fmt.Println("  (Rewards distributed previously but not yet sent to withdrawal address)")
 			fmt.Println()
 			totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards)
 
 			nodeAddr := nodeStatus.AccountAddress
 			canClaim, canErr := rp.CanClaimUnclaimedRewards(nodeAddr)
-			var gasInfo rocketpoolapi.GasInfo
+			var gasLimits gaslimit.Limits
 			canClaimOk := false
 			if canErr != nil {
 				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
 			} else if !canClaim.CanClaim {
 				color.YellowPrintln("  Cannot claim unclaimed rewards at this time.")
 			} else {
-				gasInfo = canClaim.GasInfo
+				gasLimits = canClaim.GasLimits
 				canClaimOk = true
 			}
 
 			if canClaimOk {
 				claims = append(claims, pendingClaim{
-					id:       unclaimedID,
-					name:     "Unclaimed Rewards (claim)",
-					ethValue: nodeStatus.UnclaimedRewards,
-					gasInfo:  gasInfo,
+					id:        unclaimedID,
+					name:      "Unclaimed Rewards (claim)",
+					ethValue:  nodeStatus.UnclaimedRewards,
+					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
 						response, err := rp.ClaimUnclaimedRewards(nodeAddr)
@@ -547,11 +541,11 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 		} else {
 			creditBalance := nodeStatus.CreditBalance
 			fmt.Printf("  Credit balance: %.6f ETH (the equivalent amount in rETH will be transferred to %s)\n",
-				math.RoundDown(eth.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
+				math.RoundDown(math.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
 			totalEthWei.Add(totalEthWei, creditBalance)
 
 			canWithdraw, canErr := rp.CanNodeWithdrawCredit(creditBalance)
-			var gasInfo rocketpoolapi.GasInfo
+			var gasInfo gaslimit.Limits
 			canWithdrawOk := false
 			if canErr != nil {
 				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
@@ -562,17 +556,17 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 					color.YellowPrintln("  Cannot withdraw credit at this time.")
 				}
 			} else {
-				gasInfo = canWithdraw.GasInfo
+				gasInfo = canWithdraw.GasLimits
 				canWithdrawOk = true
 			}
 
 			if canWithdrawOk {
 				withdrawAmount := creditBalance
 				claims = append(claims, pendingClaim{
-					id:       creditID,
-					name:     "Credit Balance Withdrawal",
-					ethValue: withdrawAmount,
-					gasInfo:  gasInfo,
+					id:        creditID,
+					name:      "Credit Balance Withdrawal",
+					ethValue:  withdrawAmount,
+					gasLimits: gasInfo,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
 						response, err := rp.NodeWithdrawCredit(withdrawAmount)
@@ -584,7 +578,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						color.GreenPrintf("Successfully withdrew %.6f credit as rETH.\n", math.RoundDown(eth.WeiToEth(withdrawAmount), 6))
+						color.GreenPrintf("Successfully withdrew %.6f credit as rETH.\n", math.RoundDown(math.WeiToEth(withdrawAmount), 6))
 						return nil
 					},
 				})
@@ -601,12 +595,12 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			fmt.Println()
 		} else {
 			ethOnBehalf := nodeStatus.EthOnBehalfBalance
-			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n", math.RoundDown(eth.WeiToEth(ethOnBehalf), 6))
+			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n", math.RoundDown(math.WeiToEth(ethOnBehalf), 6))
 			fmt.Println()
 			totalEthWei.Add(totalEthWei, ethOnBehalf)
 
 			canWithdraw, canErr := rp.CanNodeWithdrawEth(ethOnBehalf)
-			var gasInfo rocketpoolapi.GasInfo
+			var gasInfo gaslimit.Limits
 			canWithdrawOk := false
 			if canErr != nil {
 				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
@@ -619,17 +613,17 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 					color.YellowPrintln("  Cannot withdraw staked ETH at this time.")
 				}
 			} else {
-				gasInfo = canWithdraw.GasInfo
+				gasInfo = canWithdraw.GasLimits
 				canWithdrawOk = true
 			}
 
 			if canWithdrawOk {
 				withdrawAmount := ethOnBehalf
 				claims = append(claims, pendingClaim{
-					id:       ethOnBehalfID,
-					name:     "Staked ETH on Behalf Withdrawal",
-					ethValue: withdrawAmount,
-					gasInfo:  gasInfo,
+					id:        ethOnBehalfID,
+					name:      "Staked ETH on Behalf Withdrawal",
+					ethValue:  withdrawAmount,
+					gasLimits: gasInfo,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
 						response, err := rp.NodeWithdrawEth(withdrawAmount)
@@ -641,7 +635,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						color.GreenPrintf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(eth.WeiToEth(withdrawAmount), 6))
+						color.GreenPrintf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(math.WeiToEth(withdrawAmount), 6))
 						return nil
 					},
 				})
@@ -670,16 +664,15 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			pdaoRplTotal.Add(pdaoRplTotal, bondTotal)
 			fmt.Printf("  Proposal %d: %.6f RPL (unlock) + %.6f RPL (reward)\n",
 				bond.ProposalID,
-				math.RoundDown(eth.WeiToEth(bond.UnlockAmount), 6),
-				math.RoundDown(eth.WeiToEth(bond.RewardAmount), 6))
+				math.RoundDown(math.WeiToEth(bond.UnlockAmount), 6),
+				math.RoundDown(math.WeiToEth(bond.RewardAmount), 6))
 		}
 		fmt.Printf("  Total: %.6f RPL from %d proposal(s)\n\n",
-			math.RoundDown(eth.WeiToEth(pdaoRplTotal), 6), len(bondsResponse.ClaimableBonds))
+			math.RoundDown(math.WeiToEth(pdaoRplTotal), 6), len(bondsResponse.ClaimableBonds))
 		totalRplWei.Add(totalRplWei, pdaoRplTotal)
 
 		// Accumulate gas
-		var totalGasEst, totalGasSafe uint64
-		var bondGasInfo rocketpoolapi.GasInfo
+		var bondGasLimits gaslimit.Limits
 		allCanClaim := true
 		for _, bond := range bondsResponse.ClaimableBonds {
 			indices := getClaimIndicesForBond(bond)
@@ -689,20 +682,16 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				allCanClaim = false
 				break
 			}
-			bondGasInfo = canResponse.GasInfo
-			totalGasEst += canResponse.GasInfo.EstGasLimit
-			totalGasSafe += canResponse.GasInfo.SafeGasLimit
+			bondGasLimits = bondGasLimits.Add(canResponse.GasLimits)
 		}
 
 		if allCanClaim {
-			bondGasInfo.EstGasLimit = totalGasEst
-			bondGasInfo.SafeGasLimit = totalGasSafe
 			bonds := bondsResponse.ClaimableBonds
 			claims = append(claims, pendingClaim{
-				id:       pdaoID,
-				name:     fmt.Sprintf("PDAO Bond Claims (%d proposal(s))", len(bonds)),
-				rplValue: pdaoRplTotal,
-				gasInfo:  bondGasInfo,
+				id:        pdaoID,
+				name:      fmt.Sprintf("PDAO Bond Claims (%d proposal(s))", len(bonds)),
+				rplValue:  pdaoRplTotal,
+				gasLimits: bondGasLimits,
 				execute: func() error {
 					failCount := 0
 					for _, bond := range bonds {
@@ -738,8 +727,8 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 	color.GreenPrintf("============================================================\n")
 	color.GreenPrintf("                       Totals                               \n")
 	color.GreenPrintf("============================================================\n")
-	fmt.Printf("  ETH: %.6f\n", math.RoundDown(eth.WeiToEth(totalEthWei), 6))
-	fmt.Printf("  RPL: %.6f\n\n", math.RoundDown(eth.WeiToEth(totalRplWei), 6))
+	fmt.Printf("  ETH: %.6f\n", math.RoundDown(math.WeiToEth(totalEthWei), 6))
+	fmt.Printf("  RPL: %.6f\n\n", math.RoundDown(math.WeiToEth(totalRplWei), 6))
 
 	if statusOnly {
 		if len(claims) > 0 {
@@ -817,7 +806,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 	if !periodicRestakeResolved && periodicClaimRpl != nil {
 		for i := range selectedClaims {
 			if selectedClaims[i].id == periodicID {
-				availableRpl := eth.WeiToEth(periodicClaimRpl)
+				availableRpl := math.WeiToEth(periodicClaimRpl)
 				amountOptions := []string{
 					"None (do not restake any RPL)",
 					fmt.Sprintf("All %.6f RPL", availableRpl),
@@ -840,7 +829,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						} else if stakeAmount > availableRpl {
 							fmt.Println("Amount must be less than or equal to the RPL available to claim.")
 						} else {
-							periodicRestakeAmount = eth.EthToWei(stakeAmount)
+							periodicRestakeAmount = math.EthToWei(stakeAmount)
 							break
 						}
 					}
@@ -849,7 +838,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				if periodicRestakeAmount != nil {
 					canClaim, canErr := rp.CanNodeClaimAndStakeRewards(periodicIntervalIndices, periodicRestakeAmount)
 					if canErr == nil {
-						selectedClaims[i].gasInfo = canClaim.GasInfo
+						selectedClaims[i].gasLimits = canClaim.GasLimits
 					}
 				}
 				break
@@ -859,18 +848,13 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 	fmt.Println()
 
 	// Accumulate total gas for fee estimation
-	var totalGasEst, totalGasSafe uint64
-	var lastGasInfo rocketpoolapi.GasInfo
+	var totalGas gaslimit.Limits
 	for _, claim := range selectedClaims {
-		lastGasInfo = claim.gasInfo
-		totalGasEst += claim.gasInfo.EstGasLimit
-		totalGasSafe += claim.gasInfo.SafeGasLimit
+		totalGas = totalGas.Add(claim.gasLimits)
 	}
-	lastGasInfo.EstGasLimit = totalGasEst
-	lastGasInfo.SafeGasLimit = totalGasSafe
 
 	// Get gas fee settings (single prompt for all transactions)
-	g, err := gas.GetMaxFeeAndLimit(lastGasInfo, rp, yes)
+	g, err := gas.GetMaxFeeAndLimit(totalGas, rp, yes)
 	if err != nil {
 		return err
 	}

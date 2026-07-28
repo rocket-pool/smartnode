@@ -1,8 +1,10 @@
-package eth
+package transactions
 
 import (
 	"context"
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -10,13 +12,59 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/bindings/utils"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+// The fraction of the timeout period to trigger overdue transactions
+const TimeoutSafetyFactor int = 2
+
+// Print a TX's details to the logger and waits for it to validated.
+func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec rocketpool.ExecutionClient, logger *log.ColorLogger) error {
+
+	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
+	hashString := hash.String()
+
+	logger.Printlnf("Transaction has been submitted with hash %s.", hashString)
+	if txWatchUrl != "" {
+		logger.Printlnf("You may follow its progress by visiting:")
+		logger.Printlnf("%s/%s\n", txWatchUrl, hashString)
+	}
+	logger.Println("Waiting for the transaction to be validated...")
+
+	// Wait for the TX to be included in a block
+	if _, err := utils.WaitForTransaction(ec, hash); err != nil {
+		return fmt.Errorf("Error waiting for transaction: %w", err)
+	}
+
+	return nil
+
+}
+
+// True if a transaction is due and needs to bypass the gas threshold
+func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, time.Duration, error) {
+
+	// Get the dissolve timeout
+	timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
+	if err != nil {
+		return false, 0, err
+	}
+
+	dueTime := timeout / time.Duration(TimeoutSafetyFactor)
+	isDue := time.Since(startTime) > dueTime
+	timeUntilDue := time.Until(startTime.Add(dueTime))
+	return isDue, timeUntilDue, nil
+
+}
+
 // Estimate the gas of SendTransaction
-func EstimateSendTransactionGas(client rocketpool.ExecutionClient, toAddress common.Address, data []byte, useSafeGasLimit bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSendTransactionGas(client rocketpool.ExecutionClient, toAddress common.Address, data []byte, useSafeGasLimit bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 
 	// User-defined settings
-	response := rocketpool.GasInfo{}
+	response := gaslimit.Limits{}
 
 	// Set default value
 	value := opts.Value
@@ -38,14 +86,14 @@ func EstimateSendTransactionGas(client rocketpool.ExecutionClient, toAddress com
 		Value:    value,
 	})
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
-	response.EstGasLimit = gasLimit
+	response.Estimated = gasLimit
 
 	if useSafeGasLimit {
-		response.SafeGasLimit = uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		response.Safe = uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
 	} else {
-		response.SafeGasLimit = gasLimit
+		response.Safe = gasLimit
 	}
 
 	return response, err

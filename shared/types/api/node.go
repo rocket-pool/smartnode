@@ -7,12 +7,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 type NodeStatusResponse struct {
@@ -72,7 +72,7 @@ type NodeStatusResponse struct {
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
-	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
+	FeeRecipientInfo            feerecipient.Details      `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 	SnapshotResponse            struct {
@@ -161,12 +161,12 @@ func (n NodeAlert) ColorString() string {
 }
 
 type CanRegisterNodeResponse struct {
-	Status               string             `json:"status"`
-	Error                string             `json:"error"`
-	CanRegister          bool               `json:"canRegister"`
-	AlreadyRegistered    bool               `json:"alreadyRegistered"`
-	RegistrationDisabled bool               `json:"registrationDisabled"`
-	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
+	Status               string          `json:"status"`
+	Error                string          `json:"error"`
+	CanRegister          bool            `json:"canRegister"`
+	AlreadyRegistered    bool            `json:"alreadyRegistered"`
+	RegistrationDisabled bool            `json:"registrationDisabled"`
+	GasLimits            gaslimit.Limits `json:"gasLimits"`
 }
 type RegisterNodeResponse struct {
 	Status string      `json:"status"`
@@ -175,11 +175,11 @@ type RegisterNodeResponse struct {
 }
 
 type CanProvisionExpressTicketsResponse struct {
-	Status             string             `json:"status"`
-	Error              string             `json:"error"`
-	CanProvision       bool               `json:"canProvision"`
-	AlreadyProvisioned bool               `json:"alreadyProvisioned"`
-	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+	Status             string          `json:"status"`
+	Error              string          `json:"error"`
+	CanProvision       bool            `json:"canProvision"`
+	AlreadyProvisioned bool            `json:"alreadyProvisioned"`
+	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type ProvisionExpressTicketsResponse struct {
 	Status string      `json:"status"`
@@ -188,10 +188,10 @@ type ProvisionExpressTicketsResponse struct {
 }
 
 type CanSetNodePrimaryWithdrawalAddressResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	CanSet  bool               `json:"canSet"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanSet    bool            `json:"canSet"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetNodePrimaryWithdrawalAddressResponse struct {
 	Status string      `json:"status"`
@@ -200,10 +200,10 @@ type SetNodePrimaryWithdrawalAddressResponse struct {
 }
 
 type CanConfirmNodePrimaryWithdrawalAddressResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanConfirm bool               `json:"canConfirm"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanConfirm bool            `json:"canConfirm"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type ConfirmNodePrimaryWithdrawalAddressResponse struct {
 	Status string      `json:"status"`
@@ -212,13 +212,13 @@ type ConfirmNodePrimaryWithdrawalAddressResponse struct {
 }
 
 type CanSetNodeRPLWithdrawalAddressResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	CanSet                bool               `json:"canSet"`
-	PrimaryAddressDiffers bool               `json:"primaryAddressDiffers"`
-	RPLAddressDiffers     bool               `json:"rplAddressDiffers"`
-	RPLStake              *big.Int           `json:"rplStake"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
+	Status                string          `json:"status"`
+	Error                 string          `json:"error"`
+	CanSet                bool            `json:"canSet"`
+	PrimaryAddressDiffers bool            `json:"primaryAddressDiffers"`
+	RPLAddressDiffers     bool            `json:"rplAddressDiffers"`
+	RPLStake              *big.Int        `json:"rplStake"`
+	GasLimits             gaslimit.Limits `json:"gasLimits"`
 }
 type SetNodeRPLWithdrawalAddressResponse struct {
 	Status string      `json:"status"`
@@ -227,10 +227,10 @@ type SetNodeRPLWithdrawalAddressResponse struct {
 }
 
 type CanConfirmNodeRPLWithdrawalAddressResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanConfirm bool               `json:"canConfirm"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status     string          `json:"status"`
+	Error      string          `json:"error"`
+	CanConfirm bool            `json:"canConfirm"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type ConfirmNodeRPLWithdrawalAddressResponse struct {
 	Status string      `json:"status"`
@@ -251,10 +251,10 @@ type GetNodePendingPrimaryWithdrawalAddressResponse struct {
 }
 
 type CanSetNodeTimezoneResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	CanSet  bool               `json:"canSet"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanSet    bool            `json:"canSet"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetNodeTimezoneResponse struct {
 	Status string      `json:"status"`
@@ -263,16 +263,16 @@ type SetNodeTimezoneResponse struct {
 }
 
 type CanNodeSwapRplResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanSwap             bool               `json:"canSwap"`
-	InsufficientBalance bool               `json:"insufficientBalance"`
-	GasInfo             rocketpool.GasInfo `json:"GasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanSwap             bool            `json:"canSwap"`
+	InsufficientBalance bool            `json:"insufficientBalance"`
+	GasLimits           gaslimit.Limits `json:"GasLimits"`
 }
 type NodeSwapRplApproveGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeSwapRplApproveResponse struct {
 	Status        string      `json:"status"`
@@ -291,17 +291,17 @@ type NodeSwapRplAllowanceResponse struct {
 }
 
 type CanNodeStakeRplResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanStake            bool               `json:"canStake"`
-	InsufficientBalance bool               `json:"insufficientBalance"`
-	InConsensus         bool               `json:"inConsensus"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanStake            bool            `json:"canStake"`
+	InsufficientBalance bool            `json:"insufficientBalance"`
+	InConsensus         bool            `json:"inConsensus"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type NodeStakeRplApproveGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeStakeRplApproveResponse struct {
 	Status        string      `json:"status"`
@@ -320,10 +320,10 @@ type NodeStakeRplAllowanceResponse struct {
 }
 
 type CanSetRplLockingAllowedResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	CanSet  bool               `json:"canSet"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanSet    bool            `json:"canSet"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 
 type SetRplLockingAllowedResponse struct {
@@ -332,10 +332,10 @@ type SetRplLockingAllowedResponse struct {
 	SetTxHash common.Hash `json:"setTxHash"`
 }
 type CanSetStakeRplForAllowedResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	CanSet  bool               `json:"canSet"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanSet    bool            `json:"canSet"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetStakeRplForAllowedResponse struct {
 	Status    string      `json:"status"`
@@ -343,12 +343,12 @@ type SetStakeRplForAllowedResponse struct {
 	SetTxHash common.Hash `json:"setTxHash"`
 }
 type CanNodeWithdrawEthResponse struct {
-	Status                        string             `json:"status"`
-	Error                         string             `json:"error"`
-	CanWithdraw                   bool               `json:"canWithdraw"`
-	InsufficientBalance           bool               `json:"insufficientBalance"`
-	HasDifferentWithdrawalAddress bool               `json:"hasDifferentWithdrawalAddress"`
-	GasInfo                       rocketpool.GasInfo `json:"gasInfo"`
+	Status                        string          `json:"status"`
+	Error                         string          `json:"error"`
+	CanWithdraw                   bool            `json:"canWithdraw"`
+	InsufficientBalance           bool            `json:"insufficientBalance"`
+	HasDifferentWithdrawalAddress bool            `json:"hasDifferentWithdrawalAddress"`
+	GasLimits                     gaslimit.Limits `json:"gasLimits"`
 }
 type NodeWithdrawEthResponse struct {
 	Status string      `json:"status"`
@@ -356,11 +356,11 @@ type NodeWithdrawEthResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 type CanNodeWithdrawCreditResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanWithdraw         bool               `json:"canWithdraw"`
-	InsufficientBalance bool               `json:"insufficientBalance"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanWithdraw         bool            `json:"canWithdraw"`
+	InsufficientBalance bool            `json:"insufficientBalance"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type NodeWithdrawCreditResponse struct {
 	Status string      `json:"status"`
@@ -369,12 +369,12 @@ type NodeWithdrawCreditResponse struct {
 }
 
 type CanNodeUnstakeRplResponse struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanUnstake                       bool               `json:"canUnstake"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string          `json:"status"`
+	Error                            string          `json:"error"`
+	CanUnstake                       bool            `json:"canUnstake"`
+	InsufficientBalance              bool            `json:"insufficientBalance"`
+	HasDifferentRPLWithdrawalAddress bool            `json:"hasDifferentRPLWithdrawalAddress"`
+	GasLimits                        gaslimit.Limits `json:"gasLimits"`
 }
 type NodeUnstakeRplResponse struct {
 	Status string      `json:"status"`
@@ -382,13 +382,13 @@ type NodeUnstakeRplResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 type CanNodeUnstakeLegacyRplResponse struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanUnstake                       bool               `json:"canUnstake"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
-	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string          `json:"status"`
+	Error                            string          `json:"error"`
+	CanUnstake                       bool            `json:"canUnstake"`
+	InsufficientBalance              bool            `json:"insufficientBalance"`
+	HasDifferentRPLWithdrawalAddress bool            `json:"hasDifferentRPLWithdrawalAddress"`
+	BelowMaxRPLStake                 bool            `json:"belowMaxRPLStake"`
+	GasLimits                        gaslimit.Limits `json:"gasLimits"`
 }
 type NodeUnstakeLegacyRplResponse struct {
 	Status string      `json:"status"`
@@ -402,24 +402,24 @@ type NodeWithdrawRplResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 type CanNodeWithdrawRplResponse struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanWithdraw                      bool               `json:"canWithdraw"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	UnstakingPeriodActive            bool               `json:"unstakingPeriodActive"`
-	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string          `json:"status"`
+	Error                            string          `json:"error"`
+	CanWithdraw                      bool            `json:"canWithdraw"`
+	InsufficientBalance              bool            `json:"insufficientBalance"`
+	UnstakingPeriodActive            bool            `json:"unstakingPeriodActive"`
+	HasDifferentRPLWithdrawalAddress bool            `json:"hasDifferentRPLWithdrawalAddress"`
+	GasLimits                        gaslimit.Limits `json:"gasLimits"`
 }
 type CanNodeWithdrawRplv1_3_1Response struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanWithdraw                      bool               `json:"canWithdraw"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
-	MinipoolsUndercollateralized     bool               `json:"minipoolsUndercollateralized"`
-	WithdrawalDelayActive            bool               `json:"withdrawalDelayActive"`
-	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string          `json:"status"`
+	Error                            string          `json:"error"`
+	CanWithdraw                      bool            `json:"canWithdraw"`
+	InsufficientBalance              bool            `json:"insufficientBalance"`
+	BelowMaxRPLStake                 bool            `json:"belowMaxRPLStake"`
+	MinipoolsUndercollateralized     bool            `json:"minipoolsUndercollateralized"`
+	WithdrawalDelayActive            bool            `json:"withdrawalDelayActive"`
+	HasDifferentRPLWithdrawalAddress bool            `json:"hasDifferentRPLWithdrawalAddress"`
+	GasLimits                        gaslimit.Limits `json:"gasLimits"`
 }
 
 type CanNodeDepositsResponse struct {
@@ -440,7 +440,7 @@ type CanNodeDepositsResponse struct {
 	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
 	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
 	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
-	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
+	GasLimits                        gaslimit.Limits           `json:"gasLimits"`
 }
 
 type NodeDepositsResponse struct {
@@ -452,14 +452,14 @@ type NodeDepositsResponse struct {
 }
 
 type CanCreateVacantMinipoolResponse struct {
-	Status               string             `json:"status"`
-	Error                string             `json:"error"`
-	CanDeposit           bool               `json:"canDeposit"`
-	InsufficientRplStake bool               `json:"insufficientRplStake"`
-	InvalidAmount        bool               `json:"invalidAmount"`
-	DepositDisabled      bool               `json:"depositDisabled"`
-	MinipoolAddress      common.Address     `json:"minipoolAddress"`
-	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
+	Status               string          `json:"status"`
+	Error                string          `json:"error"`
+	CanDeposit           bool            `json:"canDeposit"`
+	InsufficientRplStake bool            `json:"insufficientRplStake"`
+	InvalidAmount        bool            `json:"invalidAmount"`
+	DepositDisabled      bool            `json:"depositDisabled"`
+	MinipoolAddress      common.Address  `json:"minipoolAddress"`
+	GasLimits            gaslimit.Limits `json:"gasLimits"`
 }
 type CreateVacantMinipoolResponse struct {
 	Status                string         `json:"status"`
@@ -471,14 +471,14 @@ type CreateVacantMinipoolResponse struct {
 }
 
 type CanNodeSendResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	Balance             float64            `json:"balance"`
-	TokenName           string             `json:"name"`
-	TokenSymbol         string             `json:"symbol"`
-	CanSend             bool               `json:"canSend"`
-	InsufficientBalance bool               `json:"insufficientBalance"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	Balance             float64         `json:"balance"`
+	TokenName           string          `json:"name"`
+	TokenSymbol         string          `json:"symbol"`
+	CanSend             bool            `json:"canSend"`
+	InsufficientBalance bool            `json:"insufficientBalance"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type NodeSendResponse struct {
 	Status string      `json:"status"`
@@ -487,9 +487,9 @@ type NodeSendResponse struct {
 }
 
 type CanNodeSendMessageResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeSendMessageResponse struct {
 	Status string      `json:"status"`
@@ -498,12 +498,12 @@ type NodeSendMessageResponse struct {
 }
 
 type CanNodeBurnResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanBurn                bool               `json:"canBurn"`
-	InsufficientBalance    bool               `json:"insufficientBalance"`
-	InsufficientCollateral bool               `json:"insufficientCollateral"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanBurn                bool            `json:"canBurn"`
+	InsufficientBalance    bool            `json:"insufficientBalance"`
+	InsufficientCollateral bool            `json:"insufficientCollateral"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type NodeBurnResponse struct {
 	Status string      `json:"status"`
@@ -519,10 +519,10 @@ type NodeSyncProgressResponse struct {
 }
 
 type CanNodeClaimRplResponse struct {
-	Status    string             `json:"status"`
-	Error     string             `json:"error"`
-	RplAmount *big.Int           `json:"rplAmount"`
-	GasInfo   rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	RplAmount *big.Int        `json:"rplAmount"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeClaimRplResponse struct {
 	Status string      `json:"status"`
@@ -575,10 +575,10 @@ type NodeIsFeeDistributorInitializedResponse struct {
 	IsInitialized bool   `json:"isInitialized"`
 }
 type NodeInitializeFeeDistributorGasResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	Distributor common.Address     `json:"distributor"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status      string          `json:"status"`
+	Error       string          `json:"error"`
+	Distributor common.Address  `json:"distributor"`
+	GasLimits   gaslimit.Limits `json:"gasLimits"`
 }
 type NodeInitializeFeeDistributorResponse struct {
 	Status string      `json:"status"`
@@ -586,11 +586,11 @@ type NodeInitializeFeeDistributorResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 type NodeCanDistributeResponse struct {
-	Status    string             `json:"status"`
-	Error     string             `json:"error"`
-	Balance   *big.Int           `json:"balance"`
-	NodeShare float64            `json:"nodeShare"`
-	GasInfo   rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	Balance   *big.Int        `json:"balance"`
+	NodeShare float64         `json:"nodeShare"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeDistributeResponse struct {
 	Status string      `json:"status"`
@@ -617,9 +617,9 @@ type NodeGetRewardsInfoResponse struct {
 }
 
 type CanNodeClaimRewardsResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeClaimRewardsResponse struct {
 	Status string      `json:"status"`
@@ -628,9 +628,9 @@ type NodeClaimRewardsResponse struct {
 }
 
 type CanNodeClaimAndStakeRewardsResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeClaimAndStakeRewardsResponse struct {
 	Status string      `json:"status"`
@@ -645,9 +645,9 @@ type GetSmoothingPoolRegistrationStatusResponse struct {
 	TimeLeftUntilChangeable time.Duration `json:"timeLeftUntilChangeable"`
 }
 type CanSetSmoothingPoolRegistrationStatusResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetSmoothingPoolRegistrationStatusResponse struct {
 	Status string      `json:"status"`
@@ -750,10 +750,10 @@ type GetExpressTicketsProvisionedResponse struct {
 }
 
 type CanClaimRefundResponse struct {
-	Status   string             `json:"status"`
-	Error    string             `json:"error"`
-	CanClaim bool               `json:"canClaim"`
-	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanClaim  bool            `json:"canClaim"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type ClaimRefundResponse struct {
 	Status string      `json:"status"`
@@ -762,11 +762,11 @@ type ClaimRefundResponse struct {
 }
 
 type CanReduceBondResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanReduceBond bool               `json:"canReduceBond"`
-	NotEnoughBond bool               `json:"notEnoughBond"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanReduceBond bool            `json:"canReduceBond"`
+	NotEnoughBond bool            `json:"notEnoughBond"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ReduceBondResponse struct {
 	Status string      `json:"status"`
@@ -775,12 +775,12 @@ type ReduceBondResponse struct {
 }
 
 type CanRepayDebtResponse struct {
-	Status           string             `json:"status"`
-	Error            string             `json:"error"`
-	CanRepay         bool               `json:"canRepay"`
-	NotEnoughDebt    bool               `json:"notEnoughDebt"`
-	NotEnoughBalance bool               `json:"notEnoughBalance"`
-	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
+	Status           string          `json:"status"`
+	Error            string          `json:"error"`
+	CanRepay         bool            `json:"canRepay"`
+	NotEnoughDebt    bool            `json:"notEnoughDebt"`
+	NotEnoughBalance bool            `json:"notEnoughBalance"`
+	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type RepayDebtResponse struct {
 	Status string      `json:"status"`
@@ -789,11 +789,11 @@ type RepayDebtResponse struct {
 }
 
 type CanDissolveValidatorResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanDissolve   bool               `json:"canDissolve"`
-	NotInPrestake bool               `json:"notInPrestake"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanDissolve   bool            `json:"canDissolve"`
+	NotInPrestake bool            `json:"notInPrestake"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type DissolveValidatorResponse struct {
 	Status string      `json:"status"`
@@ -802,12 +802,12 @@ type DissolveValidatorResponse struct {
 }
 
 type CanDissolveWithProofResponse struct {
-	Status           string             `json:"status"`
-	Error            string             `json:"error"`
-	CanDissolve      bool               `json:"canDissolve"`
-	NotInPrestake    bool               `json:"notInPrestake"`
-	ValidCredentials bool               `json:"validCredentials"`
-	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
+	Status           string          `json:"status"`
+	Error            string          `json:"error"`
+	CanDissolve      bool            `json:"canDissolve"`
+	NotInPrestake    bool            `json:"notInPrestake"`
+	ValidCredentials bool            `json:"validCredentials"`
+	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type DissolveWithProofResponse struct {
 	Status string      `json:"status"`
@@ -816,11 +816,11 @@ type DissolveWithProofResponse struct {
 }
 
 type CanExitValidatorResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanExit       bool               `json:"canExit"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanExit       bool            `json:"canExit"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ExitValidatorResponse struct {
 	Status string      `json:"status"`
@@ -829,11 +829,11 @@ type ExitValidatorResponse struct {
 }
 
 type CanNotifyValidatorExitResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanExit       bool               `json:"canExit"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanExit       bool            `json:"canExit"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type NotifyValidatorExitResponse struct {
 	Status string      `json:"status"`
@@ -842,11 +842,11 @@ type NotifyValidatorExitResponse struct {
 }
 
 type CanNotifyFinalBalanceResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanExit       bool               `json:"canExit"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanExit       bool            `json:"canExit"`
+	InvalidStatus bool            `json:"invalidStatus"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type NotifyFinalBalanceResponse struct {
 	Status string      `json:"status"`
@@ -855,11 +855,11 @@ type NotifyFinalBalanceResponse struct {
 }
 
 type CanStakeResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanStake      bool               `json:"canStake"`
-	IndexNotFound bool               `json:"indexNotFound"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status        string          `json:"status"`
+	Error         string          `json:"error"`
+	CanStake      bool            `json:"canStake"`
+	IndexNotFound bool            `json:"indexNotFound"`
+	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type StakeResponse struct {
 	Status string      `json:"status"`
@@ -868,10 +868,10 @@ type StakeResponse struct {
 }
 
 type CanExitQueueResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	CanExit bool               `json:"canExit"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanExit   bool            `json:"canExit"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 
 type ExitQueueResponse struct {
@@ -881,10 +881,10 @@ type ExitQueueResponse struct {
 }
 
 type CanClaimUnclaimedRewardsResponse struct {
-	Status   string             `json:"status"`
-	Error    string             `json:"error"`
-	CanClaim bool               `json:"canClaim"`
-	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	CanClaim  bool            `json:"canClaim"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 
 type ClaimUnclaimedRewardsResponse struct {

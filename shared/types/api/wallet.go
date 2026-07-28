@@ -4,7 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -76,12 +76,12 @@ type ExportWalletResponse struct {
 }
 
 type SetEnsNameResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	Address common.Address     `json:"address"`
-	EnsName string             `json:"ensName"`
-	TxHash  common.Hash        `json:"txHash"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status    string          `json:"status"`
+	Error     string          `json:"error"`
+	Address   common.Address  `json:"address"`
+	EnsName   string          `json:"ensName"`
+	TxHash    common.Hash     `json:"txHash"`
+	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 
 type TestMnemonicResponse struct {

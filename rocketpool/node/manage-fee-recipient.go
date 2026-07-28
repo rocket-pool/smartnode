@@ -8,7 +8,10 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -16,9 +19,6 @@ import (
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // Manage fee recipient task
@@ -105,7 +105,7 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	}
 
 	// Get the fee recipient info for the node
-	feeRecipientInfo, err := rputils.GetFeeRecipientInfo(m.rp, m.bc, nodeAccount.Address, state)
+	feeRecipientInfo, err := feerecipient.GetDetails(m.rp, m.bc, nodeAccount.Address, state)
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)
 	}

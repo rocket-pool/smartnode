@@ -99,13 +99,13 @@ func canDefeatProposal(c *cli.Command, proposalId uint64, index uint64) (*api.PD
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateDefeatProposalGas(rp, proposalId, index, opts)
+	gasLimits, err := protocol.EstimateDefeatProposalGas(rp, proposalId, index, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

@@ -10,8 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Info for a rewards snapshot event
@@ -150,10 +151,10 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacy
 }
 
 // Estimate the gas for submitting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts, legacyRocketRewardsPoolAddress *common.Address) (rocketpool.GasInfo, error) {
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts, legacyRocketRewardsPoolAddress *common.Address) (gaslimit.Limits, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", submission)
 }
@@ -187,7 +188,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
 		return RewardsEvent{}, err
 	}
@@ -249,7 +250,7 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}

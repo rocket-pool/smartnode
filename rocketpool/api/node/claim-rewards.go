@@ -16,13 +16,13 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
@@ -162,7 +162,7 @@ func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 		var wg2 errgroup.Group
 		wg2.Go(func() error {
 			var err error
-			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = CheckCollateral(rp, nodeAccount.Address, nil)
 			return err
 		})
 
@@ -172,20 +172,20 @@ func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 		}
 
 		// bonded eth = total validators * 32 - borrowed
-		totalBorrowedEth := eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount)
+		totalBorrowedEth := math.WeiToEth(response.EthBorrowed) + math.WeiToEth(response.PendingBorrowAmount)
 		totalBondedEth := float64(totalActiveValidators)*32.0 - totalBorrowedEth
 
 		// Calculate collateral ratios
 		if totalBondedEth <= 0 {
 			response.BondedCollateralRatio = 0
 		} else {
-			response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBondedEth
+			response.BondedCollateralRatio = math.WeiToEth(response.RplPrice) * math.WeiToEth(response.RplStake) / totalBondedEth
 		}
 
 		if totalBorrowedEth <= 0 {
 			response.BorrowedCollateralRatio = 0
 		} else {
-			response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBorrowedEth
+			response.BorrowedCollateralRatio = math.WeiToEth(response.RplPrice) * math.WeiToEth(response.RplStake) / totalBorrowedEth
 		}
 	}
 
@@ -226,17 +226,16 @@ func canClaimRewards(c *cli.Command, indicesString string) (*api.CanNodeClaimRew
 		return nil, err
 	}
 
-	var gasInfo rocketpool.GasInfo
+	var gasLimits gaslimit.Limits
 	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+	gasLimits, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 
@@ -323,11 +322,11 @@ func canClaimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
+	gasLimits, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 

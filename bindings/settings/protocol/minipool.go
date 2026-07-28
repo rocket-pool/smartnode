@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -41,7 +42,7 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
 func ProposeMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", MinipoolSubmitWithdrawableEnabledSettingPath), MinipoolSettingsContractName, MinipoolSubmitWithdrawableEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinipoolSubmitWithdrawableEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinipoolSubmitWithdrawableEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", MinipoolSubmitWithdrawableEnabledSettingPath), MinipoolSettingsContractName, MinipoolSubmitWithdrawableEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -61,7 +62,7 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (t
 func ProposeMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolLaunchTimeoutSettingPath), MinipoolSettingsContractName, MinipoolLaunchTimeoutSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinipoolLaunchTimeoutGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinipoolLaunchTimeoutGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolLaunchTimeoutSettingPath), MinipoolSettingsContractName, MinipoolLaunchTimeoutSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -93,7 +94,7 @@ func GetBondReductionEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bo
 func ProposeBondReductionEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", BondReductionEnabledSettingPath), MinipoolSettingsContractName, BondReductionEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeBondReductionEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeBondReductionEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", BondReductionEnabledSettingPath), MinipoolSettingsContractName, BondReductionEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -112,7 +113,7 @@ func GetMaximumMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 func ProposeMaximumMinipoolCount(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumMinipoolCountSettingPath), MinipoolSettingsContractName, MaximumMinipoolCountSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumMinipoolCountGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumMinipoolCountGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumMinipoolCountSettingPath), MinipoolSettingsContractName, MaximumMinipoolCountSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -131,7 +132,7 @@ func GetMinipoolUserDistributeWindowStart(rp *rocketpool.RocketPool, opts *bind.
 func ProposeMinipoolUserDistributeWindowStart(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUserDistributeWindowStartSettingPath), MinipoolSettingsContractName, MinipoolUserDistributeWindowStartSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinipoolUserDistributeWindowStartGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinipoolUserDistributeWindowStartGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUserDistributeWindowStartSettingPath), MinipoolSettingsContractName, MinipoolUserDistributeWindowStartSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -150,7 +151,7 @@ func GetMinipoolUserDistributeWindowLength(rp *rocketpool.RocketPool, opts *bind
 func ProposeMinipoolUserDistributeWindowLength(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUserDistributeWindowLengthSettingPath), MinipoolSettingsContractName, MinipoolUserDistributeWindowLengthSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinipoolUserDistributeWindowLengthGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinipoolUserDistributeWindowLengthGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUserDistributeWindowLengthSettingPath), MinipoolSettingsContractName, MinipoolUserDistributeWindowLengthSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -169,7 +170,7 @@ func GetMaximumPenaltyCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 func ProposeMaximumPenaltyCount(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolMaximumPenaltyCountSettingPath), MinipoolSettingsContractName, MinipoolMaximumPenaltyCountSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumPenaltyCountGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMaximumPenaltyCountGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumMinipoolCountSettingPath), MinipoolMaximumPenaltyCountSettingPath, MinipoolMaximumPenaltyCountSettingPath, value, blockNumber, treeNodes, opts)
 }
 

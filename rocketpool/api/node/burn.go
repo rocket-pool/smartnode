@@ -84,9 +84,9 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 		}
 		switch token {
 		case "reth":
-			gasInfo, err := tokens.EstimateBurnRETHGas(rp, amountWei, opts)
+			gasLimits, err := tokens.EstimateBurnRETHGas(rp, amountWei, opts)
 			if err == nil {
-				response.GasInfo = gasInfo
+				response.GasLimits = gasLimits
 			}
 			return err
 		}

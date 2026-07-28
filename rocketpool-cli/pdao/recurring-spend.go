@@ -5,10 +5,10 @@ import (
 	"math/big"
 	"time"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeRecurringSpend(rawEnabled bool, contractName string, recipientString string, amountString string, startTimeUnix uint64, periodLengthString string, numPeriods uint64, customMessage string, yes bool) error {
@@ -108,7 +108,7 @@ func proposeRecurringSpend(rawEnabled bool, contractName string, recipientString
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

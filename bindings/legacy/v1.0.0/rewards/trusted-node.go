@@ -8,8 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get whether trusted node reward claims are enabled
@@ -49,10 +50,10 @@ func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress 
 }
 
 // Estimate the gas of ClaimTrustedNodeRewards
-func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (rocketpool.GasInfo, error) {
+func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (gaslimit.Limits, error) {
 	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return estimateClaimGas(rocketClaimTrustedNode, opts)
 }
@@ -87,7 +88,7 @@ func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddre
 	}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
 	if err != nil {
 		return nil, err
 	}

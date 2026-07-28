@@ -79,11 +79,11 @@ func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse,
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateReduceBondGas(amount, opts)
+	gasLimits, err := mp.EstimateReduceBondGas(amount, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanReduceBond = true
 
 	return &response, nil

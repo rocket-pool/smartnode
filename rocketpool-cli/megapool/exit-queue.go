@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 // Exit the megapool queue
@@ -133,7 +133,7 @@ func exitQueue(validatorId string, yes bool) error {
 	}
 
 	// Check whether each validator can be exited and accumulate gas estimates
-	var totalGasInfo rocketpoolapi.GasInfo
+	var totalGasLimits gaslimit.Limits
 	canExitResponses := make(map[uint64]*api.CanExitQueueResponse)
 	for _, v := range selectedValidators {
 		validatorId := uint64(v.ValidatorId)
@@ -146,8 +146,7 @@ func exitQueue(validatorId string, yes bool) error {
 			continue
 		}
 		canExitResponses[validatorId] = &canExit
-		totalGasInfo.EstGasLimit += canExit.GasInfo.EstGasLimit
-		totalGasInfo.SafeGasLimit += canExit.GasInfo.SafeGasLimit
+		totalGasLimits = totalGasLimits.Add(canExit.GasLimits)
 	}
 
 	if len(canExitResponses) == 0 {
@@ -161,7 +160,7 @@ func exitQueue(validatorId string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(totalGasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(totalGasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

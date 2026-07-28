@@ -76,9 +76,9 @@ func canProposeLeave(c *cli.Command) (*api.CanProposeTNDAOLeaveResponse, error) 
 			return err
 		}
 		message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberUrl)
-		gasInfo, err := trustednode.EstimateProposeMemberLeaveGas(rp, message, nodeAccount.Address, opts)
+		gasLimits, err := trustednode.EstimateProposeMemberLeaveGas(rp, message, nodeAccount.Address, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

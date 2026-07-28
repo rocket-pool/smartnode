@@ -12,8 +12,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -143,7 +143,7 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 
 					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
 					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-					eight := eth.EthToWei(8)
+					eight := math.EthToWei(8)
 					if distributableBalance.Cmp(eight) >= 0 {
 						minipoolDetails.CanDistribute = false
 						return nil
@@ -172,7 +172,7 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 				if !success {
 					return fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", address.Hex(), minipoolDetails.MinipoolVersion)
 				}
-				minipoolDetails.GasInfo, err = mpv3.EstimateDistributeBalanceGas(true, opts)
+				minipoolDetails.GasLimits, err = mpv3.EstimateDistributeBalanceGas(true, opts)
 				if err != nil {
 					return fmt.Errorf("error estimating gas to distribute minipool %s: %w", address.Hex(), err)
 				}

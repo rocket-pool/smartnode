@@ -11,8 +11,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -103,7 +104,7 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPercTotal"); err != nil {
 		return 0, fmt.Errorf("error getting rewards claimers total percent: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // Rewards claim interval time
@@ -121,7 +122,7 @@ func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 func ProposeRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
 }
 

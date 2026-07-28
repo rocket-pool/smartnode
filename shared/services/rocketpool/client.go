@@ -29,13 +29,12 @@ import (
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
+	clicolor "github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	clicolor "github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -45,11 +44,10 @@ const (
 	PrometheusConfigTemplate string = "prometheus.tmpl"
 	PrometheusFile           string = "prometheus.yml"
 
-	templatesDir                  string = "templates"
-	overrideDir                   string = "override"
-	runtimeDir                    string = "runtime"
-	defaultFeeRecipientFile       string = "fr-default.tmpl"
-	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
+	templatesDir    string = "templates"
+	overrideDir     string = "override"
+	runtimeDir      string = "runtime"
+	upgradeFlagFile string = ".firstrun"
 
 	nethermindAdminUrl          string = "http://127.0.0.1:7434"
 	pruneStarterContainerSuffix string = "_nm_prune_starter"
@@ -204,7 +202,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 		return nil, false, fmt.Errorf("error expanding settings file path: %w", err)
 	}
 
-	cfg, err := rp.LoadConfigFromFile(expandedPath)
+	cfg, err := config.LoadFromFile(expandedPath)
 	if err != nil {
 		return nil, false, err
 	}
@@ -226,7 +224,7 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 		return nil, fmt.Errorf("error expanding backup settings file path: %w", err)
 	}
 
-	return rp.LoadConfigFromFile(expandedPath)
+	return config.LoadFromFile(expandedPath)
 }
 
 // Save the config
@@ -235,7 +233,27 @@ func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	if err != nil {
 		return err
 	}
-	return rp.SaveConfig(cfg, settingsFileDirectoryPath, SettingsFile)
+	return cfg.Save(settingsFileDirectoryPath, SettingsFile)
+}
+
+// Remove the upgrade flag file
+func removeUpgradeFlagFile(configDir string) error {
+
+	// Check for the upgrade flag file
+	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
+	_, err := os.Stat(upgradeFilePath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	// Delete the upgrade flag file
+	err = os.Remove(upgradeFilePath)
+	if err != nil {
+		return fmt.Errorf("error removing upgrade flag file: %w", err)
+	}
+
+	return nil
+
 }
 
 // Remove the upgrade flag file
@@ -244,7 +262,16 @@ func (c *Client) RemoveUpgradeFlagFile() error {
 	if err != nil {
 		return err
 	}
-	return rp.RemoveUpgradeFlagFile(expandedPath)
+	return removeUpgradeFlagFile(expandedPath)
+}
+
+// Checks if this is the first run of the configurator after an install
+func isFirstRun(configDir string) bool {
+	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
+
+	// Load the config normally if the upgrade flag file isn't there
+	_, err := os.Stat(upgradeFilePath)
+	return !os.IsNotExist(err)
 }
 
 // Returns whether or not this is the first run of the configurator since a previous installation
@@ -253,7 +280,7 @@ func (c *Client) IsFirstRun() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error expanding settings file path: %w", err)
 	}
-	return rp.IsFirstRun(expandedPath), nil
+	return isFirstRun(expandedPath), nil
 }
 
 // Load the Prometheus template, do a template variable substitution, and save it

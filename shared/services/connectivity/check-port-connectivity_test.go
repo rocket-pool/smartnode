@@ -3,9 +3,9 @@ package connectivity
 import (
 	"testing"
 
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	cfg "github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	log "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // TestCheckPortConnectivity_Run verifies that the port connectivity task correctly

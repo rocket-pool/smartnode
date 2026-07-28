@@ -74,9 +74,9 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.CanCancelTNDAOPr
 		if err != nil {
 			return err
 		}
-		gasInfo, err := trustednode.EstimateCancelProposalGas(rp, proposalId, opts)
+		gasLimits, err := trustednode.EstimateCancelProposalGas(rp, proposalId, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

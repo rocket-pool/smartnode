@@ -5,10 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func setSignallingAddress(signallingAddress common.Address, signature string, yes bool) error {
@@ -32,7 +32,7 @@ func setSignallingAddress(signallingAddress common.Address, signature string, ye
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(resp.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func clearSignallingAddress(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(resp.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

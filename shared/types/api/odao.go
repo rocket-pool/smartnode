@@ -7,7 +7,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	tn "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type TNDAOStatusResponse struct {
@@ -49,12 +49,12 @@ type TNDAOProposalResponse struct {
 }
 
 type CanProposeTNDAOInviteResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	ProposalCooldownActive bool               `json:"proposalCooldownActive"`
-	MemberAlreadyExists    bool               `json:"memberAlreadyExists"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
+	MemberAlreadyExists    bool            `json:"memberAlreadyExists"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOInviteResponse struct {
 	Status     string      `json:"status"`
@@ -64,12 +64,12 @@ type ProposeTNDAOInviteResponse struct {
 }
 
 type CanProposeTNDAOLeaveResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	ProposalCooldownActive bool               `json:"proposalCooldownActive"`
-	InsufficientMembers    bool               `json:"insufficientMembers"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
+	InsufficientMembers    bool            `json:"insufficientMembers"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOLeaveResponse struct {
 	Status     string      `json:"status"`
@@ -79,12 +79,12 @@ type ProposeTNDAOLeaveResponse struct {
 }
 
 type CanProposeTNDAOReplaceResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	ProposalCooldownActive bool               `json:"proposalCooldownActive"`
-	MemberAlreadyExists    bool               `json:"memberAlreadyExists"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
+	MemberAlreadyExists    bool            `json:"memberAlreadyExists"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOReplaceResponse struct {
 	Status     string      `json:"status"`
@@ -94,12 +94,12 @@ type ProposeTNDAOReplaceResponse struct {
 }
 
 type CanProposeTNDAOKickResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	ProposalCooldownActive bool               `json:"proposalCooldownActive"`
-	InsufficientRplBond    bool               `json:"insufficientRplBond"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
+	InsufficientRplBond    bool            `json:"insufficientRplBond"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOKickResponse struct {
 	Status     string      `json:"status"`
@@ -109,13 +109,13 @@ type ProposeTNDAOKickResponse struct {
 }
 
 type CanCancelTNDAOProposalResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanCancel       bool               `json:"canCancel"`
-	DoesNotExist    bool               `json:"doesNotExist"`
-	InvalidState    bool               `json:"invalidState"`
-	InvalidProposer bool               `json:"invalidProposer"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status          string          `json:"status"`
+	Error           string          `json:"error"`
+	CanCancel       bool            `json:"canCancel"`
+	DoesNotExist    bool            `json:"doesNotExist"`
+	InvalidState    bool            `json:"invalidState"`
+	InvalidProposer bool            `json:"invalidProposer"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type CancelTNDAOProposalResponse struct {
 	Status string      `json:"status"`
@@ -124,14 +124,14 @@ type CancelTNDAOProposalResponse struct {
 }
 
 type CanVoteOnTNDAOProposalResponse struct {
-	Status             string             `json:"status"`
-	Error              string             `json:"error"`
-	CanVote            bool               `json:"canVote"`
-	DoesNotExist       bool               `json:"doesNotExist"`
-	InvalidState       bool               `json:"invalidState"`
-	JoinedAfterCreated bool               `json:"joinedAfterCreated"`
-	AlreadyVoted       bool               `json:"alreadyVoted"`
-	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+	Status             string          `json:"status"`
+	Error              string          `json:"error"`
+	CanVote            bool            `json:"canVote"`
+	DoesNotExist       bool            `json:"doesNotExist"`
+	InvalidState       bool            `json:"invalidState"`
+	JoinedAfterCreated bool            `json:"joinedAfterCreated"`
+	AlreadyVoted       bool            `json:"alreadyVoted"`
+	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type VoteOnTNDAOProposalResponse struct {
 	Status string      `json:"status"`
@@ -140,12 +140,12 @@ type VoteOnTNDAOProposalResponse struct {
 }
 
 type CanExecuteTNDAOProposalResponse struct {
-	Status       string             `json:"status"`
-	Error        string             `json:"error"`
-	CanExecute   bool               `json:"canExecute"`
-	DoesNotExist bool               `json:"doesNotExist"`
-	InvalidState bool               `json:"invalidState"`
-	GasInfo      rocketpool.GasInfo `json:"gasInfo"`
+	Status       string          `json:"status"`
+	Error        string          `json:"error"`
+	CanExecute   bool            `json:"canExecute"`
+	DoesNotExist bool            `json:"doesNotExist"`
+	InvalidState bool            `json:"invalidState"`
+	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type ExecuteTNDAOProposalResponse struct {
 	Status string      `json:"status"`
@@ -154,13 +154,13 @@ type ExecuteTNDAOProposalResponse struct {
 }
 
 type CanExecuteTNDAOUpgradeResponse struct {
-	Status             string             `json:"status"`
-	Error              string             `json:"error"`
-	CanExecute         bool               `json:"canExecute"`
-	InvalidTrustedNode bool               `json:"invalidTrustedNode"`
-	DoesNotExist       bool               `json:"doesNotExist"`
-	InvalidState       bool               `json:"invalidState"`
-	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+	Status             string          `json:"status"`
+	Error              string          `json:"error"`
+	CanExecute         bool            `json:"canExecute"`
+	InvalidTrustedNode bool            `json:"invalidTrustedNode"`
+	DoesNotExist       bool            `json:"doesNotExist"`
+	InvalidState       bool            `json:"invalidState"`
+	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type ExecuteTNDAOUpgradeResponse struct {
 	Status string      `json:"status"`
@@ -169,13 +169,13 @@ type ExecuteTNDAOUpgradeResponse struct {
 }
 
 type CanJoinTNDAOResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanJoin                bool               `json:"canJoin"`
-	ProposalExpired        bool               `json:"proposalExpired"`
-	AlreadyMember          bool               `json:"alreadyMember"`
-	InsufficientRplBalance bool               `json:"insufficientRplBalance"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanJoin                bool            `json:"canJoin"`
+	ProposalExpired        bool            `json:"proposalExpired"`
+	AlreadyMember          bool            `json:"alreadyMember"`
+	InsufficientRplBalance bool            `json:"insufficientRplBalance"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type JoinTNDAOApproveResponse struct {
 	Status        string      `json:"status"`
@@ -189,12 +189,12 @@ type JoinTNDAOJoinResponse struct {
 }
 
 type CanLeaveTNDAOResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanLeave            bool               `json:"canLeave"`
-	ProposalExpired     bool               `json:"proposalExpired"`
-	InsufficientMembers bool               `json:"insufficientMembers"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanLeave            bool            `json:"canLeave"`
+	ProposalExpired     bool            `json:"proposalExpired"`
+	InsufficientMembers bool            `json:"insufficientMembers"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type LeaveTNDAOResponse struct {
 	Status string      `json:"status"`
@@ -203,12 +203,12 @@ type LeaveTNDAOResponse struct {
 }
 
 type CanReplaceTNDAOPositionResponse struct {
-	Status              string             `json:"status"`
-	Error               string             `json:"error"`
-	CanReplace          bool               `json:"canReplace"`
-	ProposalExpired     bool               `json:"proposalExpired"`
-	MemberAlreadyExists bool               `json:"memberAlreadyExists"`
-	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+	Status              string          `json:"status"`
+	Error               string          `json:"error"`
+	CanReplace          bool            `json:"canReplace"`
+	ProposalExpired     bool            `json:"proposalExpired"`
+	MemberAlreadyExists bool            `json:"memberAlreadyExists"`
+	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type ReplaceTNDAOPositionResponse struct {
 	Status string      `json:"status"`
@@ -217,11 +217,11 @@ type ReplaceTNDAOPositionResponse struct {
 }
 
 type CanProposeTNDAOSettingResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanPropose             bool               `json:"canPropose"`
-	ProposalCooldownActive bool               `json:"proposalCooldownActive"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOSettingMembersQuorumResponse struct {
 	Status     string      `json:"status"`
@@ -332,10 +332,10 @@ type GetTNDAOMinipoolSettingsResponse struct {
 }
 
 type CanPenaliseMegapoolResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	CanPenalise bool               `json:"canPenalise"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status      string          `json:"status"`
+	Error       string          `json:"error"`
+	CanPenalise bool            `json:"canPenalise"`
+	GasLimits   gaslimit.Limits `json:"gasLimits"`
 }
 type PenaliseMegapoolResponse struct {
 	Status string      `json:"status"`

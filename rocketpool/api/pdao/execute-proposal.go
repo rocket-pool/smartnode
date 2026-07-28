@@ -61,9 +61,9 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.CanExecutePDAOP
 		if err != nil {
 			return err
 		}
-		gasInfo, err := protocol.EstimateExecuteProposalGas(rp, proposalId, opts)
+		gasLimits, err := protocol.EstimateExecuteProposalGas(rp, proposalId, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

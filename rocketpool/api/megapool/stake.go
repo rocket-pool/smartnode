@@ -104,11 +104,11 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
+	gasLimits, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanStake = true
 
 	return &response, nil

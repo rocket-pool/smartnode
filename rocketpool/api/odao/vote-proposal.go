@@ -90,9 +90,9 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.CanVoteOnTNDAOPr
 		if err != nil {
 			return err
 		}
-		gasInfo, err := trustednode.EstimateVoteOnProposalGas(rp, proposalId, false, opts)
+		gasLimits, err := trustednode.EstimateVoteOnProposalGas(rp, proposalId, false, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

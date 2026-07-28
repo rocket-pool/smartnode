@@ -11,7 +11,7 @@ import (
 	eth2util "github.com/wealdtech/go-eth2-util"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
 )
 
 // Config

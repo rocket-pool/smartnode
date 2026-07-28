@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 func ProposeMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.MinipoolSubmitWithdrawableEnabledSettingPath), minipoolNamespace, psettings.MinipoolSubmitWithdrawableEnabledSettingPath, value, opts)
 }
-func EstimateProposeMinipoolSubmitWithdrawableEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeMinipoolSubmitWithdrawableEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.MinipoolSubmitWithdrawableEnabledSettingPath), minipoolNamespace, psettings.MinipoolSubmitWithdrawableEnabledSettingPath, value, opts)
 }
 
@@ -27,6 +28,6 @@ func EstimateProposeMinipoolSubmitWithdrawableEnabledGas(rp *rocketpool.RocketPo
 func ProposeBondReductionEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.BondReductionEnabledSettingPath), minipoolNamespace, psettings.BondReductionEnabledSettingPath, value, opts)
 }
-func EstimateProposeBondReductionEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeBondReductionEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.BondReductionEnabledSettingPath), minipoolNamespace, psettings.BondReductionEnabledSettingPath, value, opts)
 }

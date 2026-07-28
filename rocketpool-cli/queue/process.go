@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func processQueue(yes bool) error {
@@ -48,7 +48,7 @@ func processQueue(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canProcess.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canProcess.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,11 +15,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
+
+	mpApi "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 )
 
 const MinipoolBalanceDetailsBatchSize = 20
@@ -47,7 +48,7 @@ func ExportValidators(c *cli.Command) error {
 	var addresses []common.Address
 	var eth2Config beacon.Eth2Config
 	var beaconHead beacon.BeaconHead
-	var blockTime uint64
+	var blockTime time.Time
 
 	// Get minipool addresses
 	wg1.Go(func() error {
@@ -74,7 +75,7 @@ func ExportValidators(c *cli.Command) error {
 	wg1.Go(func() error {
 		header, err := ec.HeaderByNumber(context.Background(), opts.BlockNumber)
 		if err == nil {
-			blockTime = header.Time
+			blockTime = time.Unix(int64(header.Time), 0)
 		}
 		return err
 	})
@@ -85,13 +86,13 @@ func ExportValidators(c *cli.Command) error {
 	}
 
 	// Get & check epoch at block
-	blockEpoch := eth2.EpochAt(eth2Config, blockTime)
+	blockEpoch := eth2Config.EpochAt(blockTime)
 	if blockEpoch > beaconHead.Epoch {
 		return fmt.Errorf("Epoch %d at block %s is higher than current epoch %d", blockEpoch, opts.BlockNumber.String(), beaconHead.Epoch)
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
+	validators, err := mpApi.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
 		return err
 	}
@@ -182,7 +183,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	}
 
 	// Get user balance at block
-	blockBalance := eth.GweiToWei(float64(validator.Balance))
+	blockBalance := math.GweiToWei(float64(validator.Balance))
 	userBalance, err := mp.CalculateUserShare(blockBalance, opts)
 	if err != nil {
 		return err
@@ -201,7 +202,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	if status == types.Initialized || status == types.Prelaunch {
 		// Use user deposit balance if initialized or prelaunch
 		userBalance = userDepositBalance
-		blockBalance = eth.EthToWei(32)
+		blockBalance = math.EthToWei(32)
 		nodeBalance.Sub(blockBalance, userBalance)
 	} else if status == types.Dissolved {
 		userBalance = big.NewInt(0)
@@ -210,7 +211,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	} else if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		// Use user deposit balance if validator not yet active on beacon chain at block
 		userBalance = userDepositBalance
-		blockBalance = eth.EthToWei(32)
+		blockBalance = math.EthToWei(32)
 		nodeBalance.Sub(blockBalance, userBalance)
 	}
 
@@ -219,9 +220,9 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		validator.Pubkey.Hex(),
 		validator.ActivationEpoch,
 		nodeFee,
-		eth.WeiToEth(blockBalance),
-		eth.WeiToEth(nodeBalance),
-		eth.WeiToEth(userBalance),
+		math.WeiToEth(blockBalance),
+		math.WeiToEth(nodeBalance),
+		math.WeiToEth(userBalance),
 		types.MinipoolStatuses[status],
 		finalised,
 		validator.ExitEpoch > blockEpoch,

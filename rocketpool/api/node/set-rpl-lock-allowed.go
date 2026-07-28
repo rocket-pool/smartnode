@@ -44,11 +44,11 @@ func canSetRplLockAllowed(c *cli.Command, allowed bool) (*api.CanSetRplLockingAl
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateSetStakeRPLForAllowedGas(rp, account.Address, allowed, opts)
+	gasLimits, err := node.EstimateSetStakeRPLForAllowedGas(rp, account.Address, allowed, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Update & return response
 	response.CanSet = (!isAllowed && allowed) || (isAllowed && !allowed)

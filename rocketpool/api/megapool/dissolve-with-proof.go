@@ -100,11 +100,11 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := megapool.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
+	gasLimits, err := megapool.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanDissolve = true
 
 	return &response, nil

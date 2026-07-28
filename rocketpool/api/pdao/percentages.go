@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	rpnode "github.com/rocket-pool/smartnode/bindings/node"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -44,7 +44,7 @@ func getRewardsPercentages(c *cli.Command) (*api.PDAOGetRewardsPercentagesRespon
 
 func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
 	// Validate sum of percentages == 100%
-	one := eth.EthToWei(1)
+	one := math.EthToWei(1)
 	sum := big.NewInt(0).Set(node)
 	sum.Add(sum, odao)
 	sum.Add(sum, pdao)
@@ -117,11 +117,11 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	response.BlockNumber = blockNumber
 
 	// Simulate
-	gasInfo, err := protocol.EstimateProposeSetRewardsPercentageGas(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeSetRewardsPercentageGas(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	// Return response
 	return &response, nil

@@ -12,8 +12,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	rprewards "github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
@@ -84,9 +84,9 @@ type MockMinipool struct {
 type BondSize *big.Int
 
 var (
-	BondSizeEightEth      = BondSize(eth.EthToWei(8))
-	BondSizeSixteenEth    = BondSize(eth.EthToWei(16))
-	_bondSizeThirtyTwoEth = BondSize(eth.EthToWei(32))
+	BondSizeEightEth      = BondSize(math.EthToWei(8))
+	BondSizeSixteenEth    = BondSize(math.EthToWei(16))
+	_bondSizeThirtyTwoEth = BondSize(math.EthToWei(32))
 )
 
 func (h *MockHistory) GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool {
@@ -259,7 +259,7 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 	}
 
 	out.RplStake = big.NewInt(params.CollateralRpl)
-	out.RplStake.Mul(out.RplStake, eth.EthToWei(1))
+	out.RplStake.Mul(out.RplStake, math.EthToWei(1))
 
 	// Opt nodes in an epoch before the start of the interval
 	if params.SmoothingPool {
@@ -517,7 +517,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].LastBondReductionTime = h.BeaconConfig.GetSlotTime(h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch + (h.EndEpoch-h.StartEpoch)/2))
-	node.Minipools[0].LastBondReductionPrevValue = big.NewInt(0).Mul(big.NewInt(16), eth.EthToWei(1))
+	node.Minipools[0].LastBondReductionPrevValue = big.NewInt(0).Mul(big.NewInt(16), math.EthToWei(1))
 	// Say it was 20% for fun
 	node.Minipools[0].LastBondReductionPrevNodeFee, _ = big.NewInt(0).SetString("200000000000000000", 10)
 	node.Notes = "Node with one 16-eth that does a bond reduction to 8 eth halfway through the interval"
@@ -712,7 +712,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		ethBorrowingLimit.Div(ethBorrowingLimit, h.NetworkDetails.MinCollateralFraction)
 		collateralisationRatio := big.NewInt(0)
 		if node.borrowedEth.Sign() > 0 {
-			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, eth.EthToWei(1)), node.borrowedEth))
+			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, math.EthToWei(1)), node.borrowedEth))
 		}
 
 		// Create the node details

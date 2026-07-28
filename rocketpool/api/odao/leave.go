@@ -61,9 +61,9 @@ func canLeave(c *cli.Command) (*api.CanLeaveTNDAOResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := trustednode.EstimateLeaveGas(rp, opts.From, opts)
+		gasLimits, err := trustednode.EstimateLeaveGas(rp, opts.From, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

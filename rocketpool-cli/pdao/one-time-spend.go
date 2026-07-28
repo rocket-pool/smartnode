@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeOneTimeSpend(invoiceIDFlag string, recipientFlag string, amountFlag string, customMessageFlag string, rawEnabled bool, yes bool) error {
@@ -75,7 +75,7 @@ func proposeOneTimeSpend(invoiceIDFlag string, recipientFlag string, amountFlag 
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

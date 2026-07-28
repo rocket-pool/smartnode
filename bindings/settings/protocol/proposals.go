@@ -11,8 +11,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Config
@@ -45,7 +46,7 @@ func GetVotePhase1Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Dur
 func ProposeVotePhase1Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VotePhase1TimeSettingPath), ProposalsSettingsContractName, VotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeVotePhase1TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeVotePhase1TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VotePhase1TimeSettingPath), ProposalsSettingsContractName, VotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -64,7 +65,7 @@ func GetVotePhase2Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Dur
 func ProposeVotePhase2Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VotePhase2TimeSettingPath), ProposalsSettingsContractName, VotePhase2TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeVotePhase2TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeVotePhase2TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VotePhase2TimeSettingPath), ProposalsSettingsContractName, VotePhase2TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -83,7 +84,7 @@ func GetVoteDelayTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Dura
 func ProposeVoteDelayTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeVoteDelayTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeVoteDelayTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -102,7 +103,7 @@ func GetExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Durati
 func ProposeExecuteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeExecuteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeExecuteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -121,7 +122,7 @@ func GetProposalBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, 
 func ProposeProposalBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalBondSettingPath), ProposalsSettingsContractName, ProposalBondSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeProposalBondGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeProposalBondGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ProposalBondSettingPath), ProposalsSettingsContractName, ProposalBondSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -140,7 +141,7 @@ func GetChallengeBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 func ProposeChallengeBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeBondSettingPath), ProposalsSettingsContractName, ChallengeBondSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeChallengeBondGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeChallengeBondGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeBondSettingPath), ProposalsSettingsContractName, ChallengeBondSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -159,7 +160,7 @@ func GetChallengePeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Du
 func ProposeChallengePeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengePeriodSettingPath), ProposalsSettingsContractName, ChallengePeriodSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeChallengePeriodGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeChallengePeriodGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengePeriodSettingPath), ProposalsSettingsContractName, ChallengePeriodSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -173,7 +174,7 @@ func GetProposalQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalQuorum"); err != nil {
 		return 0, fmt.Errorf("error getting proposal quorum: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The minimum amount of voting power a proposal needs to succeed
@@ -191,7 +192,7 @@ func GetProposalQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 func ProposeProposalQuorum(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalQuorumSettingPath), ProposalsSettingsContractName, ProposalQuorumSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeProposalQuorumGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeProposalQuorumGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ProposalQuorumSettingPath), ProposalsSettingsContractName, ProposalQuorumSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -205,7 +206,7 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalVetoQuorum"); err != nil {
 		return 0, fmt.Errorf("error getting proposal veto quorum: %w", err)
 	}
-	return eth.WeiToEth(*value), nil
+	return math.WeiToEth(*value), nil
 }
 
 // The amount of voting power vetoing a proposal require to veto it
@@ -223,7 +224,7 @@ func GetProposalVetoQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*
 func ProposeProposalVetoQuorum(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalVetoQuorumSettingPath), ProposalsSettingsContractName, ProposalVetoQuorumSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeProposalVetoQuorumGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeProposalVetoQuorumGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ProposalVetoQuorumSettingPath), ProposalsSettingsContractName, ProposalVetoQuorumSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -242,7 +243,7 @@ func GetProposalMaxBlockAge(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 func ProposeProposalMaxBlockAge(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalMaxBlockAgeSettingPath), ProposalsSettingsContractName, ProposalMaxBlockAgeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeProposalMaxBlockAgeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeProposalMaxBlockAgeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ProposalMaxBlockAgeSettingPath), ProposalsSettingsContractName, ProposalMaxBlockAgeSettingPath, value, blockNumber, treeNodes, opts)
 }
 

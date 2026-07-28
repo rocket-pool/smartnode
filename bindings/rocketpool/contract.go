@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Transaction settings
@@ -31,12 +32,6 @@ type Contract struct {
 	Client   ExecutionClient
 }
 
-// Response for gas limits from network and from user request
-type GasInfo struct {
-	EstGasLimit  uint64 `json:"estGasLimit"`
-	SafeGasLimit uint64 `json:"safeGasLimit"`
-}
-
 // Call a contract method
 func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
 	results := make([]interface{}, 1)
@@ -45,9 +40,9 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 }
 
 // Get Gas Limit for transaction
-func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (GasInfo, error) {
+func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (gaslimit.Limits, error) {
 
-	response := GasInfo{}
+	response := gaslimit.Limits{}
 
 	// Pack transaction Info
 	input, err := c.ABI.Pack(method, params...)
@@ -61,8 +56,8 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
 	if err != nil {
 		return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
 	}
-	response.EstGasLimit = estGasLimit
-	response.SafeGasLimit = safeGasLimit
+	response.Estimated = estGasLimit
+	response.Safe = safeGasLimit
 
 	return response, err
 }
@@ -94,17 +89,17 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 }
 
 // Get gas limit for a transfer call
-func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) {
+func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 
-	response := GasInfo{}
+	response := gaslimit.Limits{}
 
 	// Estimate gas limit
 	estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
 	if err != nil {
 		return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas limit: %w", err)
 	}
-	response.EstGasLimit = estGasLimit
-	response.SafeGasLimit = safeGasLimit
+	response.Estimated = estGasLimit
+	response.Safe = safeGasLimit
 
 	return response, nil
 }

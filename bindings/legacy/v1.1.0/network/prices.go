@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Get the block number which network prices are current for
@@ -38,10 +39,10 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNet
 }
 
 // Estimate the gas of SubmitPrices
-func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, effectiveRplStake *big.Int, opts *bind.TransactOpts, legacyRocketNetworkPricesAddress *common.Address) (rocketpool.GasInfo, error) {
+func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, effectiveRplStake *big.Int, opts *bind.TransactOpts, legacyRocketNetworkPricesAddress *common.Address) (gaslimit.Limits, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
 }

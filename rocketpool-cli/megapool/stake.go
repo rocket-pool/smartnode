@@ -3,11 +3,11 @@ package megapool
 import (
 	"fmt"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func getStakableValidator() (uint64, bool, error) {
@@ -90,7 +90,7 @@ func stake(validatorId uint64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canStake.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canStake.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

@@ -23,9 +23,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	hexutil "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -197,7 +196,7 @@ func (c *StandardHttpClient) GetBeaconHead() (beacon.BeaconHead, error) {
 
 	// Return response
 	return beacon.BeaconHead{
-		Epoch:                  eth2.EpochAt(eth2Config, uint64(time.Now().Unix())),
+		Epoch:                  eth2Config.EpochAt(time.Now()),
 		FinalizedEpoch:         uint64(finalityCheckpoints.Data.Finalized.Epoch),
 		JustifiedEpoch:         uint64(finalityCheckpoints.Data.CurrentJustified.Epoch),
 		PreviousJustifiedEpoch: uint64(finalityCheckpoints.Data.PreviousJustified.Epoch),

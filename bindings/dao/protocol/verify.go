@@ -12,9 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
 
@@ -94,10 +95,10 @@ func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *b
 }
 
 // Estimate the gas of CreateChallenge
-func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), node, witness)
 }
@@ -116,10 +117,10 @@ func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64,
 }
 
 // Estimate the gas of SubmitRoot
-func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "submitRoot", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), treeNodes)
 }
@@ -306,7 +307,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 	topicFilter := [][]common.Hash{{rootSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +385,7 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 	topicFilter := [][]common.Hash{{challengeSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -429,10 +430,10 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 }
 
 // Estimate the gas of ClaimBondChallenger
-func EstimateClaimBondChallengerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimBondChallengerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	// Make the args
 	proposalIDBig := big.NewInt(int64(proposalID))
@@ -463,10 +464,10 @@ func ClaimBondChallenger(rp *rocketpool.RocketPool, proposalID uint64, indices [
 }
 
 // Estimate the gas of ClaimBondProposer
-func EstimateClaimBondProposerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimBondProposerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	// Make the args
 	proposalIDBig := big.NewInt(int64(proposalID))
@@ -497,10 +498,10 @@ func ClaimBondProposer(rp *rocketpool.RocketPool, proposalID uint64, indices []u
 }
 
 // Estimate the gas of DefeatProposal
-func EstimateDefeatProposalGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDefeatProposalGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "defeatProposal", big.NewInt(int64(proposalId)), big.NewInt(int64(index)))
 }

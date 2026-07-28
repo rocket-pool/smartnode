@@ -3,7 +3,7 @@ package node
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,12 +37,12 @@ func canSendMessage(c *cli.Command, address common.Address, message []byte) (*ap
 		return nil, err
 	}
 
-	gasInfo, err := eth.EstimateSendTransactionGas(ec, address, message, true, opts)
+	gasLimits, err := transactions.EstimateSendTransactionGas(ec, address, message, true, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error estimating gas to send message: %w", err)
 	}
 
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 
 	return &response, nil
 
@@ -67,7 +67,7 @@ func sendMessage(c *cli.Command, address common.Address, message []byte, opts *b
 	response := api.NodeSendMessageResponse{}
 
 	// Send the message
-	hash, err := eth.SendTransaction(ec, address, w.GetChainID(), message, true, opts)
+	hash, err := transactions.SendTransaction(ec, address, w.GetChainID(), message, true, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error sending message: %w", err)
 	}

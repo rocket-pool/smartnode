@@ -127,13 +127,13 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 	}
 
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
+	gasLimits, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanExit = !response.InvalidStatus
 	return &response, nil
 

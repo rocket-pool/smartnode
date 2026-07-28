@@ -11,10 +11,10 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 func getSmoothingPoolRegistrationStatus(c *cli.Command) (*api.GetSmoothingPoolRegistrationStatusResponse, error) {
@@ -105,9 +105,9 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := node.EstimateSetSmoothingPoolRegistrationStateGas(rp, status, opts)
+	gasLimits, err := node.EstimateSetSmoothingPoolRegistrationStateGas(rp, status, opts)
 	if err == nil {
-		response.GasInfo = gasInfo
+		response.GasLimits = gasLimits
 	}
 
 	return &response, err

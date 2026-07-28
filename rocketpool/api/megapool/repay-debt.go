@@ -93,11 +93,11 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 		return nil, err
 	}
 	opts.Value = amount
-	gasInfo, err := mp.EstimateRepayDebtGas(opts)
+	gasLimits, err := mp.EstimateRepayDebtGas(opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	response.CanRepay = true
 
 	return &response, nil

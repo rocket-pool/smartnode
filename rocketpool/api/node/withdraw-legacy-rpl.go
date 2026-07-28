@@ -87,9 +87,9 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateUnstakeLegacyRPLGas(rp, amountWei, opts)
+		gasLimits, err := node.EstimateUnstakeLegacyRPLGas(rp, amountWei, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

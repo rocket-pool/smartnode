@@ -9,8 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Info for a price updated event
@@ -48,10 +49,10 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 }
 
 // Estimate the gas of SubmitPrices
-func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, rplPrice *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), rplPrice)
 }
@@ -81,7 +82,7 @@ func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}, {common.BytesToHash(nodeAddress.Bytes())}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, int
 	topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +158,7 @@ func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *b
 	}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(100), big.NewInt(int64(blockNumber)), big.NewInt(int64(toBlock)), nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, big.NewInt(100), big.NewInt(int64(blockNumber)), big.NewInt(int64(toBlock)), nil)
 	if err != nil {
 		return false, PriceUpdatedEvent{}, err
 	}

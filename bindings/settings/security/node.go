@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 func ProposeNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.NodeRegistrationEnabledSettingPath), nodeNamespace, psettings.NodeRegistrationEnabledSettingPath, value, opts)
 }
-func EstimateProposeNodeRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNodeRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.NodeRegistrationEnabledSettingPath), nodeNamespace, psettings.NodeRegistrationEnabledSettingPath, value, opts)
 }
 
@@ -27,7 +28,7 @@ func EstimateProposeNodeRegistrationEnabledGas(rp *rocketpool.RocketPool, value 
 func ProposeSmoothingPoolRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.SmoothingPoolRegistrationEnabledSettingPath), nodeNamespace, psettings.SmoothingPoolRegistrationEnabledSettingPath, value, opts)
 }
-func EstimateProposeSmoothingPoolRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSmoothingPoolRegistrationEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.SmoothingPoolRegistrationEnabledSettingPath), nodeNamespace, psettings.SmoothingPoolRegistrationEnabledSettingPath, value, opts)
 }
 
@@ -35,7 +36,7 @@ func EstimateProposeSmoothingPoolRegistrationEnabledGas(rp *rocketpool.RocketPoo
 func ProposeNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.NodeDepositEnabledSettingPath), nodeNamespace, psettings.NodeDepositEnabledSettingPath, value, opts)
 }
-func EstimateProposeNodeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNodeDepositEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.NodeDepositEnabledSettingPath), nodeNamespace, psettings.NodeDepositEnabledSettingPath, value, opts)
 }
 
@@ -43,6 +44,6 @@ func EstimateProposeNodeDepositEnabledGas(rp *rocketpool.RocketPool, value bool,
 func ProposeVacantMinipoolsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.VacantMinipoolsEnabledSettingPath), nodeNamespace, psettings.VacantMinipoolsEnabledSettingPath, value, opts)
 }
-func EstimateProposeVacantMinipoolsEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeVacantMinipoolsEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.VacantMinipoolsEnabledSettingPath), nodeNamespace, psettings.VacantMinipoolsEnabledSettingPath, value, opts)
 }

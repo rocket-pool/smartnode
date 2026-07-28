@@ -7,21 +7,21 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers the wallet module's HTTP routes onto mux.
 func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/wallet/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/set-password", func(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		resp, err := setPassword(c, password)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/init", func(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +30,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			derivationPath = r.FormValue("derivationPath")
 		}
 		resp, err := initWalletWithPath(c, derivationPath)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/recover", func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +39,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		derivationPath := r.FormValue("derivationPath")
 		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
 		resp, err := recoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/search-and-recover", func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +47,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		address := common.HexToAddress(r.FormValue("address"))
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
 		resp, err := searchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/test-recover", func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +56,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		derivationPath := r.FormValue("derivationPath")
 		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
 		resp, err := testRecoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/test-search-and-recover", func(w http.ResponseWriter, r *http.Request) {
@@ -64,29 +64,29 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		address := common.HexToAddress(r.FormValue("address"))
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
 		resp, err := testSearchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/rebuild", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := rebuildWallet(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/export", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := exportWallet(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/masquerade", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.FormValue("address"))
 		observe := r.FormValue("observe") == "true"
 		resp, err := masquerade(c, address, observe)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/end-masquerade", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := endMasquerade(c)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/estimate-gas-set-ens-name", func(w http.ResponseWriter, r *http.Request) {
@@ -96,21 +96,21 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := setEnsName(c, name, true, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/set-ens-name", func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := setEnsName(c, name, false, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 }

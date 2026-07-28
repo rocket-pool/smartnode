@@ -10,17 +10,18 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Stake megapool validator task
@@ -71,7 +72,7 @@ func newDefendChallengeExit(c *cli.Command, logger log.ColorLogger) (*defendChal
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
@@ -79,9 +80,9 @@ func newDefendChallengeExit(c *cli.Command, logger log.ColorLogger) (*defendChal
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -188,22 +189,22 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	}
 
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
-	var gasInfo rocketpool.GasInfo
+	var gasLimits gaslimit.Limits
 
 	if !exiting {
 		// Get the gas limit
-		gasInfo, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	} else {
-		gasInfo, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	}
 
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasLimits.Safe))
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
@@ -214,7 +215,7 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -241,7 +242,7 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

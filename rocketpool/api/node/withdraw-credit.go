@@ -54,9 +54,9 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateWithdrawCreditGas(rp, amountWei, opts)
+		gasLimits, err := node.EstimateWithdrawCreditGas(rp, amountWei, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})

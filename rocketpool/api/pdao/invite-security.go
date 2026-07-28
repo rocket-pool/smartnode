@@ -87,14 +87,14 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeInviteToSecurityCouncilGas(rp, message, id, address, blockNumber, pollard, opts)
+	gasLimits, err := protocol.EstimateProposeInviteToSecurityCouncilGas(rp, message, id, address, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
+	response.GasLimits = gasLimits
 	return &response, nil
 }
 

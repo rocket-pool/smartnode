@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Token balances
@@ -110,7 +111,7 @@ func allowance(tokenContract *rocketpool.Contract, tokenName string, owner, spen
 }
 
 // Estimate the gas of transfer
-func estimateTransferGas(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func estimateTransferGas(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return tokenContract.GetTransactionGasInfo(opts, "transfer", to, amount)
 }
 
@@ -124,7 +125,7 @@ func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Ad
 }
 
 // Estimate the gas of approve
-func estimateApproveGas(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func estimateApproveGas(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return tokenContract.GetTransactionGasInfo(opts, "approve", spender, amount)
 }
 
@@ -138,7 +139,7 @@ func approve(tokenContract *rocketpool.Contract, tokenName string, spender commo
 }
 
 // Estimate the gas of transferFrom
-func estimateTransferFromGas(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func estimateTransferFromGas(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return tokenContract.GetTransactionGasInfo(opts, "transferFrom", from, to, amount)
 }
 

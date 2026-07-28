@@ -15,9 +15,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	rputils "github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
@@ -25,13 +25,13 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Settings
@@ -371,7 +371,7 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() {
 
 	minipoolsToScrub := []minipool.Minipool{}
 
-	weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
+	weiPerGwei := big.NewInt(int64(math.WeiPerGwei))
 	for minipool := range t.it.minipools {
 		// Get the MinipoolPrestaked event
 		prestakeData, err := minipool.GetPrestakeEvent(t.it.eventLogInterval, nil)
@@ -572,21 +572,21 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.Minipool) err
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteScrubGas(opts)
+	gasLimits, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to voteScrub the minipool: %w", err)
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
+	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasLimit = gasLimits.Safe
 
 	// Dissolve
 	hash, err := mp.VoteScrub(opts)
@@ -595,7 +595,7 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.Minipool) err
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

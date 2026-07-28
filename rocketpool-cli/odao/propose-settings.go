@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeSettingMembersQuorum(quorumPercent float64, yes bool) error {
@@ -35,7 +34,7 @@ func proposeSettingMembersQuorum(quorumPercent float64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -74,7 +73,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	defer rp.Close()
 
 	// Check if proposal can be made
-	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
+	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}
@@ -87,7 +86,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -99,7 +98,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Submit proposal
-	response, err := rp.ProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
+	response, err := rp.ProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}
@@ -139,7 +138,7 @@ func proposeSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64, yes bool) err
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -198,7 +197,7 @@ func proposeSettingProposalCooldown(proposalCooldownTimespan string, yes bool) e
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -257,7 +256,7 @@ func proposeSettingProposalVoteTimespan(proposalVoteTimespan string, yes bool) e
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -316,7 +315,7 @@ func proposeSettingProposalVoteDelayTimespan(proposalDelayTimespan string, yes b
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -375,7 +374,7 @@ func proposeSettingProposalExecuteTimespan(proposalExecuteTimespan string, yes b
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -434,7 +433,7 @@ func proposeSettingProposalActionTimespan(proposalActionTimespan string, yes boo
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -493,7 +492,7 @@ func proposeSettingScrubPeriod(scrubPeriod string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -552,7 +551,7 @@ func proposeSettingPromotionScrubPeriod(scrubPeriod string, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -604,7 +603,7 @@ func proposeSettingScrubPenaltyEnabled(enabled bool, yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -663,7 +662,7 @@ func proposeSettingBondReductionWindowStart(windowStart string, yes bool) error 
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -722,7 +721,7 @@ func proposeSettingBondReductionWindowLength(windowLength string, yes bool) erro
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

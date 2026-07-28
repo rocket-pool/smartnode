@@ -5,13 +5,11 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func nodeSwapRpl(amount string, yes bool) error {
@@ -41,7 +39,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid swap amount '%s': %w", amount, err)
 		}
-		amountWei = eth.EthToWei(swapAmount)
+		amountWei = math.EthToWei(swapAmount)
 
 	} else {
 
@@ -53,7 +51,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		entireAmount := status.AccountBalances.FixedSupplyRPL
 
 		// Prompt for entire amount
-		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6)) {
+		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(math.WeiToEth(entireAmount), 6)) {
 			amountWei = entireAmount
 		} else {
 
@@ -63,7 +61,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
 			}
-			amountWei = eth.EthToWei(swapAmount)
+			amountWei = math.EthToWei(swapAmount)
 
 		}
 
@@ -95,7 +93,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 			return err
 		}
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
+		err = gas.AssignMaxFeeAndLimit(approvalGas.GasLimits, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -139,13 +137,13 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 	fmt.Println("RPL Swap Gas Info:")
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canSwap.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(math.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -163,7 +161,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(math.WeiToEth(amountWei), 6))
 	return nil
 
 }

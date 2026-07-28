@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	promptcli "github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func exportWallet(secureSession bool) error {

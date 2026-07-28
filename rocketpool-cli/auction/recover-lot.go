@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
-	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func recoverRplFromLot(lot string, yes bool) error {
@@ -78,7 +77,7 @@ func recoverRplFromLot(lot string, yes bool) error {
 		options := make([]string, len(recoverableLots)+1)
 		options[0] = "All available lots"
 		for li, lot := range recoverableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
+			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(math.WeiToEth(lot.Details.RemainingRPLAmount), 6))
 		}
 		selected, _ := prompt.Select("Please select a lot to recover unclaimed RPL from:", options)
 
@@ -94,21 +93,21 @@ func recoverRplFromLot(lot string, yes bool) error {
 	// Get the total gas limit estimate
 	var totalGas uint64
 	var totalSafeGas uint64
-	var gasInfo rocketpoolapi.GasInfo
+	var gasLimits gaslimit.Limits
 	for _, lot := range selectedLots {
 		canResponse, err := rp.CanRecoverUnclaimedRPLFromLot(lot.Details.Index)
 		if err != nil {
 			return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Details.Index, err)
 		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
+		gasLimits = canResponse.GasLimits
+		totalGas += canResponse.GasLimits.Estimated
+		totalSafeGas += canResponse.GasLimits.Safe
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
+	gasLimits.Estimated = totalGas
+	gasLimits.Safe = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
+	g, err := gas.GetMaxFeeAndLimit(gasLimits, rp, yes)
 	if err != nil {
 		return err
 	}

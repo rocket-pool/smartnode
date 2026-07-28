@@ -21,15 +21,15 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
+	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
@@ -276,7 +276,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = CheckCollateral(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -364,7 +364,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		feeRecipientInfo, err := rputils.GetFeeRecipientInfoWithoutState(rp, bc, nodeAccount.Address, nil)
+		feeRecipientInfo, err := feerecipient.GetDetailsWithoutState(rp, bc, nodeAccount.Address, nil)
 		if err == nil {
 			response.FeeRecipientInfo = *feeRecipientInfo
 			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), feeRecipientInfo.FeeDistributorAddress, nil)
@@ -437,8 +437,8 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 
-		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
-		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
+		response.BondedCollateralRatio = math.WeiToEth(rplPrice) * math.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - math.WeiToEth(response.EthBorrowed) - math.WeiToEth(response.PendingBorrowAmount))
+		response.BorrowedCollateralRatio = math.WeiToEth(rplPrice) * math.WeiToEth(response.TotalRplStake) / (math.WeiToEth(response.EthBorrowed) + math.WeiToEth(response.PendingBorrowAmount))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain
 		_, _, pendingEligibleBorrowedEth, pendingEligibleBondedEth, err := getTrueBorrowAndBondAmounts(rp, bc, nodeAccount.Address)
@@ -452,18 +452,18 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
 
-		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
+		pendingEligibleBondedEthFloat := math.WeiToEth(pendingEligibleBondedEth)
 		if pendingEligibleBondedEthFloat == 0 {
 			response.PendingBondedCollateralRatio = 0
 		} else {
-			response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / pendingEligibleBondedEthFloat
+			response.PendingBondedCollateralRatio = math.WeiToEth(rplPrice) * math.WeiToEth(response.TotalRplStake) / pendingEligibleBondedEthFloat
 		}
 
-		pendingEligibleBorrowedEthFloat := eth.WeiToEth(pendingEligibleBorrowedEth)
+		pendingEligibleBorrowedEthFloat := math.WeiToEth(pendingEligibleBorrowedEth)
 		if pendingEligibleBorrowedEthFloat == 0 {
 			response.PendingBorrowedCollateralRatio = 0
 		} else {
-			response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / pendingEligibleBorrowedEthFloat
+			response.PendingBorrowedCollateralRatio = math.WeiToEth(rplPrice) * math.WeiToEth(response.TotalRplStake) / pendingEligibleBorrowedEthFloat
 		}
 	} else {
 		response.BorrowedCollateralRatio = -1

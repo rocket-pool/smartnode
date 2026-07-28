@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func claimUnclaimedRewards(yes bool) error {
@@ -31,7 +30,7 @@ func claimUnclaimedRewards(yes bool) error {
 	// Show unclaimed rewards status
 	fmt.Printf("The node's withdrawal address is %s\n", status.PrimaryWithdrawalAddress)
 	if status.UnclaimedRewards != nil && status.UnclaimedRewards.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You have %.6f ETH in unclaimed rewards.\n", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6))
+		fmt.Printf("You have %.6f ETH in unclaimed rewards.\n", math.RoundDown(math.WeiToEth(status.UnclaimedRewards), 6))
 		fmt.Printf("Your node %s's rewards were distributed, but the withdrawal address (at the time of distribution) was unable to accept ETH. ",
 			color.LightBlue(status.AccountAddress.String()))
 		fmt.Println("Before continuing, please use the command `rocketpool node set-primary-withdrawal-address` to configure an address that can accept ETH")
@@ -49,13 +48,13 @@ func claimUnclaimedRewards(yes bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, yes)
+	err = gas.AssignMaxFeeAndLimit(canClaim.GasLimits, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to claim %.6f ETH in unclaimed rewards?", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to claim %.6f ETH in unclaimed rewards?", math.RoundDown(math.WeiToEth(status.UnclaimedRewards), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -73,7 +72,7 @@ func claimUnclaimedRewards(yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully claimed %.6f ETH in unclaimed rewards.\n", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6))
+	fmt.Printf("Successfully claimed %.6f ETH in unclaimed rewards.\n", math.RoundDown(math.WeiToEth(status.UnclaimedRewards), 6))
 	return nil
 
 }

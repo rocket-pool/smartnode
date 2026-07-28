@@ -8,13 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -103,15 +102,15 @@ func getStatus() error {
 	default:
 		fmt.Printf("The node has a voting delegate of %s which can represent it when voting on Rocket Pool onchain governance proposals.\n", color.LightBlue(response.OnchainVotingDelegateFormatted))
 	}
-	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+	fmt.Printf("The node's local voting power: %.10f\n", math.WeiToEth(response.VotingPower))
 
 	if response.IsNodeRegistered {
-		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", math.WeiToEth(response.TotalDelegatedVp))
 	} else {
 		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
 	}
 
-	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.SumVotingPower))
+	fmt.Printf("Network total initialized voting power: %.10f\n", math.WeiToEth(response.SumVotingPower))
 	fmt.Println("")
 
 	// Claimable Bonds Status:
@@ -120,7 +119,7 @@ func getStatus() error {
 		fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
 		if response.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
 			fmt.Printf("The node currently has %.6f RPL locked.\n",
-				math.RoundDown(eth.WeiToEth(response.NodeRPLLocked), 6))
+				math.RoundDown(math.WeiToEth(response.NodeRPLLocked), 6))
 		}
 
 	} else {

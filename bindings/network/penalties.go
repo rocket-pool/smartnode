@@ -9,13 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas of SubmitPenalty
-func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkPenalties, err := getRocketNetworkPenalties(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkPenalties.GetTransactionGasInfo(opts, "submitPenalty", minipoolAddress, block)
 }

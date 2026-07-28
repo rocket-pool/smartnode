@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -13,9 +12,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/storage"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 // Settings
@@ -343,14 +343,14 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
 }
 
 // Estimate the gas of RegisterNode
-func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
+		return gaslimit.Limits{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "registerNode", timezoneLocation)
 }
@@ -373,14 +373,14 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 }
 
 // Estimate the gas of SetTimezoneLocation
-func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
+		return gaslimit.Limits{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "setTimezoneLocation", timezoneLocation)
 }
@@ -442,10 +442,10 @@ func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.
 }
 
 // Estimate the gas for creating the fee distributor contract for a node
-func EstimateInitializeFeeDistributorGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateInitializeFeeDistributorGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "initialiseFeeDistributor")
 }
@@ -473,7 +473,7 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
 		return 0, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
-	return eth.WeiToEth(*avgFee), nil
+	return math.WeiToEth(*avgFee), nil
 }
 
 // Get a node's average minipool fee
@@ -555,10 +555,10 @@ func GetSmoothingPoolRegistrationChangedRaw(rp *rocketpool.RocketPool, nodeAddre
 }
 
 // Estimate the gas for opting into / out of the smoothing pool
-func EstimateSetSmoothingPoolRegistrationStateGas(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetSmoothingPoolRegistrationStateGas(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "setSmoothingPoolRegistrationState", optIn)
 }
@@ -666,10 +666,10 @@ func GetNodePendingRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress c
 }
 
 // Estimate the gas for setting the RPL-specific withdrawal address
-func EstimateSetRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSetRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "setRPLWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
 }
@@ -688,10 +688,10 @@ func SetRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Addre
 }
 
 // Estimate the gas for confirming the RPL-specific withdrawal address
-func EstimateConfirmRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateConfirmRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "confirmRPLWithdrawalAddress", nodeAddress)
 }
@@ -760,7 +760,7 @@ func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
 		return 0, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
 	}
-	return eth.WeiToEth(*unclaimedRewards), nil
+	return math.WeiToEth(*unclaimedRewards), nil
 }
 
 // Get the amount of unclaimed ETH rewards for a given node operator
@@ -778,10 +778,10 @@ func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Addres
 }
 
 // Estimate the gas for sending unclaimed rewards to node operator's withdrawal address
-func EstimateClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "claimUnclaimedRewards", nodeAddress)
 }
@@ -814,10 +814,10 @@ func GetExpressTicketsProvisioned(rp *rocketpool.RocketPool, nodeAddress common.
 }
 
 // Estimate the gas for provisioning the node's express tickets
-func EstimateProvisionExpressTicketsGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProvisionExpressTicketsGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "provisionExpressTickets", nodeAddress)
 }

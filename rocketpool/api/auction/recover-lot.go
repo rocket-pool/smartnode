@@ -79,9 +79,9 @@ func canRecoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.CanRecoverRPLFr
 		if err != nil {
 			return err
 		}
-		gasInfo, err := auction.EstimateRecoverUnclaimedRPLGas(rp, lotIndex, opts)
+		gasLimits, err := auction.EstimateRecoverUnclaimedRPLGas(rp, lotIndex, opts)
 		if err == nil {
-			response.GasInfo = gasInfo
+			response.GasLimits = gasLimits
 		}
 		return err
 	})
