@@ -24,6 +24,7 @@ const (
 	kurtosisDevnetMulticallAddressDefault      string = "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
 	kurtosisDevnetBalanceBatcherAddressDefault string = "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
 	kurtosisDevnetSignerRegistryAddressDefault string = "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
+	kurtosisDevnetRplTwapPoolAddressDefault    string = "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
 
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
@@ -624,7 +625,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  kurtosisDevnetRplTwapPoolAddressDefault,
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 

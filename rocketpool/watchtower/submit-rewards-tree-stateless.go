@@ -382,9 +382,9 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Create the total rewards for each network
 	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
-		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
-		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
-		nodeOperatorSmoothingPoolEthRewardsAndVoterShare = append(nodeOperatorSmoothingPoolEthRewardsAndVoterShare, rewardsFile.GetNetworkSmoothingPoolEth(network))
+		collateralRplRewards = append(collateralRplRewards, zeroIfNil(rewardsFile.GetNetworkCollateralRpl(network)))
+		oDaoRplRewards = append(oDaoRplRewards, zeroIfNil(rewardsFile.GetNetworkOracleDaoRpl(network)))
+		nodeOperatorSmoothingPoolEthRewardsAndVoterShare = append(nodeOperatorSmoothingPoolEthRewardsAndVoterShare, zeroIfNil(rewardsFile.GetNetworkSmoothingPoolEth(network)))
 	}
 
 	// Get transactor
@@ -401,13 +401,13 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
 		MerkleRoot:       treeRoot,
 		IntervalsPassed:  intervalsPassed,
-		TreasuryETH:      rewardsFile.GetTotalProtocolDaoEth(),
-		TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),
+		TreasuryETH:      zeroIfNil(rewardsFile.GetTotalProtocolDaoEth()),
+		TreasuryRPL:      zeroIfNil(rewardsFile.GetTotalProtocolDaoRpl()),
 		NodeRPL:          collateralRplRewards,
 		TrustedNodeRPL:   oDaoRplRewards,
 		NodeETH:          nodeOperatorSmoothingPoolEthRewardsAndVoterShare,
-		UserETH:          rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
-		SmoothingPoolETH: rewardsFile.GetTotalSmoothingPoolBalance(),
+		UserETH:          zeroIfNil(rewardsFile.GetTotalPoolStakerSmoothingPoolEth()),
+		SmoothingPoolETH: zeroIfNil(rewardsFile.GetTotalSmoothingPoolBalance()),
 	}
 
 	// Skip submission if the period has already reached consensus.
@@ -450,6 +450,13 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	return true, nil
+}
+
+func zeroIfNil(v *big.Int) *big.Int {
+	if v == nil {
+		return big.NewInt(0)
+	}
+	return v
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
