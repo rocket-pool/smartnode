@@ -53,3 +53,11 @@ func getBeaconStateVerifier(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*ro
 	defer BeaconStateVerifierLock.Unlock()
 	return rp.GetContract("beaconStateVerifier", opts)
 }
+
+func GetBeaconStateVerifierVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
+	beaconStateVerifier, err := getBeaconStateVerifier(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	return rocketpool.GetContractVersion(rp, *beaconStateVerifier.Address, opts)
+}
