@@ -51,6 +51,10 @@ func endMasquerade(yes bool) error {
 
 	fmt.Println("Successfully ended masquerade mode.")
 
+	if status.IsObserve {
+		return promptAndRestartObserveDaemons(rp, yes)
+	}
+
 	// Return
 	return nil
 }

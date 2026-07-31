@@ -47,6 +47,7 @@ const (
 	DistributeMinipoolsColor       = color.FgHiGreen
 	ErrorColor                     = color.FgRed
 	WarningColor                   = color.FgYellow
+	ObserveWarningColor            = color.FgHiRed
 	UpdateColor                    = color.FgHiWhite
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
@@ -176,16 +177,10 @@ func run(c *cli.Command) error {
 		return fmt.Errorf("error getting node account: %w", err)
 	}
 
-	if isObserveMode {
-		red := color.New(color.FgHiRed).SprintFunc()
-		fmt.Println(red("Node daemon is observing address " + nodeAccount.Address.Hex() + "."))
-		fmt.Println(red("Transactions will not be submitted. Fee recipient management targets your real node address."))
-		fmt.Println(red("Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing."))
-	}
-
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
+	observeLog := log.NewColorLogger(ObserveWarningColor)
 
 	// Create the state provider. In live mode this is a NetworkStateManager
 	// backed by the real EC/BC; in --network-state mode it is a
@@ -347,6 +342,16 @@ func run(c *cli.Command) error {
 				continue
 			}
 			stateLocker.UpdateState(state)
+
+			// Keep the observe mode warning visible in the logs and the alert active for as long as observe mode is in effect
+			if isObserveMode {
+				observeLog.Println("Node daemon is observing address " + nodeAccount.Address.Hex() + ".")
+				observeLog.Println("Transactions will not be submitted. Fee recipient management targets your real node address.")
+				observeLog.Println("Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing.")
+				if err := alerting.AlertObserveModeActive(cfg, nodeAccount.Address); err != nil {
+					errorLog.Println(err)
+				}
+			}
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {

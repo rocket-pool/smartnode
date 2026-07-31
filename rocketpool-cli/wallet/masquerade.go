@@ -53,8 +53,46 @@ func masquerade(addressFlag string, yes bool, observe bool) error {
 
 	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(address.Hex()))
 	if observe {
-		fmt.Println("Restart the node and watchtower daemons to observe as the masquerade address.")
+		return promptAndRestartObserveDaemons(rp, yes)
 	}
 
+	return nil
+}
+
+// promptAndRestartObserveDaemons asks the user whether to restart the node and watchtower
+// containers now, so they immediately pick up the new observe-mode state.
+func promptAndRestartObserveDaemons(rp *rocketpool.Client, yes bool) error {
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading configuration: %w", err)
+	}
+
+	if cfg.IsNativeMode {
+		fmt.Println("Restart the node and watchtower daemons for this to take effect.")
+		return nil
+	}
+
+	if !yes && !prompt.Confirm("Would you like to restart the node and watchtower containers now?") {
+		fmt.Println("Remember to restart the node and watchtower containers for this to take effect.")
+		return nil
+	}
+
+	projectName := cfg.Smartnode.ProjectName.Value.(string)
+	for _, name := range []string{"node", "watchtower"} {
+		container := fmt.Sprintf("%s_%s", projectName, name)
+		fmt.Printf("Restarting %s... ", container)
+		response, err := rp.RestartContainer(container)
+		if err != nil {
+			fmt.Println()
+			return fmt.Errorf("error restarting %s: %w", container, err)
+		}
+		if response != container {
+			fmt.Println()
+			return fmt.Errorf("unexpected output while restarting %s: %s", container, response)
+		}
+		fmt.Println("done!")
+	}
+
+	fmt.Println("Done!")
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -48,6 +49,7 @@ const (
 	MetricsColor                    = color.FgHiYellow
 	SubmitRewardsTreeColor          = color.FgHiCyan
 	WarningColor                    = color.FgYellow
+	ObserveWarningColor             = color.FgHiRed
 	ProcessPenaltiesColor           = color.FgHiMagenta
 	CancelBondsColor                = color.FgGreen
 	CheckSoloMigrationsColor        = color.FgCyan
@@ -158,6 +160,7 @@ func run(c *cli.Command) error {
 	// Initialize error logger
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
+	observeLog := log.NewColorLogger(ObserveWarningColor)
 
 	// Create the state manager
 	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
@@ -166,13 +169,6 @@ func run(c *cli.Command) error {
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return fmt.Errorf("error getting node account: %w", err)
-	}
-
-	if isObserveMode {
-		red := color.New(color.FgHiRed).SprintFunc()
-		fmt.Println(red("Watchtower daemon is observing address " + nodeAccount.Address.Hex() + "."))
-		fmt.Println(red("Transactions will not be submitted."))
-		fmt.Println(red("Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing."))
 	}
 
 	// Initialize tasks
@@ -284,6 +280,16 @@ func run(c *cli.Command) error {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
+			}
+
+			// Keep the observe mode warning visible in the logs and the alert active for as long as observe mode is in effect
+			if isObserveMode {
+				observeLog.Println("Watchtower daemon is observing address " + nodeAccount.Address.Hex() + ".")
+				observeLog.Println("Transactions will not be submitted.")
+				observeLog.Println("Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing.")
+				if err := alerting.AlertObserveModeActive(cfg, nodeAccount.Address); err != nil {
+					errorLog.Println(err)
+				}
 			}
 
 			// Run the manual rewards tree generation
