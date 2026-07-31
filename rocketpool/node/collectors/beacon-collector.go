@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
@@ -97,16 +98,10 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	upcomingSyncCommittee := float64(0)
 	upcomingProposals := float64(0)
 
-	var validatorIndices []string
 	var head beacon.BeaconHead
 
-	// Get sync committee duties
-	for _, mpd := range state.MinipoolDetailsByNode[collector.nodeAddress] {
-		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
-		if validator.Exists {
-			validatorIndices = append(validatorIndices, validator.Index)
-		}
-	}
+	// Get the validators to check duties for
+	validatorIndices := getNodeValidatorIndices(state, collector.nodeAddress)
 
 	head, err := collector.bc.GetBeaconHead()
 	if err != nil {
@@ -205,7 +200,37 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.recentProposals, prometheus.GaugeValue, recentProposalCount)
 }
 
+// Get the Beacon indices of all of the node's validators, both minipool and megapool
+func getNodeValidatorIndices(networkState *state.NetworkState, nodeAddress common.Address) []string {
+	var validatorIndices []string
+
+	for _, mpd := range networkState.MinipoolDetailsByNode[nodeAddress] {
+		validator := networkState.MinipoolValidatorDetails[mpd.Pubkey]
+		if validator.Exists {
+			validatorIndices = append(validatorIndices, validator.Index)
+		}
+	}
+
+	// Megapool validators have duties too
+	nodeDetails, exists := networkState.NodeDetailsByAddress[nodeAddress]
+	if exists && nodeDetails.MegapoolDeployed {
+		for _, pubkey := range networkState.MegapoolToPubkeysMap[nodeDetails.MegapoolAddress] {
+			validator := networkState.MegapoolValidatorDetails[pubkey]
+			if validator.Exists {
+				validatorIndices = append(validatorIndices, validator.Index)
+			}
+		}
+	}
+
+	return validatorIndices
+}
+
 func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []string, head beacon.BeaconHead, slotsPerEpoch uint64) (float64, error) {
+	// Nothing to look for
+	if len(validatorIndices) == 0 {
+		return 0, nil
+	}
+
 	// prepare for quick lookups in event of many validators:
 	indexLookup := make(map[string]string, len(validatorIndices))
 	for _, index := range validatorIndices {
