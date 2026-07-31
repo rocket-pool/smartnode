@@ -1,6 +1,7 @@
 package rocketpool
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -89,7 +90,7 @@ func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address,
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/search-and-recover", url.Values{
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/search-and-recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"address":                  {address.Hex()},
 		"skipValidatorKeyRecovery": {skipStr},
@@ -158,7 +159,8 @@ func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Addr
 
 // Rebuild wallet
 func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/rebuild", nil)
+	// removed timeout as large nodes were exceeding it
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/rebuild", nil)
 	if err != nil {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
 	}
