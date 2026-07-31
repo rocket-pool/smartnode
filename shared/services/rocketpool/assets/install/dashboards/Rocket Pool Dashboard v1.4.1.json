@@ -4833,7 +4833,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "This shows various levels of RPL stake you have:\n\n- **Total**: the total amount of RPL you have staked.\n- **Effective**: the amount of your staked RPL that is being put to use, accounting for the 10% borrowed minimum and 150% bonded maximum limits.\n- **Rewardable**: the effective amount of RPL that is eligible for earning RPL rewards at the end of each rewards period. This is based on the status of your validators on the Beacon Chain; validators that haven't been activated yet or validators that have been exited are not eligible for rewards.\n\n**Note**: this takes any *pending bond reductions* you may have into account.",
+      "description": "This shows various levels of RPL stake you have:\n\n- **Total**: the total amount of RPL you have staked.\n- **Effective**: the amount of your staked RPL that is being put to use.\n- **Rewardable**: the effective amount of RPL that is eligible for earning RPL rewards at the end of each rewards period. This is based on the status of your validators on the Beacon Chain; validators that haven't been activated yet or validators that have been exited are not eligible for rewards.\n\n**Note**: this takes any *pending bond reductions* you may have into account.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4919,7 +4919,7 @@
       "type": "stat"
     },
     {
-      "description": "Your total staked RPL collateral levels. This shows your collateral relative to the amount of ETH you have *borrowed* from the staking pool to complete your validators, and the amount of ETH you have *bonded* with your own funds.\n\nIf you fall below 10% of the *borrowed* ETH, you won't be able to claim your rewards at the next checkpoint until you get back to 10%.\n\nIf you go over 150% of the *bonded* ETH, you'll only be rewarded for the first 150% of your stake.",
+      "description": "Your total staked RPL collateral levels.",
       "fieldConfig": {
         "defaults": {
           "color": {
