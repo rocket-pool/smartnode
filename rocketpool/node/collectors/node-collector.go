@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 )
@@ -29,10 +28,10 @@ type NodeCollector struct {
 	// The total amount of RPL staked on megapool on the node
 	megapoolStakedRpl *prometheus.Desc
 
-	// The effective amount of RPL staked on the node (honoring the 150% collateral cap)
+	// The effective amount of RPL staked on the node
 	effectiveStakedRpl *prometheus.Desc
 
-	// The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)
+	// The amount of staked RPL that will be eligible for rewards (0 if the node has no validators that count towards its borrowed ETH)
 	rewardableStakedRpl *prometheus.Desc
 
 	// The cumulative RPL rewards earned by the node
@@ -195,11 +194,11 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			nil, nil,
 		),
 		effectiveStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "effective_staked_rpl"),
-			"The effective amount of RPL staked on the node (honoring the 150% collateral cap)",
+			"The effective amount of RPL staked on the node",
 			nil, nil,
 		),
 		rewardableStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rewardable_staked_rpl"),
-			"The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)",
+			"The amount of staked RPL that will be eligible for rewards (0 if the node has no validators that count towards its borrowed ETH)",
 			nil, nil,
 		),
 		cumulativeRplRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "cumulative_rpl_rewards"),
@@ -418,7 +417,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	nodeLegacyStakedRpl := math.WeiToEth(nd.LegacyStakedRPL) // TODO: update all metrics to account for saturn
+	nodeLegacyStakedRpl := math.WeiToEth(nd.LegacyStakedRPL)
 	nodeMegapoolStakedRpl := math.WeiToEth(nd.MegapoolStakedRPL)
 	effectiveStakedRpl := math.WeiToEth(nd.EffectiveRPLStake)
 	megapoolQueueBond := math.WeiToEth(megapoolDetails.NodeQueuedBond)
@@ -431,11 +430,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	oldRplBalance := math.WeiToEth(nd.BalanceOldRPL)
 	newRplBalance := math.WeiToEth(nd.BalanceRPL)
 	rethBalance := math.WeiToEth(nd.BalanceRETH)
-	eligibleBorrowedEth := state.GetMinipoolEligibleBorrowedEth(nd)
+	eligibleBorrowedEth := state.GetEligibleBorrowedEth(nd)
 	var activeMinipoolCount float64
 	rplPriceRaw := state.NetworkDetails.RplPrice
 	rplPrice := math.WeiToEth(rplPriceRaw)
-	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
 	lowETHBalanceThreshold := collector.cfg.Alertmanager.LowETHBalanceThreshold.Value.(float64)
@@ -591,16 +589,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the beacon head
-	wg.Go(func() error {
-		_beaconHead, err := collector.bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("Error getting beacon chain head: %w", err)
-		}
-		beaconHead = _beaconHead
-		return nil
-	})
-
 	// Get the megapool details
 	wg.Go(func() error {
 		// Get queue sizes - these are protocol-wide metrics, independent of whether
@@ -687,13 +675,17 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
-	// Calculate the node weight
-	nodeWeight := big.NewInt(0)
+	// Calculate the node weight, using the same inputs as the rewards tree
+	nodeWeight := state.GetUnscaledNodeWeight(nd)
+
+	// All of the node's staked RPL (legacy + megapool) earns rewards
+	totalStakedRpl := nodeLegacyStakedRpl + nodeMegapoolStakedRpl
+
+	rewardableStakeFloat := float64(0)
 	if eligibleBorrowedEth.Sign() > 0 {
-		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
+		rewardableStakeFloat = totalStakedRpl
 	}
 
-	// Calculate the rewardable RPL
 	reductionWindowStart := state.NetworkDetails.BondReductionWindowStart
 	reductionWindowLength := state.NetworkDetails.BondReductionWindowLength
 	reductionWindowEnd := reductionWindowStart + reductionWindowLength
@@ -705,8 +697,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	zero := big.NewInt(0)
 	pendingBorrowedEth := big.NewInt(0)
 	pendingBondedEth := big.NewInt(0)
-	rewardableBorrowedEth := big.NewInt(0)
-	rewardableBondedEth := big.NewInt(0)
 	for _, mpd := range minipools {
 		if mpd.Finalised {
 			// Ignore finalized minipools in the ratio math
@@ -728,26 +718,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		borrowed := big.NewInt(0).Sub(math.EthToWei(32), bonded)
 		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
 		pendingBondedEth.Add(pendingBondedEth, bonded)
-
-		validator, exists := state.MinipoolValidatorDetails[mpd.Pubkey]
-		if !exists {
-			// Validator doesn't exist on Beacon yet
-			continue
-		}
-		if validator.ActivationEpoch > beaconHead.Epoch {
-			// Validator hasn't activated yet
-			continue
-		}
-		if validator.ExitEpoch <= beaconHead.Epoch {
-			// Validator exited
-			continue
-		}
-
-		rewardableBorrowedEth.Add(rewardableBorrowedEth, borrowed)
-		rewardableBondedEth.Add(rewardableBondedEth, bonded)
 	}
-
-	rewardableStakeFloat := math.WeiToEth(nd.LegacyStakedRPL)
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)
@@ -783,8 +754,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Calculate the RPL APR
 	rplApr := float64(0)
-	if nodeLegacyStakedRpl > 0 {
-		rplApr = estimatedRewards / nodeLegacyStakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	if totalStakedRpl > 0 {
+		rplApr = estimatedRewards / totalStakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
 	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
@@ -810,8 +781,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// RPL collateral
-	// Use the total staked RPL (legacy + megapool)
-	totalStakedRpl := nodeLegacyStakedRpl + nodeMegapoolStakedRpl
 	totalBondedEthFloat := math.WeiToEth(pendingBondedEth) + math.WeiToEth(nd.MegapoolEthBonded)
 	var bondedCollateralRatio float64
 	if totalBondedEthFloat == 0 {

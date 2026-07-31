@@ -447,6 +447,30 @@ func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *bi
 	)
 }
 
+// Get the node's total borrowed ETH that counts towards RPL rewards (minipool + megapool)
+func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+	eligibleBorrowedEth := s.GetMinipoolEligibleBorrowedEth(node)
+	eligibleBorrowedEth.Add(eligibleBorrowedEth, s.GetMegapoolEligibleBorrowedEth(node))
+	return eligibleBorrowedEth
+}
+
+// Get the node's total staked RPL that counts towards RPL rewards (legacy + megapool)
+func (s *NetworkState) GetRewardsEligibleRplStake(node *rpstate.NativeNodeDetails) *big.Int {
+	rplStake := big.NewInt(0).Set(node.LegacyStakedRPL)
+	// Megapool staked RPL counts towards RPL rewards
+	rplStake.Add(rplStake, node.MegapoolStakedRPL)
+	return rplStake
+}
+
+// Get the node's weight before scaling on participation
+func (s *NetworkState) GetUnscaledNodeWeight(node *rpstate.NativeNodeDetails) *big.Int {
+	eligibleBorrowedEth := s.GetEligibleBorrowedEth(node)
+	if eligibleBorrowedEth.Sign() <= 0 {
+		return big.NewInt(0)
+	}
+	return s.GetNodeWeight(eligibleBorrowedEth, s.GetRewardsEligibleRplStake(node))
+}
+
 // Starting in v8, RPL stake is phased out and replaced with weight.
 // scaleByParticipation and allowRplForUnstartedValidators are hard-coded true here, since
 // only v8 cares about weight.
@@ -466,20 +490,12 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	wg.SetLimit(threadLimit)
 	for i, node := range s.NodeDetails {
 		wg.Go(func() error {
-			eligibleBorrowedEth := s.GetMinipoolEligibleBorrowedEth(&node)
-			rplStake := big.NewInt(0).Set(node.LegacyStakedRPL)
-			// Megapool staked RPL counts towards RPL rewards
-			rplStake.Add(rplStake, node.MegapoolStakedRPL)
-			eligibleBorrowedEth.Add(eligibleBorrowedEth, s.GetMegapoolEligibleBorrowedEth(&node))
-
 			// Calculate the weight
-			nodeWeight := big.NewInt(0)
-			if eligibleBorrowedEth.Sign() <= 0 {
+			nodeWeight := s.GetUnscaledNodeWeight(&node)
+			if nodeWeight.Sign() <= 0 {
 				weightSlice[i] = nodeWeight
 				return nil
 			}
-
-			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, rplStake))
 
 			// Scale the node weight by the participation in the current interval
 			// Get the timestamp of the node's registration
