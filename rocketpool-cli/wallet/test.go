@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) error {
+func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint, yes bool) error {
 
 	// Get RP client
 	rp, ready, err := rocketpool.NewClient().WithStatus()
@@ -26,9 +26,30 @@ func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, d
 		return err
 	}
 
-	// Prompt a notice about test recovery
-	color.YellowPrintln("NOTE:")
-	color.YellowPrintln("This command will test the recovery of your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools, but will not actually write any files; it's simply a \"dry run\" of recovery.")
+	// A dry run still derives keys on the daemon, so it contends with a real
+	// recovery for the same wallet; check before asking for the mnemonic
+	running, err := checkForRunningKeyRecovery(rp, cfg)
+	if err != nil {
+		return err
+	}
+	if running {
+		return nil
+	}
+
+	// Explain what this does and confirm, before asking for the mnemonic
+	effects := []string{
+		"Derive your node wallet's private key from the mnemonic phrase you provide",
+	}
+	if !skipValidatorKeyRecovery {
+		effects = append(effects, "Derive the validator keys for every validator on this node")
+	}
+	effects = append(effects,
+		"Write nothing to disk - this is a dry run to confirm that recovery would work",
+		"Hold the daemon's recovery lock while it runs, so a real recovery cannot start until it finishes",
+	)
+	if !confirmRecoveryOperation(yes, "You are about to test recovering your node wallet.", effects) {
+		return nil
+	}
 	color.YellowPrintln("Use `rocketpool wallet recover` to actually recover the wallet and validator keys.")
 	fmt.Println()
 
@@ -86,7 +107,9 @@ func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, d
 		}
 
 		// Test recover wallet
+		stopProgress := startRecoveryProgressReporter(rp)
 		response, err := rp.TestSearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery)
+		stopProgress()
 		if err != nil {
 			return err
 		}
@@ -131,7 +154,9 @@ func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, d
 		}
 
 		// Test recover wallet
+		stopProgress := startRecoveryProgressReporter(rp)
 		response, err := rp.TestRecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex)
+		stopProgress()
 		if err != nil {
 			return err
 		}

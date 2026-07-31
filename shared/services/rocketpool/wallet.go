@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -170,6 +171,24 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	}
 	if response.Error != "" {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the status of any validator key recovery currently running
+func (c *Client) GetKeyRecoveryStatus() (api.KeyRecoveryStatusResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	responseBytes, err := c.callHTTPAPICtx(ctx, "GET", "/api/wallet/recovery-status", nil)
+	if err != nil {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %w", err)
+	}
+	var response api.KeyRecoveryStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not decode key recovery status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %s", response.Error)
 	}
 	return response, nil
 }
