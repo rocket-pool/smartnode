@@ -77,7 +77,7 @@ func startProgressReporter(out io.Writer, interactive bool, interval time.Durati
 			case <-done:
 				// Close off the line the updates have been overwriting
 				if wrote && interactive {
-					fmt.Fprintln(out)
+					_, _ = fmt.Fprintln(out)
 				}
 				return
 			case <-ticker.C:
@@ -89,9 +89,9 @@ func startProgressReporter(out io.Writer, interactive bool, interval time.Durati
 				}
 				line := formatRecoveryProgress(recovery)
 				if interactive {
-					fmt.Fprintf(out, "\r\033[K%s", line)
+					_, _ = fmt.Fprintf(out, "\r\033[K%s", line)
 				} else {
-					fmt.Fprintln(out, line)
+					_, _ = fmt.Fprintln(out, line)
 				}
 				wrote = true
 			}
