@@ -566,17 +566,16 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 
 func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator) (megapoolBalanceDetail, error) {
 	megapoolBalanceDetails := megapoolBalanceDetail{}
-	megapoolValidators := state.MegapoolToPubkeysMap[megapoolAddress]
+	megapoolValidators := state.MegapoolValidatorsByAddress[megapoolAddress]
 	// iterate the megapoolValidators array
 	megapoolBeaconBalanceTotal := big.NewInt(0)
 	megapoolStakingBalance := big.NewInt(0)
 	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 
 	totalWithdrawnBalance := big.NewInt(0)
-	for _, megapoolValidatorKey := range megapoolValidators {
-		// Grab the validator details from the pubkey
-		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
-		megapoolValidatorInfo := state.MegapoolValidatorInfo[megapoolValidatorKey]
+	for _, megapoolValidatorInfo := range megapoolValidators {
+		// Grab the Beacon details using this megapool's own record for the validator
+		megapoolValidatorDetails := state.MegapoolValidatorDetails[rptypes.ValidatorPubkey(megapoolValidatorInfo.Pubkey)]
 
 		// If the validator was dissolved, exited, or in queue, ignore the beacon balance
 		if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {

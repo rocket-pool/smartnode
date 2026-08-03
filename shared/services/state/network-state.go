@@ -86,8 +86,15 @@ type NetworkState struct {
 	// Stores validator details from all megapools
 	MegapoolValidatorGlobalIndex []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_global_index"`
 
-	// Map megapool addresses to the pubkeys of its validators
-	MegapoolToPubkeysMap map[common.Address][]types.ValidatorPubkey `json:"-"`
+	// Maps a megapool address to its validator records, in global index order.
+	// This is an index over MegapoolValidatorGlobalIndex and is ignored when marshaling to
+	// JSON; it is rebuilt when unmarshaling.
+	//
+	// Megapool validator pubkeys are only unique *within* a megapool - RocketMegapoolManager
+	// scopes its uniqueness check by megapool address - so validator records must never be
+	// keyed by pubkey alone. The contract identifies a validator by (megapoolAddress,
+	// validatorId), and each record here carries both.
+	MegapoolValidatorsByAddress map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex `json:"-"`
 
 	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"megapool_details"`
 
@@ -100,8 +107,6 @@ type NetworkState struct {
 	// NetworkState was updated to support megapools, so the old json tag "validator_details" is needed to decode rp-network-state-mainnet-20.json.gz
 	MinipoolValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
-
-	MegapoolValidatorInfo map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex `json:"-"`
 
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
@@ -164,18 +169,17 @@ func (s *NetworkState) UnmarshalJSON(data []byte) error {
 		s.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
 	}
 
-	// Rebuild MegapoolToPubkeysMap and MegapoolValidatorInfo from MegapoolValidatorGlobalIndex
-	s.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
-	s.MegapoolValidatorInfo = make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
+	// Rebuild MegapoolValidatorsByAddress from MegapoolValidatorGlobalIndex
+	s.MegapoolValidatorsByAddress = make(map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex)
 	for i := range s.MegapoolValidatorGlobalIndex {
+		// See comments in the loops above as to why we're using &s.MegapoolValidatorGlobalIndex[i]
 		validator := &s.MegapoolValidatorGlobalIndex[i]
-		if len(validator.Pubkey) > 0 {
-			pubkey := types.ValidatorPubkey(validator.Pubkey)
-			s.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
-				s.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
-			)
-			s.MegapoolValidatorInfo[pubkey] = validator
+		if len(validator.Pubkey) != len(types.ValidatorPubkey{}) {
+			continue
 		}
+		s.MegapoolValidatorsByAddress[validator.MegapoolAddress] = append(
+			s.MegapoolValidatorsByAddress[validator.MegapoolAddress], validator,
+		)
 	}
 
 	return nil
@@ -301,20 +305,24 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	currentStep++
 	m.logLine("%d/%d - Retrieved megapool validator global index (%s so far)", currentStep, steps, time.Since(start))
 
+	// A pubkey can legitimately appear under more than one megapool, so deduplicate before
+	// querying the Beacon Node - the same validator only needs to be fetched once.
 	megapoolValidatorPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidatorGlobalIndex))
-	megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
-	megapoolValidatorInfo := make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
+	seenPubkeys := make(map[types.ValidatorPubkey]bool, len(state.MegapoolValidatorGlobalIndex))
+	megapoolAddressMap := make(map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex)
 	for i := range state.MegapoolValidatorGlobalIndex {
 		validator := &state.MegapoolValidatorGlobalIndex[i]
-		if len(validator.Pubkey) > 0 {
-			pubkey := types.ValidatorPubkey(validator.Pubkey)
-			megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], pubkey)
+		if len(validator.Pubkey) != len(types.ValidatorPubkey{}) {
+			continue
+		}
+		pubkey := types.ValidatorPubkey(validator.Pubkey)
+		megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], validator)
+		if !seenPubkeys[pubkey] {
+			seenPubkeys[pubkey] = true
 			megapoolValidatorPubkeys = append(megapoolValidatorPubkeys, pubkey)
-			megapoolValidatorInfo[pubkey] = validator
 		}
 	}
-	state.MegapoolToPubkeysMap = megapoolAddressMap
-	state.MegapoolValidatorInfo = megapoolValidatorInfo
+	state.MegapoolValidatorsByAddress = megapoolAddressMap
 
 	megapoolAddresses := make([]common.Address, 0, len(megapoolAddressMap))
 	for addr := range megapoolAddressMap {
@@ -571,17 +579,28 @@ func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital)
 
 	// Iterate over the validators
-	for _, validator := range s.MegapoolToPubkeysMap[node.MegapoolAddress] {
-		megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
-		if !megapoolValidatorInfo.ValidatorInfo.InPrestake {
+	for _, validator := range s.MegapoolValidatorsByAddress[node.MegapoolAddress] {
+		if !validator.ValidatorInfo.InPrestake {
 			continue
 		}
 
-		validatorTotalEth := big.NewInt(0).Set(math.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-		validatorBondedEth := big.NewInt(0).Set(math.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+		validatorTotalEth := big.NewInt(0).Set(math.MilliEthToWei(float64(validator.ValidatorInfo.LastRequestedValue)))
+		validatorBondedEth := big.NewInt(0).Set(math.MilliEthToWei(float64(validator.ValidatorInfo.LastRequestedBond)))
 		validatorUserEth := big.NewInt(0).Sub(validatorTotalEth, validatorBondedEth)
 		eligibleBorrowedEth.Sub(eligibleBorrowedEth, validatorUserEth)
 	}
 
 	return eligibleBorrowedEth
+}
+
+// GetMegapoolPubkeys returns the Beacon pubkeys of a megapool's validators. Use this only where
+// the Beacon key itself is all that's needed; anything reading a validator's on-chain state must
+// range over MegapoolValidatorsByAddress so it reads that megapool's own record.
+func (s *NetworkState) GetMegapoolPubkeys(megapoolAddress common.Address) []types.ValidatorPubkey {
+	validators := s.MegapoolValidatorsByAddress[megapoolAddress]
+	pubkeys := make([]types.ValidatorPubkey, 0, len(validators))
+	for _, validator := range validators {
+		pubkeys = append(pubkeys, types.ValidatorPubkey(validator.Pubkey))
+	}
+	return pubkeys
 }

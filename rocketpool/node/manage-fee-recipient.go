@@ -162,7 +162,7 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	// The Fee distributor will be the global fee recipient and we override the fee recipient for megapool validator keys
 	if feeRecipientInfo.HasMegapoolValidators && feeRecipientInfo.HasMinipools && !feeRecipientInfo.IsInSmoothingPool {
 		// Get the megapool pubkeys
-		pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
+		pubkeys := state.GetMegapoolPubkeys(feeRecipientInfo.MegapoolAddress)
 		// Override megapool validator fee recipients
 		err = rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
 		if err != nil {

@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -954,6 +955,13 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 		// Check megapool eth as well
 		if nodeInfo.Megapool != nil {
 			for _, validator := range nodeInfo.Megapool.Validators {
+				if len(validator.CompletedAttestations)+len(validator.MissingAttestationSlots) == 0 || !validator.WasActive {
+					// Ignore validators that weren't active for the interval
+					validator.WasActive = false
+					validator.MegapoolValidatorShare = big.NewInt(0)
+					continue
+				}
+
 				validatorEth := big.NewInt(0).Set(totalNodeOpShare)
 				validatorEth.Mul(validatorEth, &validator.AttestationScore.Int)
 				validatorEth.Div(validatorEth, r.totalAttestationScore)
@@ -1460,6 +1468,28 @@ func (r *treeGeneratorImpl_v11) createMegapoolIndexMap() error {
 			default:
 				// Get the validator index
 				validatorInfo.Index = status.Index
+
+				// Megapool validator pubkeys are only unique within a megapool, so two megapools
+				// can both claim the same Beacon validator. Only the megapool that actually owns
+				// it can reach Staked - staking requires proving the validator's withdrawal
+				// credentials point at that megapool - so gating on Staked lets the true owner
+				// claim the index and keeps an impostor from stealing its rewards.
+				if !validatorInfo.NativeValidatorInfo.ValidatorInfo.Staked {
+					validatorInfo.WasActive = false
+					continue
+				}
+
+				// Two staked megapools for one Beacon validator should be impossible on-chain.
+				// If it happens anyway, pick a winner deterministically so every Oracle DAO
+				// member still generates an identical tree.
+				if existing, exists := r.megapoolValidatorIndexMap[validatorInfo.Index]; exists && existing.Address != details.Megapool.Address {
+					r.log.Printlnf("%s WARNING: validator %s (pubkey %s) is claimed as staked by megapools %s and %s; using the lower address",
+						r.logPrefix, validatorInfo.Index, validatorInfo.Pubkey.Hex(), existing.Address.Hex(), details.Megapool.Address.Hex())
+					if bytes.Compare(existing.Address.Bytes(), details.Megapool.Address.Bytes()) < 0 {
+						validatorInfo.WasActive = false
+						continue
+					}
+				}
 				r.megapoolValidatorIndexMap[validatorInfo.Index] = details.Megapool
 
 				// Get the validator's activation start and end slots
@@ -1620,7 +1650,7 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 					// Get the megapool details
 					megapoolAddress := nativeNodeDetails.MegapoolAddress
 					nativeMegapoolDetails := r.networkState.MegapoolDetails[megapoolAddress]
-					validators := r.networkState.MegapoolToPubkeysMap[megapoolAddress]
+					validators := r.networkState.MegapoolValidatorsByAddress[megapoolAddress]
 
 					mpInfo := &MegapoolInfo{
 						Address:              megapoolAddress,
@@ -1630,23 +1660,20 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 						ActiveValidatorCount: nativeMegapoolDetails.ActiveValidatorCount,
 					}
 
-					for _, validator := range validators {
-						status, exists := r.networkState.MegapoolValidatorDetails[validator]
-						if !exists {
-							continue
-						}
-
-						nativeValidatorInfo, exists := r.networkState.MegapoolValidatorInfo[validator]
+					for _, nativeValidatorInfo := range validators {
+						pubkey := rptypes.ValidatorPubkey(nativeValidatorInfo.Pubkey)
+						status, exists := r.networkState.MegapoolValidatorDetails[pubkey]
 						if !exists {
 							continue
 						}
 
 						v := &MegapoolValidatorInfo{
-							Pubkey:                  validator,
+							Pubkey:                  pubkey,
 							Index:                   status.Index,
 							MissingAttestationSlots: map[uint64]bool{},
 							AttestationScore:        NewQuotedBigInt(0),
 							CompletedAttestations:   map[uint64]bool{},
+							WasActive:               true,
 							NativeValidatorInfo:     nativeValidatorInfo,
 						}
 

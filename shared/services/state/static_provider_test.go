@@ -164,7 +164,7 @@ func TestStaticProviderMegapoolDetails(t *testing.T) {
 	}
 }
 
-func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
+func TestStaticProviderMegapoolValidatorsByAddress(t *testing.T) {
 	provider, err := NewStaticNetworkStateProviderFromFile(smallStatePath)
 	if err != nil {
 		t.Fatalf("NewStaticNetworkStateProviderFromFile: %v", err)
@@ -175,38 +175,39 @@ func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
 		t.Fatalf("GetHeadState: %v", err)
 	}
 
-	// MegapoolToPubkeysMap must be rebuilt from MegapoolValidatorGlobalIndex
-	if ns.MegapoolToPubkeysMap == nil {
-		t.Fatal("MegapoolToPubkeysMap is nil after loading from JSON")
+	// MegapoolValidatorsByAddress must be rebuilt from MegapoolValidatorGlobalIndex
+	if ns.MegapoolValidatorsByAddress == nil {
+		t.Fatal("MegapoolValidatorsByAddress is nil after loading from JSON")
 	}
 
-	// Every pubkey in the map must have a corresponding MegapoolValidatorInfo entry
-	for addr, pubkeys := range ns.MegapoolToPubkeysMap {
-		for _, pk := range pubkeys {
-			if _, ok := ns.MegapoolValidatorInfo[pk]; !ok {
-				t.Errorf("pubkey from MegapoolToPubkeysMap[%s] not found in MegapoolValidatorInfo", addr.Hex())
+	// Every record must be filed under the megapool that actually owns it
+	for addr, validators := range ns.MegapoolValidatorsByAddress {
+		for _, v := range validators {
+			if v.MegapoolAddress != addr {
+				t.Errorf("MegapoolValidatorsByAddress[%s] contains a record owned by %s", addr.Hex(), v.MegapoolAddress.Hex())
 			}
 		}
 	}
 
-	// Total pubkeys across all megapools must equal the non-empty entries in MegapoolValidatorGlobalIndex
-	totalPubkeys := 0
-	for _, pks := range ns.MegapoolToPubkeysMap {
-		totalPubkeys += len(pks)
+	// Total validators across all megapools must equal the entries in MegapoolValidatorGlobalIndex
+	// that carry a full-length pubkey
+	totalValidators := 0
+	for _, validators := range ns.MegapoolValidatorsByAddress {
+		totalValidators += len(validators)
 	}
 
 	expectedCount := 0
 	for _, v := range ns.MegapoolValidatorGlobalIndex {
-		if len(v.Pubkey) > 0 {
+		if len(v.Pubkey) == len(types.ValidatorPubkey{}) {
 			expectedCount++
 		}
 	}
-	if totalPubkeys != expectedCount {
-		t.Errorf("MegapoolToPubkeysMap total pubkeys: got %d, want %d", totalPubkeys, expectedCount)
+	if totalValidators != expectedCount {
+		t.Errorf("MegapoolValidatorsByAddress total validators: got %d, want %d", totalValidators, expectedCount)
 	}
 }
 
-func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
+func TestStaticProviderMegapoolValidatorAliasing(t *testing.T) {
 	provider, err := NewStaticNetworkStateProviderFromFile(smallStatePath)
 	if err != nil {
 		t.Fatalf("NewStaticNetworkStateProviderFromFile: %v", err)
@@ -217,22 +218,24 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 		t.Fatalf("GetHeadState: %v", err)
 	}
 
-	if ns.MegapoolValidatorInfo == nil {
-		t.Fatal("MegapoolValidatorInfo is nil after loading from JSON")
+	if ns.MegapoolValidatorsByAddress == nil {
+		t.Fatal("MegapoolValidatorsByAddress is nil after loading from JSON")
 	}
 
-	// Every entry in MegapoolValidatorInfo must point back into MegapoolValidatorGlobalIndex
-	for pk, info := range ns.MegapoolValidatorInfo {
-		found := false
-		for i := range ns.MegapoolValidatorGlobalIndex {
-			candidate := &ns.MegapoolValidatorGlobalIndex[i]
-			if candidate == info {
-				found = true
-				break
+	// Every entry must point back into MegapoolValidatorGlobalIndex rather than at a copy
+	for addr, validators := range ns.MegapoolValidatorsByAddress {
+		for _, info := range validators {
+			found := false
+			for i := range ns.MegapoolValidatorGlobalIndex {
+				candidate := &ns.MegapoolValidatorGlobalIndex[i]
+				if candidate == info {
+					found = true
+					break
+				}
 			}
-		}
-		if !found {
-			t.Errorf("MegapoolValidatorInfo[%x] does not point into MegapoolValidatorGlobalIndex", pk[:4])
+			if !found {
+				t.Errorf("MegapoolValidatorsByAddress[%s] entry does not point into MegapoolValidatorGlobalIndex", addr.Hex())
+			}
 		}
 	}
 }

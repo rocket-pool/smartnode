@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -411,7 +412,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	nd := state.NodeDetailsByAddress[collector.nodeAddress]
 	minipools := state.MinipoolDetailsByNode[collector.nodeAddress]
 
-	// MegapoolDetails and MegapoolToPubkeysMap are keyed by megapool contract address, not node address
+	// MegapoolDetails and MegapoolValidatorsByAddress are keyed by megapool contract address, not node address
 	megapoolAddress := nd.MegapoolAddress
 	megapoolDetails := state.MegapoolDetails[megapoolAddress]
 
@@ -448,7 +449,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	megapoolUserCapital := math.WeiToEth(megapoolDetails.UserCapital)
 	megapoolAssignedValue := math.WeiToEth(megapoolDetails.AssignedValue)
 	megapoolDelegateExpiry := float64(megapoolDetails.DelegateExpiry)
-	megapoolPubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
+	megapoolValidators := state.MegapoolValidatorsByAddress[megapoolAddress]
 	megapoolBeaconBalanceTotal := big.NewInt(0)
 	megapoolStandardQueueSize := float64(0)
 	megapoolExpressQueueSize := float64(0)
@@ -637,15 +638,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		currentEpoch := state.BeaconConfig.SlotToEpoch(state.BeaconSlotNumber)
 		totalEffectiveBeaconBalance := big.NewInt(0)
-		for _, pubkey := range megapoolPubkeys {
-			info, infoExists := state.MegapoolValidatorInfo[pubkey]
-			if !infoExists {
-				continue
-			}
+		for _, info := range megapoolValidators {
 			if !info.ValidatorInfo.Staked || info.ValidatorInfo.Exited || info.ValidatorInfo.Exiting {
 				continue
 			}
-			validator, exists := state.MegapoolValidatorDetails[pubkey]
+			validator, exists := state.MegapoolValidatorDetails[types.ValidatorPubkey(info.Pubkey)]
 			if !exists {
 				continue
 			}

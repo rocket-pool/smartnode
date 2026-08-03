@@ -149,11 +149,11 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	}
 
 	// MegapoolsUserShareTotal should equal the sum of UserCapital for megapools
-	// that appear in MegapoolDetails AND have validators in MegapoolToPubkeysMap
+	// that appear in MegapoolDetails AND have validators in MegapoolValidatorsByAddress
 	// (the balance loop iterates MegapoolDetails, which is keyed by address).
 	expectedUserCapital := big.NewInt(0)
 	for addr, mp := range ns.MegapoolDetails {
-		if _, hasPubkeys := ns.MegapoolToPubkeysMap[addr]; hasPubkeys {
+		if _, hasValidators := ns.MegapoolValidatorsByAddress[addr]; hasValidators {
 			expectedUserCapital.Add(expectedUserCapital, mp.UserCapital)
 		}
 	}

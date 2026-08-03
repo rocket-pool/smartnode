@@ -214,7 +214,7 @@ func getNodeValidatorIndices(networkState *state.NetworkState, nodeAddress commo
 	// Megapool validators have duties too
 	nodeDetails, exists := networkState.NodeDetailsByAddress[nodeAddress]
 	if exists && nodeDetails.MegapoolDeployed {
-		for _, pubkey := range networkState.MegapoolToPubkeysMap[nodeDetails.MegapoolAddress] {
+		for _, pubkey := range networkState.GetMegapoolPubkeys(nodeDetails.MegapoolAddress) {
 			validator := networkState.MegapoolValidatorDetails[pubkey]
 			if validator.Exists {
 				validatorIndices = append(validatorIndices, validator.Index)

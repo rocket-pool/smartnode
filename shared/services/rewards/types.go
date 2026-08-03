@@ -304,10 +304,6 @@ type PositionInfo struct {
 	Megapool     *MegapoolPositionInfo
 }
 
-func (m *MegapoolPositionInfo) GetValidatorInfo() *MegapoolValidatorInfo {
-	return m.Info.ValidatorIndexMap[m.ValidatorIndex]
-}
-
 func (p *PositionInfo) DeleteMissingAttestationSlot(slotIndex uint64) {
 	if p.MinipoolInfo != nil {
 		delete(p.MinipoolInfo.MissingAttestationSlots, slotIndex)

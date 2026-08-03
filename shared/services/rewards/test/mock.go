@@ -685,8 +685,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		ProtocolDaoProposalDetails: nil,
 
 		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{},
-		MegapoolToPubkeysMap:         make(map[common.Address][]types.ValidatorPubkey),
-		MegapoolValidatorInfo:        make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex),
+		MegapoolValidatorsByAddress:  make(map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex),
 		MegapoolDetails:              make(map[common.Address]rpstate.NativeMegapoolDetails),
 		MegapoolValidatorDetails:     make(state.ValidatorDetailsMap),
 	}
@@ -877,8 +876,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 					ValidatorId:     uint32(intIdx),
 				}
 				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
-				out.MegapoolToPubkeysMap[node.MegapoolAddress()] = append(out.MegapoolToPubkeysMap[node.MegapoolAddress()], pubkey)
-				out.MegapoolValidatorInfo[pubkey] = &vifgi
 				out.MegapoolValidatorDetails[pubkey] = beacon.ValidatorStatus{
 					Pubkey:                     pubkey,
 					Index:                      idx,
@@ -894,6 +891,16 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				}
 			}
 		}
+	}
+
+	// Build the megapool validator index once the global index is complete, mirroring
+	// createNetworkState - the entries must point into the finished slice, since appending
+	// to it invalidates any pointer taken earlier.
+	for i := range out.MegapoolValidatorGlobalIndex {
+		validator := &out.MegapoolValidatorGlobalIndex[i]
+		out.MegapoolValidatorsByAddress[validator.MegapoolAddress] = append(
+			out.MegapoolValidatorsByAddress[validator.MegapoolAddress], validator,
+		)
 	}
 
 	return out

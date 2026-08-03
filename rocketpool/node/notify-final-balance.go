@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/bindings/types"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/math"
@@ -134,23 +135,15 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	}
 
 	validatorDetailsToProve := make(map[uint32]beacon.ValidatorStatus)
-	pubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
-	for _, pubkey := range pubkeys {
+	for _, validatorInfo := range state.MegapoolValidatorsByAddress[megapoolAddress] {
+		pubkey := types.ValidatorPubkey(validatorInfo.Pubkey)
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
 			// Skip validators that haven't been staked
-			info, infoExists := state.MegapoolValidatorInfo[pubkey]
-			if infoExists && !info.ValidatorInfo.Staked {
+			if !validatorInfo.ValidatorInfo.Staked {
 				continue
 			}
 			t.log.Printlnf("Validator %s not found in the megapool validator details map", pubkey.String())
-			continue
-		}
-
-		validatorInfo, exists := state.MegapoolValidatorInfo[pubkey]
-		if !exists {
-			// Log
-			t.log.Printlnf("Validator %s not found in the megapool validator info map", pubkey.String())
 			continue
 		}
 

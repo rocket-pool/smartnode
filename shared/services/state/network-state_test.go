@@ -223,12 +223,8 @@ func buildTestState() *NetworkState {
 		nodeAddrB: {&minipoolDetails[2]},
 	}
 
-	megapoolToPubkeys := map[common.Address][]types.ValidatorPubkey{
-		megapoolAddrA: {megapoolPubkey},
-	}
-
-	megapoolValidatorInfo := map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex{
-		megapoolPubkey: &megapoolValidatorGlobalIndex[0],
+	megapoolValidatorsByAddress := map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex{
+		megapoolAddrA: {&megapoolValidatorGlobalIndex[0]},
 	}
 
 	megapoolDetails := map[common.Address]rpstate.NativeMegapoolDetails{
@@ -279,8 +275,7 @@ func buildTestState() *NetworkState {
 			megapoolPubkey: {Pubkey: megapoolPubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
 		},
 		MegapoolValidatorGlobalIndex: megapoolValidatorGlobalIndex,
-		MegapoolToPubkeysMap:         megapoolToPubkeys,
-		MegapoolValidatorInfo:        megapoolValidatorInfo,
+		MegapoolValidatorsByAddress:  megapoolValidatorsByAddress,
 		MegapoolDetails:              megapoolDetails,
 		OracleDaoMemberDetails: []rpstate.OracleDaoMemberDetails{
 			{
@@ -499,5 +494,164 @@ func TestUnmarshalDuplicateMinipoolErrors(t *testing.T) {
 	err = json.Unmarshal(data, &restored)
 	if err == nil {
 		t.Fatal("expected error for duplicate minipool address, got nil")
+	}
+}
+
+// buildDuplicatePubkeyState returns a state in which two megapools have registered the same
+// pubkey. RocketMegapoolManager only enforces pubkey uniqueness per megapool, so this is a
+// state the contracts genuinely permit: megapool A owns and has staked the validator, while
+// megapool B deposited using the same pubkey and then dequeued. B is later in the global
+// index, so any pubkey-keyed lookup would return B's record for both megapools.
+func buildDuplicatePubkeyState() (*NetworkState, common.Address, common.Address, types.ValidatorPubkey) {
+	megapoolA := common.HexToAddress("0xAAAA000000000000000000000000000000000001")
+	megapoolB := common.HexToAddress("0xBBBB000000000000000000000000000000000002")
+	sharedPubkey := newTestPubkey(0x42)
+
+	globalIndex := []megapool.ValidatorInfoFromGlobalIndex{
+		{
+			Pubkey:          sharedPubkey[:],
+			MegapoolAddress: megapoolA,
+			ValidatorId:     0,
+			ValidatorInfo: megapool.ValidatorInfo{
+				Staked:       true,
+				DepositValue: 32000,
+			},
+		},
+		{
+			Pubkey:          sharedPubkey[:],
+			MegapoolAddress: megapoolB,
+			ValidatorId:     0,
+			ValidatorInfo: megapool.ValidatorInfo{
+				Staked:             false,
+				InPrestake:         true,
+				LastRequestedValue: 32000,
+				LastRequestedBond:  4000,
+			},
+		},
+	}
+
+	zeroInt := func() *big.Int { return big.NewInt(0) }
+	state := &NetworkState{
+		BeaconConfig: beacon.Eth2Config{},
+		NetworkDetails: &rpstate.NetworkDetails{
+			RplPrice:                          zeroInt(),
+			MinCollateralFraction:             zeroInt(),
+			MaxCollateralFraction:             zeroInt(),
+			NodeOperatorRewardsPercent:        zeroInt(),
+			TrustedNodeOperatorRewardsPercent: zeroInt(),
+			ProtocolDaoRewardsPercent:         zeroInt(),
+		},
+		NodeDetails:              []rpstate.NativeNodeDetails{},
+		MinipoolDetails:          []rpstate.NativeMinipoolDetails{},
+		MinipoolValidatorDetails: ValidatorDetailsMap{},
+		MegapoolValidatorDetails: ValidatorDetailsMap{
+			sharedPubkey: {Pubkey: sharedPubkey, Index: "7", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
+		},
+		MegapoolValidatorGlobalIndex: globalIndex,
+		MegapoolDetails: map[common.Address]rpstate.NativeMegapoolDetails{
+			megapoolA: {Address: megapoolA, Deployed: true, ActiveValidatorCount: 1, UserCapital: big.NewInt(28_000_000_000), NodeBond: big.NewInt(4_000_000_000), NodeDebt: zeroInt(), RefundValue: zeroInt(), AssignedValue: zeroInt(), BondRequirement: zeroInt(), EthBalance: zeroInt(), PendingRewards: zeroInt(), NodeQueuedBond: zeroInt()},
+			megapoolB: {Address: megapoolB, Deployed: true, ActiveValidatorCount: 0, UserCapital: big.NewInt(28_000_000_000), NodeBond: big.NewInt(4_000_000_000), NodeDebt: zeroInt(), RefundValue: zeroInt(), AssignedValue: zeroInt(), BondRequirement: zeroInt(), EthBalance: zeroInt(), PendingRewards: zeroInt(), NodeQueuedBond: zeroInt()},
+		},
+	}
+
+	state.MegapoolValidatorsByAddress = make(map[common.Address][]*megapool.ValidatorInfoFromGlobalIndex)
+	for i := range state.MegapoolValidatorGlobalIndex {
+		v := &state.MegapoolValidatorGlobalIndex[i]
+		state.MegapoolValidatorsByAddress[v.MegapoolAddress] = append(state.MegapoolValidatorsByAddress[v.MegapoolAddress], v)
+	}
+
+	return state, megapoolA, megapoolB, sharedPubkey
+}
+
+// assertDuplicatePubkeyIsolation checks that each megapool sees its own validator record and
+// not the other's.
+func assertDuplicatePubkeyIsolation(t *testing.T, ns *NetworkState, megapoolA, megapoolB common.Address) {
+	t.Helper()
+
+	validatorsA := ns.MegapoolValidatorsByAddress[megapoolA]
+	if len(validatorsA) != 1 {
+		t.Fatalf("megapool A: got %d validators, want 1", len(validatorsA))
+	}
+	if !validatorsA[0].ValidatorInfo.Staked {
+		t.Error("megapool A's validator reads as not staked; it was overwritten by megapool B's record")
+	}
+	if validatorsA[0].MegapoolAddress != megapoolA {
+		t.Errorf("megapool A's validator is owned by %s", validatorsA[0].MegapoolAddress.Hex())
+	}
+
+	validatorsB := ns.MegapoolValidatorsByAddress[megapoolB]
+	if len(validatorsB) != 1 {
+		t.Fatalf("megapool B: got %d validators, want 1", len(validatorsB))
+	}
+	if validatorsB[0].ValidatorInfo.Staked {
+		t.Error("megapool B's validator reads as staked; it was overwritten by megapool A's record")
+	}
+	if validatorsB[0].MegapoolAddress != megapoolB {
+		t.Errorf("megapool B's validator is owned by %s", validatorsB[0].MegapoolAddress.Hex())
+	}
+}
+
+// TestDuplicatePubkeyAcrossMegapools verifies that a pubkey registered by two megapools does
+// not cause one megapool's validator record to shadow the other's. Previously the state kept a
+// single pubkey-keyed map, so the last global index entry won and the victim's validator
+// appeared unstaked - which zeroed its Beacon balance in the rETH balance submission.
+func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
+	ns, megapoolA, megapoolB, _ := buildDuplicatePubkeyState()
+	assertDuplicatePubkeyIsolation(t, ns, megapoolA, megapoolB)
+}
+
+// TestDuplicatePubkeyAcrossMegapoolsRoundtrip verifies the same isolation survives a JSON
+// round-trip, since UnmarshalJSON rebuilds the index independently of createNetworkState.
+func TestDuplicatePubkeyAcrossMegapoolsRoundtrip(t *testing.T) {
+	original, megapoolA, megapoolB, _ := buildDuplicatePubkeyState()
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+
+	var restored NetworkState
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	assertDuplicatePubkeyIsolation(t, &restored, megapoolA, megapoolB)
+
+	// Entries must alias the restored global index, not a copy of it
+	for addr, validators := range restored.MegapoolValidatorsByAddress {
+		for _, v := range validators {
+			found := false
+			for i := range restored.MegapoolValidatorGlobalIndex {
+				if &restored.MegapoolValidatorGlobalIndex[i] == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("MegapoolValidatorsByAddress[%s] entry does not point into the global index", addr.Hex())
+			}
+		}
+	}
+}
+
+// TestGetMegapoolEligibleBorrowedEthWithDuplicatePubkey verifies that megapool B's in-prestake
+// validator does not reduce megapool A's eligible borrowed ETH. A's validator is staked, not in
+// prestake, so A's eligible borrowed ETH must be its full user capital.
+func TestGetMegapoolEligibleBorrowedEthWithDuplicatePubkey(t *testing.T) {
+	ns, megapoolA, megapoolB, _ := buildDuplicatePubkeyState()
+
+	nodeA := &rpstate.NativeNodeDetails{MegapoolDeployed: true, MegapoolAddress: megapoolA}
+	gotA := ns.GetMegapoolEligibleBorrowedEth(nodeA)
+	wantA := ns.MegapoolDetails[megapoolA].UserCapital
+	if gotA.Cmp(wantA) != 0 {
+		t.Errorf("megapool A eligible borrowed ETH: got %s, want %s (B's prestake validator leaked into A)", gotA, wantA)
+	}
+
+	// B's own validator is in prestake, so B's eligible borrowed ETH is reduced by the user
+	// portion of the requested value: 32000 - 4000 = 28000 milliEth.
+	nodeB := &rpstate.NativeNodeDetails{MegapoolDeployed: true, MegapoolAddress: megapoolB}
+	gotB := ns.GetMegapoolEligibleBorrowedEth(nodeB)
+	if gotB.Cmp(gotA) >= 0 {
+		t.Errorf("megapool B eligible borrowed ETH (%s) should be below A's (%s); B's own prestake validator was not applied", gotB, gotA)
 	}
 }

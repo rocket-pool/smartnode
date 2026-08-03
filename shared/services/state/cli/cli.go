@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -56,11 +57,17 @@ func truncateNetworkState(ns *state.NetworkState) {
 			}
 		}
 	}
+	// Keep the Beacon details belonging to the validator we retained above, so the truncated
+	// state stays internally consistent instead of pairing an arbitrary Beacon entry with an
+	// unrelated global index entry.
 	if len(ns.MegapoolValidatorDetails) > 1 {
+		var keep types.ValidatorPubkey
+		if len(ns.MegapoolValidatorGlobalIndex) > 0 {
+			keep = types.ValidatorPubkey(ns.MegapoolValidatorGlobalIndex[0].Pubkey)
+		}
 		for k := range ns.MegapoolValidatorDetails {
-			delete(ns.MegapoolValidatorDetails, k)
-			if len(ns.MegapoolValidatorDetails) == 1 {
-				break
+			if k != keep {
+				delete(ns.MegapoolValidatorDetails, k)
 			}
 		}
 	}
