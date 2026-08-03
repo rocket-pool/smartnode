@@ -274,10 +274,15 @@ func recoverNodeKeys(c *cli.Command, rp *rocketpool.RocketPool, bc beacon.Client
 		pubkeyMap[pubkey] = true
 	}
 
+	// Publish progress so a second CLI invocation can report how far along this is
+	keysTotal := len(pubkeyMap)
+	activeRecovery.setKeysTotal(keysTotal)
+
 	pubkeyMap, err = checkForAndRecoverCustomMinipoolKeys(cfg, pubkeyMap, w, testOnly)
 	if err != nil {
 		return nil, fmt.Errorf("error checking for or recovering custom validator keys: %w", err)
 	}
+	activeRecovery.setKeysFound(keysTotal - len(pubkeyMap))
 
 	// Recover conventionally generated keys
 	bucketStart := uint(0)
@@ -306,6 +311,7 @@ func recoverNodeKeys(c *cli.Command, rp *rocketpool.RocketPool, bc beacon.Client
 						return nil, fmt.Errorf("error recovering validator keys: %w", err)
 					}
 				}
+				activeRecovery.setKeysFound(keysTotal - len(pubkeyMap))
 			}
 		}
 

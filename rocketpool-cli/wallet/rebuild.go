@@ -7,7 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func rebuildWallet() error {
+func rebuildWallet(yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -22,6 +22,15 @@ func rebuildWallet() error {
 		return err
 	}
 
+	// Bail out early if the daemon is still working on an earlier recovery
+	running, err := checkForRunningKeyRecovery(rp, cfg)
+	if err != nil {
+		return err
+	}
+	if running {
+		return nil
+	}
+
 	// Get & check wallet status
 	status, err := rp.WalletStatus()
 	if err != nil {
@@ -29,6 +38,15 @@ func rebuildWallet() error {
 	}
 	if !status.WalletInitialized {
 		fmt.Println("The node wallet is not initialized.")
+		return nil
+	}
+
+	// Explain what this does and confirm
+	if !confirmRecoveryOperation(yes, "You are about to rebuild your validator keystores.", []string{
+		"Re-derive the validator keys for every validator on this node from your existing node wallet",
+		"Regenerate the validator keystores for all supported Validator Clients, overwriting the current ones",
+		"Leave your node wallet and mnemonic phrase untouched",
+	}) {
 		return nil
 	}
 
@@ -56,7 +74,9 @@ func rebuildWallet() error {
 	fmt.Println("Rebuilding node validator keystores...")
 
 	// Rebuild wallet
+	stopProgress := startRecoveryProgressReporter(rp)
 	response, err := rp.RebuildWallet()
+	stopProgress()
 	if err != nil {
 		return err
 	}
