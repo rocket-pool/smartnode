@@ -1643,7 +1643,7 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 
 						// Skip validators that never reached the beacon chain via this megapool
 						vi := nativeValidatorInfo.ValidatorInfo
-						if !(vi.Staked || vi.InPrestake || vi.Exiting || vi.Exited) {
+						if !vi.Staked && !vi.InPrestake && !vi.Exiting && !vi.Exited {
 							continue
 						}
 
