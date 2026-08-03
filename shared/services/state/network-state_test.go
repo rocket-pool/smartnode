@@ -227,8 +227,8 @@ func buildTestState() *NetworkState {
 		megapoolAddrA: {megapoolPubkey},
 	}
 
-	megapoolValidatorInfo := map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex{
-		megapoolPubkey: &megapoolValidatorGlobalIndex[0],
+	megapoolValidatorInfo := map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex{
+		{MegapoolAddress: megapoolAddrA, Pubkey: megapoolPubkey}: &megapoolValidatorGlobalIndex[0],
 	}
 
 	megapoolDetails := map[common.Address]rpstate.NativeMegapoolDetails{
@@ -500,4 +500,85 @@ func TestUnmarshalDuplicateMinipoolErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for duplicate minipool address, got nil")
 	}
+}
+
+func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
+	megapoolAddrA := common.HexToAddress("0xAA00000000000000000000000000000000000000")
+	megapoolAddrB := common.HexToAddress("0xBB00000000000000000000000000000000000000")
+	pubkey := newTestPubkey(0xDD)
+
+	state := &NetworkState{
+		MinipoolValidatorDetails: ValidatorDetailsMap{},
+		MegapoolValidatorDetails: ValidatorDetailsMap{},
+		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{
+			{
+				Pubkey:          pubkey[:],
+				MegapoolAddress: megapoolAddrA,
+				ValidatorId:     1,
+				ValidatorInfo: megapool.ValidatorInfo{
+					Staked: true,
+				},
+			},
+			{
+				// A validator in a different megapool reusing the same pubkey,
+				// dequeued immediately (all status flags false)
+				Pubkey:          pubkey[:],
+				MegapoolAddress: megapoolAddrB,
+				ValidatorId:     0,
+				ValidatorInfo:   megapool.ValidatorInfo{},
+			},
+		},
+	}
+
+	checkState := func(t *testing.T, s *NetworkState) {
+		t.Helper()
+
+		if len(s.MegapoolValidatorInfo) != 2 {
+			t.Errorf("MegapoolValidatorInfo count: got %d, want 2", len(s.MegapoolValidatorInfo))
+		}
+
+		infoA, exists := s.GetMegapoolValidatorInfo(megapoolAddrA, pubkey)
+		if !exists {
+			t.Fatal("validator info for megapool A not found")
+		}
+		if !infoA.ValidatorInfo.Staked {
+			t.Error("megapool A validator lost Staked=true (overwritten by the duplicate pubkey)")
+		}
+		if infoA.ValidatorId != 1 {
+			t.Errorf("megapool A ValidatorId: got %d, want 1", infoA.ValidatorId)
+		}
+
+		infoB, exists := s.GetMegapoolValidatorInfo(megapoolAddrB, pubkey)
+		if !exists {
+			t.Fatal("validator info for megapool B not found")
+		}
+		if infoB.ValidatorInfo.Staked {
+			t.Error("megapool B validator should not be staked")
+		}
+
+		if len(s.MegapoolToPubkeysMap[megapoolAddrA]) != 1 {
+			t.Errorf("MegapoolToPubkeysMap[A] count: got %d, want 1", len(s.MegapoolToPubkeysMap[megapoolAddrA]))
+		}
+		if len(s.MegapoolToPubkeysMap[megapoolAddrB]) != 1 {
+			t.Errorf("MegapoolToPubkeysMap[B] count: got %d, want 1", len(s.MegapoolToPubkeysMap[megapoolAddrB]))
+		}
+	}
+
+	// The rebuild helper is used by both createNetworkState and UnmarshalJSON
+	pubkeys := state.rebuildMegapoolValidatorMaps()
+	if len(pubkeys) != 1 {
+		t.Errorf("deduplicated pubkey list: got %d entries, want 1", len(pubkeys))
+	}
+	checkState(t, state)
+
+	// Round-trip through JSON to exercise the UnmarshalJSON rebuild path
+	data, err := json.Marshal(state)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var restored NetworkState
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	checkState(t, &restored)
 }

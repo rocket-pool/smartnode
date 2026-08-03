@@ -1636,8 +1636,14 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 							continue
 						}
 
-						nativeValidatorInfo, exists := r.networkState.MegapoolValidatorInfo[validator]
+						nativeValidatorInfo, exists := r.networkState.GetMegapoolValidatorInfo(megapoolAddress, validator)
 						if !exists {
+							continue
+						}
+
+						// Skip validators that never reached the beacon chain via this megapool
+						vi := nativeValidatorInfo.ValidatorInfo
+						if !(vi.Staked || vi.InPrestake || vi.Exiting || vi.Exited) {
 							continue
 						}
 

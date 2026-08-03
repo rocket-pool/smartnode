@@ -183,7 +183,7 @@ func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
 	// Every pubkey in the map must have a corresponding MegapoolValidatorInfo entry
 	for addr, pubkeys := range ns.MegapoolToPubkeysMap {
 		for _, pk := range pubkeys {
-			if _, ok := ns.MegapoolValidatorInfo[pk]; !ok {
+			if _, ok := ns.GetMegapoolValidatorInfo(addr, pk); !ok {
 				t.Errorf("pubkey from MegapoolToPubkeysMap[%s] not found in MegapoolValidatorInfo", addr.Hex())
 			}
 		}
@@ -222,7 +222,7 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 	}
 
 	// Every entry in MegapoolValidatorInfo must point back into MegapoolValidatorGlobalIndex
-	for pk, info := range ns.MegapoolValidatorInfo {
+	for key, info := range ns.MegapoolValidatorInfo {
 		found := false
 		for i := range ns.MegapoolValidatorGlobalIndex {
 			candidate := &ns.MegapoolValidatorGlobalIndex[i]
@@ -232,7 +232,7 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("MegapoolValidatorInfo[%x] does not point into MegapoolValidatorGlobalIndex", pk[:4])
+			t.Errorf("MegapoolValidatorInfo[%s/%x] does not point into MegapoolValidatorGlobalIndex", key.MegapoolAddress.Hex(), key.Pubkey[:4])
 		}
 	}
 }

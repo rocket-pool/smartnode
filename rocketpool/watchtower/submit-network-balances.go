@@ -576,7 +576,10 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	for _, megapoolValidatorKey := range megapoolValidators {
 		// Grab the validator details from the pubkey
 		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
-		megapoolValidatorInfo := state.MegapoolValidatorInfo[megapoolValidatorKey]
+		megapoolValidatorInfo, exists := state.GetMegapoolValidatorInfo(megapoolAddress, megapoolValidatorKey)
+		if !exists {
+			continue
+		}
 
 		// If the validator was dissolved, exited, or in queue, ignore the beacon balance
 		if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {
