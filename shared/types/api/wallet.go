@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
@@ -65,6 +67,23 @@ type RebuildWalletResponse struct {
 	Status        string                  `json:"status"`
 	Error         string                  `json:"error"`
 	ValidatorKeys []types.ValidatorPubkey `json:"validatorKeys"`
+}
+
+type KeyRecoveryStatus struct {
+	Running        bool      `json:"running"`
+	Operation      string    `json:"operation"`
+	StartedAt      time.Time `json:"startedAt"`
+	ElapsedSeconds float64   `json:"elapsedSeconds"`
+	KeysFound      int       `json:"keysFound"`
+	KeysTotal      int       `json:"keysTotal"`
+	// False until the daemon has finished working out how many keys this node has
+	TotalKnown bool `json:"totalKnown"`
+}
+
+type KeyRecoveryStatusResponse struct {
+	Status   string            `json:"status"`
+	Error    string            `json:"error"`
+	Recovery KeyRecoveryStatus `json:"recovery"`
 }
 
 type ExportWalletResponse struct {

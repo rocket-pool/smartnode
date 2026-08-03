@@ -1,8 +1,10 @@
 package rocketpool
 
 import (
+	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -89,7 +91,7 @@ func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address,
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/search-and-recover", url.Values{
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/search-and-recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"address":                  {address.Hex()},
 		"skipValidatorKeyRecovery": {skipStr},
@@ -158,7 +160,8 @@ func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Addr
 
 // Rebuild wallet
 func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/rebuild", nil)
+	// removed timeout as large nodes were exceeding it
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/rebuild", nil)
 	if err != nil {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
 	}
@@ -168,6 +171,24 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	}
 	if response.Error != "" {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the status of any validator key recovery currently running
+func (c *Client) GetKeyRecoveryStatus() (api.KeyRecoveryStatusResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	responseBytes, err := c.callHTTPAPICtx(ctx, "GET", "/api/wallet/recovery-status", nil)
+	if err != nil {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %w", err)
+	}
+	var response api.KeyRecoveryStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not decode key recovery status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %s", response.Error)
 	}
 	return response, nil
 }

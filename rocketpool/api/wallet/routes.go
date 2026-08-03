@@ -9,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // RegisterRoutes registers the wallet module's HTTP routes onto mux.
@@ -33,12 +34,20 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		response.WriteResponse(w, resp, err)
 	})
 
+	// Reports on the recovery currently holding the lock below, so the CLI can
+	// explain a rejected command rather than just failing
+	mux.HandleFunc("/api/wallet/recovery-status", func(w http.ResponseWriter, r *http.Request) {
+		response.WriteResponse(w, &api.KeyRecoveryStatusResponse{Recovery: activeRecovery.status()}, nil)
+	})
+
 	mux.HandleFunc("/api/wallet/recover", func(w http.ResponseWriter, r *http.Request) {
 		mnemonic := r.FormValue("mnemonic")
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
 		derivationPath := r.FormValue("derivationPath")
 		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
-		resp, err := recoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+		resp, err := withRecoveryLock("wallet recover", func() (*api.RecoverWalletResponse, error) {
+			return recoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+		})
 		response.WriteResponse(w, resp, err)
 	})
 
@@ -46,7 +55,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		mnemonic := r.FormValue("mnemonic")
 		address := common.HexToAddress(r.FormValue("address"))
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
-		resp, err := searchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
+		resp, err := withRecoveryLock("wallet recover --address", func() (*api.SearchAndRecoverWalletResponse, error) {
+			return searchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
+		})
 		response.WriteResponse(w, resp, err)
 	})
 
@@ -55,7 +66,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
 		derivationPath := r.FormValue("derivationPath")
 		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
-		resp, err := testRecoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+		resp, err := withRecoveryLock("wallet test-recovery", func() (*api.RecoverWalletResponse, error) {
+			return testRecoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+		})
 		response.WriteResponse(w, resp, err)
 	})
 
@@ -63,12 +76,16 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		mnemonic := r.FormValue("mnemonic")
 		address := common.HexToAddress(r.FormValue("address"))
 		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
-		resp, err := testSearchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
+		resp, err := withRecoveryLock("wallet test-recovery --address", func() (*api.SearchAndRecoverWalletResponse, error) {
+			return testSearchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
+		})
 		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/rebuild", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := rebuildWallet(c)
+		resp, err := withRecoveryLock("wallet rebuild", func() (*api.RebuildWalletResponse, error) {
+			return rebuildWallet(c)
+		})
 		response.WriteResponse(w, resp, err)
 	})
 

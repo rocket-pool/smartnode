@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) error {
+func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint, yes bool) error {
 
 	// Get RP client
 	rp, ready, err := rocketpool.NewClient().WithStatus()
@@ -27,6 +27,14 @@ func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecov
 		return err
 	}
 
+	running, err := checkForRunningKeyRecovery(rp, cfg)
+	if err != nil {
+		return err
+	}
+	if running {
+		return nil
+	}
+
 	// Get & check wallet status
 	status, err := rp.WalletStatus()
 	if err != nil {
@@ -37,10 +45,20 @@ func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecov
 		return nil
 	}
 
-	// Prompt a notice about test recovery
-	color.YellowPrintln("NOTE:")
-	color.YellowPrintln("This command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.")
-	color.YellowPrintln("If you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.")
+	// Explain what this does and confirm, before asking for anything sensitive
+	effects := []string{
+		"Regenerate your node wallet's private key from the mnemonic phrase you provide",
+	}
+	if skipValidatorKeyRecovery {
+		effects = append(effects, "Leave your validator keys alone (--skip-validator-key-recovery was set)")
+	} else {
+		effects = append(effects, "Regenerate the validator keystores for every validator on this node, for all supported Validator Clients")
+	}
+	effects = append(effects, "Overwrite the existing node wallet and keystore files on disk")
+	if !confirmRecoveryOperation(yes, "You are about to recover your node wallet.", effects) {
+		return nil
+	}
+	color.YellowPrintln("If you only want to check that recovery works without writing any files, cancel and use `rocketpool wallet test-recovery` instead.")
 	fmt.Println()
 
 	// Set password if not set
@@ -105,7 +123,9 @@ func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecov
 		}
 
 		// Recover wallet
+		stopProgress := startRecoveryProgressReporter(rp)
 		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery)
+		stopProgress()
 		if err != nil {
 			return err
 		}
@@ -147,7 +167,9 @@ func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecov
 		}
 
 		// Recover wallet
+		stopProgress := startRecoveryProgressReporter(rp)
 		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex)
+		stopProgress()
 		if err != nil {
 			return err
 		}
