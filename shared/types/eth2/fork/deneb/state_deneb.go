@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"sync/atomic"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
@@ -60,9 +59,9 @@ func getStateChunkSize() uint64 {
 }
 
 func GetGeneralizedIndexForValidators() uint64 {
-	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
-	// BeaconStateValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
+	// Classic SSZ Container field gindex (pre-Gloas). Field count rounded up to
+	// the next power of two; validators is field index 11.
+	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStateValidatorsIndex)
 }
 
 func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {

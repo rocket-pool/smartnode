@@ -653,12 +653,17 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 
 	endTime := g.slotToTime(g.targets.block.Slot)
 
-	// Get the number of the EL block matching the CL snapshot block
+	// Get the number of the EL block matching the CL snapshot block. Gloas blocks only commit to
+	// the EL block hash, so the number has to be resolved.
 	var snapshotElBlockHeader *types.Header
-	if g.targets.block.ExecutionBlockNumber == 0 {
+	elBlockNumber, hasElBlock, err := beacon.ResolveExecutionBlockNumber(context.Background(), g.rp, *g.targets.block)
+	if err != nil {
+		return nil, err
+	}
+	if !hasElBlock {
 		return nil, fmt.Errorf("slot %d was pre-merge", g.targets.block.Slot)
 	}
-	opts.BlockNumber = big.NewInt(0).SetUint64(g.targets.block.ExecutionBlockNumber)
+	opts.BlockNumber = big.NewInt(0).SetUint64(elBlockNumber)
 	snapshotElBlockHeader, err = g.rp.HeaderByNumber(context.Background(), opts.BlockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error getting EL block %d: %w", opts.BlockNumber.Uint64(), err)

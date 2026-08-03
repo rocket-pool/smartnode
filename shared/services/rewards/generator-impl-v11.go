@@ -1749,6 +1749,7 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
+	var hasElBlock bool
 	for {
 		beaconBlock, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(r.rewardsFile.ConsensusStartBlock))
 		if err != nil {
@@ -1758,13 +1759,17 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 			r.rewardsFile.ConsensusStartBlock++
 			r.performanceFile.ConsensusStartBlock++
 		} else {
-			elBlockNumber = beaconBlock.ExecutionBlockNumber
+			// Gloas blocks only commit to the EL block hash, so the number has to be resolved
+			elBlockNumber, hasElBlock, err = beacon.ResolveExecutionBlockNumber(context.Background(), r.rp, beaconBlock)
+			if err != nil {
+				return nil, err
+			}
 			break
 		}
 	}
 
 	var startElHeader *types.Header
-	if elBlockNumber == 0 {
+	if !hasElBlock {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
 		r.performanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock

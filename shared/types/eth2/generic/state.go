@@ -1,18 +1,25 @@
 package generic
 
+// Shared BeaconState field offsets. These offsets are stable from Capella through
+// Gloas for the fields Smart Node proves against; only the *merkleization* of the
+// parent container changes in Gloas
+
 // BeaconStateValidatorsIndex is the field offset of the Validators field in the BeaconState struct
 const BeaconStateValidatorsIndex uint64 = 11
 
-// SlotIndex is the field offset of the Slot field in the BeaconState struct
+// BeaconStateSlotIndex is the field offset of the Slot field in the BeaconState struct
 const BeaconStateSlotIndex uint64 = 2
 
-// If this ever isn't a power of two, we need to round up to the next power of two
+// beaconStateValidatorsMaxLength is VALIDATOR_REGISTRY_LIMIT (mainnet List capacity)
+// used by pre-Gloas fixed-capacity List[Validator, N] merkleization.
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
 
 const BeaconStateHistoricalSummariesFieldIndex uint64 = 27
 const BeaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
 const BeaconStateBlockRootsMaxLength uint64 = 1 << 13
 const BeaconStateBlockRootsFieldIndex uint64 = 5
+const BeaconStateStateRootsMaxLength uint64 = 1 << 13
+const BeaconStateStateRootsFieldIndex uint64 = 6
 
 type PendingDeposit struct {
 	Pubkey                []byte `json:"pubkey" ssz-size:"48"`

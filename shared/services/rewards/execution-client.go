@@ -43,6 +43,10 @@ func (client *defaultRewardsExecutionClient) HeaderByNumber(ctx context.Context,
 	return client.RocketPool.Client.HeaderByNumber(ctx, block)
 }
 
+func (client *defaultRewardsExecutionClient) HeaderByHash(ctx context.Context, hash common.Hash) (*ethtypes.Header, error) {
+	return client.RocketPool.Client.HeaderByHash(ctx, hash)
+}
+
 func (client *defaultRewardsExecutionClient) GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {
 	found, rewardsEvent, err := rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
 	if err == nil && found {

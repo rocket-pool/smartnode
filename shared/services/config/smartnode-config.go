@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -13,10 +12,20 @@ import (
 
 // Constants
 const (
-	smartnodeTagPrefix                 string = "rocketpool/smartnode:v"
-	NetworkID                          string = "network"
-	ProjectNameID                      string = "projectName"
-	SnapshotID                         string = "rocketpool-dao.eth"
+	smartnodeTagPrefix string = "rocketpool/smartnode:v"
+	NetworkID          string = "network"
+	ProjectNameID      string = "projectName"
+	SnapshotID         string = "rocketpool-dao.eth"
+
+	kurtosisDevnetChainIDDefault               uint   = 3151908
+	kurtosisDevnetStorageAddressDefault        string = "0xb4B46bdAA835F8E4b4d8e208B6559cD267851051"
+	kurtosisDevnetRplAddressDefault            string = "0x2b45cD38B213Bbd3A1A848bf2467927c976877Cb"
+	kurtosisDevnetRethAddressDefault           string = "0x80741a37E3644612F0465145C9709a90B6D77Ee3"
+	kurtosisDevnetMulticallAddressDefault      string = "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
+	kurtosisDevnetBalanceBatcherAddressDefault string = "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
+	kurtosisDevnetSignerRegistryAddressDefault string = "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
+	kurtosisDevnetRplTwapPoolAddressDefault    string = "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
+
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
 	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
@@ -433,43 +442,43 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
 		nodeManagerUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://node.rocketpool.net",
-			config.Network_Devnet:  "https://devnet.node.rocketpool.net",
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "https://testnet.node.rocketpool.net",
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,      // Mainnet
-			config.Network_Devnet:  560048, // Hoodi
-			config.Network_Testnet: 560048, // Hoodi
+			config.Network_Mainnet: 1,                            // Mainnet
+			config.Network_Devnet:  kurtosisDevnetChainIDDefault, // Kurtosis ethereum-package (was Hoodi)
+			config.Network_Testnet: 560048,                       // Hoodi
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0x990BC2c12d2a39e5FD92111B98A728bf39742478",
+			config.Network_Devnet:  kurtosisDevnetStorageAddressDefault,
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
+			config.Network_Devnet:  kurtosisDevnetSignerRegistryAddressDefault,
 			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0xce59520Cbaec3B399a5245e72C0F21df791202FE",
+			config.Network_Devnet:  kurtosisDevnetRplAddressDefault,
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0x3aC886F531BEb95f08F73fDb21528BE3c63AA82F",
+			config.Network_Devnet:  kurtosisDevnetRethAddressDefault,
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -551,9 +560,8 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 				common.HexToAddress("0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0x556791EC1aa443df339E340E6f20d06a1cD21583"),
-			},
+			// Fresh private deploy — no legacy rewards pool history.
+			config.Network_Devnet: {},
 			config.Network_Testnet: {
 				common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 			},
@@ -617,25 +625,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
+			config.Network_Devnet:  kurtosisDevnetRplTwapPoolAddressDefault,
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
+			config.Network_Devnet:  kurtosisDevnetMulticallAddressDefault,
 			config.Network_Testnet: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
+			config.Network_Devnet:  kurtosisDevnetBalanceBatcherAddressDefault,
 			config.Network_Testnet: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "https://rpc-hoodi.flashbots.net/",
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "https://rpc-hoodi.flashbots.net/",
 		},
 
@@ -1015,14 +1023,11 @@ func getNetworkOptions() []config.ParameterOption {
 			Description: "This is the Hoodi test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
 			Value:       config.Network_Testnet,
 		},
-	}
-
-	if strings.Contains(shared.RocketPoolVersion(), "dev") {
-		options = append(options, config.ParameterOption{
+		{
 			Name:        "Devnet",
-			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",
+			Description: "Rocket Pool development network. This is a local network that is used for development and testing. It uses free fake ETH and free fake RPL to make fake validators.",
 			Value:       config.Network_Devnet,
-		})
+		},
 	}
 
 	return options

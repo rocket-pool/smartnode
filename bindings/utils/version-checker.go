@@ -7,12 +7,21 @@ import (
 	"github.com/hashicorp/go-version"
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
+	beaconStateVerifierVersion, err := megapool.GetBeaconStateVerifierVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking beacon state verifier version: %w", err)
+	}
+	if beaconStateVerifierVersion == 2 {
+		return version.NewSemver("1.4.1")
+	}
+
 	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error checking deposit pool version: %w", err)
@@ -20,6 +29,7 @@ func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version
 
 	// Check for v1.4 (Saturn 1)
 	if depositPoolVersion > 3 {
+
 		return version.NewSemver("1.4.0")
 	}
 

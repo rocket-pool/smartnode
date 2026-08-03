@@ -41,6 +41,7 @@ const (
 type RewardsExecutionClient interface {
 	GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error)
 	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
+	HeaderByHash(context.Context, common.Hash) (*ethtypes.Header, error)
 	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
 	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
 	GetRewardIndex(opts *bind.CallOpts) (*big.Int, error)

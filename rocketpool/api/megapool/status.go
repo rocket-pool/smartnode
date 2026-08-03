@@ -1,11 +1,9 @@
 package megapool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -44,16 +42,7 @@ func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse
 	if err != nil {
 		return nil, err
 	}
-	var opts *bind.CallOpts
-
-	if finalizedState {
-		// We just need a non-nil opts for the next calls to use the finalized state
-		opts = &bind.CallOpts{
-			Context: context.Background(),
-		}
-	}
-
-	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, opts)
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil, finalizedState)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +55,18 @@ func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse
 	}
 	response.BeaconHead = beaconHead
 
+	// Beacon SHARD_COMMITTEE_PERIOD (for exit eligibility)
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting eth2 config: %w", err)
+	}
+	response.ShardCommitteePeriod = eth2Config.ShardCommitteePeriod
+	if response.ShardCommitteePeriod == 0 {
+		response.ShardCommitteePeriod = 256
+	}
+
 	// Get latest delegate address
-	delegate, err := rp.GetContract("rocketMegapoolDelegate", opts)
+	delegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting latest minipool delegate contract: %w", err)
 	}

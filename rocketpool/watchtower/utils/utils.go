@@ -37,20 +37,36 @@ func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 	return max(MinWatchtowerPriorityFee, setting)
 }
 
-func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (beacon.BeaconBlock, error) {
-	beaconBlock := beacon.BeaconBlock{}
-	var err error
-	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot-- {
-		beaconBlock, blockExists, err = bc.GetBeaconBlock(strconv.FormatUint(searchSlot, 10))
-		if err != nil {
-			return beacon.BeaconBlock{}, err
-		}
+// Walks back from slotNumber until it finds a block that actually has an Execution Layer block
+// behind it, and returns it with ExecutionBlockNumber populated. Gloas (EIP-7732) blocks carry
+// only the payload bid's block hash, so the number is resolved through the EL.
+func FindLastBlockWithExecutionPayload(bc beacon.Client, ec rocketpool.ExecutionClient, slotNumber uint64) (beacon.BeaconBlock, error) {
+	for searchSlot := slotNumber; ; searchSlot-- {
 		// If we go back more than 32 slots, error out
 		if slotNumber-searchSlot > 32 {
 			return beacon.BeaconBlock{}, fmt.Errorf("could not find EL block from slot %d", slotNumber)
 		}
+
+		beaconBlock, blockExists, err := bc.GetBeaconBlock(strconv.FormatUint(searchSlot, 10))
+		if err != nil {
+			return beacon.BeaconBlock{}, err
+		}
+		if !blockExists {
+			continue
+		}
+
+		// Resolve the EL block number
+		elBlockNumber, found, err := beacon.ResolveExecutionBlockNumber(context.Background(), ec, beaconBlock)
+		if err != nil {
+			return beacon.BeaconBlock{}, err
+		}
+		if !found {
+			continue
+		}
+
+		beaconBlock.ExecutionBlockNumber = elBlockNumber
+		return beaconBlock, nil
 	}
-	return beaconBlock, nil
 }
 
 func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2Config, bc beacon.Client, ec rocketpool.ExecutionClient, lastSubmissionBlock uint64, referenceTimestamp int64, submissionIntervalInSeconds int64) (uint64, time.Time, *types.Header, bool, error) {
@@ -99,7 +115,7 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := FindLastBlockWithExecutionPayload(bc, slotNumber)
+	targetBlock, err := FindLastBlockWithExecutionPayload(bc, ec, slotNumber)
 	if err != nil {
 		return 0, time.Time{}, nil, false, err
 	}

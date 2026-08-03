@@ -53,7 +53,7 @@ const (
 	MainnetV10Interval uint64 = 30
 	MainnetV11Interval uint64 = 46
 	// Devnet intervals
-	DevnetV11Interval uint64 = 7
+	DevnetV11Interval uint64 = 0
 
 	// Testnet intervals
 	TestnetV10Interval uint64 = 0

@@ -43,7 +43,7 @@ func canDistributeMegapool(c *cli.Command) (*api.CanDistributeMegapoolResponse, 
 	}
 
 	// Load the megapool details
-	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil, false)
 	if err != nil {
 		return nil, err
 	}

@@ -57,7 +57,7 @@ func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse,
 	}
 
 	// Load the megapool details
-	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil, false)
 	if err != nil {
 		return nil, err
 	}

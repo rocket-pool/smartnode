@@ -829,11 +829,14 @@ type ExitValidatorResponse struct {
 }
 
 type CanNotifyValidatorExitResponse struct {
-	Status        string          `json:"status"`
-	Error         string          `json:"error"`
-	CanExit       bool            `json:"canExit"`
-	InvalidStatus bool            `json:"invalidStatus"`
-	GasLimits     gaslimit.Limits `json:"gasLimits"`
+	Status           string          `json:"status"`
+	Error            string          `json:"error"`
+	CanExit          bool            `json:"canExit"`
+	InvalidStatus    bool            `json:"invalidStatus"`
+	AlreadyExiting   bool            `json:"alreadyExiting"`
+	AlreadyExited    bool            `json:"alreadyExited"`
+	ExitNotFinalized bool            `json:"exitNotFinalized"`
+	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type NotifyValidatorExitResponse struct {
 	Status string      `json:"status"`

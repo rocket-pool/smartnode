@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hashicorp/go-version"
 
-	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
@@ -233,52 +232,5 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		*wrappers[i].contract = contract
 	}
 
-	err = contracts.getCurrentVersion(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting network contract version: %w", err)
-	}
-
 	return contracts, nil
-}
-
-// Get the current version of the network
-func (c *NetworkContracts) getCurrentVersion(rp *rocketpool.RocketPool) error {
-	opts := &bind.CallOpts{
-		BlockNumber: c.ElBlockNumber,
-	}
-
-	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
-	if err != nil {
-		return fmt.Errorf("error checking deposit pool version: %w", err)
-	}
-
-	// Check for v1.4 (Saturn 1)
-	if depositPoolVersion > 3 {
-		c.Version, err = version.NewSemver("1.4.0")
-		return err
-	}
-
-	// Check for v1.2
-	nodeStakingVersion, err := rocketpool.GetContractVersion(rp, *c.RocketNodeStaking.Address, opts)
-	if err != nil {
-		return fmt.Errorf("error checking node staking version: %w", err)
-	}
-	if nodeStakingVersion > 3 {
-		c.Version, err = version.NewSemver("1.2.0")
-		return err
-	}
-
-	// Check for v1.1
-	nodeMgrVersion, err := rocketpool.GetContractVersion(rp, *c.RocketNodeManager.Address, opts)
-	if err != nil {
-		return fmt.Errorf("error checking node manager version: %w", err)
-	}
-	if nodeMgrVersion > 1 {
-		c.Version, err = version.NewSemver("1.1.0")
-		return err
-	}
-
-	// v1.0
-	c.Version, err = version.NewSemver("1.0.0")
-	return err
 }
