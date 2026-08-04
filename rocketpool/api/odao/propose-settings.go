@@ -165,69 +165,6 @@ func proposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int, opts *
 
 }
 
-func canProposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax uint64) (*api.CanProposeTNDAOSettingResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := canProposeSetting(c, w, rp)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	gasLimits, err := trustednode.EstimateProposeMinipoolUnbondedMaxGas(rp, unbondedMinipoolMax, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	response.GasLimits = gasLimits
-	return response, nil
-
-}
-
-func proposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax uint64, opts *bind.TransactOpts) (*api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}
-
-	// Submit proposal
-	proposalId, hash, err := trustednode.ProposeMinipoolUnbondedMax(rp, unbondedMinipoolMax, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
-}
-
 func canProposeSettingProposalCooldown(c *cli.Command, proposalCooldownTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services

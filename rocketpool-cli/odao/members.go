@@ -39,7 +39,6 @@ func getMembers() error {
 		fmt.Printf("Joined at:            %s\n", cliutils.GetDateTimeString(member.JoinedTime))
 		fmt.Printf("Last proposal:        %s\n", cliutils.GetDateTimeString(member.LastProposalTime))
 		fmt.Printf("RPL bond amount:      %.6f\n", math.RoundDown(math.WeiToEth(member.RPLBondAmount), 6))
-		fmt.Printf("Unbonded minipools:   %d\n", member.UnbondedValidatorCount)
 		fmt.Printf("\n")
 	}
 	return nil

@@ -324,31 +324,6 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		response.WriteResponse(w, resp, err)
 	})
 
-	mux.HandleFunc("/api/odao/can-propose-members-minipool-unbonded-max", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint64(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingMinipoolUnbondedMax(c, m)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/odao/propose-members-minipool-unbonded-max", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint64(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingMinipoolUnbondedMax(c, m, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
 	mux.HandleFunc("/api/odao/can-propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
