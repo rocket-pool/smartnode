@@ -638,7 +638,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		currentEpoch := state.BeaconConfig.SlotToEpoch(state.BeaconSlotNumber)
 		totalEffectiveBeaconBalance := big.NewInt(0)
 		for _, pubkey := range megapoolPubkeys {
-			info, infoExists := state.MegapoolValidatorInfo[pubkey]
+			info, infoExists := state.GetMegapoolValidatorInfo(megapoolAddress, pubkey)
 			if !infoExists {
 				continue
 			}

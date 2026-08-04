@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
@@ -8,7 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
@@ -174,4 +178,84 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	t.Logf("  RETHSupply:              %s", balances.RETHSupply)
 	t.Logf("  NodeCreditBalance:       %s", balances.NodeCreditBalance)
 	t.Logf("  RewardCalc calls:        %d", len(rewardCalc.calls))
+}
+
+// TestMegapoolBalanceWithDuplicatePubkey verifies that a staked validator's
+// beacon balance is still counted when another megapool holds a validator
+func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
+	megapoolAddrA := common.HexToAddress("0xAA00000000000000000000000000000000000000")
+	megapoolAddrB := common.HexToAddress("0xBB00000000000000000000000000000000000000")
+	var pubkey rptypes.ValidatorPubkey
+	pubkey[0] = 0xDD
+
+	oneEth := big.NewInt(1e18)
+	reducedBond := new(big.Int).Mul(big.NewInt(4), oneEth)
+
+	ns := &state.NetworkState{
+		BeaconSlotNumber: 32000,
+		BeaconConfig: beacon.Eth2Config{
+			SlotsPerEpoch: 32,
+		},
+		NetworkDetails: &rpstate.NetworkDetails{
+			ReducedBond: reducedBond,
+		},
+		MegapoolValidatorDetails: state.ValidatorDetailsMap{
+			pubkey: {Pubkey: pubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
+		},
+		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{
+			{
+				Pubkey:          pubkey[:],
+				MegapoolAddress: megapoolAddrA,
+				ValidatorId:     1,
+				ValidatorInfo: megapool.ValidatorInfo{
+					Staked: true,
+				},
+			},
+			{
+				// A validator in a different megapool reusing the same pubkey,
+				// dequeued immediately (all status flags false)
+				Pubkey:          pubkey[:],
+				MegapoolAddress: megapoolAddrB,
+				ValidatorId:     0,
+				ValidatorInfo:   megapool.ValidatorInfo{},
+			},
+		},
+	}
+
+	// Round-trip through JSON to build MegapoolToPubkeysMap and
+	// MegapoolValidatorInfo the same way createNetworkState does
+	data, err := json.Marshal(ns)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var restored state.NetworkState
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	megapoolDetails := rpstate.NativeMegapoolDetails{
+		Address:        megapoolAddrA,
+		Deployed:       true,
+		UserCapital:    new(big.Int).Mul(big.NewInt(24), oneEth),
+		NodeBond:       new(big.Int).Mul(big.NewInt(8), oneEth),
+		EthBalance:     big.NewInt(0),
+		PendingRewards: big.NewInt(0),
+	}
+
+	task := &submitNetworkBalances{}
+	details, err := task.getMegapoolBalanceDetails(megapoolAddrA, &restored, megapoolDetails, &stubRewardSplitCalculator{})
+	if err != nil {
+		t.Fatalf("getMegapoolBalanceDetails: %v", err)
+	}
+
+	// The staked validator's 32 ETH beacon balance must be counted
+	expectedTotal := new(big.Int).Mul(big.NewInt(32), oneEth)
+	if details.BeaconBalanceTotal.Cmp(expectedTotal) != 0 {
+		t.Errorf("BeaconBalanceTotal: got %s, want %s (staked validator's balance dropped due to duplicate pubkey)", details.BeaconBalanceTotal, expectedTotal)
+	}
+
+	expectedStaking := new(big.Int).Sub(expectedTotal, reducedBond)
+	if details.StakingBalance.Cmp(expectedStaking) != 0 {
+		t.Errorf("StakingBalance: got %s, want %s", details.StakingBalance, expectedStaking)
+	}
 }

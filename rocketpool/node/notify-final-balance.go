@@ -139,7 +139,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
 			// Skip validators that haven't been staked
-			info, infoExists := state.MegapoolValidatorInfo[pubkey]
+			info, infoExists := state.GetMegapoolValidatorInfo(megapoolAddress, pubkey)
 			if infoExists && !info.ValidatorInfo.Staked {
 				continue
 			}
@@ -147,7 +147,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 			continue
 		}
 
-		validatorInfo, exists := state.MegapoolValidatorInfo[pubkey]
+		validatorInfo, exists := state.GetMegapoolValidatorInfo(megapoolAddress, pubkey)
 		if !exists {
 			// Log
 			t.log.Printlnf("Validator %s not found in the megapool validator info map", pubkey.String())

@@ -686,7 +686,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 
 		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{},
 		MegapoolToPubkeysMap:         make(map[common.Address][]types.ValidatorPubkey),
-		MegapoolValidatorInfo:        make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex),
+		MegapoolValidatorInfo:        make(map[state.MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex),
 		MegapoolDetails:              make(map[common.Address]rpstate.NativeMegapoolDetails),
 		MegapoolValidatorDetails:     make(state.ValidatorDetailsMap),
 	}
@@ -878,7 +878,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				}
 				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
 				out.MegapoolToPubkeysMap[node.MegapoolAddress()] = append(out.MegapoolToPubkeysMap[node.MegapoolAddress()], pubkey)
-				out.MegapoolValidatorInfo[pubkey] = &vifgi
+				out.MegapoolValidatorInfo[state.MegapoolValidatorKey{MegapoolAddress: node.MegapoolAddress(), Pubkey: pubkey}] = &vifgi
 				out.MegapoolValidatorDetails[pubkey] = beacon.ValidatorStatus{
 					Pubkey:                     pubkey,
 					Index:                      idx,

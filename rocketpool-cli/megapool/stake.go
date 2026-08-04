@@ -18,7 +18,7 @@ func getStakableValidator() (uint64, bool, error) {
 	}
 	defer rp.Close()
 	// Get Megapool status
-	status, err := rp.MegapoolStatus(false)
+	status, err := rp.MegapoolStatus(true)
 	if err != nil {
 		return 0, false, err
 	}
