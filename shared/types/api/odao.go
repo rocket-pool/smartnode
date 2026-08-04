@@ -235,12 +235,6 @@ type ProposeTNDAOSettingMembersRplBondResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
-type ProposeTNDAOSettingMinipoolUnbondedMaxResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
-	ProposalId uint64      `json:"proposalId"`
-	TxHash     common.Hash `json:"txHash"`
-}
 type ProposeTNDAOSettingProposalCooldownResponse struct {
 	Status     string      `json:"status"`
 	Error      string      `json:"error"`
@@ -303,14 +297,13 @@ type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
 }
 
 type GetTNDAOMemberSettingsResponse struct {
-	Status              string   `json:"status"`
-	Error               string   `json:"error"`
-	Quorum              float64  `json:"quorum"`
-	RPLBond             *big.Int `json:"rplBond"`
-	MinipoolUnbondedMax uint64   `json:"minipoolUnbondedMax"`
-	ChallengeCooldown   uint64   `json:"challengeCooldown"`
-	ChallengeWindow     uint64   `json:"challengeWindow"`
-	ChallengeCost       *big.Int `json:"challengeCost"`
+	Status            string   `json:"status"`
+	Error             string   `json:"error"`
+	Quorum            float64  `json:"quorum"`
+	RPLBond           *big.Int `json:"rplBond"`
+	ChallengeCooldown uint64   `json:"challengeCooldown"`
+	ChallengeWindow   uint64   `json:"challengeWindow"`
+	ChallengeCost     *big.Int `json:"challengeCost"`
 }
 type GetTNDAOProposalSettingsResponse struct {
 	Status        string `json:"status"`

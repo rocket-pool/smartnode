@@ -405,21 +405,6 @@ func (c *Client) CanProposeTNDAOSettingMembersRplBond(bondAmountWei *big.Int) (a
 	return response, nil
 }
 
-func (c *Client) CanProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64) (api.CanProposeTNDAOSettingResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/odao/can-propose-members-minipool-unbonded-max", url.Values{"max": {strconv.FormatUint(unbondedMinipoolMax, 10)}})
-	if err != nil {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.minipool.unbonded.max: %w", err)
-	}
-	var response api.CanProposeTNDAOSettingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting members.minipool.unbonded.max response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.minipool.unbonded.max: %s", response.Error)
-	}
-	return response, nil
-}
-
 func (c *Client) CanProposeTNDAOSettingProposalCooldown(proposalCooldownTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
 	responseBytes, err := c.callHTTPAPI("GET", "/api/odao/can-propose-proposal-cooldown", url.Values{"value": {strconv.FormatUint(proposalCooldownTimespan, 10)}})
 	if err != nil {
@@ -601,21 +586,6 @@ func (c *Client) ProposeTNDAOSettingMembersRplBond(bondAmountWei *big.Int) (api.
 	}
 	if response.Error != "" {
 		return api.ProposeTNDAOSettingMembersRplBondResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.rplbond: %s", response.Error)
-	}
-	return response, nil
-}
-
-func (c *Client) ProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64) (api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/odao/propose-members-minipool-unbonded-max", url.Values{"max": {strconv.FormatUint(unbondedMinipoolMax, 10)}})
-	if err != nil {
-		return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.minipool.unbonded.max: %w", err)
-	}
-	var response api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting members.minipool.unbonded.max response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.minipool.unbonded.max: %s", response.Error)
 	}
 	return response, nil
 }

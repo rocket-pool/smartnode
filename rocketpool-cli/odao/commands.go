@@ -294,27 +294,6 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 								},
 							},
 							{
-								Name:      "members-minipool-unbonded-max",
-								Aliases:   []string{"u"},
-								Usage:     "Propose updating the members.minipool.unbonded.max setting - takes a number (e.g 100)",
-								UsageText: "rocketpool odao propose setting members-minipool-unbonded-max value",
-								Action: func(ctx context.Context, c *cli.Command) error {
-
-									// Validate args
-									if err := cliutils.ValidateArgCount(c, 1); err != nil {
-										return err
-									}
-									unbondedMinipoolMax, err := cliutils.ValidateUint("maximum unbonded minipool count", c.Args().Get(0))
-									if err != nil {
-										return err
-									}
-
-									// Run
-									return proposeSettingMinipoolUnbondedMax(unbondedMinipoolMax, c.Bool("yes"))
-
-								},
-							},
-							{
 								Name:      "proposal-cooldown",
 								Aliases:   []string{"c"},
 								Usage:     "Propose updating the proposal.cooldown.time setting - format is e.g. 1h30m45s",

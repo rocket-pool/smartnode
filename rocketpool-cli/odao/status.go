@@ -26,7 +26,7 @@ func getStatus() error {
 
 	// Membership status
 	if status.IsMember {
-		fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
+		fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		if status.CanLeave {
 			fmt.Println("The node has an executed proposal to leave - you can leave the oracle DAO with 'rocketpool odao leave'")
 		}

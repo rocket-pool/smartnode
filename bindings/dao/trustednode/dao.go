@@ -21,14 +21,13 @@ const (
 
 // Member details
 type MemberDetails struct {
-	Address                common.Address `json:"address"`
-	Exists                 bool           `json:"exists"`
-	ID                     string         `json:"id"`
-	Url                    string         `json:"url"`
-	JoinedTime             uint64         `json:"joinedTime"`
-	LastProposalTime       uint64         `json:"lastProposalTime"`
-	RPLBondAmount          *big.Int       `json:"rplBondAmount"`
-	UnbondedValidatorCount uint64         `json:"unbondedValidatorCount"`
+	Address          common.Address `json:"address"`
+	Exists           bool           `json:"exists"`
+	ID               string         `json:"id"`
+	Url              string         `json:"url"`
+	JoinedTime       uint64         `json:"joinedTime"`
+	LastProposalTime uint64         `json:"lastProposalTime"`
+	RPLBondAmount    *big.Int       `json:"rplBondAmount"`
 }
 
 // Get all member details
@@ -129,7 +128,6 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 	var joinedTime uint64
 	var lastProposalTime uint64
 	var rplBondAmount *big.Int
-	var unbondedValidatorCount uint64
 
 	// Load data
 	wg.Go(func() error {
@@ -162,11 +160,6 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 		rplBondAmount, err = GetMemberRPLBondAmount(rp, memberAddress, opts)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		unbondedValidatorCount, err = GetMemberUnbondedValidatorCount(rp, memberAddress, opts)
-		return err
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
@@ -175,14 +168,13 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 
 	// Return
 	return MemberDetails{
-		Address:                memberAddress,
-		Exists:                 exists,
-		ID:                     id,
-		Url:                    url,
-		JoinedTime:             joinedTime,
-		LastProposalTime:       lastProposalTime,
-		RPLBondAmount:          rplBondAmount,
-		UnbondedValidatorCount: unbondedValidatorCount,
+		Address:          memberAddress,
+		Exists:           exists,
+		ID:               id,
+		Url:              url,
+		JoinedTime:       joinedTime,
+		LastProposalTime: lastProposalTime,
+		RPLBondAmount:    rplBondAmount,
 	}, nil
 
 }
@@ -292,17 +284,6 @@ func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Addr
 		return nil, fmt.Errorf("error getting trusted node DAO member %s RPL bond amount: %w", memberAddress.Hex(), err)
 	}
 	return *rplBondAmount, nil
-}
-func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	unbondedValidatorCount := new(*big.Int)
-	if err := rocketDAONodeTrusted.Call(opts, unbondedValidatorCount, "getMemberUnbondedValidatorCount", memberAddress); err != nil {
-		return 0, fmt.Errorf("error getting trusted node DAO member %s unbonded validator count: %w", memberAddress.Hex(), err)
-	}
-	return (*unbondedValidatorCount).Uint64(), nil
 }
 
 // Get the time that a proposal for a member was executed at

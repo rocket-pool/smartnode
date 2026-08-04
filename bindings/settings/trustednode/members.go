@@ -16,14 +16,12 @@ import (
 
 // Config
 const (
-	MembersSettingsContractName       = "rocketDAONodeTrustedSettingsMembers"
-	QuorumSettingPath                 = "members.quorum"
-	RPLBondSettingPath                = "members.rplbond"
-	MinipoolUnbondedMaxSettingPath    = "members.minipool.unbonded.max"
-	MinipoolUnbondedMinFeeSettingPath = "members.minipool.unbonded.min.fee"
-	ChallengeCooldownSettingPath      = "members.challenge.cooldown"
-	ChallengeWindowSettingPath        = "members.challenge.window"
-	ChallengeCostSettingPath          = "members.challenge.cost"
+	MembersSettingsContractName  = "rocketDAONodeTrustedSettingsMembers"
+	QuorumSettingPath            = "members.quorum"
+	RPLBondSettingPath           = "members.rplbond"
+	ChallengeCooldownSettingPath = "members.challenge.cooldown"
+	ChallengeWindowSettingPath   = "members.challenge.window"
+	ChallengeCostSettingPath     = "members.challenge.cost"
 )
 
 // Member proposal quorum threshold
@@ -62,44 +60,6 @@ func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.Transa
 }
 func EstimateProposeRPLBondGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
-}
-
-// The maximum number of unbonded minipools a member can run
-func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMax"); err != nil {
-		return 0, fmt.Errorf("error getting member unbonded minipool limit: %w", err)
-	}
-	return (*value).Uint64(), nil
-}
-func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
-}
-func EstimateProposeMinipoolUnbondedMaxGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
-}
-
-// The minimum commission rate before unbonded minipools are allowed
-func GetMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMinFee"); err != nil {
-		return 0, fmt.Errorf("error getting member unbonded minipool minimum fee: %w", err)
-	}
-	return (*value).Uint64(), nil
-}
-func ProposeMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMinFeeSettingPath), MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
-}
-func EstimateProposeMinipoolUnbondedMinFeeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUnbondedMinFeeSettingPath), MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
 }
 
 // The period a member must wait for before submitting another challenge, in blocks
