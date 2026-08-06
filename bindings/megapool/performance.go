@@ -8,13 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 // Estimate the gas to call ChallengeMegapool
-func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, validatorId, startEpoch, participation, slotTimestamp, slotProof)
 }
@@ -33,10 +34,10 @@ func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address
 }
 
 // Estimate the gas to call RespondWithParticipation
-func EstimateRespondWithParticipationGas(rp *rocketpool.RocketPool, challengeId uint64, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRespondWithParticipationGas(rp *rocketpool.RocketPool, challengeId uint64, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "respondWithParticipation", challengeId, offset, challengeLeaf, challengeWitness, slotTimestamp, validatorProof, participationProof, slotProof)
 }
@@ -56,10 +57,10 @@ func RespondWithParticipation(rp *rocketpool.RocketPool, challengeId uint64, off
 }
 
 // Estimate the gas to call RespondWithValidator
-func EstimateRespondWithValidatorGas(rp *rocketpool.RocketPool, challengeId uint64, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRespondWithValidatorGas(rp *rocketpool.RocketPool, challengeId uint64, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "respondWithValidator", challengeId, slotTimestamp, validatorProof, slotProof)
 }
@@ -79,10 +80,10 @@ func RespondWithValidator(rp *rocketpool.RocketPool, challengeId uint64, slotTim
 }
 
 // Estimate the gas to call FinaliseChallenge
-func EstimateFinaliseChallengeGas(rp *rocketpool.RocketPool, challengeId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateFinaliseChallengeGas(rp *rocketpool.RocketPool, challengeId uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "finaliseChallenge", challengeId)
 }

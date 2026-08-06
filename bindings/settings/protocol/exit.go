@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -37,7 +38,7 @@ func GetCooperativeExitPhase(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ti
 func ProposeCooperativeExitPhase(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", CooperativeExitPhaseSettingPath), ExitSettingsContractName, CooperativeExitPhaseSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeCooperativeExitPhaseGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeCooperativeExitPhaseGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooperativeExitPhaseSettingPath), ExitSettingsContractName, CooperativeExitPhaseSettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -56,7 +57,7 @@ func GetDidNotExitPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 func ProposeDidNotExitPenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", DidNotExitPenaltySettingPath), ExitSettingsContractName, DidNotExitPenaltySettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeDidNotExitPenaltyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeDidNotExitPenaltyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DidNotExitPenaltySettingPath), ExitSettingsContractName, DidNotExitPenaltySettingPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -75,7 +76,7 @@ func GetDidNotExitCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time
 func ProposeDidNotExitCooldown(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", DidNotExitCooldownSettingPath), ExitSettingsContractName, DidNotExitCooldownSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeDidNotExitCooldownGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeDidNotExitCooldownGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DidNotExitCooldownSettingPath), ExitSettingsContractName, DidNotExitCooldownSettingPath, value, blockNumber, treeNodes, opts)
 }
 

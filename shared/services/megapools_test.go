@@ -510,13 +510,13 @@ func walkWitnessChain(t *testing.T, leaf []byte, gid *big.Int, witnesses [][]byt
 // filled in.
 func anchorBlockRoot(t *testing.T, state *fulu.BeaconState) []byte {
 	t.Helper()
-	stateRoot, err := state.HashTreeRoot()
+	stateRoot, err := generic.SSZ.HashTreeRoot(state)
 	if err != nil {
 		t.Fatalf("failed to hash anchor state: %v", err)
 	}
 	header := *state.LatestBlockHeader
 	header.StateRoot = stateRoot[:]
-	blockRoot, err := header.HashTreeRoot()
+	blockRoot, err := generic.SSZ.HashTreeRoot(&header)
 	if err != nil {
 		t.Fatalf("failed to hash anchor block header: %v", err)
 	}
@@ -533,7 +533,7 @@ func TestBuildRecentParticipationWitnesses(t *testing.T) {
 	anchorState := newProofTestFuluState(t, numValidators, anchorSlot)
 
 	// Wire the anchor's state_roots vector to commit to the participation state
-	participationRoot, err := participationState.HashTreeRoot()
+	participationRoot, err := generic.SSZ.HashTreeRoot(participationState)
 	if err != nil {
 		t.Fatalf("failed to hash participation state: %v", err)
 	}
@@ -585,7 +585,7 @@ func TestBuildHistoricalParticipationWitnesses(t *testing.T) {
 
 	// Wire the era boundary state's state_roots vector to commit to the
 	// participation state
-	participationRoot, err := participationState.HashTreeRoot()
+	participationRoot, err := generic.SSZ.HashTreeRoot(participationState)
 	if err != nil {
 		t.Fatalf("failed to hash participation state: %v", err)
 	}
@@ -601,7 +601,7 @@ func TestBuildHistoricalParticipationWitnesses(t *testing.T) {
 		BlockRoots: eraState.BlockRoots,
 		StateRoots: eraState.StateRoots,
 	}
-	hslsTree, err := hsls.GetTree()
+	hslsTree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		t.Fatalf("failed to get historical summary lists tree: %v", err)
 	}

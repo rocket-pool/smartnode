@@ -270,7 +270,7 @@ func verifyParticipationStateLink(linkState eth2.BeaconState, participationState
 	if !ok {
 		return nil
 	}
-	participationRoot, err := participationFulu.HashTreeRoot()
+	participationRoot, err := generic.SSZ.HashTreeRoot(participationFulu)
 	if err != nil {
 		return fmt.Errorf("error hashing the participation state: %w", err)
 	}
@@ -346,7 +346,7 @@ func GetParticipationProof(c *cli.Command, validatorIndex uint64, validatorPubke
 	if err != nil {
 		return PerformanceDefenseProofs{}, fmt.Errorf("error getting beacon state at slot %d (an archive Beacon Node may be required for old epochs): %w", participationSlot, err)
 	}
-	participationState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
+	participationState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Size, stateResponse.Fork)
 	if err != nil {
 		return PerformanceDefenseProofs{}, fmt.Errorf("error parsing beacon state at slot %d: %w", participationSlot, err)
 	}
@@ -413,7 +413,7 @@ func GetParticipationProof(c *cli.Command, validatorIndex uint64, validatorPubke
 		if err != nil {
 			return PerformanceDefenseProofs{}, fmt.Errorf("error getting the era boundary state at slot %d (an archive Beacon Node may be required): %w", eraBoundarySlot, err)
 		}
-		eraState, err := eth2.NewBeaconState(eraStateResponse.Data, eraStateResponse.Fork)
+		eraState, err := eth2.NewBeaconState(eraStateResponse.Data, eraStateResponse.Size, eraStateResponse.Fork)
 		if err != nil {
 			return PerformanceDefenseProofs{}, fmt.Errorf("error parsing the era boundary state at slot %d: %w", eraBoundarySlot, err)
 		}

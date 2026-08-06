@@ -14,9 +14,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -24,8 +26,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Stake megapool validator task
@@ -113,7 +113,7 @@ func newDefendChallengePerformance(c *cli.Command, logger log.ColorLogger) (*def
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
@@ -121,9 +121,9 @@ func newDefendChallengePerformance(c *cli.Command, logger log.ColorLogger) (*def
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -305,7 +305,7 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 	if err != nil {
 		return fmt.Errorf("could not estimate the gas required to finalise challenge %d: %w", challenge.challengeId, err)
 	}
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasInfo.Safe))
 
 	// Get the max fee
 	maxFee := t.maxFee
@@ -317,7 +317,7 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -332,7 +332,7 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}
@@ -368,7 +368,7 @@ func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerf
 		return err
 	}
 
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasInfo.Safe))
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
@@ -379,7 +379,7 @@ func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerf
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -394,7 +394,7 @@ func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerf
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}
@@ -428,7 +428,7 @@ func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, 
 		return err
 	}
 
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasInfo.Safe))
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
@@ -439,7 +439,7 @@ func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, 
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -454,7 +454,7 @@ func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, 
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -53,7 +53,7 @@ func GetPerformanceThresholdPct(rp *rocketpool.RocketPool) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error getting performance threshold: %w", err)
 	}
-	return eth.WeiToEth(thresholdWei) * 100.0, nil
+	return math.WeiToEth(thresholdWei) * 100.0, nil
 }
 
 // Defaults used before Saturn 2 deploys.
