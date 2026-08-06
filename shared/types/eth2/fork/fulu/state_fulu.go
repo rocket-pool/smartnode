@@ -84,7 +84,7 @@ func GetGeneralizedIndexForSlot() uint64 {
 }
 
 func GetGeneralizedIndexForPreviousEpochParticipation() uint64 {
-	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStatePreviousEpochParticipationFieldIndex
+	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStatePreviousEpochParticipationFieldIndex)
 }
 
 // PreviousEpochParticipationChunkProof proves the previous_epoch_participation
@@ -104,7 +104,7 @@ func (state *BeaconState) PreviousEpochParticipationChunkProof(validatorIndex ui
 	var chunk [32]byte
 	copy(chunk[:], state.PreviousEpochParticipation[chunkIndex*32:])
 
-	stateTree, err := state.GetTree()
+	stateTree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return [32]byte{}, nil, fmt.Errorf("could not get state tree: %w", err)
 	}
@@ -270,7 +270,7 @@ func (state *BeaconState) HistoricalSummaryStateRootProof(slot int) ([][]byte, e
 	}
 
 	idx := slot % int(generic.SlotsPerHistoricalRoot)
-	tree, err := hsls.GetTree()
+	tree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
 	}
@@ -300,7 +300,7 @@ func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}

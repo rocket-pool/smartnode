@@ -133,15 +133,15 @@ func getSettings() error {
 		fmt.Printf("\tPerformance Exits Enabled:   %t\n", response.Performance.ExitsEnabled)
 		fmt.Printf("\tPerformance Period:          %d Epochs\n", response.Performance.Period)
 		fmt.Printf("\tProof Buffer:                %s\n", response.Performance.ProofBuffer)
-		fmt.Printf("\tPerformance Threshold:       %.2f%%\n", eth.WeiToEth(response.Performance.Threshold)*100)
+		fmt.Printf("\tPerformance Threshold:       %.2f%%\n", math.WeiToEth(response.Performance.Threshold)*100)
 		fmt.Printf("\tChallenge Period:            %s\n", response.Performance.ChallengePeriod)
-		fmt.Printf("\tChallenge Bond:              %.6f RPL\n", eth.WeiToEth(response.Performance.ChallengeBond))
+		fmt.Printf("\tChallenge Bond:              %.6f RPL\n", math.WeiToEth(response.Performance.ChallengeBond))
 		fmt.Println()
 
 		// Exit
 		fmt.Println("== Exit Settings (RPIP-80) ==")
 		fmt.Printf("\tCooperative Exit Phase:      %.0f Hours\n", response.Exit.CooperativeExitPhase.Hours())
-		fmt.Printf("\tDid Not Exit Penalty:        %.6f ETH\n", eth.WeiToEth(response.Exit.DidNotExitPenalty))
+		fmt.Printf("\tDid Not Exit Penalty:        %.6f ETH\n", math.WeiToEth(response.Exit.DidNotExitPenalty))
 		fmt.Printf("\tDid Not Exit Cooldown:       %s\n", response.Exit.DidNotExitCooldown)
 		fmt.Println()
 	}

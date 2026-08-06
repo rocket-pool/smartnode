@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 // LargeEpochRangeWarning is the number of epochs above which the CLI prompts

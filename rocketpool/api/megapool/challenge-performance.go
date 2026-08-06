@@ -84,7 +84,7 @@ func canChallengePerformance(
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo, err = megapool.EstimateChallengeMegapoolGas(rp, megapoolAddress, validatorId, startEpoch, participation, slotTimestamp, slotProof, opts)
+	response.GasLimits, err = megapool.EstimateChallengeMegapoolGas(rp, megapoolAddress, validatorId, startEpoch, participation, slotTimestamp, slotProof, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error estimating challengeMegapool gas: %w", err)
 	}

@@ -281,7 +281,7 @@ func (state *BeaconState) HistoricalSummaryStateRootProof(slot int) ([][]byte, e
 	}
 
 	idx := slot % int(generic.SlotsPerHistoricalRoot)
-	tree, err := hsls.GetTree()
+	tree, err := generic.SSZ.GetTree(&hsls)
 	if err != nil {
 		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
 	}
@@ -311,7 +311,7 @@ func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
-	tree, err := state.GetTree()
+	tree, err := generic.SSZ.GetTree(state)
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}

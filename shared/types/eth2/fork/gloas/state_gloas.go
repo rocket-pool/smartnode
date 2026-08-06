@@ -453,3 +453,7 @@ func (state *BeaconState) GetSlot() uint64 {
 func (state *BeaconState) GetPreviousEpochParticipation() []byte {
 	return state.PreviousEpochParticipation
 }
+
+func (state *BeaconState) PreviousEpochParticipationChunkProof(validatorIndex uint64) ([32]byte, [][]byte, error) {
+	return [32]byte{}, nil, fmt.Errorf("participation proofs are not supported for gloas states yet")
+}

@@ -210,7 +210,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = security.EstimateProposePerformanceExitsEnabledGas(rp, newValue, opts)
+			response.GasLimits, err = security.EstimateProposePerformanceExitsEnabledGas(rp, newValue, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceExitsEnabled: %w", err)
 			}

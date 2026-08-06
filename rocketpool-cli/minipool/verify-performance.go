@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	verifyperf "github.com/rocket-pool/smartnode/rocketpool-cli/cli/verify-performance"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	verifyperf "github.com/rocket-pool/smartnode/shared/utils/cli/verify-performance"
 )
 
 // validateMinipoolTargets checks that the verify-performance targets argument

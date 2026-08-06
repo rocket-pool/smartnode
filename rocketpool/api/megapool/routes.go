@@ -377,17 +377,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/megapool/verify-performance", func(w http.ResponseWriter, r *http.Request) {
 		targets := r.FormValue("targets")
 		if targets == "" {
-			apiutils.WriteErrorResponse(w, fmt.Errorf("missing required parameter 'targets'"))
+			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter 'targets'"))
 			return
 		}
 		startEpoch, err := parseUint64(r, "startEpoch")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		endEpoch, err := parseUint64(r, "endEpoch")
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		// megapoolAddress is optional; zero address means "use the node's own megapool".
@@ -398,32 +398,32 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			megapoolAddr = common.HexToAddress(raw)
 		}
 		resp, err := verifyPerformance(c, megapoolAddr, targets, startEpoch, endEpoch)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/can-challenge-performance", func(w http.ResponseWriter, r *http.Request) {
 		megapoolAddr, validatorId, startEpoch, participation, err := parseChallengePerformanceParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := canChallengePerformance(c, megapoolAddr, validatorId, startEpoch, participation)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/challenge-performance", func(w http.ResponseWriter, r *http.Request) {
 		megapoolAddr, validatorId, startEpoch, participation, err := parseChallengePerformanceParams(r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+			response.WriteErrorResponse(w, err)
 			return
 		}
 		resp, err := challengePerformance(c, megapoolAddr, validatorId, startEpoch, participation, opts)
-		apiutils.WriteResponse(w, resp, err)
+		response.WriteResponse(w, resp, err)
 	})
 }
 
@@ -490,7 +490,7 @@ func parseBigIntList(r *http.Request, name string) ([]*big.Int, error) {
 		raw = r.FormValue(name)
 	}
 	if raw == "" {
-		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+		return nil, &response.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
 	}
 	parts := strings.Split(raw, ",")
 	values := make([]*big.Int, 0, len(parts))
@@ -501,12 +501,12 @@ func parseBigIntList(r *http.Request, name string) ([]*big.Int, error) {
 		}
 		v, ok := new(big.Int).SetString(part, 10)
 		if !ok {
-			return nil, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s entry: %s", name, part)}
+			return nil, &response.BadRequestError{Err: fmt.Errorf("invalid %s entry: %s", name, part)}
 		}
 		values = append(values, v)
 	}
 	if len(values) == 0 {
-		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("no valid entries in parameter '%s'", name)}
+		return nil, &response.BadRequestError{Err: fmt.Errorf("no valid entries in parameter '%s'", name)}
 	}
 	return values, nil
 }
