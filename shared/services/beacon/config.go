@@ -3,10 +3,13 @@ package beacon
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+const FarFutureEpoch uint64 = 0xffffffffffffffff
 
 type Eth2Config struct {
 	GenesisForkVersion           []byte `json:"genesis_fork_version"`
@@ -18,6 +21,7 @@ type Eth2Config struct {
 	SecondsPerEpoch              uint64 `json:"seconds_per_epoch"`
 	EpochsPerSyncCommitteePeriod uint64 `json:"epochs_per_sync_committee_period"`
 	ShardCommitteePeriod         uint64 `json:"shard_committee_period"`
+	GloasForkEpoch               uint64 `json:"gloas_fork_epoch"`
 }
 
 func (c *Eth2Config) MarshalJSON() ([]byte, error) {
@@ -59,6 +63,15 @@ func (c *Eth2Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+// GloasActivationSlot returns the first slot of the Gloas fork, saturating at
+// MaxUint64 when the fork is not scheduled (FAR_FUTURE_EPOCH).
+func (c *Eth2Config) GloasActivationSlot() uint64 {
+	if c.SlotsPerEpoch == 0 || c.GloasForkEpoch > math.MaxUint64/c.SlotsPerEpoch {
+		return math.MaxUint64
+	}
+	return c.GloasForkEpoch * c.SlotsPerEpoch
 }
 
 // GetSlotTime returns the time of a given slot for the network described by Eth2Config.

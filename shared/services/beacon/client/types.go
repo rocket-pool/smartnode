@@ -46,6 +46,7 @@ type Eth2ConfigResponse struct {
 		CapellaForkVersion           byteArray `json:"CAPELLA_FORK_VERSION"`
 		EpochsPerSyncCommitteePeriod uinteger  `json:"EPOCHS_PER_SYNC_COMMITTEE_PERIOD"`
 		ShardCommitteePeriod         uinteger  `json:"SHARD_COMMITTEE_PERIOD"`
+		GloasForkEpoch               *uinteger `json:"GLOAS_FORK_EPOCH"`
 	} `json:"data"`
 }
 type Eth2DepositContractResponse struct {
