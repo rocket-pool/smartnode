@@ -11,12 +11,12 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // verifyPerformance computes the RPIP-73 target-vote performance over the

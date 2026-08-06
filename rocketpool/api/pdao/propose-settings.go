@@ -969,7 +969,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformanceExitsEnabledGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformanceExitsEnabledGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceExitsEnabled: %w", err)
 			}
@@ -980,7 +980,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformancePeriodGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformancePeriodGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformancePeriod: %w", err)
 			}
@@ -991,7 +991,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformanceProofBufferGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformanceProofBufferGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceProofBuffer: %w", err)
 			}
@@ -1002,7 +1002,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformanceThresholdGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformanceThresholdGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceThreshold: %w", err)
 			}
@@ -1013,7 +1013,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformanceChallengePeriodGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformanceChallengePeriodGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceChallengePeriod: %w", err)
 			}
@@ -1024,7 +1024,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposePerformanceChallengeBondGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposePerformanceChallengeBondGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PerformanceChallengeBond: %w", err)
 			}
@@ -1038,7 +1038,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeCooperativeExitPhaseGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeCooperativeExitPhaseGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing CooperativeExitPhase: %w", err)
 			}
@@ -1049,7 +1049,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeDidNotExitPenaltyGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeDidNotExitPenaltyGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitPenalty: %w", err)
 			}
@@ -1060,7 +1060,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeDidNotExitCooldownGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeDidNotExitCooldownGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitCooldown: %w", err)
 			}

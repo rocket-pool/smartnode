@@ -7,14 +7,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
+	verifyperf "github.com/rocket-pool/smartnode/rocketpool-cli/cli/verify-performance"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	verifyperf "github.com/rocket-pool/smartnode/shared/utils/cli/verify-performance"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // validateMegapoolTargets checks that the verify-performance targets argument
@@ -93,7 +92,7 @@ func challengePerformance(rp *rocketpool.Client, megapoolAddress common.Address,
 		fmt.Println("\nPerformance challenges are not available until Saturn 2 is deployed.")
 		return nil
 	}
-	bondRpl := math.RoundDown(eth.WeiToEth(settings.Performance.ChallengeBond), 6)
+	bondRpl := math.RoundDown(math.WeiToEth(settings.Performance.ChallengeBond), 6)
 
 	for _, group := range groups {
 		ids := make([]string, len(group.ValidatorIds))
@@ -115,7 +114,7 @@ func challengePerformance(rp *rocketpool.Client, megapoolAddress common.Address,
 			}
 			if can.InsufficientRplBalance {
 				fmt.Printf("The node wallet holds %.6f RPL but the challenge bond requires %.6f RPL. Skipping validator %d.\n",
-					math.RoundDown(eth.WeiToEth(can.RplBalance), 6), math.RoundDown(eth.WeiToEth(can.ChallengeBond), 6), validatorId)
+					math.RoundDown(math.WeiToEth(can.RplBalance), 6), math.RoundDown(math.WeiToEth(can.ChallengeBond), 6), validatorId)
 				continue
 			}
 			if !can.CanChallenge {
@@ -124,7 +123,7 @@ func challengePerformance(rp *rocketpool.Client, megapoolAddress common.Address,
 			}
 
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(can.GasInfo, rp, yes)
+			err = gas.AssignMaxFeeAndLimit(can.GasLimits, rp, yes)
 			if err != nil {
 				return err
 			}

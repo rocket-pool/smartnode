@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // newTestFuluState builds a minimal but SSZ-valid fulu beacon state with
@@ -122,7 +122,7 @@ func validateFuluStateProofToStateRoot(t *testing.T, leaf []byte, proof [][]byte
 
 	currentHash := walkProof(t, leaf, proof, gid)
 
-	stateRoot, err := state.HashTreeRoot()
+	stateRoot, err := generic.SSZ.HashTreeRoot(state)
 	if err != nil {
 		t.Fatalf("Failed to get state root: %v", err)
 	}
