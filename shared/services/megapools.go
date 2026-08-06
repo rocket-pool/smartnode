@@ -259,23 +259,30 @@ func buildHistoricalParticipationWitnesses(anchorState eth2.BeaconState, eraStat
 
 // verifyParticipationStateLink sanity checks that linkState's state_roots
 // vector commits to the participation state's hash tree root before anything
-// is submitted on chain. The check is skipped for fork combinations that
-// can't be inspected (non-fulu states)
+// is submitted on chain. The link and participation states are inspected
+// independently (they can be different forks across a fork boundary); the
+// check is skipped for forks it can't inspect.
 func verifyParticipationStateLink(linkState eth2.BeaconState, participationState eth2.BeaconState, participationSlot uint64) error {
-	linkFulu, ok := linkState.(*fulu.BeaconState)
-	if !ok {
+	var stateRoots *[8192][32]byte
+	switch s := linkState.(type) {
+	case *fulu.BeaconState:
+		stateRoots = &s.StateRoots
+	case *gloas.BeaconState:
+		stateRoots = &s.StateRoots
+	default:
 		return nil
 	}
-	participationFulu, ok := participationState.(*fulu.BeaconState)
-	if !ok {
+	switch participationState.(type) {
+	case *fulu.BeaconState, *gloas.BeaconState:
+	default:
 		return nil
 	}
-	participationRoot, err := generic.SSZ.HashTreeRoot(participationFulu)
+	participationRoot, err := generic.SSZ.HashTreeRoot(participationState)
 	if err != nil {
 		return fmt.Errorf("error hashing the participation state: %w", err)
 	}
-	if linkFulu.StateRoots[participationSlot%generic.SlotsPerHistoricalRoot] != participationRoot {
-		return fmt.Errorf("the state at slot %d does not commit to the root of the participation state at slot %d", linkFulu.Slot, participationSlot)
+	if stateRoots[participationSlot%generic.SlotsPerHistoricalRoot] != participationRoot {
+		return fmt.Errorf("the state at slot %d does not commit to the root of the participation state at slot %d", linkState.GetSlot(), participationSlot)
 	}
 	return nil
 }
@@ -289,8 +296,7 @@ func verifyParticipationStateLink(linkState eth2.BeaconState, participationState
 // previous_epoch_participation flags for the challenged epoch. All proofs are
 // anchored at a recent finalized state: the participation state's root is
 // proven through the anchor's state_roots vector when it is at most 8192
-// slots old, or through historical_summaries otherwise, mirroring the
-// on-chain BeaconStateVerifier path construction.
+// slots old, or through historical_summaries otherwise.
 func GetParticipationProof(c *cli.Command, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, challengedEpoch uint64, startEpoch uint64, participation []*big.Int) (PerformanceDefenseProofs, error) {
 	// Locate the challenged epoch within the challenge participation bitmap
 	if challengedEpoch < startEpoch {
@@ -393,8 +399,7 @@ func GetParticipationProof(c *cli.Command, validatorIndex uint64, validatorPubke
 
 	// Extend the participation chunk proof up to the anchor block root, via
 	// the anchor's state_roots vector when the participation slot is recent
-	// or via historical_summaries otherwise (matching the on-chain
-	// _pathBeaconStateToPastStateRoot branch)
+	// or via historical_summaries otherwise
 	var participationWitnesses [][]byte
 	if participationSlot+generic.SlotsPerHistoricalRoot >= anchorSlot {
 		if err := verifyParticipationStateLink(anchorState, participationState, participationSlot); err != nil {

@@ -22,6 +22,11 @@ func TestGloasFieldGindices(t *testing.T) {
 		{"historical_summaries", GetGeneralizedIndexForHistoricalSummaries(), 2950},
 		{"validators[0]", GetGeneralizedIndexForValidator(0), 1432},
 		{"validators[1]", GetGeneralizedIndexForValidator(1), 11464},
+		{"previous_epoch_participation", GetGeneralizedIndexForPreviousEpochParticipation(), 362},
+		{"participation chunk 0", GetGeneralizedIndexForParticipationChunk(0), 1448},
+		{"participation chunk 1", GetGeneralizedIndexForParticipationChunk(1), 11592},
+		{"participation chunk 4", GetGeneralizedIndexForParticipationChunk(4), 11595},
+		{"participation chunk 5", GetGeneralizedIndexForParticipationChunk(5), 92768},
 	}
 	for _, tc := range cases {
 		if tc.got != tc.want {
@@ -361,5 +366,129 @@ func TestHistoricalSummaryStateRootProof(t *testing.T) {
 	state.Slot = generic.SlotsPerHistoricalRoot + 1
 	if _, err := state.HistoricalSummaryStateRootProof(7); err == nil {
 		t.Fatalf("expected non-aligned state error")
+	}
+}
+
+func TestPreviousEpochParticipationChunkProofProgressive(t *testing.T) {
+	state := minimalBeaconState()
+
+	// 180 flag bytes span packed chunks 0-5: chunks 0-4 fill progressive
+	// levels 0 and 1, chunk 5 is the first (partial) chunk of level 2.
+	const numValidators = 180
+	state.PreviousEpochParticipation = make([]byte, numValidators)
+	for i := range state.PreviousEpochParticipation {
+		state.PreviousEpochParticipation[i] = byte(i % 8)
+	}
+
+	tree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		t.Fatalf("GetTree: %v", err)
+	}
+
+	cases := []struct {
+		validatorIndex uint64
+		wantDepth      int
+	}{
+		{0, 10},   // chunk 0 (progressive level 0)
+		{31, 10},  // chunk 0, last byte
+		{32, 13},  // chunk 1, first chunk of level 1
+		{70, 13},  // chunk 2, mid level 1
+		{127, 13}, // chunk 3, last byte
+		{128, 13}, // chunk 4, last chunk of level 1
+		{160, 16}, // chunk 5, first chunk of level 2
+		{179, 16}, // chunk 5, tail of the partial chunk
+	}
+	for _, tc := range cases {
+		chunk, hashes, err := state.PreviousEpochParticipationChunkProof(tc.validatorIndex)
+		if err != nil {
+			t.Fatalf("chunk proof for validator %d: %v", tc.validatorIndex, err)
+		}
+		if got, want := chunk[tc.validatorIndex%32], state.PreviousEpochParticipation[tc.validatorIndex]; got != want {
+			t.Fatalf("validator %d: chunk byte %d != flags %d", tc.validatorIndex, got, want)
+		}
+		if len(hashes) != tc.wantDepth {
+			t.Fatalf("validator %d: proof depth %d, want %d", tc.validatorIndex, len(hashes), tc.wantDepth)
+		}
+
+		gid := GetGeneralizedIndexForParticipationChunk(tc.validatorIndex / 32)
+		direct, err := tree.Prove(int(gid))
+		if err != nil {
+			t.Fatalf("direct Prove gid %d: %v", gid, err)
+		}
+		if !bytes.Equal(direct.Leaf, chunk[:]) {
+			t.Fatalf("validator %d: direct leaf %x != chunk %x", tc.validatorIndex, direct.Leaf, chunk)
+		}
+		if ok, err := treeproof.VerifyProof(tree.Hash(), direct); err != nil || !ok {
+			t.Fatalf("validator %d: verify participation chunk: ok=%v err=%v", tc.validatorIndex, ok, err)
+		}
+		if len(hashes) != len(direct.Hashes) {
+			t.Fatalf("validator %d: helper proof length %d != direct %d", tc.validatorIndex, len(hashes), len(direct.Hashes))
+		}
+		for i := range hashes {
+			if !bytes.Equal(hashes[i], direct.Hashes[i]) {
+				t.Fatalf("validator %d: proof hash[%d] mismatch", tc.validatorIndex, i)
+			}
+		}
+	}
+
+	// Out-of-bounds index must error.
+	if _, _, err := state.PreviousEpochParticipationChunkProof(numValidators); err == nil {
+		t.Fatalf("expected out-of-bounds error")
+	}
+
+	// An empty participation list must reject every index.
+	empty := minimalBeaconState()
+	if _, _, err := empty.PreviousEpochParticipationChunkProof(0); err == nil {
+		t.Fatalf("expected error for empty participation list")
+	}
+}
+
+func TestPreviousEpochParticipationChunkProofLargeIndex(t *testing.T) {
+	state := minimalBeaconState()
+
+	// A registry of over a million validators: index 1,048,600 sits in packed
+	// chunk 32768, which lives in progressive level 8 of the list, so the
+	// proof must be 10 + 3*8 = 34 hashes deep.
+	const validatorIndex = uint64(1_048_600)
+	const numValidators = validatorIndex + 50
+	state.PreviousEpochParticipation = make([]byte, numValidators)
+	for i := range state.PreviousEpochParticipation {
+		state.PreviousEpochParticipation[i] = byte(i % 8)
+	}
+
+	tree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		t.Fatalf("GetTree: %v", err)
+	}
+
+	chunk, hashes, err := state.PreviousEpochParticipationChunkProof(validatorIndex)
+	if err != nil {
+		t.Fatalf("chunk proof for validator %d: %v", validatorIndex, err)
+	}
+	if got, want := chunk[validatorIndex%32], state.PreviousEpochParticipation[validatorIndex]; got != want {
+		t.Fatalf("chunk byte %d != flags %d", got, want)
+	}
+	if len(hashes) != 34 {
+		t.Fatalf("proof depth %d, want 34", len(hashes))
+	}
+
+	gid := GetGeneralizedIndexForParticipationChunk(validatorIndex / 32)
+	direct, err := tree.Prove(int(gid))
+	if err != nil {
+		t.Fatalf("direct Prove gid %d: %v", gid, err)
+	}
+	if !bytes.Equal(direct.Leaf, chunk[:]) {
+		t.Fatalf("direct leaf %x != chunk %x", direct.Leaf, chunk)
+	}
+	if ok, err := treeproof.VerifyProof(tree.Hash(), direct); err != nil || !ok {
+		t.Fatalf("verify participation chunk: ok=%v err=%v", ok, err)
+	}
+	if len(hashes) != len(direct.Hashes) {
+		t.Fatalf("helper proof length %d != direct %d", len(hashes), len(direct.Hashes))
+	}
+	for i := range hashes {
+		if !bytes.Equal(hashes[i], direct.Hashes[i]) {
+			t.Fatalf("proof hash[%d] mismatch", i)
+		}
 	}
 }

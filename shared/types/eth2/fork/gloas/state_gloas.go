@@ -16,6 +16,8 @@ const (
 	beaconStateStateRootsFieldIndex          = generic.BeaconStateStateRootsFieldIndex          // 6
 	beaconStateValidatorsFieldIndex          = generic.BeaconStateValidatorsIndex               // 11
 	beaconStateHistoricalSummariesFieldIndex = generic.BeaconStateHistoricalSummariesFieldIndex // 27
+
+	beaconStatePreviousEpochParticipationFieldIndex = generic.BeaconStatePreviousEpochParticipationFieldIndex // 15
 	// New in Gloas (EIP-7732): payload_expected_withdrawals commits to the
 	// withdrawals of the execution payload bid on at this slot.
 	beaconStatePayloadExpectedWithdrawalsFieldIndex = 44
@@ -160,6 +162,23 @@ func GetGeneralizedIndexForValidator(validatorIndex uint64) uint64 {
 	return generic.GetGeneralizedIndexForProgressiveListElement(
 		GetGeneralizedIndexForValidators(),
 		validatorIndex,
+	)
+}
+
+// GetGeneralizedIndexForPreviousEpochParticipation returns the gindex of the
+// previous_epoch_participation field root inside the Gloas ProgressiveContainer BeaconState.
+func GetGeneralizedIndexForPreviousEpochParticipation() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStatePreviousEpochParticipationFieldIndex)
+}
+
+// GetGeneralizedIndexForParticipationChunk returns the gindex of packed 32-byte
+// chunk chunkIndex of previous_epoch_participation (ProgressiveContainer field
+// + ProgressiveList packed chunk). The list holds basic uint8 elements, so the
+// leaves are the packed chunks, not the individual bytes.
+func GetGeneralizedIndexForParticipationChunk(chunkIndex uint64) uint64 {
+	return generic.GetGeneralizedIndexForProgressiveListElement(
+		GetGeneralizedIndexForPreviousEpochParticipation(),
+		chunkIndex,
 	)
 }
 
@@ -454,6 +473,39 @@ func (state *BeaconState) GetPreviousEpochParticipation() []byte {
 	return state.PreviousEpochParticipation
 }
 
+// PreviousEpochParticipationChunkProof proves the previous_epoch_participation
+// chunk containing validatorIndex's participation flags up to the state root
+// chunk is the 32-byte merkle leaf holding the flags of validators
+// [chunkIndex*32, chunkIndex*32+31], with the validator's own flags at byte
+// validatorIndex % 32. Unlike pre-Gloas forks, the branch length is variable:
+// the list merkleizes progressively (EIP-7916), so the proof grows by 3 hashes
+// per progressive level of the chunk index.
 func (state *BeaconState) PreviousEpochParticipationChunkProof(validatorIndex uint64) ([32]byte, [][]byte, error) {
-	return [32]byte{}, nil, fmt.Errorf("participation proofs are not supported for gloas states yet")
+	if validatorIndex >= uint64(len(state.PreviousEpochParticipation)) {
+		return [32]byte{}, nil, errors.New("validator index out of bounds of the previous epoch participation list")
+	}
+
+	// Pack the expected leaf chunk locally: 32 participation flag bytes,
+	// zero-padded at the tail of the list.
+	chunkIndex := validatorIndex / 32
+	var chunk [32]byte
+	copy(chunk[:], state.PreviousEpochParticipation[chunkIndex*32:])
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return [32]byte{}, nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	chunkGid := GetGeneralizedIndexForParticipationChunk(chunkIndex)
+	participationStateProof, err := stateTree.Prove(int(chunkGid))
+	if err != nil {
+		return [32]byte{}, nil, fmt.Errorf("could not get proof for participation chunk: %w", err)
+	}
+
+	// Sanity check that the proof leaf matches the locally packed chunk
+	if !bytes.Equal(participationStateProof.Leaf, chunk[:]) {
+		return [32]byte{}, nil, fmt.Errorf("proof leaf does not match expected participation chunk")
+	}
+
+	return chunk, participationStateProof.Hashes, nil
 }
