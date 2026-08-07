@@ -13,10 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/math"
 )
 
 const (
@@ -25,17 +27,17 @@ const (
 
 type MinipoolV4 interface {
 	Minipool
-	EstimateReduceBondAmountGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateReduceBondAmountGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	ReduceBondAmount(opts *bind.TransactOpts) (common.Hash, error)
-	EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimatePromoteGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
-	EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (gaslimit.Limits, error)
 	DistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (common.Hash, error)
 	PrepareDistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (*types.Transaction, error)
 	ForceExit(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateForceExitGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateForceExitGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 }
 
 // Minipool contract
@@ -248,7 +250,7 @@ func (mp *minipool_v4) GetNodeFee(opts *bind.CallOpts) (float64, error) {
 	if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
 		return 0, fmt.Errorf("error getting minipool %s node fee: %w", mp.Address.Hex(), err)
 	}
-	return eth.WeiToEth(*nodeFee), nil
+	return math.WeiToEth(*nodeFee), nil
 }
 func (mp *minipool_v4) GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error) {
 	nodeFee := new(*big.Int)
@@ -355,7 +357,7 @@ func (mp *minipool_v4) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Tim
 }
 
 // Estimate the gas of Refund
-func (mp *minipool_v4) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateRefundGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "refund")
 }
 
@@ -378,7 +380,7 @@ func (mp *minipool_v4) GetUserDistributed(opts *bind.CallOpts) (bool, error) {
 }
 
 // Estimate the gas of DistributeBalance
-func (mp *minipool_v4) EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance", rewardsOnly)
 }
 
@@ -406,7 +408,7 @@ func (mp *minipool_v4) PrepareDistributeBalance(rewardsOnly bool, opts *bind.Tra
 }
 
 // Estimate the gas of Stake
-func (mp *minipool_v4) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorSignature[:], depositDataRoot)
 }
 
@@ -420,7 +422,7 @@ func (mp *minipool_v4) Stake(validatorSignature rptypes.ValidatorSignature, depo
 }
 
 // Estimate the gas of Dissolve
-func (mp *minipool_v4) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateDissolveGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "dissolve")
 }
 
@@ -434,7 +436,7 @@ func (mp *minipool_v4) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of Close
-func (mp *minipool_v4) EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateCloseGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "close")
 }
 
@@ -448,7 +450,7 @@ func (mp *minipool_v4) Close(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of Finalise
-func (mp *minipool_v4) EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateFinaliseGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "finalise")
 }
 
@@ -462,7 +464,7 @@ func (mp *minipool_v4) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of DelegateUpgrade
-func (mp *minipool_v4) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
 }
 
@@ -476,7 +478,7 @@ func (mp *minipool_v4) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, er
 }
 
 // Estimate the gas of SetUseLatestDelegate
-func (mp *minipool_v4) EstimateSetUseLatestDelegateGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateSetUseLatestDelegateGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", true)
 }
 
@@ -526,7 +528,7 @@ func (mp *minipool_v4) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address
 }
 
 // Estimate the gas required to reduce a minipool's bond
-func (mp *minipool_v4) EstimateReduceBondAmountGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateReduceBondAmountGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "reduceBondAmount")
 }
 
@@ -558,7 +560,7 @@ func (mp *minipool_v4) CalculateUserShare(balance *big.Int, opts *bind.CallOpts)
 }
 
 // Estimate the gas required to vote to scrub a minipool
-func (mp *minipool_v4) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateVoteScrubGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "voteScrub")
 }
 
@@ -572,7 +574,7 @@ func (mp *minipool_v4) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas required to promote a vacant minipool
-func (mp *minipool_v4) EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimatePromoteGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "promote")
 }
 
@@ -614,7 +616,7 @@ func (mp *minipool_v4) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 		fromBig := big.NewInt(0).SetUint64(from)
 		toBig := big.NewInt(0).SetUint64(i)
 
-		logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, fromBig, toBig, nil)
+		logs, err := logs.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, fromBig, toBig, nil)
 		if err != nil {
 			return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
 		}
@@ -651,7 +653,7 @@ func (mp *minipool_v4) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 }
 
 // Estimate the gas required to force exit a minipool
-func (mp *minipool_v4) EstimateForceExitGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *minipool_v4) EstimateForceExitGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "forceExit")
 }
 
