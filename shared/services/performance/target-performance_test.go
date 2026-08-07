@@ -4,20 +4,15 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
-	"time"
 
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func TestIsChallengeable(t *testing.T) {
-	// Mainnet timing: 32 slots * 12s = 384s per epoch, so a 24h proof buffer
-	// spans 86400 / 384 = 225 epochs.
-	cfg := beacon.Eth2Config{SecondsPerEpoch: 384}
 	params := ChallengeParams{
-		ExitsEnabled: true,
-		PeriodEpochs: 1000,
-		ProofBuffer:  24 * time.Hour,
+		ExitsEnabled:      true,
+		PeriodEpochs:      1000,
+		ProofBufferEpochs: 225,
 	}
 	// The challenge window is period + proofBufferEpochs = 1225 epochs, so with
 	// currentEpoch = 10000 the oldest challengeable start epoch is 8776.
@@ -25,7 +20,6 @@ func TestIsChallengeable(t *testing.T) {
 	tests := []struct {
 		name         string
 		params       ChallengeParams
-		cfg          beacon.Eth2Config
 		currentEpoch uint64
 		startEpoch   uint64
 		endEpoch     uint64
@@ -34,7 +28,6 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "recent full period",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 10000,
 			startEpoch:   9000,
 			endEpoch:     9999,
@@ -42,8 +35,7 @@ func TestIsChallengeable(t *testing.T) {
 		},
 		{
 			name:         "exits disabled",
-			params:       ChallengeParams{ExitsEnabled: false, PeriodEpochs: 1000, ProofBuffer: 24 * time.Hour},
-			cfg:          cfg,
+			params:       ChallengeParams{ExitsEnabled: false, PeriodEpochs: 1000, ProofBufferEpochs: 225},
 			currentEpoch: 10000,
 			startEpoch:   9000,
 			endEpoch:     9999,
@@ -52,7 +44,6 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "range one epoch too long",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 10000,
 			startEpoch:   9000,
 			endEpoch:     10000,
@@ -61,7 +52,6 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "range one epoch too short",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 10000,
 			startEpoch:   9000,
 			endEpoch:     9998,
@@ -70,7 +60,6 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "start epoch just inside the window",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 10000,
 			startEpoch:   8776,
 			endEpoch:     9775,
@@ -79,7 +68,6 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "start epoch at the window boundary",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 10000,
 			startEpoch:   8775,
 			endEpoch:     9774,
@@ -88,26 +76,16 @@ func TestIsChallengeable(t *testing.T) {
 		{
 			name:         "current epoch smaller than the window",
 			params:       params,
-			cfg:          cfg,
 			currentEpoch: 1000,
 			startEpoch:   0,
 			endEpoch:     999,
 			want:         true,
 		},
-		{
-			name:         "invalid beacon config",
-			params:       params,
-			cfg:          beacon.Eth2Config{},
-			currentEpoch: 10000,
-			startEpoch:   9000,
-			endEpoch:     9999,
-			want:         false,
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := IsChallengeable(tc.params, tc.cfg, tc.currentEpoch, tc.startEpoch, tc.endEpoch)
+			got := IsChallengeable(tc.params, tc.currentEpoch, tc.startEpoch, tc.endEpoch)
 			if got != tc.want {
 				t.Errorf("IsChallengeable(%+v, current %d, [%d, %d]) = %v, want %v",
 					tc.params, tc.currentEpoch, tc.startEpoch, tc.endEpoch, got, tc.want)

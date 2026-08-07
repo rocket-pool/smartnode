@@ -185,21 +185,23 @@ type GetPDAOSettingsResponse struct {
 		UserDistributeDelay              uint64        `json:"userDistributeDelay"`
 		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
 		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
+		PrestakeChallengePeriod          time.Duration `json:"prestakeChallengePeriod"`
 	} `json:"megapool"`
 
 	Performance struct {
 		ExitsEnabled    bool          `json:"exitsEnabled"`
 		Period          uint64        `json:"period"`
-		ProofBuffer     time.Duration `json:"proofBuffer"`
+		ProofBuffer     uint64        `json:"proofBuffer"`
 		Threshold       *big.Int      `json:"threshold"`
 		ChallengePeriod time.Duration `json:"challengePeriod"`
 		ChallengeBond   *big.Int      `json:"challengeBond"`
 	} `json:"performance"`
 
 	Exit struct {
-		CooperativeExitPhase time.Duration `json:"cooperativeExitPhase"`
-		DidNotExitPenalty    *big.Int      `json:"didNotExitPenalty"`
-		DidNotExitCooldown   time.Duration `json:"didNotExitCooldown"`
+		CooperativeExitPhase  time.Duration `json:"cooperativeExitPhase"`
+		DidNotExitPenaltyBase *big.Int      `json:"didNotExitPenaltyBase"`
+		DidNotExitBase        time.Duration `json:"didNotExitBase"`
+		DidNotExitBackoff     *big.Int      `json:"didNotExitBackoff"`
 	} `json:"exit"`
 }
 

@@ -356,6 +356,11 @@ func proposeSettingPenaltyThreshold(value *big.Int, yes bool) error {
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue, yes)
 }
 
+func proposeSettingMegapoolPrestakeChallengePeriod(value uint64, yes bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPrestakeChallengePeriodPath, trueValue, yes)
+}
+
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes)
@@ -366,9 +371,9 @@ func proposeSettingPerformancePeriod(value uint64, yes bool) error {
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes)
 }
 
-func proposeSettingPerformanceProofBuffer(value time.Duration, yes bool) error {
-	trueValue := fmt.Sprint(uint64(value.Hours()))
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceProofBufferSettingPath, trueValue, yes)
+func proposeSettingProofBuffer(value uint64, yes bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.ProofBufferSettingPath, trueValue, yes)
 }
 
 func proposeSettingPerformanceThreshold(value *big.Int, yes bool) error {
@@ -391,14 +396,19 @@ func proposeSettingCooperativeExitPhase(value uint64, yes bool) error {
 	return proposeSetting(protocol.ExitSettingsContractName, protocol.CooperativeExitPhaseSettingPath, trueValue, yes)
 }
 
-func proposeSettingDidNotExitPenalty(value *big.Int, yes bool) error {
+func proposeSettingDidNotExitPenaltyBase(value *big.Int, yes bool) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitPenaltySettingPath, trueValue, yes)
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitPenaltyBaseSettingPath, trueValue, yes)
 }
 
-func proposeSettingDidNotExitCooldown(value uint64, yes bool) error {
+func proposeSettingDidNotExitBase(value uint64, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitCooldownSettingPath, trueValue, yes)
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBaseSettingPath, trueValue, yes)
+}
+
+func proposeSettingDidNotExitBackoff(value *big.Int, yes bool) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBackoffSettingPath, trueValue, yes)
 }
 
 func proposeSettingNodeCommissionShare(value *big.Int, yes bool) error {

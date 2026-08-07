@@ -925,6 +925,16 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PenaltyThreshold: %w", err)
 			}
+		// PrestakeChallengePeriod
+		case protocol.MegapoolPrestakeChallengePeriodPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposePrestakeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PrestakeChallengePeriod: %w", err)
+			}
 		}
 
 	case protocol.PerformanceSettingsContractName:
@@ -951,15 +961,15 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing PerformancePeriod: %w", err)
 			}
 
-		// PerformanceProofBuffer
-		case protocol.PerformanceProofBufferSettingPath:
+		// ProofBuffer
+		case protocol.ProofBufferSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasLimits, err = protocol.EstimateProposePerformanceProofBufferGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeProofBufferGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing PerformanceProofBuffer: %w", err)
+				return nil, fmt.Errorf("error estimating gas for proposing ProofBuffer: %w", err)
 			}
 
 		// PerformanceThreshold
@@ -1009,26 +1019,37 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing CooperativeExitPhase: %w", err)
 			}
 
-		// DidNotExitPenalty
-		case protocol.DidNotExitPenaltySettingPath:
+		// DidNotExitPenaltyBase
+		case protocol.DidNotExitPenaltyBaseSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasLimits, err = protocol.EstimateProposeDidNotExitPenaltyGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeDidNotExitPenaltyBaseGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitPenalty: %w", err)
+				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitPenaltyBase: %w", err)
 			}
 
-		// DidNotExitCooldown
-		case protocol.DidNotExitCooldownSettingPath:
+		// DidNotExitBase
+		case protocol.DidNotExitBaseSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasLimits, err = protocol.EstimateProposeDidNotExitCooldownGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasLimits, err = protocol.EstimateProposeDidNotExitBaseGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitCooldown: %w", err)
+				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitBase: %w", err)
+			}
+
+		// DidNotExitBackoff
+		case protocol.DidNotExitBackoffSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeDidNotExitBackoffGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitBackoff: %w", err)
 			}
 		}
 
@@ -1881,6 +1902,16 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
 			}
+		// PrestakeChallengePeriod
+		case protocol.MegapoolPrestakeChallengePeriodPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePrestakeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PrestakeChallengePeriod: %w", err)
+			}
 
 		}
 
@@ -1908,15 +1939,15 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing PerformancePeriod: %w", err)
 			}
 
-		// PerformanceProofBuffer
-		case protocol.PerformanceProofBufferSettingPath:
+		// ProofBuffer
+		case protocol.ProofBufferSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposePerformanceProofBuffer(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol.ProposeProofBuffer(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error proposing PerformanceProofBuffer: %w", err)
+				return nil, fmt.Errorf("error proposing ProofBuffer: %w", err)
 			}
 
 		// PerformanceThreshold
@@ -1966,26 +1997,37 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing CooperativeExitPhase: %w", err)
 			}
 
-		// DidNotExitPenalty
-		case protocol.DidNotExitPenaltySettingPath:
+		// DidNotExitPenaltyBase
+		case protocol.DidNotExitPenaltyBaseSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeDidNotExitPenalty(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol.ProposeDidNotExitPenaltyBase(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error proposing DidNotExitPenalty: %w", err)
+				return nil, fmt.Errorf("error proposing DidNotExitPenaltyBase: %w", err)
 			}
 
-		// DidNotExitCooldown
-		case protocol.DidNotExitCooldownSettingPath:
+		// DidNotExitBase
+		case protocol.DidNotExitBaseSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeDidNotExitCooldown(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol.ProposeDidNotExitBase(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error proposing DidNotExitCooldown: %w", err)
+				return nil, fmt.Errorf("error proposing DidNotExitBase: %w", err)
+			}
+
+		// DidNotExitBackoff
+		case protocol.DidNotExitBackoffSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeDidNotExitBackoff(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing DidNotExitBackoff: %w", err)
 			}
 		}
 
