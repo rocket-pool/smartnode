@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -58,13 +57,13 @@ func GetPerformanceThresholdPct(rp *rocketpool.RocketPool) (float64, error) {
 
 // Defaults used before Saturn 2 deploys.
 const DefaultPerformancePeriodEpochs uint64 = 44032
-const defaultProofBuffer = 24 * time.Hour
+const defaultProofBufferEpochs uint64 = 225
 
 // ChallengeParams are the pDAO settings governing performance challenges.
 type ChallengeParams struct {
-	ExitsEnabled bool
-	PeriodEpochs uint64
-	ProofBuffer  time.Duration
+	ExitsEnabled      bool
+	PeriodEpochs      uint64
+	ProofBufferEpochs uint64
 }
 
 // GetChallengeParams fetches the pDAO performance-challenge settings, using
@@ -76,9 +75,9 @@ func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
 	}
 	if !saturn2Deployed {
 		return ChallengeParams{
-			ExitsEnabled: true,
-			PeriodEpochs: DefaultPerformancePeriodEpochs,
-			ProofBuffer:  defaultProofBuffer,
+			ExitsEnabled:      true,
+			PeriodEpochs:      DefaultPerformancePeriodEpochs,
+			ProofBufferEpochs: defaultProofBufferEpochs,
 		}, nil
 	}
 	exitsEnabled, err := protocol.GetPerformanceExitsEnabled(rp, nil)
@@ -89,21 +88,20 @@ func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
 	if err != nil {
 		return ChallengeParams{}, err
 	}
-	proofBuffer, err := protocol.GetPerformanceProofBuffer(rp, nil)
+	proofBufferEpochs, err := protocol.GetProofBuffer(rp, nil)
 	if err != nil {
 		return ChallengeParams{}, err
 	}
 	return ChallengeParams{
-		ExitsEnabled: exitsEnabled,
-		PeriodEpochs: periodEpochs,
-		ProofBuffer:  proofBuffer,
+		ExitsEnabled:      exitsEnabled,
+		PeriodEpochs:      periodEpochs,
+		ProofBufferEpochs: proofBufferEpochs,
 	}, nil
 }
 
 // challengeBeaconClient is the beacon client surface needed to evaluate the
 // challengeability of an epoch range.
 type challengeBeaconClient interface {
-	GetEth2Config() (beacon.Eth2Config, error)
 	GetBeaconHead() (beacon.BeaconHead, error)
 }
 
@@ -116,15 +114,11 @@ func IsRangeChallengeable(rp *rocketpool.RocketPool, bc challengeBeaconClient, s
 	if err != nil {
 		return false, err
 	}
-	cfg, err := bc.GetEth2Config()
-	if err != nil {
-		return false, fmt.Errorf("error getting beacon config: %w", err)
-	}
 	head, err := bc.GetBeaconHead()
 	if err != nil {
 		return false, fmt.Errorf("error getting beacon head: %w", err)
 	}
-	return IsChallengeable(params, cfg, head.Epoch, startEpoch, endEpoch), nil
+	return IsChallengeable(params, head.Epoch, startEpoch, endEpoch), nil
 }
 
 // ExceedsChallengeThreshold reports whether the validator missed enough
@@ -142,20 +136,15 @@ func ExceedsChallengeThreshold(resp *api.VerifyPerformanceResponse) bool {
 // range [startEpoch, endEpoch] could back an on-chain challenge: performance
 // exits must be enabled, the range must cover exactly one performance period,
 // and it must be recent enough that the proof buffer has not elapsed
-// (startEpoch > currentEpoch - period - proofBuffer, with the buffer
-// converted to epochs).
-func IsChallengeable(params ChallengeParams, cfg beacon.Eth2Config, currentEpoch, startEpoch, endEpoch uint64) bool {
+// (startEpoch > currentEpoch - period - proofBuffer).
+func IsChallengeable(params ChallengeParams, currentEpoch, startEpoch, endEpoch uint64) bool {
 	if !params.ExitsEnabled {
 		return false
 	}
 	if endEpoch != startEpoch+params.PeriodEpochs-1 {
 		return false
 	}
-	if cfg.SecondsPerEpoch == 0 {
-		return false
-	}
-	proofBufferEpochs := uint64(params.ProofBuffer.Seconds()) / cfg.SecondsPerEpoch
-	window := params.PeriodEpochs + proofBufferEpochs
+	window := params.PeriodEpochs + params.ProofBufferEpochs
 	if currentEpoch <= window {
 		// The whole chain history is still within the challenge window.
 		return true

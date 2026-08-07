@@ -345,6 +345,11 @@ func proposeSettingPenaltyThreshold(value *big.Int, yes bool, toJson string) err
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue, yes, toJson)
 }
 
+func proposeSettingMegapoolPrestakeChallengePeriod(value uint64, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPrestakeChallengePeriodPath, trueValue, yes, toJson)
+}
+
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes, toJson)
@@ -355,9 +360,9 @@ func proposeSettingPerformancePeriod(value uint64, yes bool, toJson string) erro
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingPerformanceProofBuffer(value time.Duration, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(uint64(value.Hours()))
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceProofBufferSettingPath, trueValue, yes, toJson)
+func proposeSettingProofBuffer(value uint64, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.ProofBufferSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformanceThreshold(value *big.Int, yes bool, toJson string) error {
@@ -380,14 +385,19 @@ func proposeSettingCooperativeExitPhase(value uint64, yes bool, toJson string) e
 	return proposeSetting(protocol.ExitSettingsContractName, protocol.CooperativeExitPhaseSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDidNotExitPenalty(value *big.Int, yes bool, toJson string) error {
+func proposeSettingDidNotExitPenaltyBase(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitPenaltySettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitPenaltyBaseSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDidNotExitCooldown(value uint64, yes bool, toJson string) error {
+func proposeSettingDidNotExitBase(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitCooldownSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBaseSettingPath, trueValue, yes, toJson)
+}
+
+func proposeSettingDidNotExitBackoff(value *big.Int, yes bool, toJson string) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBackoffSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingNodeCommissionShare(value *big.Int, yes bool, toJson string) error {

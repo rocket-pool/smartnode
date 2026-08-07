@@ -192,7 +192,7 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 		wg.Go(func() error {
 			var err error
-			response.Performance.ProofBuffer, err = protocol.GetPerformanceProofBuffer(rp, nil)
+			response.Performance.ProofBuffer, err = protocol.GetProofBuffer(rp, nil)
 			return err
 		})
 
@@ -222,13 +222,25 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 		wg.Go(func() error {
 			var err error
-			response.Exit.DidNotExitPenalty, err = protocol.GetDidNotExitPenalty(rp, nil)
+			response.Exit.DidNotExitPenaltyBase, err = protocol.GetDidNotExitPenaltyBase(rp, nil)
 			return err
 		})
 
 		wg.Go(func() error {
 			var err error
-			response.Exit.DidNotExitCooldown, err = protocol.GetDidNotExitCooldown(rp, nil)
+			response.Exit.DidNotExitBase, err = protocol.GetDidNotExitBase(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Exit.DidNotExitBackoff, err = protocol.GetDidNotExitBackoff(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.PrestakeChallengePeriod, err = protocol.GetPrestakeChallengePeriod(rp, nil)
 			return err
 		})
 	}
