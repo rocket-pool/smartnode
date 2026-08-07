@@ -10,10 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
 // A MinipoolExitRequested event from rocketNetworkExit
@@ -86,10 +87,10 @@ func GetMinipoolLastExit(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 }
 
 // Estimate the gas of RequestMinipoolExit
-func EstimateRequestMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRequestMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "requestMinipoolExit", minipoolAddress)
 }
@@ -108,10 +109,10 @@ func RequestMinipoolExit(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 }
 
 // Estimate the gas of ForceMinipoolExit
-func EstimateForceMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateForceMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "forceMinipoolExit", minipoolAddress)
 }
@@ -130,10 +131,10 @@ func ForceMinipoolExit(rp *rocketpool.RocketPool, minipoolAddress common.Address
 }
 
 // Estimate the gas of PenaliseMinipool
-func EstimatePenaliseMinipoolGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimatePenaliseMinipoolGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "penaliseMinipool", minipoolAddress, slotTimestamp, validatorProof, slotProof)
 }
@@ -152,10 +153,10 @@ func PenaliseMinipool(rp *rocketpool.RocketPool, minipoolAddress common.Address,
 }
 
 // Estimate the gas of RequestMegapoolExit
-func EstimateRequestMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateRequestMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "requestMegapoolExit", megapoolAddress, validatorId)
 }
@@ -174,10 +175,10 @@ func RequestMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Addre
 }
 
 // Estimate the gas of ForceMegapoolExit
-func EstimateForceMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateForceMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "forceMegapoolExit", megapoolAddress, validatorId)
 }
@@ -196,10 +197,10 @@ func ForceMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address
 }
 
 // Estimate the gas of PenaliseMegapoolValidator
-func EstimatePenaliseMegapoolValidatorGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimatePenaliseMegapoolValidatorGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return gaslimit.Limits{}, err
 	}
 	return rocketNetworkExit.GetTransactionGasInfo(opts, "penaliseMegapool", megapoolAddress, validatorId)
 }
@@ -232,7 +233,7 @@ func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 	addressFilter := []common.Address{*rocketNetworkExit.Address}
 	topicFilter := [][]common.Hash{{minipoolExitRequestedEvent.ID}}
 
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +296,7 @@ func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 	addressFilter := []common.Address{*rocketNetworkExit.Address}
 	topicFilter := [][]common.Hash{{megapoolExitRequestedEvent.ID}}
 
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
+	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
 	if err != nil {
 		return nil, err
 	}
