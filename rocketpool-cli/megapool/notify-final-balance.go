@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"time"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
@@ -24,33 +25,143 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 		return 0, 0, false, err
 	}
 	defer rp.Close()
-	// Get Megapool status
+	// Get Megapool status (finalized beacon state — required for final balance proofs)
+	fmt.Println("Loading megapool validators at the finalized beacon state...")
 	status, err := rp.MegapoolStatus(true)
 	if err != nil {
 		return 0, 0, false, err
 	}
 
-	exitingValidators := []api.MegapoolValidatorDetails{}
+	readyValidators := []api.MegapoolValidatorDetails{}
+	pendingValidators := []api.MegapoolValidatorDetails{}
+	// Beacon exit started, but notify-validator-exit has not been submitted yet.
+	needsExitNotify := []api.MegapoolValidatorDetails{}
 
 	for _, validator := range status.Megapool.Validators {
-		if validator.Exiting && validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
-			exitingValidators = append(exitingValidators, validator)
+		if validator.Exited {
+			continue
+		}
+		if validator.Exiting {
+			if validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
+				readyValidators = append(readyValidators, validator)
+			} else {
+				pendingValidators = append(pendingValidators, validator)
+			}
+			continue
+		}
+		// Exit is visible on the finalized beacon state but not yet recorded on the megapool.
+		if validator.Activated &&
+			validator.BeaconStatus.Exists &&
+			validator.BeaconStatus.ExitEpoch != 0 &&
+			validator.BeaconStatus.ExitEpoch != FarFutureEpoch {
+			needsExitNotify = append(needsExitNotify, validator)
 		}
 	}
-	if len(exitingValidators) > 0 {
-		sort.Sort(ByIndex(exitingValidators))
-		options := make([]string, len(exitingValidators))
-		for vi, v := range exitingValidators {
+	if len(readyValidators) > 0 {
+		sort.Sort(ByIndex(readyValidators))
+		options := make([]string, len(readyValidators))
+		for vi, v := range readyValidators {
 			options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
 		}
 		selected, _ := prompt.Select("Please select a validator to notify the final balance:", options)
 
 		// Get validators
-		return uint64(exitingValidators[selected].ValidatorId), uint64(exitingValidators[selected].ValidatorIndex), true, nil
+		return uint64(readyValidators[selected].ValidatorId), uint64(readyValidators[selected].ValidatorIndex), true, nil
 
 	}
-	fmt.Println("No validators at the state where the full withdrawal can be proved")
+
+	fmt.Println("No validators at the state where the full withdrawal can be proved.")
+	printPendingFinalBalanceValidators(pendingValidators, needsExitNotify, status)
 	return 0, 0, false, nil
+}
+
+func printPendingFinalBalanceValidators(pending, needsExitNotify []api.MegapoolValidatorDetails, status api.MegapoolStatusResponse) {
+	currentEpoch := status.BeaconHead.FinalizedEpoch
+	if currentEpoch == 0 {
+		currentEpoch = status.BeaconHead.Epoch
+	}
+	secondsPerEpoch := status.SecondsPerEpoch
+	if secondsPerEpoch == 0 {
+		secondsPerEpoch = 384
+	}
+
+	if len(pending) == 0 && len(needsExitNotify) == 0 {
+		fmt.Println("There are also no megapool validators currently exiting on the finalized beacon state.")
+		fmt.Println("A final balance proof can only be submitted after:")
+		fmt.Println("  1. the validator has exited on the beacon chain")
+		fmt.Println("  2. notify-validator-exit has been run")
+		fmt.Println("  3. the validator reaches beacon status withdrawal_done (full balance withdrawn)")
+		return
+	}
+
+	if len(needsExitNotify) > 0 {
+		sort.Sort(ByIndex(needsExitNotify))
+		fmt.Printf("The following %d validator(s) have an exit visible on the finalized beacon state but still need notify-validator-exit first:\n", len(needsExitNotify))
+		fmt.Println()
+		for _, v := range needsExitNotify {
+			printPendingFinalBalanceValidator(v, currentEpoch, secondsPerEpoch)
+		}
+		fmt.Println("Run: rocketpool megapool notify-validator-exit")
+		fmt.Println()
+	}
+
+	if len(pending) > 0 {
+		sort.Sort(ByIndex(pending))
+		fmt.Printf("The following %d validator(s) are exiting on the megapool but not yet fully withdrawn (finalized epoch %d):\n", len(pending), currentEpoch)
+		fmt.Println()
+		for _, v := range pending {
+			printPendingFinalBalanceValidator(v, currentEpoch, secondsPerEpoch)
+		}
+	}
+
+	fmt.Println("A final balance proof can only be submitted once beacon status is withdrawal_done.")
+	fmt.Println("After withdrawable_epoch, the beacon chain still needs to process the full withdrawal (sweep); that can take additional time beyond the estimate above.")
+}
+
+func printPendingFinalBalanceValidator(v api.MegapoolValidatorDetails, currentEpoch, secondsPerEpoch uint64) {
+	bs := v.BeaconStatus
+	fmt.Printf("  ID %d - Index %d - status: %s\n", v.ValidatorId, v.ValidatorIndex, bs.Status)
+
+	exitEpoch := bs.ExitEpoch
+	withdrawableEpoch := bs.WithdrawableEpoch
+	if withdrawableEpoch == 0 || withdrawableEpoch == FarFutureEpoch {
+		// Prefer the megapool-recorded withdrawable epoch if beacon still reports FAR_FUTURE.
+		if v.WithdrawableEpoch != 0 && v.WithdrawableEpoch != FarFutureEpoch {
+			withdrawableEpoch = v.WithdrawableEpoch
+		}
+	}
+
+	if exitEpoch != 0 && exitEpoch != FarFutureEpoch {
+		fmt.Printf("    exit_epoch:          %d%s\n", exitEpoch, epochTimingSuffix(exitEpoch, currentEpoch, secondsPerEpoch))
+	} else {
+		fmt.Printf("    exit_epoch:          not yet set on finalized state\n")
+	}
+
+	if withdrawableEpoch != 0 && withdrawableEpoch != FarFutureEpoch {
+		fmt.Printf("    withdrawable_epoch:  %d%s\n", withdrawableEpoch, epochTimingSuffix(withdrawableEpoch, currentEpoch, secondsPerEpoch))
+		if currentEpoch >= withdrawableEpoch {
+			switch bs.Status {
+			case beacon.ValidatorState_WithdrawalPossible:
+				fmt.Printf("    note:                withdrawable; waiting for the beacon withdrawal sweep (full balance)\n")
+			case beacon.ValidatorState_ExitedUnslashed, beacon.ValidatorState_ExitedSlashed:
+				fmt.Printf("    note:                exited; waiting to become withdrawal_possible, then for the sweep\n")
+			default:
+				fmt.Printf("    note:                withdrawable epoch reached; waiting for full withdrawal (status %s)\n", bs.Status)
+			}
+		}
+	} else {
+		fmt.Printf("    withdrawable_epoch:  not yet set on finalized state\n")
+	}
+	fmt.Println()
+}
+
+func epochTimingSuffix(targetEpoch, currentEpoch, secondsPerEpoch uint64) string {
+	if targetEpoch <= currentEpoch {
+		return " (reached)"
+	}
+	remaining := targetEpoch - currentEpoch
+	wait := formatDaysHours(time.Duration(remaining*secondsPerEpoch) * time.Second)
+	return fmt.Sprintf(" (in %d epochs, ~%s)", remaining, wait)
 }
 
 func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) error {

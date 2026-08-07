@@ -22,6 +22,8 @@ type MegapoolStatusResponse struct {
 	BeaconHead     beacon.BeaconHead `json:"beaconHead"`
 	// ShardCommitteePeriod is the number of epochs after activation before voluntary exit is allowed
 	ShardCommitteePeriod uint64 `json:"shardCommitteePeriod"`
+	// SecondsPerEpoch is used for wall-clock estimates of exit/withdrawal timing
+	SecondsPerEpoch uint64 `json:"secondsPerEpoch"`
 }
 
 type MegapoolDetails struct {
