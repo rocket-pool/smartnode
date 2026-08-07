@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 const smallStateFixture = "../../shared/services/state/testdata/network_state.json.gz"
@@ -49,6 +50,28 @@ func (s *stubSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkSta
 	return ns.NetworkDetails.SmoothingPoolBalance, nil
 }
 
+// stubWithdrawalFinder satisfies withdrawalFinder for balance-calculation tests
+// that do not exercise the live beacon/EL withdrawal scan.
+type stubWithdrawalFinder struct {
+	withdrawal *generic.Withdrawal
+	err        error
+	calls      int
+}
+
+func (s *stubWithdrawalFinder) FindWithdrawal(slot uint64, validatorIndex uint64) (*generic.Withdrawal, error) {
+	s.calls++
+	if s.err != nil {
+		return nil, s.err
+	}
+	if s.withdrawal != nil {
+		return s.withdrawal, nil
+	}
+	return &generic.Withdrawal{
+		ValidatorIndex: validatorIndex,
+		Amount:         32000000000,
+	}, nil
+}
+
 func TestGetNetworkBalancesFromState(t *testing.T) {
 	provider, err := state.NewStaticNetworkStateProviderFromFile(smallStateFixture)
 	if err != nil {
@@ -64,6 +87,7 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	cfg := config.NewRocketPoolConfig("", false)
 	rewardCalc := &stubRewardSplitCalculator{}
 	spCalc := &stubSmoothingPoolCalculator{}
+	wFinder := &stubWithdrawalFinder{}
 
 	elBlockHeader := &types.Header{
 		Number: new(big.Int).SetUint64(ns.ElBlockNumber),
@@ -75,7 +99,7 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 		cfg: cfg,
 	}
 
-	balances, err := task.getNetworkBalancesFromState(ns, elBlockHeader, slotTime, rewardCalc, spCalc)
+	balances, err := task.getNetworkBalancesFromState(ns, elBlockHeader, slotTime, rewardCalc, spCalc, wFinder)
 	if err != nil {
 		t.Fatalf("getNetworkBalancesFromState: %v", err)
 	}
@@ -243,7 +267,7 @@ func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
 	}
 
 	task := &submitNetworkBalances{}
-	details, err := task.getMegapoolBalanceDetails(megapoolAddrA, &restored, megapoolDetails, &stubRewardSplitCalculator{})
+	details, err := task.getMegapoolBalanceDetails(megapoolAddrA, &restored, megapoolDetails, &stubRewardSplitCalculator{}, &stubWithdrawalFinder{})
 	if err != nil {
 		t.Fatalf("getMegapoolBalanceDetails: %v", err)
 	}
