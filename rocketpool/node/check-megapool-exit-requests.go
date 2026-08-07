@@ -15,17 +15,17 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/transactions"
+	rpvalidator "github.com/rocket-pool/smartnode/rocketpool/validator"
 
+	log "github.com/rocket-pool/smartnode/shared/logger"
+	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
-	rpvalidator "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // Check megapool exit requests task
@@ -77,7 +77,7 @@ func newCheckMegapoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 	if maxFeeGwei == 0 {
 		maxFee = nil
 	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
+		maxFee = math.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested priority fee
@@ -85,9 +85,9 @@ func newCheckMegapoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
+		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Get the event log interval
@@ -240,7 +240,7 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkState) error {
 func (t *checkMegapoolExitRequests) exitOwnMegapoolValidator(state *state.NetworkState, request network.MegapoolExitRequest, status beacon.ValidatorStatus) error {
 
 	// Check the validator status on the megapool
-	validatorInfo, exists := state.MegapoolValidatorInfo[request.Pubkey]
+	validatorInfo, exists := state.GetMegapoolValidatorInfo(request.MegapoolAddress, request.Pubkey)
 	if !exists {
 		return fmt.Errorf("validator %s not found in the megapool validator info map", request.Pubkey.Hex())
 	}
@@ -301,7 +301,7 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.Megap
 	if t.gasLimit != 0 {
 		gas = new(big.Int).SetUint64(t.gasLimit)
 	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+		gas = new(big.Int).SetUint64(gasInfo.Safe)
 	}
 
 	// Get the max fee
@@ -314,7 +314,7 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.Megap
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -329,7 +329,7 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.Megap
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (t *checkMegapoolExitRequests) penaliseMegapoolValidator(request network.Me
 	if err != nil {
 		return fmt.Errorf("could not estimate the gas required to penalise megapool %s validator %d: %w", request.MegapoolAddress.Hex(), request.ValidatorId, err)
 	}
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	gas := big.NewInt(int64(gasInfo.Safe))
 
 	// Get the max fee
 	maxFee := t.maxFee
@@ -366,7 +366,7 @@ func (t *checkMegapoolExitRequests) penaliseMegapoolValidator(request network.Me
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -381,7 +381,7 @@ func (t *checkMegapoolExitRequests) penaliseMegapoolValidator(request network.Me
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

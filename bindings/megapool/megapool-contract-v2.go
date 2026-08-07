@@ -9,11 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type MegapoolV2 interface {
 	Megapool
-	EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error)
 	ForceExit(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (common.Hash, error)
 }
 
@@ -58,7 +59,7 @@ func NewMegaPoolV2(rp *rocketpool.RocketPool, address common.Address, opts *bind
 }
 
 // Estimate the gas of ForceExit
-func (mp *megapoolV2) EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV2) EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "forceExit", validatorIds, feeLimit)
 }
 
