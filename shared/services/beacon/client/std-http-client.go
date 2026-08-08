@@ -139,6 +139,11 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 	if shardCommitteePeriod == 0 {
 		shardCommitteePeriod = 256
 	}
+	// A CL that predates Gloas omits GLOAS_FORK_EPOCH from the spec
+	gloasForkEpoch := beacon.FarFutureEpoch
+	if eth2Config.Data.GloasForkEpoch != nil {
+		gloasForkEpoch = uint64(*eth2Config.Data.GloasForkEpoch)
+	}
 	out := beacon.Eth2Config{
 		GenesisForkVersion:           genesis.Data.GenesisForkVersion,
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
@@ -149,6 +154,7 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
 		ShardCommitteePeriod:         shardCommitteePeriod,
+		GloasForkEpoch:               gloasForkEpoch,
 	}
 	eth2ConfigCache.Store(&out)
 

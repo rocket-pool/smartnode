@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -1104,6 +1105,44 @@ func FindGloasWithdrawalSlotAndArrayPosition(slot uint64, validatorIndex uint64,
 	return 0, 0, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
 }
 
+// WithdrawalFinder locates validator withdrawals in a fork-aware way. Searches
+// starting before Gloas activation scan beacon blocks; searches starting at or
+// after it scan execution-layer blocks instead (Gloas/ePBS removed the
+// execution payload from beacon blocks). A pre-Gloas search that reaches the
+// fork without finding its withdrawal continues on the execution layer from
+// the activation slot.
+type WithdrawalFinder struct {
+	bc         beacon.Client
+	ec         *ExecutionClientManager
+	eth2Config beacon.Eth2Config
+}
+
+func NewWithdrawalFinder(bc beacon.Client, ec *ExecutionClientManager, eth2Config beacon.Eth2Config) *WithdrawalFinder {
+	return &WithdrawalFinder{
+		bc:         bc,
+		ec:         ec,
+		eth2Config: eth2Config,
+	}
+}
+
+// FindWithdrawal returns the first withdrawal for the given validator index at
+// or after the given slot, scanning up to MAX_WITHDRAWAL_SLOT_DISTANCE slots.
+func (f *WithdrawalFinder) FindWithdrawal(slot uint64, validatorIndex uint64) (*generic.Withdrawal, error) {
+	activationSlot := f.eth2Config.GloasActivationSlot()
+	if slot >= activationSlot {
+		_, _, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(slot, validatorIndex, f.ec, f.eth2Config)
+		return withdrawal, err
+	}
+	_, _, _, withdrawal, _, err := FindWithdrawalBlockAndArrayPosition(slot, validatorIndex, f.bc)
+	if errors.Is(err, ErrGloasBoundaryReached) {
+		// The withdrawal wasn't included before the fork; continue the search
+		// on the execution layer from the activation slot
+		_, _, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(activationSlot, validatorIndex, f.ec, f.eth2Config)
+		return withdrawal, err
+	}
+	return withdrawal, err
+}
+
 // slotOfExecutionBlock returns the consensus slot an execution block belongs to.
 func slotOfExecutionBlock(block *ethtypes.Block, eth2Config beacon.Eth2Config) uint64 {
 	if slotNumber := block.Header().SlotNumber; slotNumber != nil {
@@ -1145,12 +1184,23 @@ func ConvertWithdrawalAmount(amount uint64) *big.Int {
 	return amountBigInt
 }
 
+// ErrGloasBoundaryReached indicates a beacon-block withdrawal scan reached the
+// Gloas activation slot without finding the target withdrawal
+var ErrGloasBoundaryReached = errors.New("withdrawal scan reached the gloas activation slot")
+
 func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc beacon.Client) (uint64, eth2.SignedBeaconBlock, int, *generic.Withdrawal, *beacon.BeaconBlock, error) {
+
+	// Beacon blocks stop carrying withdrawals at Gloas activation, so the scan
+	// must not continue past it
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return 0, nil, 0, nil, nil, err
+	}
+	gloasActivationSlot := eth2Config.GloasActivationSlot()
 
 	// cant use head here as we need to grab the next slot timestamp
 	blockToRequest := "finalized"
 	var finalizedBlock beacon.BeaconBlock
-	var err error
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		finalizedBlock, _, err = bc.GetBeaconBlock(blockToRequest)
@@ -1171,6 +1221,9 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
 	notFounds := 0
 	for candidateSlot := slot; candidateSlot <= slot+MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot++ {
+		if candidateSlot >= gloasActivationSlot {
+			return 0, nil, 0, nil, nil, fmt.Errorf("no withdrawal found for validator index %d between slot %d and gloas activation at slot %d: %w", validatorIndex, slot, gloasActivationSlot, ErrGloasBoundaryReached)
+		}
 		// Get the block at the candidate slot.
 		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {

@@ -64,6 +64,7 @@ func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse
 	if response.ShardCommitteePeriod == 0 {
 		response.ShardCommitteePeriod = 256
 	}
+	response.SecondsPerEpoch = eth2Config.SecondsPerEpoch
 
 	// Get latest delegate address
 	delegate, err := rp.GetContract("rocketMegapoolDelegate", nil)

@@ -33,6 +33,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 const (
@@ -50,6 +51,10 @@ type rewardSplitCalculator interface {
 
 type smoothingPoolShareCalculator interface {
 	GetSmoothingPoolShare(ns *state.NetworkState, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error)
+}
+
+type withdrawalFinder interface {
+	FindWithdrawal(slot uint64, validatorIndex uint64) (*generic.Withdrawal, error)
 }
 
 // Submit network balances task
@@ -447,8 +452,13 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	rewardCalc := &liveRewardSplitCalculator{rp: client}
 	spCalc := &liveSmoothingPoolCalculator{log: t.log, cfg: t.cfg, bc: t.bc, client: client}
+	elc, err := services.GetEthClient(t.c)
+	if err != nil {
+		return networkBalances{}, err
+	}
+	wFinder := services.NewWithdrawalFinder(t.bc, elc, ns.BeaconConfig)
 
-	return t.getNetworkBalancesFromState(ns, elBlockHeader, slotTime, rewardCalc, spCalc)
+	return t.getNetworkBalancesFromState(ns, elBlockHeader, slotTime, rewardCalc, spCalc, wFinder)
 }
 
 // getNetworkBalancesFromState computes the network balances from an already-loaded NetworkState.
@@ -458,6 +468,7 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 	slotTime time.Time,
 	rewardCalc rewardSplitCalculator,
 	spCalc smoothingPoolShareCalculator,
+	wFinder withdrawalFinder,
 ) (networkBalances, error) {
 
 	// Data
@@ -488,7 +499,7 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 		i := 0
 		for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
 			var err error
-			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails, rewardCalc)
+			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails, rewardCalc, wFinder)
 			if err != nil {
 				return fmt.Errorf("error getting megapool balance details: %w", err)
 			}
@@ -564,7 +575,7 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 
 }
 
-func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator) (megapoolBalanceDetail, error) {
+func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator, wFinder withdrawalFinder) (megapoolBalanceDetail, error) {
 	megapoolBalanceDetails := megapoolBalanceDetail{}
 	megapoolValidators := state.MegapoolToPubkeysMap[megapoolAddress]
 	// iterate the megapoolValidators array
@@ -597,13 +608,13 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		if megapoolValidatorInfo.ValidatorInfo.Exiting {
 			if megapoolValidatorDetails.Balance == 0 {
 				// Find the withdrawn balance from the beacon chain
-				searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
+				searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * state.BeaconConfig.SlotsPerEpoch
 				// Convert the validator index to a uint64
 				validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
 				if err != nil {
 					return megapoolBalanceDetails, fmt.Errorf("error converting validator index %s to uint64: %w", megapoolValidatorDetails.Index, err)
 				}
-				_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
+				withdrawal, err := wFinder.FindWithdrawal(searchWithdrawSlot, validatorIndex)
 				if err != nil {
 					return megapoolBalanceDetails, fmt.Errorf("error finding withdrawal for validator %d: %w", validatorIndex, err)
 				}
