@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.17.4
+	github.com/ethereum/go-ethereum v1.17.5
 	github.com/fatih/color v1.16.0
 	github.com/felixge/fgprof v0.9.5
 	github.com/ferranbt/fastssz v0.1.4
@@ -83,7 +83,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/ethereum/c-kzg-4844/v2 v2.1.6 // indirect
+	github.com/ethereum/c-kzg-4844/v2 v2.1.8 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fjl/jsonw v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
