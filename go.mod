@@ -11,7 +11,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ethereum/go-ethereum v1.17.5
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.19.0
 	github.com/felixge/fgprof v0.9.5
 	github.com/ferranbt/fastssz v0.1.4
 	github.com/gdamore/tcell/v2 v2.6.0
@@ -21,10 +21,10 @@ require (
 	github.com/go-openapi/strfmt v0.22.0
 	github.com/go-openapi/swag v0.22.9
 	github.com/go-openapi/validate v0.23.0
-	github.com/goccy/go-json v0.10.4
+	github.com/goccy/go-json v0.10.6
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.6.0
-	github.com/herumi/bls-eth-go-binary v1.36.4
+	github.com/herumi/bls-eth-go-binary v1.37.0
 	github.com/holiman/uint256 v1.3.2
 	github.com/ipfs/boxo v0.8.0
 	github.com/ipfs/go-cid v0.6.1
@@ -41,11 +41,11 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/urfave/cli/v3 v3.7.0
-	github.com/wealdtech/go-ens/v3 v3.5.5
+	github.com/urfave/cli/v3 v3.10.1
+	github.com/wealdtech/go-ens/v3 v3.6.0
 	github.com/wealdtech/go-eth2-types/v2 v2.8.2
-	github.com/wealdtech/go-eth2-util v1.8.0
-	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0
+	github.com/wealdtech/go-eth2-util v1.8.2
+	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.4.1
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
@@ -124,7 +124,7 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -172,7 +172,7 @@ require (
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
-	github.com/wealdtech/go-bytesutil v1.2.0 // indirect
+	github.com/wealdtech/go-bytesutil v1.2.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20230126041949-52956bd4c9aa // indirect
 	github.com/whyrusleeping/chunker v0.0.0-20181014151217-fe64bd25879f // indirect
