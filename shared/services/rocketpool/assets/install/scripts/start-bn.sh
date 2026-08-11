@@ -289,7 +289,6 @@ if [ "$CC_CLIENT" = "teku" ]; then
         --rest-api-interface=0.0.0.0 \
         --rest-api-port=${BN_API_PORT:-5052} \
         --rest-api-host-allowlist=* \
-        --eth1-deposit-contract-max-request-size=150 \
         --log-destination=CONSOLE \
         --ee-jwt-secret-file=/secrets/jwtsecret \
         --beacon-liveness-tracking-enabled \
