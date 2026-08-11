@@ -11,8 +11,8 @@ import (
 const (
 	CommitBoostConfigFile     string = "cb_config.toml"
 	CommitBoostConfigTemplate string = "commit-boost-config"
-	commitBoostProdTag        string = "ghcr.io/commit-boost/pbs:v0.9.6"
-	commitBoostTestTag        string = "ghcr.io/commit-boost/pbs:v0.9.6"
+	commitBoostProdTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.0"
+	commitBoostTestTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.0"
 )
 
 // Relay selection mode for Commit-Boost PBS
