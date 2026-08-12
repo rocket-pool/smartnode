@@ -146,7 +146,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						c.String("address"),
 						c.Bool("skip-validator-key-recovery"),
 						c.String("derivation-path"),
-						c.Uint("wallet-index"),
+						uint(c.Uint64("wallet-index")),
 						c.Bool("yes"),
 					)
 
@@ -236,7 +236,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						c.String("address"),
 						c.Bool("skip-validator-key-recovery"),
 						c.String("derivation-path"),
-						c.Uint("wallet-index"),
+						uint(c.Uint64("wallet-index")),
 						c.Bool("yes"),
 					)
 
