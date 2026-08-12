@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -20,7 +21,9 @@ func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorK
 	if err != nil {
 		return nil, err
 	}
+	// Chain clients are only needed to discover and filter validator pubkeys
 	var rp *rocketpool.RocketPool
+	var bc beacon.Client
 	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
@@ -29,11 +32,10 @@ func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorK
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create a blank wallet
@@ -88,7 +90,9 @@ func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, addre
 	if err != nil {
 		return nil, err
 	}
+	// Chain clients are only needed to discover and filter validator pubkeys
 	var rp *rocketpool.RocketPool
+	var bc beacon.Client
 	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
@@ -97,11 +101,10 @@ func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, addre
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create a blank wallet

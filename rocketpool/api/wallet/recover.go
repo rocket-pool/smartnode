@@ -41,7 +41,9 @@ func recoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRe
 	if err != nil {
 		return nil, err
 	}
+	// Chain clients are only needed to discover and filter validator pubkeys
 	var rp *rocketpool.RocketPool
+	var bc beacon.Client
 	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
@@ -50,10 +52,10 @@ func recoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRe
 		if err != nil {
 			return nil, err
 		}
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Response
@@ -111,7 +113,9 @@ func searchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, address c
 	if err != nil {
 		return nil, err
 	}
+	// Chain clients are only needed to discover and filter validator pubkeys
 	var rp *rocketpool.RocketPool
+	var bc beacon.Client
 	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
@@ -120,10 +124,10 @@ func searchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, address c
 		if err != nil {
 			return nil, err
 		}
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Response

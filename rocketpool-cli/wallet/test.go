@@ -13,10 +13,15 @@ import (
 
 func testRecovery(mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint, yes bool) error {
 
-	// Get RP client
-	rp, ready, err := rocketpool.NewClient().WithStatus()
-	if err != nil {
-		return err
+	// Only check client status when testing validator key recovery
+	rp := rocketpool.NewClient()
+	ready := false
+	if !skipValidatorKeyRecovery {
+		var err error
+		rp, ready, err = rp.WithStatus()
+		if err != nil {
+			return err
+		}
 	}
 	defer rp.Close()
 
