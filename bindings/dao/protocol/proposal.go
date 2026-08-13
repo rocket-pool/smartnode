@@ -2,15 +2,12 @@ package protocol
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
@@ -19,7 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	strutils "github.com/rocket-pool/smartnode/bindings/utils/strings"
 )
 
 // Settings
@@ -57,6 +53,7 @@ type ProtocolDaoProposalDetails struct {
 	VetoQuorum           *big.Int                       `json:"vetoQuorum"`
 	Payload              []byte                         `json:"payload"`
 	PayloadStr           string                         `json:"payloadStr"`
+	MultiSettings        []DecodedProposalSetting       `json:"multiSettings,omitempty"`
 	State                types.ProtocolDaoProposalState `json:"state"`
 	ProposalBond         *big.Int                       `json:"proposalBond"`
 	ChallengeBond        *big.Int                       `json:"challengeBond"`
@@ -238,11 +235,12 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	}
 
 	// Get proposal payload string
-	payloadStr, err := GetProposalPayloadString(rp, prop.Payload, opts)
+	payloadStr, multiSettings, err := ParseProposalPayload(rp, prop.Payload, opts)
 	if err != nil {
 		payloadStr = "(unknown)"
 	}
 	prop.PayloadStr = payloadStr
+	prop.MultiSettings = multiSettings
 	return prop, nil
 }
 
@@ -508,45 +506,35 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 
 // Get a proposal's payload as a human-readable string
 func GetProposalPayloadString(rp *rocketpool.RocketPool, payload []byte, opts *bind.CallOpts) (string, error) {
+	payloadStr, _, err := ParseProposalPayload(rp, payload, opts)
+	return payloadStr, err
+}
+
+func ParseProposalPayload(rp *rocketpool.RocketPool, payload []byte, opts *bind.CallOpts) (string, []DecodedProposalSetting, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	// Get proposal DAO contract ABI
-	daoContractAbi := rocketDAOProtocolProposals.ABI
-
-	// Get proposal payload method
-	method, err := daoContractAbi.MethodById(payload)
+	method, err := rocketDAOProtocolProposals.ABI.MethodById(payload)
 	if err != nil {
-		return "", fmt.Errorf("error getting proposal payload method: %w", err)
+		return "", nil, fmt.Errorf("error getting proposal payload method: %w", err)
 	}
 
-	// Get proposal payload argument values
 	args, err := method.Inputs.UnpackValues(payload[4:])
 	if err != nil {
-		return "", fmt.Errorf("error getting proposal payload arguments: %w", err)
+		return "", nil, fmt.Errorf("error getting proposal payload arguments: %w", err)
 	}
 
-	// Format argument values as strings
-	argStrs := []string{}
-	for ai, arg := range args {
-		switch method.Inputs[ai].Type.T {
-		case abi.AddressTy:
-			argStrs = append(argStrs, arg.(common.Address).Hex())
-		case abi.HashTy:
-			argStrs = append(argStrs, arg.(common.Hash).Hex())
-		case abi.FixedBytesTy:
-			fallthrough
-		case abi.BytesTy:
-			argStrs = append(argStrs, hex.EncodeToString(arg.([]byte)))
-		default:
-			argStrs = append(argStrs, fmt.Sprintf("%v", arg))
+	if method.RawName == proposalSettingMultiMethod {
+		settings, err := decodeProposalSettingMultiArgs(args)
+		if err != nil {
+			return "", nil, err
 		}
+		return FormatProposalSettingMulti(settings), settings, nil
 	}
 
-	// Build & return payload string
-	return strutils.Sanitize(fmt.Sprintf("%s(%s)", method.RawName, strings.Join(argStrs, ","))), nil
+	return formatGenericProposalPayload(method, args), nil, nil
 }
 
 // Get the proposal's state

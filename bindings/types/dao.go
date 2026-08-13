@@ -76,6 +76,19 @@ const (
 	ProposalSettingType_Address
 )
 
+func (t ProposalSettingType) String() string {
+	switch t {
+	case ProposalSettingType_Uint256:
+		return "uint256"
+	case ProposalSettingType_Bool:
+		return "bool"
+	case ProposalSettingType_Address:
+		return "address"
+	default:
+		return fmt.Sprintf("unknown(%d)", t)
+	}
+}
+
 // Challenge states
 type ChallengeState uint8
 

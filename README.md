@@ -147,6 +147,8 @@ The following commands are available via the Smart Node client:
   - `rocketpool pdao set-voting-delegate, svd` - Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.
   - `rocketpool pdao claim-bonds, cb` - Unlock any bonded RPL you have for a proposal or set of challenges, and claim any bond rewards for defending or defeating the proposal
   - `rocketpool pdao propose, p` - Make a Protocol DAO proposal
+    - `rocketpool pdao propose submit-batch, sb` - Submit a single proposal that changes multiple Protocol DAO settings from a JSON file
+    - Setting propose commands accept `--generate-json <file>` to write/append a setting change to a JSON file instead of submitting a transaction
   - `rocketpool pdao proposals, o` - Manage Protocol DAO proposals
 - **queue**, q - Manage the Rocket Pool deposit queue
   - `rocketpool queue status, s` - Get the deposit pool and minipool queue status

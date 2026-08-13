@@ -12,7 +12,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func setAllowListedControllers(addressListStr string, yes bool) error {
+func setAllowListedControllers(addressListStr string, yes bool, generateJson string) error {
+	if generateJson != "" {
+		return fmt.Errorf("allow-listed-controllers cannot be included in a multi-setting proposal (the protocol only supports bool, uint256, and address values in batch proposals)")
+	}
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()

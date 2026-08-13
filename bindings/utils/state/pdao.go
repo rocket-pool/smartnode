@@ -216,7 +216,7 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.ChallengeWindow = time.Second * time.Duration(rawDetails.ChallengeWindow.Uint64())
 
 	var err error
-	details.PayloadStr, err = protocol.GetProposalPayloadString(rp, rawDetails.Payload, opts)
+	details.PayloadStr, details.MultiSettings, err = protocol.ParseProposalPayload(rp, rawDetails.Payload, opts)
 	if err != nil {
 		details.PayloadStr = fmt.Sprintf("<error decoding: %s>", err.Error())
 	}
