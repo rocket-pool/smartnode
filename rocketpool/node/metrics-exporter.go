@@ -103,7 +103,7 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	// Start the HTTP server
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := c.Root().String("metricsAddress")
-	metricsPort := c.Root().Uint("metricsPort")
+	metricsPort := uint(c.Root().Uint64("metricsPort"))
 	if metricsPort == 0 {
 		metricsPort = uint(cfg.NodeMetricsPort.Value.(uint16))
 	}

@@ -41,7 +41,7 @@ func runMetricsServer(c *cli.Command, logger log.ColorLogger, scrubCollector *co
 
 	// Start the HTTP server
 	metricsAddress := c.Root().String("metricsAddress")
-	metricsPort := c.Root().Uint("metricsPort")
+	metricsPort := uint(c.Root().Uint64("metricsPort"))
 	if metricsPort == 0 {
 		metricsPort = uint(cfg.WatchtowerMetricsPort.Value.(uint16))
 	}

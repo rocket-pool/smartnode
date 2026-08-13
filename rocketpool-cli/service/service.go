@@ -430,7 +430,7 @@ func updateConfigParamFromCliArg(c *cli.Command, sectionName string, param *cfgt
 			}
 			param.Value = c.String(paramName)
 		case cfgtypes.ParameterType_Uint:
-			param.Value = c.Uint(paramName)
+			param.Value = c.Uint64(paramName)
 		case cfgtypes.ParameterType_Uint16:
 			param.Value = uint16(c.Uint(paramName))
 		case cfgtypes.ParameterType_Choice:
