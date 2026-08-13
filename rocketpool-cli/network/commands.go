@@ -117,7 +117,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					}
 
 					if c.IsSet("index") {
-						return generateRewardsTree(c.Int64("index"), c.Bool("yes"))
+						return generateRewardsTree(int64(c.Uint64("index")), c.Bool("yes"))
 					}
 					return generateRewardsTree(-1, c.Bool("yes"))
 				},
