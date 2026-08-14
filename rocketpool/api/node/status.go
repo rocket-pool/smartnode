@@ -267,7 +267,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
+	// MinimumLegacyRPLStake is used to compute the RPL amount that a node cannot fall under when withdrawing
 	wg.Go(func() error {
 		var err error
 		response.RplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStake(rp, nil)
@@ -425,7 +425,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		var wg2 errgroup.Group
 		var rplStakeThresholdFraction *big.Int
 
-		// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
+		// MinimumLegacyRPLStake is used to compute the RPL amount that a node cannot fall under when withdrawing
 		wg2.Go(func() error {
 			var err error
 			rplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)

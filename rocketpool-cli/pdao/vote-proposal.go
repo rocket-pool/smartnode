@@ -84,11 +84,12 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 			} else {
 				endTime = fmt.Sprintf("phase 2 end: %s", proposal.Phase2EndTime.Format(time.RFC822))
 			}
+			message, payload := proposalDisplayText(proposal)
 			options[pi] = fmt.Sprintf(
 				"proposal %d (message: '%s', payload: %s, %s, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
 				proposal.ID,
-				proposal.Message,
-				proposal.PayloadStr,
+				message,
+				payload,
 				endTime,
 				math.WeiToEth(proposal.VotingPowerRequired),
 				math.WeiToEth(proposal.VotingPowerFor),
@@ -101,6 +102,8 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 		selectedProposal = votableProposals[selected]
 
 	}
+
+	printSelectedMultiSettings(selectedProposal.MultiSettings)
 
 	// Check if delegate has voted
 	if selectedProposal.DelegateVoteDirection != types.VoteDirection_NoVote && votingDelegateInfo.VotingDelegate != votingDelegateInfo.AccountAddress {

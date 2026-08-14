@@ -6,7 +6,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/bindings/utils/strings"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
@@ -78,11 +77,8 @@ func executeProposal(proposal string, yes bool) error {
 		options := make([]string, len(executableProposals)+1)
 		options[0] = "All available proposals"
 		for pi, proposal := range executableProposals {
-			if len(proposal.Message) > 200 {
-				proposal.Message = proposal.Message[:200]
-			}
-			proposal.Message = strings.Sanitize(proposal.Message)
-			options[pi+1] = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", proposal.ID, proposal.Message, proposal.PayloadStr)
+			message, payload := proposalDisplayText(proposal)
+			options[pi+1] = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", proposal.ID, message, payload)
 		}
 		selected, _ := prompt.Select("Please select a proposal to execute:", options)
 
@@ -93,6 +89,10 @@ func executeProposal(proposal string, yes bool) error {
 			selectedProposals = []api.PDAOProposalWithNodeVoteDirection{executableProposals[selected-1]}
 		}
 
+	}
+
+	if len(selectedProposals) == 1 {
+		printSelectedMultiSettings(selectedProposals[0].MultiSettings)
 	}
 
 	// Get the total gas limit estimate

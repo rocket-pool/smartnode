@@ -6,7 +6,6 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 )
@@ -557,6 +556,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -570,7 +573,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsCreateLotEnabled(value, c.Bool("yes"))
+											return proposeSettingAuctionIsCreateLotEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -586,6 +589,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -599,7 +606,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsBidOnLotEnabled(value, c.Bool("yes"))
+											return proposeSettingAuctionIsBidOnLotEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -619,6 +626,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -632,7 +643,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotMinimumEthValue(value, c.Bool("yes"))
+											return proposeSettingAuctionLotMinimumEthValue(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -652,6 +663,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -665,7 +680,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotMaximumEthValue(value, c.Bool("yes"))
+											return proposeSettingAuctionLotMaximumEthValue(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -681,6 +696,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -694,7 +713,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotDuration(value, c.Bool("yes"))
+											return proposeSettingAuctionLotDuration(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -714,6 +733,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -727,7 +750,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotStartingPriceRatio(value, c.Bool("yes"))
+											return proposeSettingAuctionLotStartingPriceRatio(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -747,6 +770,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -760,7 +787,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotReservePriceRatio(value, c.Bool("yes"))
+											return proposeSettingAuctionLotReservePriceRatio(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -784,6 +811,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -797,7 +828,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositIsDepositingEnabled(value, c.Bool("yes"))
+											return proposeSettingDepositIsDepositingEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -813,6 +844,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -826,7 +861,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositAreDepositAssignmentsEnabled(value, c.Bool("yes"))
+											return proposeSettingDepositAreDepositAssignmentsEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -846,6 +881,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -859,7 +898,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMinimumDeposit(value, c.Bool("yes"))
+											return proposeSettingDepositMinimumDeposit(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -879,6 +918,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -892,7 +935,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMaximumDepositPoolSize(value, c.Bool("yes"))
+											return proposeSettingDepositMaximumDepositPoolSize(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -908,6 +951,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -921,7 +968,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMaximumAssignmentsPerDeposit(value, c.Bool("yes"))
+											return proposeSettingDepositMaximumAssignmentsPerDeposit(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -937,6 +984,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -950,7 +1001,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(value, c.Bool("yes"))
+											return proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -970,6 +1021,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -983,7 +1038,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositDepositFee(value, c.Bool("yes"))
+											return proposeSettingDepositDepositFee(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -999,6 +1054,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 											// Validate args
@@ -1011,7 +1070,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositExpressQueueRate(value, c.Bool("yes"))
+											return proposeSettingDepositExpressQueueRate(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1027,6 +1086,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 											// Validate args
@@ -1039,7 +1102,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositExpressQueueTicketsBaseProvision(value, c.Bool("yes"))
+											return proposeSettingDepositExpressQueueTicketsBaseProvision(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1063,6 +1126,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1076,7 +1143,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(value, c.Bool("yes"))
+											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1092,6 +1159,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1105,7 +1176,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolLaunchTimeout(value, c.Bool("yes"))
+											return proposeSettingMinipoolLaunchTimeout(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1121,6 +1192,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1134,7 +1209,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsBondReductionEnabled(value, c.Bool("yes"))
+											return proposeSettingMinipoolIsBondReductionEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1150,6 +1225,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1163,7 +1242,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolMaximumCount(value, c.Bool("yes"))
+											return proposeSettingMinipoolMaximumCount(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1179,6 +1258,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1192,7 +1275,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolUserDistributeWindowStart(value, c.Bool("yes"))
+											return proposeSettingMinipoolUserDistributeWindowStart(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1208,6 +1291,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1221,7 +1308,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolUserDistributeWindowLength(value, c.Bool("yes"))
+											return proposeSettingMinipoolUserDistributeWindowLength(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1249,6 +1336,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1262,7 +1353,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkOracleDaoConsensusThreshold(value, c.Bool("yes"))
+											return proposeSettingNetworkOracleDaoConsensusThreshold(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1282,6 +1373,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1295,7 +1390,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkNodePenaltyThreshold(value, c.Bool("yes"))
+											return proposeSettingNetworkNodePenaltyThreshold(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1315,6 +1410,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1328,7 +1427,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkPerPenaltyRate(value, c.Bool("yes"))
+											return proposeSettingNetworkPerPenaltyRate(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1344,6 +1443,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1357,7 +1460,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitBalancesEnabled(value, c.Bool("yes"))
+											return proposeSettingNetworkIsSubmitBalancesEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1373,6 +1476,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1386,7 +1493,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitBalancesFrequency(value, c.Bool("yes"))
+											return proposeSettingNetworkSubmitBalancesFrequency(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1402,6 +1509,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1415,7 +1526,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitPricesEnabled(value, c.Bool("yes"))
+											return proposeSettingNetworkIsSubmitPricesEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1431,6 +1542,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1444,7 +1559,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitPricesFrequency(value, c.Bool("yes"))
+											return proposeSettingNetworkSubmitPricesFrequency(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1464,6 +1579,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1477,7 +1596,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkMinimumNodeFee(value, c.Bool("yes"))
+											return proposeSettingNetworkMinimumNodeFee(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1497,6 +1616,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1510,7 +1633,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkTargetNodeFee(value, c.Bool("yes"))
+											return proposeSettingNetworkTargetNodeFee(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1530,6 +1653,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1543,7 +1670,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkMaximumNodeFee(value, c.Bool("yes"))
+											return proposeSettingNetworkMaximumNodeFee(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1563,6 +1690,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1576,7 +1707,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkNodeFeeDemandRange(value, c.Bool("yes"))
+											return proposeSettingNetworkNodeFeeDemandRange(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1596,6 +1727,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1609,7 +1744,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkTargetRethCollateralRate(value, c.Bool("yes"))
+											return proposeSettingNetworkTargetRethCollateralRate(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1625,6 +1760,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1638,7 +1777,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitRewardsEnabled(value, c.Bool("yes"))
+											return proposeSettingNetworkIsSubmitRewardsEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1655,6 +1794,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Usage:   "Automatically confirm all interactive questions",
 											},
 											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+											&cli.StringFlag{
 												Name:  "addressList, a",
 												Usage: "One or more addresses, separated by commas with no spaces",
 											},
@@ -1666,7 +1809,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												return err
 											}
 											// Run
-											return setAllowListedControllers(c.String("addressList"), c.Bool("yes"))
+											return setAllowListedControllers(c.String("addressList"), c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1686,6 +1829,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1699,7 +1846,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeCommissionShare(value, c.Bool("yes"))
+											return proposeSettingNodeCommissionShare(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1719,6 +1866,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1732,7 +1883,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeCommissionShareSecurityCouncilAdder(value, c.Bool("yes"))
+											return proposeSettingNodeCommissionShareSecurityCouncilAdder(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1752,6 +1903,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1765,7 +1920,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingVoterShare(value, c.Bool("yes"))
+											return proposeSettingVoterShare(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1785,6 +1940,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1798,7 +1957,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingPDAOShare(value, c.Bool("yes"))
+											return proposeSettingPDAOShare(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1818,6 +1977,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1831,7 +1994,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeMaxNodeShareSecurityCouncilAdder(value, c.Bool("yes"))
+											return proposeMaxNodeShareSecurityCouncilAdder(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1851,6 +2014,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1864,7 +2031,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeMaxRethBalanceDelta(value, c.Bool("yes"))
+											return proposeMaxRethBalanceDelta(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1888,6 +2055,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1901,7 +2072,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsRegistrationEnabled(value, c.Bool("yes"))
+											return proposeSettingNodeIsRegistrationEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1917,6 +2088,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1930,7 +2105,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value, c.Bool("yes"))
+											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1946,6 +2121,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1959,7 +2138,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsDepositingEnabled(value, c.Bool("yes"))
+											return proposeSettingNodeIsDepositingEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -1975,6 +2154,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -1988,73 +2171,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeAreVacantMinipoolsEnabled(value, c.Bool("yes"))
-
-										},
-									},
-
-									{
-										Name:      "minimum-per-minipool-stake",
-										Aliases:   []string{"minpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
-										UsageText: "rocketpool pdao propose setting node minimum-per-minipool-stake value",
-										Flags: []cli.Flag{
-											&cli.BoolFlag{
-												Name:  "raw",
-												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
-											},
-											&cli.BoolFlag{
-												Name:    "yes",
-												Aliases: []string{"y"},
-												Usage:   "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(ctx context.Context, c *cli.Command) error {
-
-											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeMinimumPerMinipoolStake(value, c.Bool("yes"))
-
-										},
-									},
-
-									{
-										Name:      "maximum-per-minipool-stake",
-										Aliases:   []string{"maxpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
-										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
-										Flags: []cli.Flag{
-											&cli.BoolFlag{
-												Name:  "raw",
-												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
-											},
-											&cli.BoolFlag{
-												Name:    "yes",
-												Aliases: []string{"y"},
-												Usage:   "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(ctx context.Context, c *cli.Command) error {
-
-											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeMaximumPerMinipoolStake(value, c.Bool("yes"))
+											return proposeSettingNodeAreVacantMinipoolsEnabled(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2074,6 +2191,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2087,7 +2208,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeMinimumLegacyRplStake(value, c.Bool("yes"))
+											return proposeSettingNodeMinimumLegacyRplStake(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2107,6 +2228,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2120,7 +2245,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingReducedBond(value, c.Bool("yes"))
+											return proposeSettingReducedBond(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2136,6 +2261,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2149,7 +2278,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeUnstakingPeriod(value, c.Bool("yes"))
+											return proposeSettingNodeUnstakingPeriod(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2173,6 +2302,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2186,7 +2319,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVotePhase1Time(value, c.Bool("yes"))
+											return proposeSettingProposalsVotePhase1Time(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2202,6 +2335,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2215,7 +2352,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVotePhase2Time(value, c.Bool("yes"))
+											return proposeSettingProposalsVotePhase2Time(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2231,6 +2368,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2244,7 +2385,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVoteDelayTime(value, c.Bool("yes"))
+											return proposeSettingProposalsVoteDelayTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2260,6 +2401,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2273,7 +2418,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsExecuteTime(value, c.Bool("yes"))
+											return proposeSettingProposalsExecuteTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2293,6 +2438,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2306,7 +2455,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsProposalBond(value, c.Bool("yes"))
+											return proposeSettingProposalsProposalBond(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2326,6 +2475,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2339,7 +2492,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsChallengeBond(value, c.Bool("yes"))
+											return proposeSettingProposalsChallengeBond(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2355,6 +2508,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2368,7 +2525,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsChallengePeriod(value, c.Bool("yes"))
+											return proposeSettingProposalsChallengePeriod(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2388,6 +2545,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2401,7 +2562,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsQuorum(value, c.Bool("yes"))
+											return proposeSettingProposalsQuorum(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2421,6 +2582,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2434,7 +2599,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVetoQuorum(value, c.Bool("yes"))
+											return proposeSettingProposalsVetoQuorum(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2450,6 +2615,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2463,7 +2632,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsMaxBlockAge(value, c.Bool("yes"))
+											return proposeSettingProposalsMaxBlockAge(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2487,6 +2656,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2500,7 +2673,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingRewardsIntervalPeriods(value, c.Bool("yes"))
+											return proposeSettingRewardsIntervalPeriods(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2528,6 +2701,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2541,7 +2718,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityMembersQuorum(value, c.Bool("yes"))
+											return proposeSettingSecurityMembersQuorum(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2557,6 +2734,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2570,7 +2751,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityMembersLeaveTime(value, c.Bool("yes"))
+											return proposeSettingSecurityMembersLeaveTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2586,6 +2767,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2599,7 +2784,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalVoteTime(value, c.Bool("yes"))
+											return proposeSettingSecurityProposalVoteTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2615,6 +2800,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2628,7 +2817,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalExecuteTime(value, c.Bool("yes"))
+											return proposeSettingSecurityProposalExecuteTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2644,6 +2833,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2657,7 +2850,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalActionTime(value, c.Bool("yes"))
+											return proposeSettingSecurityProposalActionTime(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2681,6 +2874,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2694,7 +2891,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolTimeBeforeDissolve(value, c.Bool("yes"))
+											return proposeSettingMegapoolTimeBeforeDissolve(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2714,6 +2911,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2727,7 +2928,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMaximumMegapoolEthPenalty(value, c.Bool("yes"))
+											return proposeSettingMaximumMegapoolEthPenalty(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2743,6 +2944,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2756,7 +2961,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolNotifyThreshold(value, c.Bool("yes"))
+											return proposeSettingMegapoolNotifyThreshold(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2776,6 +2981,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2789,7 +2998,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolLateNotifyFine(value, c.Bool("yes"))
+											return proposeSettingMegapoolLateNotifyFine(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2805,6 +3014,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2818,7 +3031,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolDissolvePenalty(value, c.Bool("yes"))
+											return proposeSettingMegapoolDissolvePenalty(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2834,6 +3047,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 											// Validate args
@@ -2846,7 +3063,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolUserDistributeDelay(value, c.Bool("yes"))
+											return proposeSettingMegapoolUserDistributeDelay(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2862,6 +3079,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 											// Validate args
@@ -2874,7 +3095,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolUserDistributeDelayWithShortfall(value, c.Bool("yes"))
+											return proposeSettingMegapoolUserDistributeDelayWithShortfall(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
@@ -2894,6 +3115,10 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 												Aliases: []string{"y"},
 												Usage:   "Automatically confirm all interactive questions",
 											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
 										},
 										Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -2907,12 +3132,47 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingPenaltyThreshold(value, c.Bool("yes"))
+											return proposeSettingPenaltyThreshold(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
 								},
 							},
+						},
+					},
+
+					{
+						Name:      "submit-batch",
+						Aliases:   []string{"sb"},
+						Usage:     "Submit a single proposal that changes multiple Protocol DAO settings from a JSON file created with --to-json",
+						UsageText: "rocketpool pdao propose submit-batch",
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:    "yes",
+								Aliases: []string{"y"},
+								Usage:   "Automatically confirm all interactive questions",
+							},
+							&cli.StringFlag{
+								Name:    "file",
+								Aliases: []string{"f"},
+								Usage:   "The JSON file of setting changes created with --to-json. If omitted, you will be prompted.",
+							},
+							&cli.StringFlag{
+								Name:    "message",
+								Aliases: []string{"m"},
+								Usage:   "A custom proposal message (no blank spaces). If omitted, you will be prompted.",
+							},
+						},
+						Action: func(ctx context.Context, c *cli.Command) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+								return err
+							}
+
+							// Run
+							return submitBatch(c.String("file"), c.String("message"), c.Bool("yes"))
+
 						},
 					},
 				},

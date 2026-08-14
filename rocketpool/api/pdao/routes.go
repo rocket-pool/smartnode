@@ -1,6 +1,7 @@
 package pdao
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // RegisterRoutes registers the pdao module's HTTP routes onto mux.
@@ -142,6 +144,36 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		resp, err := proposeSetting(c, contract, setting, value, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	})
+
+	mux.HandleFunc("/api/pdao/can-propose-setting-multi", func(w http.ResponseWriter, r *http.Request) {
+		settings, customMessage, err := parseBatchSettings(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingMulti(c, settings, customMessage)
+		response.WriteResponse(w, resp, err)
+	})
+
+	mux.HandleFunc("/api/pdao/propose-setting-multi", func(w http.ResponseWriter, r *http.Request) {
+		settings, customMessage, err := parseBatchSettings(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMulti(c, settings, customMessage, blockNumber, opts)
 		response.WriteResponse(w, resp, err)
 	})
 
@@ -678,6 +710,18 @@ func parseRawAddressList(raw string) []common.Address {
 		}
 	}
 	return addresses
+}
+
+func parseBatchSettings(r *http.Request) ([]api.PDAOBatchSetting, string, error) {
+	raw := paramVal(r, "settings")
+	if raw == "" {
+		return nil, "", fmt.Errorf("missing required parameter: settings")
+	}
+	var settings []api.PDAOBatchSetting
+	if err := json.Unmarshal([]byte(raw), &settings); err != nil {
+		return nil, "", fmt.Errorf("invalid settings JSON: %w", err)
+	}
+	return settings, paramVal(r, "customMessage"), nil
 }
 
 func parseClaimBondsParams(r *http.Request) (uint64, []uint64, error) {

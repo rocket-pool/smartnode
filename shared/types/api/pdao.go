@@ -143,8 +143,6 @@ type GetPDAOSettingsResponse struct {
 		IsSmoothingPoolRegistrationEnabled bool          `json:"isSmoothingPoolRegistrationEnabled"`
 		IsDepositingEnabled                bool          `json:"isDepositingEnabled"`
 		AreVacantMinipoolsEnabled          bool          `json:"areVacantMinipoolsEnabled"`
-		MinimumPerMinipoolStake            *big.Int      `json:"minimumPerMinipoolStake"`
-		MaximumPerMinipoolStake            *big.Int      `json:"maximumPerMinipoolStake"`
 		MinimumLegacyRplStake              *big.Int      `json:"minimumLegacyRplStake"`
 		ReducedBond                        float64       `json:"reducedBond"`
 		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
@@ -200,6 +198,33 @@ type CanProposePDAOSettingResponse struct {
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type ProposePDAOSettingResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOBatchSetting struct {
+	Contract string `json:"contract"`
+	Setting  string `json:"setting"`
+	Type     string `json:"type,omitempty"`
+	Value    string `json:"value"`
+}
+
+type CanProposePDAOSettingMultiResponse struct {
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanPropose             bool            `json:"canPropose"`
+	InsufficientRpl        bool            `json:"proposalCooldownActive"`
+	StakedRpl              *big.Int        `json:"stakedRpl"`
+	LockedRpl              *big.Int        `json:"lockedRpl"`
+	ProposalBond           *big.Int        `json:"proposalBond"`
+	BlockNumber            uint32          `json:"blockNumber"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
+	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
+}
+
+type ProposePDAOSettingMultiResponse struct {
 	Status     string      `json:"status"`
 	Error      string      `json:"error"`
 	ProposalId uint64      `json:"proposalId"`

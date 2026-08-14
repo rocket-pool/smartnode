@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	utilsStrings "github.com/rocket-pool/smartnode/bindings/utils/strings"
 
@@ -79,6 +80,9 @@ func getProposals(stateFilter string) error {
 			}
 			proposal.Message = utilsStrings.Sanitize(proposal.Message)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
+			if summary := formatMultiSettingsSummary(proposal.MultiSettings); summary != "" {
+				fmt.Printf("    %s\n", summary)
+			}
 		}
 
 		count += len(proposals)
@@ -132,8 +136,7 @@ func getProposal(id uint64) error {
 	// Main details
 	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
 	fmt.Printf("Message:                %s\n", proposal.Message)
-	fmt.Printf("Payload:                %s\n", proposal.PayloadStr)
-	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
+	printProposalPayload(proposal.ProtocolDaoProposalDetails)
 	fmt.Printf("Proposed by:            %s\n", proposal.ProposerAddress.Hex())
 	fmt.Printf("Created at:             %s, %s\n", proposal.CreatedTime.Format(time.RFC822), getTimeDifference(proposal.CreatedTime))
 	fmt.Printf("State:                  %s\n", types.ProtocolDaoProposalStates[proposal.State])
@@ -209,4 +212,53 @@ func getTimeDifference(t time.Time) string {
 	}
 
 	return message
+}
+
+func printProposalPayload(proposal protocol.ProtocolDaoProposalDetails) {
+	if len(proposal.MultiSettings) > 0 {
+		fmt.Printf("Payload:                proposalSettingMulti (%d settings)\n", len(proposal.MultiSettings))
+		printMultiSettings(proposal.MultiSettings, "                        ")
+	} else {
+		fmt.Printf("Payload:                %s\n", proposal.PayloadStr)
+	}
+	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
+}
+
+func printMultiSettings(settings []protocol.DecodedProposalSetting, indent string) {
+	for i, setting := range settings {
+		fmt.Printf("%s%d. %s / %s = %s (%s)\n", indent, i+1, setting.Contract, setting.Path, setting.Value, setting.Type)
+	}
+}
+
+func formatMultiSettingsSummary(settings []protocol.DecodedProposalSetting) string {
+	if len(settings) == 0 {
+		return ""
+	}
+	return protocol.FormatProposalSettingMulti(settings)
+}
+
+func proposalDisplayText(proposal api.PDAOProposalWithNodeVoteDirection) (message string, payload string) {
+	message = proposal.Message
+	if len(message) > 200 {
+		message = message[:200]
+	}
+	message = utilsStrings.Sanitize(message)
+
+	payload = proposal.PayloadStr
+	if len(proposal.MultiSettings) > 0 {
+		payload = formatMultiSettingsSummary(proposal.MultiSettings)
+	}
+	if len(payload) > 200 {
+		payload = payload[:200] + "..."
+	}
+	return message, payload
+}
+
+func printSelectedMultiSettings(settings []protocol.DecodedProposalSetting) {
+	if len(settings) == 0 {
+		return
+	}
+	fmt.Printf("This proposal updates %d settings:\n", len(settings))
+	printMultiSettings(settings, "  ")
+	fmt.Println()
 }

@@ -205,6 +205,53 @@ func (c *Client) PDAOCanProposeSetting(contract string, setting string, value st
 	return response, nil
 }
 
+// Check whether the node can propose updating multiple PDAO settings
+func (c *Client) PDAOCanProposeSettingMulti(settings []api.PDAOBatchSetting, customMessage string) (api.CanProposePDAOSettingMultiResponse, error) {
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return api.CanProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not encode multi-setting proposal: %w", err)
+	}
+	responseBytes, err := c.callHTTPAPI("POST", "/api/pdao/can-propose-setting-multi", url.Values{
+		"settings":      {string(settingsJSON)},
+		"customMessage": {customMessage},
+	})
+	if err != nil {
+		return api.CanProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-setting-multi: %w", err)
+	}
+	var response api.CanProposePDAOSettingMultiResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-setting-multi response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-setting-multi: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose updating multiple PDAO settings
+func (c *Client) PDAOProposeSettingMulti(settings []api.PDAOBatchSetting, customMessage string, blockNumber uint32) (api.ProposePDAOSettingMultiResponse, error) {
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return api.ProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not encode multi-setting proposal: %w", err)
+	}
+	responseBytes, err := c.callHTTPAPI("POST", "/api/pdao/propose-setting-multi", url.Values{
+		"settings":      {string(settingsJSON)},
+		"customMessage": {customMessage},
+		"blockNumber":   {strconv.FormatUint(uint64(blockNumber), 10)},
+	})
+	if err != nil {
+		return api.ProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting-multi: %w", err)
+	}
+	var response api.ProposePDAOSettingMultiResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not decode protocol DAO propose-setting-multi response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposePDAOSettingMultiResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting-multi: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Propose updating a PDAO setting
 func (c *Client) PDAOProposeSetting(contract string, setting string, value string, blockNumber uint32) (api.ProposePDAOSettingResponse, error) {
 	responseBytes, err := c.callHTTPAPI("POST", "/api/pdao/propose-setting", url.Values{

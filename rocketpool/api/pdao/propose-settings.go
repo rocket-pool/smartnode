@@ -7,8 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -605,26 +603,6 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			response.GasLimits, err = protocol.EstimateProposeVacantMinipoolsEnabledGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing VacantMinipoolsEnabled: %w", err)
-			}
-		// MinimumPerMinipoolStake
-		case protocol131.MinimumPerMinipoolStakeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasLimits, err = protocol131.EstimateProposeMinimumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing MinimumPerMinipoolStake: %w", err)
-			}
-		// MaximumPerMinipoolStake
-		case protocol131.MaximumPerMinipoolStakeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasLimits, err = protocol131.EstimateProposeMaximumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing MaximumPerMinipoolStake: %w", err)
 			}
 		// MinimumLegacyRplStake
 		case protocol.MinimumLegacyRplStakePath:
@@ -1455,26 +1433,6 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeVacantMinipoolsEnabled(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing VacantMinipoolsEnabled: %w", err)
-			}
-		// MinimumPerMinipoolStake
-		case protocol131.MinimumPerMinipoolStakeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = protocol131.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing MinimumPerMinipoolStake: %w", err)
-			}
-		// MaximumPerMinipoolStake
-		case protocol131.MaximumPerMinipoolStakeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = protocol131.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing MaximumPerMinipoolStake: %w", err)
 			}
 		// MinimumLegacyRplStake
 		case protocol.MinimumLegacyRplStakePath:
