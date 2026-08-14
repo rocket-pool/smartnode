@@ -111,7 +111,7 @@ if [ "$CLIENT" = "geth" ]; then
         fi
         
         if [ "$EC_PRUNING_MODE" = "archive" ]; then
-            CMD="$CMD --syncmode=full --gcmode=archive"
+            CMD="$CMD --syncmode=full --gcmode=archive --history.state=0"
         fi
 
         if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
@@ -185,6 +185,10 @@ if [ "$CLIENT" = "nethermind" ]; then
         exit 1
     fi
 
+    if [ "$EC_PRUNING_MODE" = "archive" ]; then
+        RP_NETHERMIND_NETWORK="${RP_NETHERMIND_NETWORK}_archive"
+    fi
+
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
         --config $RP_NETHERMIND_NETWORK \
         --data-dir /ethclient/nethermind \
@@ -196,11 +200,14 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
-        --Pruning.FullPruningTrigger=VolumeFreeSpace \
-        --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
-        --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
-        --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM \
         $EC_ADDITIONAL_FLAGS"
+
+    if [ "$EC_PRUNING_MODE" != "archive" ]; then
+        CMD="$CMD --Pruning.FullPruningTrigger=VolumeFreeSpace \
+            --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
+            --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
+            --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM"
+    fi
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --Blocks.TargetBlockGasLimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
@@ -208,7 +215,7 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
         CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
-        CMD="$CMD --Pruning.Mode=None"
+        CMD="$CMD --Pruning.Mode=None --Receipt.TxLookupLimit=0"
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
@@ -259,12 +266,14 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Network.DiscoveryPort $EC_P2P_PORT --Network.P2PPort $EC_P2P_PORT"
     fi
 
-    if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
-        CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
-    fi
+    if [ "$EC_PRUNING_MODE" != "archive" ]; then
+        if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
+            CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
+        fi
 
-    if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
-        CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+        if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
+            CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+        fi
     fi
     
     exec ${CMD}
@@ -319,7 +328,6 @@ if [ "$CLIENT" = "besu" ]; then
             --engine-rpc-port=${EC_ENGINE_PORT:-8551} \
             --engine-host-allowlist=* \
             --engine-jwt-secret=/secrets/jwtsecret \
-            --Xbonsai-full-flat-db-enabled=true \
             $EC_ADDITIONAL_FLAGS"
 
         if [ ! -z "$EXTERNAL_IP" ]; then
@@ -332,6 +340,8 @@ if [ "$CLIENT" = "besu" ]; then
         
         if [ "$EC_PRUNING_MODE" = "archive" ]; then
             CMD="$CMD --sync-mode=FULL --data-storage-format=FOREST"
+        else
+            CMD="$CMD --Xbonsai-full-flat-db-enabled=true"
         fi
 
         if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
@@ -362,7 +372,7 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --p2p-port=$EC_P2P_PORT"
         fi
 
-        if [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
+        if [ "$EC_PRUNING_MODE" != "archive" ] && [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
             CMD="$CMD --bonsai-historical-block-limit=$BESU_MAX_BACK_LAYERS"
         fi
 

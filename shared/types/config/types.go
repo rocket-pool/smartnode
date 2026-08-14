@@ -53,7 +53,7 @@ const (
 	PruningMode_Archive              Mode = "archive"
 
 	// RollingHistoryBlockRetention is about one year of post-merge slots
-	// (82125 epochs * 32 slots). 
+	// (82125 epochs * 32 slots)
 	RollingHistoryBlockRetention uint64 = 2628000
 )
 
