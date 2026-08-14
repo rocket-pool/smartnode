@@ -6,7 +6,6 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 )
@@ -2173,80 +2172,6 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 											// Run
 											return proposeSettingNodeAreVacantMinipoolsEnabled(value, c.Bool("yes"), c.String("to-json"))
-
-										},
-									},
-
-									{
-										Name:      "minimum-per-minipool-stake",
-										Aliases:   []string{"minpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
-										UsageText: "rocketpool pdao propose setting node minimum-per-minipool-stake value",
-										Flags: []cli.Flag{
-											&cli.BoolFlag{
-												Name:  "raw",
-												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
-											},
-											&cli.BoolFlag{
-												Name:    "yes",
-												Aliases: []string{"y"},
-												Usage:   "Automatically confirm all interactive questions",
-											},
-											&cli.StringFlag{
-												Name:  "to-json",
-												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
-											},
-										},
-										Action: func(ctx context.Context, c *cli.Command) error {
-
-											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeMinimumPerMinipoolStake(value, c.Bool("yes"), c.String("to-json"))
-
-										},
-									},
-
-									{
-										Name:      "maximum-per-minipool-stake",
-										Aliases:   []string{"maxpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
-										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
-										Flags: []cli.Flag{
-											&cli.BoolFlag{
-												Name:  "raw",
-												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
-											},
-											&cli.BoolFlag{
-												Name:    "yes",
-												Aliases: []string{"y"},
-												Usage:   "Automatically confirm all interactive questions",
-											},
-											&cli.StringFlag{
-												Name:  "to-json",
-												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
-											},
-										},
-										Action: func(ctx context.Context, c *cli.Command) error {
-
-											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeMaximumPerMinipoolStake(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},

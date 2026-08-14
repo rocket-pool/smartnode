@@ -7,7 +7,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -211,16 +210,6 @@ func proposeSettingNodeAreVacantMinipoolsEnabled(value bool, yes bool, toJson st
 	return proposeSetting(protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeMinimumPerMinipoolStake(value *big.Int, yes bool, toJson string) error {
-	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MinimumPerMinipoolStakeSettingPath, trueValue, yes, toJson)
-}
-
-func proposeSettingNodeMaximumPerMinipoolStake(value *big.Int, yes bool, toJson string) error {
-	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MaximumPerMinipoolStakeSettingPath, trueValue, yes, toJson)
-}
-
 func proposeSettingNodeMinimumLegacyRplStake(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
 	return proposeSetting(protocol.NodeSettingsContractName, protocol.MinimumLegacyRplStakePath, trueValue, yes, toJson)
@@ -388,11 +377,6 @@ func proposeMaxRethBalanceDelta(value *big.Int, yes bool, toJson string) error {
 
 // Master general proposal function
 func proposeSetting(contract string, setting string, value string, yes bool, toJson string) error {
-	if protocol.IsHoustonOnlySetting(setting) {
-		fmt.Println("This command no longer available in Saturn.")
-		return nil
-	}
-
 	if toJson != "" {
 		return writeSettingToBatchJSON(toJson, contract, setting, value)
 	}

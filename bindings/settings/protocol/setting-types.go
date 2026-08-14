@@ -3,7 +3,6 @@ package protocol
 import (
 	"fmt"
 
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -17,7 +16,6 @@ const (
 var (
 	ErrUnknownPDAOSetting      = fmt.Errorf("unknown protocol DAO setting")
 	ErrUnsupportedBatchSetting = fmt.Errorf("setting type is not supported in a multi-setting proposal")
-	ErrHoustonOnlySetting      = fmt.Errorf("setting is no longer available after Saturn")
 	ErrDuplicateBatchSetting   = fmt.Errorf("duplicate setting in multi-setting proposal")
 	ErrEmptyBatchSettings      = fmt.Errorf("multi-setting proposal must contain at least one setting")
 )
@@ -86,15 +84,13 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		NetworkMaxRethBalanceDeltaPath:                     settingKindUint256,
 	},
 	NodeSettingsContractName: {
-		NodeRegistrationEnabledSettingPath:             settingKindBool,
-		SmoothingPoolRegistrationEnabledSettingPath:    settingKindBool,
-		NodeDepositEnabledSettingPath:                  settingKindBool,
-		VacantMinipoolsEnabledSettingPath:              settingKindBool,
-		protocol131.MinimumPerMinipoolStakeSettingPath: settingKindUint256,
-		protocol131.MaximumPerMinipoolStakeSettingPath: settingKindUint256,
-		MinimumLegacyRplStakePath:                      settingKindUint256,
-		ReducedBondSettingPath:                         settingKindUint256,
-		NodeUnstakingPeriodSettingPath:                 settingKindUint256,
+		NodeRegistrationEnabledSettingPath:          settingKindBool,
+		SmoothingPoolRegistrationEnabledSettingPath: settingKindBool,
+		NodeDepositEnabledSettingPath:               settingKindBool,
+		VacantMinipoolsEnabledSettingPath:           settingKindBool,
+		MinimumLegacyRplStakePath:                   settingKindUint256,
+		ReducedBondSettingPath:                      settingKindUint256,
+		NodeUnstakingPeriodSettingPath:              settingKindUint256,
 	},
 	ProposalsSettingsContractName: {
 		VotePhase1TimeSettingPath:      settingKindUint256,
@@ -130,18 +126,6 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 	},
 }
 
-// houstonOnlySettings cannot be proposed after the Saturn upgrade.
-var houstonOnlySettings = map[string]struct{}{
-	protocol131.MinimumPerMinipoolStakeSettingPath: {},
-	protocol131.MaximumPerMinipoolStakeSettingPath: {},
-}
-
-// IsHoustonOnlySetting reports whether the setting existed only on Houston 1.3.1.
-func IsHoustonOnlySetting(setting string) bool {
-	_, exists := houstonOnlySettings[setting]
-	return exists
-}
-
 // GetProposalSettingType returns the on-chain type used by proposalSettingMulti
 // for the given contract/setting pair.
 func GetProposalSettingType(contract string, setting string) (types.ProposalSettingType, error) {
@@ -152,9 +136,6 @@ func GetProposalSettingType(contract string, setting string) (types.ProposalSett
 	kind, ok := kinds[setting]
 	if !ok {
 		return 0, fmt.Errorf("%w: [%s - %s]", ErrUnknownPDAOSetting, contract, setting)
-	}
-	if IsHoustonOnlySetting(setting) {
-		return 0, fmt.Errorf("%w: %s", ErrHoustonOnlySetting, setting)
 	}
 	switch kind {
 	case settingKindUint256:
