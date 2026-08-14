@@ -16,385 +16,385 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 )
 
-func proposeSettingAuctionIsCreateLotEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingAuctionIsCreateLotEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.CreateLotEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.CreateLotEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionIsBidOnLotEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingAuctionIsBidOnLotEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.BidOnLotEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.BidOnLotEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionLotMinimumEthValue(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingAuctionLotMinimumEthValue(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotMinimumEthValueSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotMinimumEthValueSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionLotMaximumEthValue(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingAuctionLotMaximumEthValue(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotMaximumEthValueSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotMaximumEthValueSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionLotDuration(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingAuctionLotDuration(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotDurationSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotDurationSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionLotStartingPriceRatio(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingAuctionLotStartingPriceRatio(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotStartingPriceRatioSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotStartingPriceRatioSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingAuctionLotReservePriceRatio(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingAuctionLotReservePriceRatio(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotReservePriceRatioSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.LotReservePriceRatioSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositIsDepositingEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingDepositIsDepositingEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.DepositEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.DepositEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositAreDepositAssignmentsEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingDepositAreDepositAssignmentsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.AssignDepositsEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.AssignDepositsEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositMinimumDeposit(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingDepositMinimumDeposit(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.MinimumDepositSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.MinimumDepositSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositMaximumDepositPoolSize(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingDepositMaximumDepositPoolSize(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumDepositPoolSizeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumDepositPoolSizeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositMaximumAssignmentsPerDeposit(value uint64, yes bool, generateJson string) error {
+func proposeSettingDepositMaximumAssignmentsPerDeposit(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumDepositAssignmentsSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumDepositAssignmentsSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(value uint64, yes bool, generateJson string) error {
+func proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositExpressQueueRate(value uint64, yes bool, generateJson string) error {
+func proposeSettingDepositExpressQueueRate(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.ExpressQueueRatePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.ExpressQueueRatePath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositExpressQueueTicketsBaseProvision(value uint64, yes bool, generateJson string) error {
+func proposeSettingDepositExpressQueueTicketsBaseProvision(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.ExpressQueueTicketsBaseProvisionPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.ExpressQueueTicketsBaseProvisionPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDepositDepositFee(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingDepositDepositFee(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.DepositSettingsContractName, protocol.DepositFeeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.DepositFeeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolIsSubmitWithdrawableEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingMinipoolIsSubmitWithdrawableEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolLaunchTimeout(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingMinipoolLaunchTimeout(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolLaunchTimeoutSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolLaunchTimeoutSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolIsBondReductionEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingMinipoolIsBondReductionEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.BondReductionEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.BondReductionEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolMaximumCount(value uint64, yes bool, generateJson string) error {
+func proposeSettingMinipoolMaximumCount(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MaximumMinipoolCountSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MaximumMinipoolCountSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolUserDistributeWindowStart(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingMinipoolUserDistributeWindowStart(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowStartSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowStartSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMinipoolUserDistributeWindowLength(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingMinipoolUserDistributeWindowLength(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowLengthSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowLengthSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkOracleDaoConsensusThreshold(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkOracleDaoConsensusThreshold(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NodeConsensusThresholdSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NodeConsensusThresholdSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkNodePenaltyThreshold(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkNodePenaltyThreshold(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPenaltyThresholdSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPenaltyThresholdSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkPerPenaltyRate(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkPerPenaltyRate(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPenaltyPerRateSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPenaltyPerRateSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkIsSubmitBalancesEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNetworkIsSubmitBalancesEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkSubmitBalancesFrequency(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingNetworkSubmitBalancesFrequency(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitBalancesFrequencySettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitBalancesFrequencySettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkIsSubmitPricesEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNetworkIsSubmitPricesEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkSubmitPricesFrequency(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingNetworkSubmitPricesFrequency(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitPricesFrequencySettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitPricesFrequencySettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkMinimumNodeFee(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkMinimumNodeFee(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.MinimumNodeFeeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.MinimumNodeFeeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkTargetNodeFee(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkTargetNodeFee(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.TargetNodeFeeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.TargetNodeFeeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkMaximumNodeFee(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkMaximumNodeFee(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.MaximumNodeFeeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.MaximumNodeFeeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkNodeFeeDemandRange(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkNodeFeeDemandRange(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NodeFeeDemandRangeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NodeFeeDemandRangeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkTargetRethCollateralRate(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNetworkTargetRethCollateralRate(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.TargetRethCollateralRateSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.TargetRethCollateralRateSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNetworkIsSubmitRewardsEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNetworkIsSubmitRewardsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeIsRegistrationEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNodeIsRegistrationEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeRegistrationEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeRegistrationEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeIsDepositingEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNodeIsDepositingEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeDepositEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeDepositEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeAreVacantMinipoolsEnabled(value bool, yes bool, generateJson string) error {
+func proposeSettingNodeAreVacantMinipoolsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeMinimumPerMinipoolStake(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNodeMinimumPerMinipoolStake(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MinimumPerMinipoolStakeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MinimumPerMinipoolStakeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeMaximumPerMinipoolStake(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNodeMaximumPerMinipoolStake(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MaximumPerMinipoolStakeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol131.MaximumPerMinipoolStakeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeMinimumLegacyRplStake(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNodeMinimumLegacyRplStake(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.MinimumLegacyRplStakePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.MinimumLegacyRplStakePath, trueValue, yes, toJson)
 }
 
-func proposeSettingReducedBond(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingReducedBond(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeUnstakingPeriod(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingNodeUnstakingPeriod(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsVotePhase1Time(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingProposalsVotePhase1Time(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsVotePhase2Time(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingProposalsVotePhase2Time(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase2TimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase2TimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsVoteDelayTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingProposalsVoteDelayTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VoteDelayTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VoteDelayTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsExecuteTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingProposalsExecuteTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ExecuteTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ExecuteTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsProposalBond(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingProposalsProposalBond(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalBondSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalBondSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsChallengeBond(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingProposalsChallengeBond(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ChallengeBondSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ChallengeBondSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsChallengePeriod(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingProposalsChallengePeriod(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ChallengePeriodSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ChallengePeriodSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsQuorum(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingProposalsQuorum(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalQuorumSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalQuorumSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsVetoQuorum(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingProposalsVetoQuorum(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalVetoQuorumSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalVetoQuorumSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingProposalsMaxBlockAge(value uint64, yes bool, generateJson string) error {
+func proposeSettingProposalsMaxBlockAge(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalMaxBlockAgeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.ProposalMaxBlockAgeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingRewardsIntervalPeriods(value uint64, yes bool, generateJson string) error {
+func proposeSettingRewardsIntervalPeriods(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.RewardsSettingsContractName, protocol.RewardsClaimIntervalPeriodsSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.RewardsSettingsContractName, protocol.RewardsClaimIntervalPeriodsSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingSecurityMembersQuorum(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingSecurityMembersQuorum(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityMembersQuorumSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityMembersQuorumSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingSecurityMembersLeaveTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingSecurityMembersLeaveTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityMembersLeaveTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityMembersLeaveTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingSecurityProposalVoteTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingSecurityProposalVoteTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalVoteTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalVoteTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingSecurityProposalExecuteTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingSecurityProposalExecuteTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalExecuteTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalExecuteTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingSecurityProposalActionTime(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingSecurityProposalActionTime(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolTimeBeforeDissolve(value time.Duration, yes bool, generateJson string) error {
+func proposeSettingMegapoolTimeBeforeDissolve(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMaximumMegapoolEthPenalty(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingMaximumMegapoolEthPenalty(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolNotifyThreshold(value uint64, yes bool, generateJson string) error {
+func proposeSettingMegapoolNotifyThreshold(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolLateNotifyFine(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingMegapoolLateNotifyFine(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolDissolvePenalty(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingMegapoolDissolvePenalty(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolDissolvePenaltyPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolDissolvePenaltyPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolUserDistributeDelay(value uint64, yes bool, generateJson string) error {
+func proposeSettingMegapoolUserDistributeDelay(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayPath, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolUserDistributeDelayWithShortfall(value uint64, yes bool, generateJson string) error {
+func proposeSettingMegapoolUserDistributeDelayWithShortfall(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayShortfallPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayShortfallPath, trueValue, yes, toJson)
 }
 
-func proposeSettingPenaltyThreshold(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingPenaltyThreshold(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue, yes, generateJson)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeCommissionShare(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNodeCommissionShare(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue, yes, toJson)
 }
 
-func proposeSettingNodeCommissionShareSecurityCouncilAdder(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingNodeCommissionShareSecurityCouncilAdder(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue, yes, toJson)
 }
 
-func proposeSettingVoterShare(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingVoterShare(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkVoterSharePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkVoterSharePath, trueValue, yes, toJson)
 }
 
-func proposeSettingPDAOShare(value *big.Int, yes bool, generateJson string) error {
+func proposeSettingPDAOShare(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPDAOSharePath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkPDAOSharePath, trueValue, yes, toJson)
 }
 
-func proposeMaxNodeShareSecurityCouncilAdder(value *big.Int, yes bool, generateJson string) error {
+func proposeMaxNodeShareSecurityCouncilAdder(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue, yes, toJson)
 }
 
-func proposeMaxRethBalanceDelta(value *big.Int, yes bool, generateJson string) error {
+func proposeMaxRethBalanceDelta(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue, yes, generateJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue, yes, toJson)
 }
 
 // Master general proposal function
-func proposeSetting(contract string, setting string, value string, yes bool, generateJson string) error {
+func proposeSetting(contract string, setting string, value string, yes bool, toJson string) error {
 	if protocol.IsHoustonOnlySetting(setting) {
 		fmt.Println("This command no longer available in Saturn.")
 		return nil
 	}
 
-	if generateJson != "" {
-		return writeSettingToBatchJSON(generateJson, contract, setting, value)
+	if toJson != "" {
+		return writeSettingToBatchJSON(toJson, contract, setting, value)
 	}
 
 	// Get RP client

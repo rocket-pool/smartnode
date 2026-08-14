@@ -7,14 +7,13 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
-// Proposal setting type names written to --generate-json files.
+// Proposal setting type names written to --to-json files.
 const (
 	ProposalSettingTypeNameUint256 = "uint256"
 	ProposalSettingTypeNameBool    = "bool"
 	ProposalSettingTypeNameAddress = "address"
 )
 
-// Errors for settings that cannot be encoded into a proposalSettingMulti payload.
 var (
 	ErrUnknownPDAOSetting      = fmt.Errorf("unknown protocol DAO setting")
 	ErrUnsupportedBatchSetting = fmt.Errorf("setting type is not supported in a multi-setting proposal")

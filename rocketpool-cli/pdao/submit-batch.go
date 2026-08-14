@@ -12,7 +12,43 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
+func printSubmitBatchHelp() {
+	fmt.Print(`submit-batch creates one Protocol DAO proposal that changes multiple settings.
+
+Build a JSON file with --to-json on the usual setting propose commands (creates the file or appends; the same contract+setting is replaced):
+
+  rocketpool pdao propose setting auction is-create-lot-enabled true --to-json settings.json
+  rocketpool pdao propose setting deposit minimum-deposit 1.0 --to-json settings.json
+
+Submit that file as a single proposal:
+
+  rocketpool pdao propose submit-batch --file settings.json
+
+The file is a JSON array. Each object is one setting:
+
+[
+  {
+    "contract": "rocketDAOProtocolSettingsAuction",
+    "setting": "auction.lot.create.enabled",
+    "type": "bool",
+    "value": "true"
+  },
+  {
+    "contract": "rocketDAOProtocolSettingsDeposit",
+    "setting": "deposit.minimum",
+    "type": "uint256",
+    "value": "1000000000000000000"
+  }
+]
+`)
+}
+
 func submitBatch(file string, message string, yes bool) error {
+	if file == "" {
+		printSubmitBatchHelp()
+		file = prompt.Prompt("Please enter the path to the JSON file:", "^.+$", "Invalid file path")
+	}
+
 	settings, err := readBatchSettingsFile(file)
 	if err != nil {
 		return err
