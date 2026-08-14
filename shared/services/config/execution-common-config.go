@@ -125,7 +125,7 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Rolling History Expiry",
-				Description: "Drop block bodies and receipts older than about one year. Nethermind, Besu, and Reth support this. Geth does not yet and will use pre-merge history expiry instead.",
+				Description: "Drop block bodies and receipts older than about one year. Nethermind, Besu, and Reth support this. Geth does not yet and will use pre-Prague history expiry instead.",
 				Value:       config.PruningMode_RollingHistoryExpiry,
 			}, {
 				Name:        "History Expiry",

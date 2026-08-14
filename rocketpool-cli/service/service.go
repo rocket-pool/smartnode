@@ -944,6 +944,7 @@ func pruneExecutionClient(yes bool) error {
 		switch pruningMode {
 		case cfgtypes.PruningMode_RollingHistoryExpiry:
 			color.YellowPrintln("Geth does not support rolling history expiry yet. This prune only removes pre-merge bodies and receipts.")
+			color.YellowPrintln("Geth rolling mode uses pre-Prague expiry on startup (--history.chain postprague). Resync to drop already-stored pre-Prague history.")
 		case cfgtypes.PruningMode_HistoryExpiry:
 			fmt.Println("This will shut down Geth and prune pre-merge block bodies and receipts.")
 		default:

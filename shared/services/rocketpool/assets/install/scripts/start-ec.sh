@@ -73,7 +73,8 @@ if [ "$CLIENT" = "geth" ]; then
 
         if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
             if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
-                echo "Geth does not support rolling history expiry; pruning pre-merge history only"
+                echo "Geth does not support rolling history expiry; prune-history only removes pre-merge data"
+                echo "A resync is required to drop pre-Prague history"
             fi
             $PERF_PREFIX /usr/local/bin/geth prune-history $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock    
         fi
@@ -114,11 +115,13 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --syncmode=full --gcmode=archive --history.state=0"
         fi
 
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
-            if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
-                echo "Geth does not support rolling history expiry; using pre-merge history expiry (--history.chain postmerge)"
-            fi
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
             CMD="$CMD --history.chain postmerge"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            echo "Geth does not support rolling history expiry; using pre-Prague history expiry (--history.chain postprague)"
+            CMD="$CMD --history.chain postprague"
         fi
 
         if [ ! -z "$GETH_EVM_TIMEOUT" ]; then
