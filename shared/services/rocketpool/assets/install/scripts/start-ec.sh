@@ -1,5 +1,7 @@
 #!/bin/sh
 # This script launches ETH1 clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
+#
+# Rolling history expiry keeps ~1 year of bodies/receipts (82125 epochs / 2628000 blocks).
 
 # Performance tuning for ARM systems
 define_perf_prefix() {
@@ -69,7 +71,11 @@ if [ "$CLIENT" = "geth" ]; then
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
 
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+                echo "Geth does not support rolling history expiry; prune-history only removes pre-merge data"
+                echo "A resync is required to drop pre-Prague history"
+            fi
             $PERF_PREFIX /usr/local/bin/geth prune-history $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock    
         fi
 
@@ -106,11 +112,16 @@ if [ "$CLIENT" = "geth" ]; then
         fi
         
         if [ "$EC_PRUNING_MODE" = "archive" ]; then
-            CMD="$CMD --syncmode=full --gcmode=archive"
+            CMD="$CMD --syncmode=full --gcmode=archive --history.state=0"
         fi
 
         if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
             CMD="$CMD --history.chain postmerge"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            echo "Geth does not support rolling history expiry; using pre-Prague history expiry (--history.chain postprague)"
+            CMD="$CMD --history.chain postprague"
         fi
 
         if [ ! -z "$GETH_EVM_TIMEOUT" ]; then
@@ -177,6 +188,10 @@ if [ "$CLIENT" = "nethermind" ]; then
         exit 1
     fi
 
+    if [ "$EC_PRUNING_MODE" = "archive" ]; then
+        RP_NETHERMIND_NETWORK="${RP_NETHERMIND_NETWORK}_archive"
+    fi
+
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
         --config $RP_NETHERMIND_NETWORK \
         --data-dir /ethclient/nethermind \
@@ -188,11 +203,14 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
-        --Pruning.FullPruningTrigger=VolumeFreeSpace \
-        --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
-        --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
-        --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM \
         $EC_ADDITIONAL_FLAGS"
+
+    if [ "$EC_PRUNING_MODE" != "archive" ]; then
+        CMD="$CMD --Pruning.FullPruningTrigger=VolumeFreeSpace \
+            --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
+            --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
+            --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM"
+    fi
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --Blocks.TargetBlockGasLimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
@@ -200,7 +218,7 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
         CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
-        CMD="$CMD --Pruning.Mode=None"
+        CMD="$CMD --Pruning.Mode=None --Receipt.TxLookupLimit=0"
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
@@ -210,6 +228,12 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
+        CMD="$CMD --History.Pruning=UseAncientBarriers"
+        CMD="$CMD --Pruning.Mode=Hybrid"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+        CMD="$CMD --History.Pruning=Rolling"
         CMD="$CMD --Pruning.Mode=Hybrid"
     fi
     
@@ -245,12 +269,14 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Network.DiscoveryPort $EC_P2P_PORT --Network.P2PPort $EC_P2P_PORT"
     fi
 
-    if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
-        CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
-    fi
+    if [ "$EC_PRUNING_MODE" != "archive" ]; then
+        if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
+            CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
+        fi
 
-    if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
-        CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+        if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
+            CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+        fi
     fi
     
     exec ${CMD}
@@ -275,14 +301,19 @@ if [ "$CLIENT" = "besu" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
-    # Check for the prune flag and run that first if requested
-    if [ -f "/ethclient/prune.lock" ]; then
-
+    # Check for the prune flag and run that first if requested.
+    # Rolling expiry is applied at startup via Xchain-pruning flags, so skip the
+    # offline pre-merge prune in that mode.
+    if [ -f "/ethclient/prune.lock" ] && [ "$EC_PRUNING_MODE" != "rollingHistoryExpiry" ]; then
 
         $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu --history-expiry-prune storage trie-log prune ; rm /ethclient/prune.lock
 
     # Run Besu normally
     else
+        if [ -f "/ethclient/prune.lock" ]; then
+            echo "Besu rolling history expiry is applied at startup; skipping offline pre-merge prune"
+            rm -f /ethclient/prune.lock
+        fi
 
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
@@ -300,7 +331,6 @@ if [ "$CLIENT" = "besu" ]; then
             --engine-rpc-port=${EC_ENGINE_PORT:-8551} \
             --engine-host-allowlist=* \
             --engine-jwt-secret=/secrets/jwtsecret \
-            --Xbonsai-full-flat-db-enabled=true \
             $EC_ADDITIONAL_FLAGS"
 
         if [ ! -z "$EXTERNAL_IP" ]; then
@@ -313,6 +343,8 @@ if [ "$CLIENT" = "besu" ]; then
         
         if [ "$EC_PRUNING_MODE" = "archive" ]; then
             CMD="$CMD --sync-mode=FULL --data-storage-format=FOREST"
+        else
+            CMD="$CMD --Xbonsai-full-flat-db-enabled=true"
         fi
 
         if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
@@ -321,6 +353,10 @@ if [ "$CLIENT" = "besu" ]; then
 
         if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
             CMD="$CMD --history-expiry-prune"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            CMD="$CMD --snapsync-server-enabled --Xchain-pruning-enabled=ALL --Xchain-pruning-blocks-retained=2628000"
         fi
 
         if [ ! -z "$ETHSTATS_LABEL" ] && [ ! -z "$ETHSTATS_LOGIN" ]; then
@@ -339,7 +375,7 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --p2p-port=$EC_P2P_PORT"
         fi
 
-        if [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
+        if [ "$EC_PRUNING_MODE" != "archive" ] && [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
             CMD="$CMD --bonsai-historical-block-limit=$BESU_MAX_BACK_LAYERS"
         fi
 
@@ -359,6 +395,16 @@ if [ "$CLIENT" = "reth" ]; then
     if [ ! -s "/secrets/jwtsecret" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
+
+    # Check for the prune flag and run that first if requested
+    if [ -f "/ethclient/prune.lock" ]; then
+        if [ "$EC_PRUNING_MODE" = "archive" ]; then
+            echo "Reth is an archive node. Not attempting to prune: Aborting."
+            rm -f /ethclient/prune.lock
+            exit 1
+        fi
+        $PERF_PREFIX /usr/local/bin/reth prune $RETH_NETWORK --datadir /ethclient/reth ; rm /ethclient/prune.lock
+    else
 
     CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \
         --datadir /ethclient/reth \
@@ -403,6 +449,16 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.transaction-lookup.distance=10064"
     fi
 
+    if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+        CMD="$CMD --block-interval 5"
+        CMD="$CMD --prune.senderrecovery.full"
+        CMD="$CMD --prune.accounthistory.distance 10064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
+        CMD="$CMD --prune.transaction-lookup.distance=10064"
+        CMD="$CMD --prune.bodies.distance 2628000"
+        CMD="$CMD --prune.receipts.distance 2628000"
+    fi
+
     if [ ! -z "$EC_MAX_PEERS" ]; then
         CMD="$CMD --max-outbound-peers=$EC_MAX_PEERS"
     fi
@@ -417,4 +473,5 @@ if [ "$CLIENT" = "reth" ]; then
 
     exec ${CMD}
 
+    fi
 fi

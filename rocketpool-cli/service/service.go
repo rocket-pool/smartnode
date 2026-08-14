@@ -929,9 +929,27 @@ func pruneExecutionClient(yes bool) error {
 		return nil
 	}
 
+	pruningMode, _ := cfg.ExecutionCommon.PruningMode.Value.(cfgtypes.Mode)
+
+	// Besu rolling expiry is applied continuously at startup; there is no offline prune step.
+	if selectedEc == cfgtypes.ExecutionClient_Besu && pruningMode == cfgtypes.PruningMode_RollingHistoryExpiry {
+		fmt.Println("Besu rolling history expiry is applied while the client is running.")
+		fmt.Println("It will drop block bodies and receipts older than about one year.")
+		fmt.Println("If you just switched to this mode from a full node, you may need `rocketpool service resync-eth1` before already-stored history is removed.")
+		return nil
+	}
+
 	// Print the appropriate warnings before pruning
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
-		color.YellowPrintln("Geth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.")
+		switch pruningMode {
+		case cfgtypes.PruningMode_RollingHistoryExpiry:
+			color.YellowPrintln("Geth does not support rolling history expiry yet. This prune only removes pre-merge bodies and receipts.")
+			color.YellowPrintln("Geth rolling mode uses pre-Prague expiry on startup (--history.chain postprague). Resync to drop already-stored pre-Prague history.")
+		case cfgtypes.PruningMode_HistoryExpiry:
+			fmt.Println("This will shut down Geth and prune pre-merge block bodies and receipts.")
+		default:
+			color.YellowPrintln("Geth has a new feature that renders state pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.")
+		}
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			color.RedPrintln("You do not have a fallback execution client configured.")
@@ -941,6 +959,13 @@ func pruneExecutionClient(yes bool) error {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
 		fmt.Println("Once pruning is complete, your execution client will restart automatically.")
+	} else if selectedEc == cfgtypes.ExecutionClient_Nethermind && pruningMode == cfgtypes.PruningMode_RollingHistoryExpiry {
+		fmt.Println("Nethermind rolling history expiry drops bodies and receipts older than about one year while the client is running.")
+		fmt.Println("This command still starts Nethermind's state prune, which is separate from history expiry.")
+		fmt.Println("If you just switched to rolling expiry from a full node, you may need `rocketpool service resync-eth1` before already-stored history is removed.")
+	} else if selectedEc == cfgtypes.ExecutionClient_Reth && pruningMode == cfgtypes.PruningMode_RollingHistoryExpiry {
+		fmt.Println("This will stop Reth and prune bodies and receipts outside the one-year rolling window.")
+		fmt.Println("This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	} else {
 		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
