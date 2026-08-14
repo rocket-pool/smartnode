@@ -47,9 +47,14 @@ const (
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
 const (
-	PruningMode_HistoryExpiry Mode = "historyExpiry"
-	PruningMode_FullNode      Mode = "fullNode"
-	PruningMode_Archive       Mode = "archive"
+	PruningMode_HistoryExpiry        Mode = "historyExpiry"
+	PruningMode_RollingHistoryExpiry Mode = "rollingHistoryExpiry"
+	PruningMode_FullNode             Mode = "fullNode"
+	PruningMode_Archive              Mode = "archive"
+
+	// RollingHistoryBlockRetention is about one year of post-merge slots
+	// (82125 epochs * 32 slots). 
+	RollingHistoryBlockRetention uint64 = 2628000
 )
 
 // Enum to describe which data type a parameter's value will have, which

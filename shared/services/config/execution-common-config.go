@@ -117,23 +117,27 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 		PruningMode: config.Parameter{
 			ID:                 "pruningMode",
 			Name:               "Pruning Mode",
-			Description:        "Instructs the clients to either prune history, keep it, or act as an archive mode.",
+			Description:        "How much execution-layer history the client keeps. Rolling History Expiry drops block bodies and receipts older than about one year. History Expiry only drops pre-merge bodies and receipts. Full node keeps all history. Archive keeps history and historical state.",
 			Type:               config.ParameterType_Choice,
-			Default:            map[config.Network]interface{}{config.Network_All: config.PruningMode_FullNode},
+			Default:            map[config.Network]interface{}{config.Network_All: config.PruningMode_RollingHistoryExpiry},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
+				Name:        "Rolling History Expiry",
+				Description: "Drop block bodies and receipts older than about one year. Nethermind, Besu, and Reth support this. Geth does not yet and will use pre-merge history expiry instead.",
+				Value:       config.PruningMode_RollingHistoryExpiry,
+			}, {
 				Name:        "History Expiry",
-				Description: "Client will drop historical data to save storage",
+				Description: "Drop pre-merge block bodies and receipts (EIP-4444 partial history expiry). Keeps all post-merge history.",
 				Value:       config.PruningMode_HistoryExpiry,
 			}, {
 				Name:        "Full node",
-				Description: "Client will keep the usual full node data (without history expiry)",
+				Description: "Keep the usual full node data, including all block bodies and receipts.",
 				Value:       config.PruningMode_FullNode,
 			}, {
 				Name:        "Archive",
-				Description: "Client will work as an archive node",
+				Description: "Keep all history and historical state. Uses much more disk.",
 				Value:       config.PruningMode_Archive,
 			}},
 		},

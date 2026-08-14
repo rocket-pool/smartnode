@@ -1,5 +1,7 @@
 #!/bin/sh
 # This script launches ETH1 clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
+#
+# Rolling history expiry keeps ~1 year of bodies/receipts (82125 epochs / 2628000 blocks).
 
 # Performance tuning for ARM systems
 define_perf_prefix() {
@@ -69,7 +71,10 @@ if [ "$CLIENT" = "geth" ]; then
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
 
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+                echo "Geth does not support rolling history expiry; pruning pre-merge history only"
+            fi
             $PERF_PREFIX /usr/local/bin/geth prune-history $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock    
         fi
 
@@ -109,7 +114,10 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --syncmode=full --gcmode=archive"
         fi
 
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ] || [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+                echo "Geth does not support rolling history expiry; using pre-merge history expiry (--history.chain postmerge)"
+            fi
             CMD="$CMD --history.chain postmerge"
         fi
 
@@ -210,6 +218,12 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
+        CMD="$CMD --History.Pruning=UseAncientBarriers"
+        CMD="$CMD --Pruning.Mode=Hybrid"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+        CMD="$CMD --History.Pruning=Rolling"
         CMD="$CMD --Pruning.Mode=Hybrid"
     fi
     
@@ -275,14 +289,19 @@ if [ "$CLIENT" = "besu" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
-    # Check for the prune flag and run that first if requested
-    if [ -f "/ethclient/prune.lock" ]; then
-
+    # Check for the prune flag and run that first if requested.
+    # Rolling expiry is applied at startup via Xchain-pruning flags, so skip the
+    # offline pre-merge prune in that mode.
+    if [ -f "/ethclient/prune.lock" ] && [ "$EC_PRUNING_MODE" != "rollingHistoryExpiry" ]; then
 
         $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu --history-expiry-prune storage trie-log prune ; rm /ethclient/prune.lock
 
     # Run Besu normally
     else
+        if [ -f "/ethclient/prune.lock" ]; then
+            echo "Besu rolling history expiry is applied at startup; skipping offline pre-merge prune"
+            rm -f /ethclient/prune.lock
+        fi
 
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
@@ -323,6 +342,10 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --history-expiry-prune"
         fi
 
+        if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+            CMD="$CMD --snapsync-server-enabled --Xchain-pruning-enabled=ALL --Xchain-pruning-blocks-retained=2628000"
+        fi
+
         if [ ! -z "$ETHSTATS_LABEL" ] && [ ! -z "$ETHSTATS_LOGIN" ]; then
             CMD="$CMD --ethstats $ETHSTATS_LABEL:$ETHSTATS_LOGIN"
         fi
@@ -359,6 +382,16 @@ if [ "$CLIENT" = "reth" ]; then
     if [ ! -s "/secrets/jwtsecret" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
+
+    # Check for the prune flag and run that first if requested
+    if [ -f "/ethclient/prune.lock" ]; then
+        if [ "$EC_PRUNING_MODE" = "archive" ]; then
+            echo "Reth is an archive node. Not attempting to prune: Aborting."
+            rm -f /ethclient/prune.lock
+            exit 1
+        fi
+        $PERF_PREFIX /usr/local/bin/reth prune $RETH_NETWORK --datadir /ethclient/reth ; rm /ethclient/prune.lock
+    else
 
     CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \
         --datadir /ethclient/reth \
@@ -403,6 +436,16 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.transaction-lookup.distance=10064"
     fi
 
+    if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+        CMD="$CMD --block-interval 5"
+        CMD="$CMD --prune.senderrecovery.full"
+        CMD="$CMD --prune.accounthistory.distance 10064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
+        CMD="$CMD --prune.transaction-lookup.distance=10064"
+        CMD="$CMD --prune.bodies.distance 2628000"
+        CMD="$CMD --prune.receipts.distance 2628000"
+    fi
+
     if [ ! -z "$EC_MAX_PEERS" ]; then
         CMD="$CMD --max-outbound-peers=$EC_MAX_PEERS"
     fi
@@ -417,4 +460,5 @@ if [ "$CLIENT" = "reth" ]; then
 
     exec ${CMD}
 
+    fi
 fi
