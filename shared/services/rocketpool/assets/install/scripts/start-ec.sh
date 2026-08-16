@@ -396,6 +396,25 @@ if [ "$CLIENT" = "reth" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
+    RETH_DATADIR="/ethclient/reth"
+
+    # Use official snapshots for mainnet when no db exists
+    if [ "$NETWORK" = "mainnet" ] && [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ] && [ ! -f "$RETH_DATADIR/db/mdbx.dat" ]; then
+        echo "No Reth database found; downloading rolling-history snapshot"
+        if ! $PERF_PREFIX /usr/local/bin/reth download $RETH_NETWORK \
+            --datadir "$RETH_DATADIR" \
+            --with-txs-distance 2628000 \
+            --with-receipts-distance 2628000 \
+            --with-state-history-distance 10064 \
+            --with-rocksdb \
+            -y
+        then
+            echo "Reth snapshot download failed; removing partial data so the next start can retry"
+            rm -rf "$RETH_DATADIR/db" "$RETH_DATADIR/static_files" "$RETH_DATADIR/rocksdb" "$RETH_DATADIR/reth.toml"
+            exit 1
+        fi
+    fi
+
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
         if [ "$EC_PRUNING_MODE" = "archive" ]; then
