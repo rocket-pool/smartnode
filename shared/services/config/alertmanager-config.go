@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/text/cases"
@@ -56,6 +58,11 @@ type AlertmanagerConfig struct {
 
 	// The Discord webhook URL for alert notifications
 	DiscordWebhookURL config.Parameter `yaml:"discordWebhookURL,omitempty"`
+
+	// The Telegram bot token for alert notifications
+	TelegramBotToken config.Parameter `yaml:"telegramBotToken,omitempty"`
+	// The Telegram chat ID for alert notifications
+	TelegramChatID config.Parameter `yaml:"telegramChatId,omitempty"`
 
 	// The Pushover Token for alert notifications
 	PushoverToken config.Parameter `yaml:"pushoverToken,omitempty"`
@@ -178,6 +185,28 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			ID:                 "discordWebhookURL",
 			Name:               "Alertmanager Discord Webhook URL",
 			Description:        "Discord notifications are sent via the Discord webhook API. See Discord's 'Intro to Webhooks' article to learn how to configure a webhook integration for a channel at https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		TelegramBotToken: config.Parameter{
+			ID:                 "telegramBotToken",
+			Name:               "Alertmanager Telegram Bot Token",
+			Description:        "Telegram notifications are sent via the Telegram Bot API. Create a bot with @BotFather (https://t.me/BotFather) and paste the token here (the token only — do not include a 'bot' prefix). Both this token and a chat ID are required; filling only one does nothing.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		TelegramChatID: config.Parameter{
+			ID:                 "telegramChatId",
+			Name:               "Alertmanager Telegram Chat ID",
+			Description:        "Numeric Telegram chat ID to send alerts to (user, group, or channel). Group and channel IDs are negative (typically -100…). For DMs, send /start to your bot first. For groups or channels, add the bot as a member (admin for channels). Both this chat ID and a bot token are required; filling only one does nothing.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
@@ -328,6 +357,8 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.NativeModeHost,
 		&cfg.NativeModePort,
 		&cfg.DiscordWebhookURL,
+		&cfg.TelegramBotToken,
+		&cfg.TelegramChatID,
 		&cfg.PushoverToken,
 		&cfg.PushoverUserKey,
 		&cfg.ContainerTag,
@@ -357,6 +388,18 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 
 func (cfg *AlertmanagerConfig) GetConfigTitle() string {
 	return cfg.Title
+}
+
+// TelegramEnabled reports whether Telegram notifications should be rendered into
+// alertmanager.yml. Both a bot token and a numeric chat ID are required.
+func (cfg *AlertmanagerConfig) TelegramEnabled() bool {
+	token, _ := cfg.TelegramBotToken.Value.(string)
+	chat, _ := cfg.TelegramChatID.Value.(string)
+	if strings.TrimSpace(token) == "" || strings.TrimSpace(chat) == "" {
+		return false
+	}
+	_, err := strconv.ParseInt(strings.TrimSpace(chat), 10, 64)
+	return err == nil
 }
 
 // Used by text/template to format alertmanager.yml
