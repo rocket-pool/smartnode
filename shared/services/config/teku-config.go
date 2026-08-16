@@ -116,7 +116,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Description:        "When enabled, Teku will use the Validator Slashing Protection feature. See https://docs.teku.consensys.io/how-to/prevent-slashing/detect-slashing for details.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},

@@ -1856,14 +1856,14 @@ func getChangedSettingsMap(oldConfig *RocketPoolConfig, newConfig *RocketPoolCon
 	// Root settings
 	oldRootParams := oldConfig.GetParameters()
 	newRootParams := newConfig.GetParameters()
-	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams, newConfig)
+	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams)
 
 	// Subconfig settings
 	oldSubconfigs := oldConfig.GetSubconfigs()
 	for name, subConfig := range newConfig.GetSubconfigs() {
 		oldParams := oldSubconfigs[name].GetParameters()
 		newParams := subConfig.GetParameters()
-		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams, newConfig)
+		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams)
 	}
 
 	return changedSettings
@@ -1872,7 +1872,7 @@ func getChangedSettingsMap(oldConfig *RocketPoolConfig, newConfig *RocketPoolCon
 // Get all of the settings that have changed between the given parameter lists.
 // Assumes the parameter lists represent identical parameters (e.g. they have the same number of elements and
 // each element has the same ID).
-func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Parameter, newConfig *RocketPoolConfig) []config.ChangedSetting {
+func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Parameter) []config.ChangedSetting {
 	changedSettings := []config.ChangedSetting{}
 
 	for i, param := range newParams {
@@ -1883,7 +1883,7 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 				Name:               param.Name,
 				OldValue:           oldValString,
 				NewValue:           newValString,
-				AffectedContainers: getAffectedContainers(param, newConfig),
+				AffectedContainers: getAffectedContainers(param),
 			})
 		}
 	}
@@ -1891,24 +1891,10 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 	return changedSettings
 }
 
-// Handles custom container overrides
-func getAffectedContainers(param *config.Parameter, cfg *RocketPoolConfig) map[config.ContainerID]bool {
-
+func getAffectedContainers(param *config.Parameter) map[config.ContainerID]bool {
 	affectedContainers := map[config.ContainerID]bool{}
-
 	for _, container := range param.AffectsContainers {
 		affectedContainers[container] = true
 	}
-
-	// Nimbus doesn't operate in split mode, so all of the VC parameters need to get redirected to the BN instead
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local &&
-		cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
-		for _, container := range param.AffectsContainers {
-			if container == config.ContainerID_Validator {
-				affectedContainers[config.ContainerID_Eth2] = true
-			}
-		}
-	}
 	return affectedContainers
-
 }
