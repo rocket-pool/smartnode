@@ -125,11 +125,11 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Rolling History Expiry",
-				Description: "Drop block bodies and receipts older than about one year. Nethermind, Besu, and Reth support this. Geth does not yet and will use pre-Prague history expiry instead.",
+				Description: "Drop block bodies and receipts older than about one year. Nethermind, Besu, Reth, and Erigon support this. Geth does not yet and will use pre-Prague history expiry instead.",
 				Value:       config.PruningMode_RollingHistoryExpiry,
 			}, {
 				Name:        "History Expiry",
-				Description: "Drop pre-merge block bodies and receipts (EIP-4444 partial history expiry). Keeps all post-merge history.",
+				Description: "Drop pre-merge block bodies and receipts (EIP-4444 partial history expiry). Keeps all post-merge history. Erigon does not support pre-merge-only expiry and will keep remaining block history with full-mode state pruning.",
 				Value:       config.PruningMode_HistoryExpiry,
 			}, {
 				Name:        "Full node",

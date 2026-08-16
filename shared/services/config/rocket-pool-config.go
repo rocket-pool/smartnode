@@ -99,6 +99,7 @@ type RocketPoolConfig struct {
 	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
 	Besu              *BesuConfig              `yaml:"besu,omitempty"`
 	Reth              *RethConfig              `yaml:"reth,omitempty"`
+	Erigon            *ErigonConfig            `yaml:"erigon,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
 
 	// Consensus client configurations
@@ -316,6 +317,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Reth",
 				Description: getAugmentedEcDescription(config.ExecutionClient_Reth, "Reth is a new Ethereum full node implementation that is focused on being user-friendly, highly modular, as well as being fast and efficient. Reth is fully open source and written in Rust."),
 				Value:       config.ExecutionClient_Reth,
+			}, {
+				Name:        "Erigon",
+				Description: getAugmentedEcDescription(config.ExecutionClient_Erigon, "Erigon is an execution client focused on disk efficiency and fast snapshot sync. It is fully open source and written in Go."),
+				Value:       config.ExecutionClient_Erigon,
 			}},
 		},
 
@@ -559,6 +564,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.Nethermind = NewNethermindConfig(cfg)
 	cfg.Besu = NewBesuConfig(cfg)
 	cfg.Reth = NewRethConfig(cfg)
+	cfg.Erigon = NewErigonConfig(cfg)
 	cfg.ExternalExecution = NewExternalExecutionConfig(cfg)
 	cfg.FallbackNormal = NewFallbackNormalConfig(cfg)
 	cfg.FallbackPrysm = NewFallbackPrysmConfig(cfg)
@@ -606,6 +612,11 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 		if totalMemoryGB < 9 {
 			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
+		}
+	case config.ExecutionClient_Erigon:
+		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+		if totalMemoryGB < 16 {
+			return fmt.Sprintf("%s\n\n[red]WARNING: Erigon currently requires 16 GB of RAM to run smoothly. We do not recommend it for your system.", originalDescription)
 		}
 	}
 
@@ -673,6 +684,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"nethermind":         cfg.Nethermind,
 		"besu":               cfg.Besu,
 		"reth":               cfg.Reth,
+		"erigon":             cfg.Erigon,
 		"externalExecution":  cfg.ExternalExecution,
 		"consensusCommon":    cfg.ConsensusCommon,
 		"lighthouse":         cfg.Lighthouse,
@@ -748,6 +760,8 @@ func (cfg *RocketPoolConfig) GetEventLogInterval() (int, error) {
 			return cfg.Nethermind.EventLogInterval, nil
 		case config.ExecutionClient_Reth:
 			return cfg.Reth.EventLogInterval, nil
+		case config.ExecutionClient_Erigon:
+			return cfg.Erigon.EventLogInterval, nil
 		default:
 			return 0, fmt.Errorf("can't get event log interval of unknown execution client [%v]", client)
 		}
@@ -1320,6 +1334,8 @@ func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
 		return cfg.Besu.ContainerTag.Value.(string), nil
 	case config.ExecutionClient_Reth:
 		return cfg.Reth.ContainerTag.Value.(string), nil
+	case config.ExecutionClient_Erigon:
+		return cfg.Erigon.ContainerTag.Value.(string), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1341,6 +1357,8 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 		return besuStopSignal, nil
 	case config.ExecutionClient_Reth:
 		return rethStopSignal, nil
+	case config.ExecutionClient_Erigon:
+		return erigonStopSignal, nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1379,6 +1397,8 @@ func (cfg *RocketPoolConfig) GetECMaxPeers() (uint16, error) {
 		return cfg.Besu.MaxPeers.Value.(uint16), nil
 	case config.ExecutionClient_Reth:
 		return cfg.Reth.MaxPeers.Value.(uint16), nil
+	case config.ExecutionClient_Erigon:
+		return cfg.Erigon.MaxPeers.Value.(uint16), nil
 	}
 
 	return 0, fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1399,6 +1419,8 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 		return cfg.Besu.AdditionalFlags.Value.(string), nil
 	case config.ExecutionClient_Reth:
 		return cfg.Reth.AdditionalFlags.Value.(string), nil
+	case config.ExecutionClient_Erigon:
+		return cfg.Erigon.AdditionalFlags.Value.(string), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
