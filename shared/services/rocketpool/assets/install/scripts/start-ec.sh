@@ -83,6 +83,11 @@ if [ "$CLIENT" = "geth" ]; then
             $PERF_PREFIX /usr/local/bin/geth snapshot prune-state $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock
         fi
 
+    elif [ -f "/ethclient/migrate-v2" ]; then
+        echo "Migrating Geth database from Pebble v1 to Pebble v2"
+        rm -f /ethclient/migrate-v2
+        $PERF_PREFIX /usr/local/bin/geth db pebble-upgrade $GETH_NETWORK --datadir /ethclient/geth
+
     # Run Geth normally
     else
 

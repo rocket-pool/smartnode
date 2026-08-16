@@ -173,6 +173,7 @@ The following commands are available via the Smart Node client:
   - `rocketpool service compose` - View the Rocket Pool service docker compose config
   - `rocketpool service version, v` - View the Rocket Pool service version information
   - `rocketpool service prune-eth1, n` - Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.
+  - `rocketpool service migrate-geth` - Shuts down Geth and migrates its database from Pebble v1 to Pebble v2, then restarts it when it's done.
   - `rocketpool service install-update-tracker, d` - Install the update tracker that provides the available system update count to the metrics dashboard
   - `rocketpool service get-config-yaml` - Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions
   - `rocketpool service resync-eth1` - Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!

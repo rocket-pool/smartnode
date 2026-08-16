@@ -415,6 +415,30 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "migrate-geth",
+				Usage:     "Shuts down Geth and migrates its database from Pebble v1 to Pebble v2, then restarts it when it's done.",
+				UsageText: "rocketpool service migrate-eth1",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm the Geth Pebble v2 migration",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return migrateGethDatabase(c.Bool("yes"))
+
+				},
+			},
+
+			{
 				Name:      "install-update-tracker",
 				Aliases:   []string{"d"},
 				Usage:     "Install the update tracker that provides the available system update count to the metrics dashboard",
