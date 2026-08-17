@@ -159,7 +159,9 @@ func TestGetIntervalRewardsEventDownloadAndCache(t *testing.T) {
 					http.NotFound(w, r)
 					return
 				}
-				w.Write([]byte(interval44YAML))
+				if _, err := w.Write([]byte(interval44YAML)); err != nil {
+					t.Errorf("write response: %v", err)
+				}
 			}))
 			t.Cleanup(server.Close)
 			overrideEventFileURL(t, server.URL+"/%s/%s")
@@ -224,7 +226,9 @@ func TestGetIntervalRewardsEventDownloadFailureIsMiss(t *testing.T) {
 
 func TestGetIntervalRewardsEventInvalidRemoteYAML(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not: [valid"))
+		if _, err := w.Write([]byte("not: [valid")); err != nil {
+			t.Errorf("write response: %v", err)
+		}
 	}))
 	t.Cleanup(server.Close)
 	overrideEventFileURL(t, server.URL+"/%s/%s")

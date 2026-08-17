@@ -118,11 +118,11 @@ func writeRewardsEventFile(path string, raw []byte) error {
 	tmpName := tmp.Name()
 	if _, err := tmp.Write(raw); err != nil {
 		tmp.Close()
-		os.Remove(tmpName)
+		_ = os.Remove(tmpName)
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
+		_ = os.Remove(tmpName)
 		return err
 	}
 	return os.Rename(tmpName, path)
@@ -139,7 +139,7 @@ func downloadRewardsEventFile(network string, index uint64) (RewardsEvent, []byt
 			continue
 		}
 		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if readErr != nil {
 			continue
 		}
