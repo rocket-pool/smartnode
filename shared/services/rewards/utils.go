@@ -85,7 +85,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	previousRewardsPoolAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
 	// Get the event details for this interval
-	client := NewRewardsExecutionClient(rp)
+	client := NewRewardsExecutionClientFromConfig(rp, cfg)
 	event, err = client.GetRewardSnapshotEvent(previousRewardsPoolAddresses, interval, opts)
 	if err != nil {
 		return

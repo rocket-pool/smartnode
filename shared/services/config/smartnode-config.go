@@ -29,6 +29,8 @@ const (
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
 	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
+	rewardsEventFilenameFormat         string = "rp-rewards-event-%s-%d.yaml"
+	rewardsEventRemoteFilenameFormat   string = "rp-rewards-event-%d.yaml"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -851,6 +853,21 @@ func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, ext
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
 		cfg.GetRewardsTreeFilename(interval, extension),
+	)
+}
+
+func (cfg *SmartnodeConfig) GetRewardsEventFilename(interval uint64) string {
+	return fmt.Sprintf(rewardsEventFilenameFormat, string(cfg.Network.Value.(config.Network)), interval)
+}
+
+func (cfg *SmartnodeConfig) GetRewardsEventRemoteFilename(interval uint64) string {
+	return fmt.Sprintf(rewardsEventRemoteFilenameFormat, interval)
+}
+
+func (cfg *SmartnodeConfig) GetRewardsEventPath(interval uint64, daemon bool) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(daemon),
+		cfg.GetRewardsEventFilename(interval),
 	)
 }
 
