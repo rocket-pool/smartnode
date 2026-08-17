@@ -41,6 +41,12 @@ receivers:
       - webhook_url: "{{ .DiscordWebhookURL.Value }}"
     {{- end }}
 
+    {{- if .TelegramEnabled }}
+    telegram_configs:
+      - bot_token: "{{ .TelegramBotToken.Value }}"
+        chat_id: {{ .TelegramChatID.Value }}
+    {{- end }}
+
     {{- if and .PushoverToken.Value .PushoverUserKey.Value }}
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
@@ -52,6 +58,13 @@ receivers:
     {{- if .DiscordWebhookURL.Value }}
     discord_configs:
       - webhook_url: "{{ .DiscordWebhookURL.Value }}"
+        send_resolved: false
+    {{- end }}
+
+    {{- if .TelegramEnabled }}
+    telegram_configs:
+      - bot_token: "{{ .TelegramBotToken.Value }}"
+        chat_id: {{ .TelegramChatID.Value }}
         send_resolved: false
     {{- end }}
     
