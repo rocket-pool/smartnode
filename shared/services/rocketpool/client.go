@@ -919,9 +919,12 @@ func (c *Client) GetVolumeSize(volumeName string) (string, error) {
 
 // Runs the prune provisioner
 func (c *Client) RunPruneProvisioner(container, volume string) error {
+	return c.TouchEthclientMarker(container, volume, "prune.lock")
+}
 
-	// Run the prune provisioner
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/prune.lock'", container, volume)
+// Creates a marker file on the execution client volume (used for prune and DB migrations).
+func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/%s'", container, volume, marker)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -929,11 +932,10 @@ func (c *Client) RunPruneProvisioner(container, volume string) error {
 
 	outputString := strings.TrimSpace(string(output))
 	if outputString != "" {
-		return fmt.Errorf("Unexpected output running the prune provisioner: %s", outputString)
+		return fmt.Errorf("Unexpected output creating marker %s: %s", marker, outputString)
 	}
 
 	return nil
-
 }
 
 // Curls the Nethermind admin URL to trigger pruning

@@ -28,15 +28,16 @@ import (
 
 // Settings
 const (
-	ExporterContainerSuffix         string = "_exporter"
-	ValidatorContainerSuffix        string = "_validator"
-	BeaconContainerSuffix           string = "_eth2"
-	ExecutionContainerSuffix        string = "_eth1"
-	NodeContainerSuffix             string = "_node"
-	WatchtowerContainerSuffix       string = "_watchtower"
-	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	clientDataVolumeName            string = "/ethclient"
-	dataFolderVolumeName            string = "/.rocketpool/data"
+	ExporterContainerSuffix           string = "_exporter"
+	ValidatorContainerSuffix          string = "_validator"
+	BeaconContainerSuffix             string = "_eth2"
+	ExecutionContainerSuffix          string = "_eth1"
+	NodeContainerSuffix               string = "_node"
+	WatchtowerContainerSuffix         string = "_watchtower"
+	PruneProvisionerContainerSuffix   string = "_prune_provisioner"
+	MigrateProvisionerContainerSuffix string = "_migrate_provisioner"
+	clientDataVolumeName              string = "/ethclient"
+	dataFolderVolumeName              string = "/.rocketpool/data"
 
 	PruneFreeSpaceRequired           uint64 = 50 * 1024 * 1024 * 1024
 	NethermindPruneFreeSpaceRequired uint64 = 250 * 1024 * 1024 * 1024
@@ -1076,6 +1077,98 @@ func pruneExecutionClient(yes bool) error {
 
 	return nil
 
+}
+
+// Migrates a local Geth database from Pebble v1 to Pebble v2.
+func migrateGethDatabase(yes bool) error {
+
+	rp := rocketpool.NewClient()
+	defer rp.Close()
+
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
+	}
+
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
+		fmt.Println("You are using an externally managed Execution client.")
+		fmt.Println("The Smart Node cannot migrate it. Run `geth db pebble-upgrade` against that client yourself.")
+		return nil
+	}
+	if cfg.IsNativeMode {
+		fmt.Println("You are using Native Mode.")
+		fmt.Println("The Smart Node cannot migrate Geth for you. Stop Geth and run `geth db pebble-upgrade --datadir <your-datadir>`.")
+		return nil
+	}
+
+	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
+	if selectedEc != cfgtypes.ExecutionClient_Geth {
+		fmt.Println("Pebble v2 migration is only implemented for Geth.")
+		return nil
+	}
+
+	fmt.Println("This will shut down Geth and migrate its database from Pebble v1 to Pebble v2.")
+	fmt.Println("New Geth databases already use v2; this is only needed for databases created before Geth 1.16+.")
+
+	fmt.Println("Once the migration is complete, Geth will restart automatically.")
+	fmt.Println()
+
+	if prompt.Declined(yes, "Are you sure you want to migrate the Geth database to Pebble v2?") {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	prefix, err := rp.GetContainerPrefix()
+	if err != nil {
+		return fmt.Errorf("Error getting container prefix: %w", err)
+	}
+	executionContainerName := prefix + ExecutionContainerSuffix
+
+	exists, err := rp.ContainerExists(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error checking if main execution container exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("Main execution container [%s] does not exist", executionContainerName)
+	}
+
+	fmt.Printf("Stopping %s...\n", executionContainerName)
+	result, err := rp.StopContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error stopping main execution container: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+	}
+
+	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
+	if err != nil {
+		return fmt.Errorf("Error getting execution client volume name: %w", err)
+	}
+
+	fmt.Printf("Provisioning Pebble v2 migration on volume %s...\n", volume)
+	err = rp.TouchEthclientMarker(prefix+MigrateProvisionerContainerSuffix, volume, "migrate-v2")
+	if err != nil {
+		return fmt.Errorf("Error creating migrate-v2 marker: %w", err)
+	}
+
+	fmt.Printf("Restarting %s...\n", executionContainerName)
+	result, err = rp.StartContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error starting main execution client: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	}
+
+	fmt.Println()
+	fmt.Println("Done! Geth is now migrating to Pebble v2. Follow progress with `rocketpool service logs eth1`.")
+	color.YellowPrintln("Do not interrupt the client until the migration finishes.")
+
+	return nil
 }
 
 // Stops Smart Node stack containers, prunes docker, and restarts the Smart Node stack.
