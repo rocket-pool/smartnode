@@ -14,7 +14,8 @@ services:
     stop_signal: {{.GetECStopSignal}}
     stop_grace_period: 15m
     {{- $p2p := (or .ExecutionCommon.P2pPort.Value "30303")}}
-    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{.GetECOpenAPIPorts}} ]
+    {{- $torrent := (or .Erigon.TorrentPort.Value "42069")}}
+    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{if eq .ExecutionClient.String "erigon"}}, "{{$torrent}}:{{$torrent}}/udp", "{{$torrent}}:{{$torrent}}/tcp"{{end}}{{.GetECOpenAPIPorts}} ]
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
@@ -55,6 +56,8 @@ services:
       - GETH_EVM_TIMEOUT={{.Geth.EvmTimeout}}
       {{- else if eq .ExecutionClient.String "reth"}}
       - RETH_MAX_INBOUND_PEERS={{.Reth.MaxInboundPeers}}
+      {{- else if eq .ExecutionClient.String "erigon"}}
+      - ERIGON_TORRENT_PORT={{.Erigon.TorrentPort}}
       {{- end}}
     entrypoint: sh
     command: "/setup/start-ec.sh"

@@ -967,6 +967,10 @@ func pruneExecutionClient(yes bool) error {
 	} else if selectedEc == cfgtypes.ExecutionClient_Reth && pruningMode == cfgtypes.PruningMode_RollingHistoryExpiry {
 		fmt.Println("This will stop Reth and prune bodies and receipts outside the one-year rolling window.")
 		fmt.Println("This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
+	} else if selectedEc == cfgtypes.ExecutionClient_Erigon {
+		fmt.Println("Erigon pruning is applied continuously while the client is running. There is no offline prune step.")
+		fmt.Println("If you just switched pruning modes, you must resync with `rocketpool service resync-eth1` before already-stored history is removed.")
+		return nil
 	} else {
 		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
@@ -1405,6 +1409,8 @@ func serviceVersion() error {
 			eth1ClientString = fmt.Sprintf(format, "Besu", cfg.Besu.ContainerTag.Value.(string))
 		case cfgtypes.ExecutionClient_Reth:
 			eth1ClientString = fmt.Sprintf(format, "Reth", cfg.Reth.ContainerTag.Value.(string))
+		case cfgtypes.ExecutionClient_Erigon:
+			eth1ClientString = fmt.Sprintf(format, "Erigon", cfg.Erigon.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}

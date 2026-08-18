@@ -18,6 +18,7 @@ type ExecutionConfigPage struct {
 	nethermindItems []*parameterizedFormItem
 	besuItems       []*parameterizedFormItem
 	rethItems       []*parameterizedFormItem
+	erigonItems     []*parameterizedFormItem
 	externalEcItems []*parameterizedFormItem
 }
 
@@ -63,6 +64,7 @@ func (configPage *ExecutionConfigPage) createContent() {
 	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.Nethermind.GetParameters(), configPage.layout)
 	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.Besu.GetParameters(), configPage.layout)
 	configPage.rethItems = createParameterizedFormItems(configPage.masterConfig.Reth.GetParameters(), configPage.layout)
+	configPage.erigonItems = createParameterizedFormItems(configPage.masterConfig.Erigon.GetParameters(), configPage.layout)
 	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
@@ -72,6 +74,7 @@ func (configPage *ExecutionConfigPage) createContent() {
 	configPage.layout.mapParameterizedFormItems(configPage.nethermindItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.besuItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.rethItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.erigonItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalEcItems...)
 
 	// Set up the setting callbacks
@@ -132,6 +135,8 @@ func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
 		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.besuItems, configPage.masterConfig.Besu.UnsupportedCommonParams)
 	case cfgtypes.ExecutionClient_Reth:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.rethItems, configPage.masterConfig.Reth.UnsupportedCommonParams)
+	case cfgtypes.ExecutionClient_Erigon:
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.erigonItems, configPage.masterConfig.Erigon.UnsupportedCommonParams)
 	}
 
 	configPage.layout.refresh()

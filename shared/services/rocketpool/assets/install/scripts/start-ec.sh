@@ -37,16 +37,19 @@ if [ "$NETWORK" = "mainnet" ]; then
     RP_NETHERMIND_NETWORK="mainnet"
     BESU_NETWORK="--network=mainnet"
     RETH_NETWORK="--chain mainnet"
+    ERIGON_NETWORK="--chain mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
     GETH_NETWORK="--hoodi"
     RP_NETHERMIND_NETWORK="hoodi"
     BESU_NETWORK="--network=hoodi"
     RETH_NETWORK="--chain hoodi"
+    ERIGON_NETWORK="--chain hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
     GETH_NETWORK="--hoodi"
     RP_NETHERMIND_NETWORK="hoodi"
     BESU_NETWORK="--network=hoodi"
     RETH_NETWORK="--chain hoodi"
+    ERIGON_NETWORK="--chain hoodi"
 else
     echo "Unknown network [$NETWORK]"
     exit 1
@@ -498,4 +501,102 @@ if [ "$CLIENT" = "reth" ]; then
     exec ${CMD}
 
     fi
+fi
+
+# Erigon startup
+if [ "$CLIENT" = "erigon" ]; then
+
+    # Performance tuning for ARM systems
+    UNAME_VAL=$(uname -m)
+    if [ "$UNAME_VAL" = "arm64" ] || [ "$UNAME_VAL" = "aarch64" ]; then
+        if command -v taskset >/dev/null 2>&1 && command -v ionice >/dev/null 2>&1; then
+            define_perf_prefix
+        else
+            echo "taskset/ionice not available; skipping ARM performance tuning"
+        fi
+    fi
+
+    # Create the JWT secret
+    # Use -s so a zero-byte leftover is repaired on restart.
+    if [ ! -s "/secrets/jwtsecret" ]; then
+        echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
+    fi
+
+    # Erigon prunes continuously from --prune.mode; there is no offline prune step.
+    if [ -f "/ethclient/prune.lock" ]; then
+        echo "Erigon pruning is applied at startup; skipping offline prune"
+        echo "Changing prune mode requires a resync (rocketpool service resync-eth1)"
+        rm -f /ethclient/prune.lock
+    fi
+
+    CMD="$PERF_PREFIX /usr/local/bin/erigon $ERIGON_NETWORK \
+        --datadir /ethclient/erigon \
+        --externalcl \
+        --mcp.disable \
+        --http \
+        --http.addr 0.0.0.0 \
+        --http.port ${EC_HTTP_PORT:-8545} \
+        --http.api eth,net,web3 \
+        --http.corsdomain=* \
+        --http.vhosts=* \
+        --ws \
+        --ws.port ${EC_WS_PORT:-8546} \
+        --authrpc.addr 0.0.0.0 \
+        --authrpc.port ${EC_ENGINE_PORT:-8551} \
+        --authrpc.vhosts=* \
+        --authrpc.jwtsecret /secrets/jwtsecret \
+        --rpc.returndata.limit 1000000 \
+        $EC_ADDITIONAL_FLAGS"
+
+    if [ "$NETWORK" = "devnet" ]; then
+        CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
+    fi
+
+    if [ ! -z "$EXTERNAL_IP" ]; then
+        CMD="$CMD --nat extip:$EXTERNAL_IP"
+    fi
+
+    if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
+        CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "archive" ]; then
+        CMD="$CMD --prune.mode=archive"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
+        CMD="$CMD --prune.mode=blocks"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+        echo "Erigon does not support pre-merge-only history expiry; keeping all remaining block history with full-mode state pruning"
+        CMD="$CMD --prune.mode=full --persist.receipts=false --prune.distance.blocks=18446744073709551615"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
+        CMD="$CMD --prune.mode=full --persist.receipts=false --prune.distance=2628000 --prune.distance.blocks=2628000"
+    fi
+
+    if [ ! -z "$ETHSTATS_LABEL" ] && [ ! -z "$ETHSTATS_LOGIN" ]; then
+        CMD="$CMD --ethstats $ETHSTATS_LABEL:$ETHSTATS_LOGIN"
+    fi
+
+    if [ ! -z "$EC_MAX_PEERS" ]; then
+        CMD="$CMD --maxpeers $EC_MAX_PEERS"
+    fi
+
+    if [ "$ENABLE_METRICS" = "true" ]; then
+        CMD="$CMD --metrics --metrics.addr 0.0.0.0 --metrics.port $EC_METRICS_PORT"
+    fi
+
+    if [ ! -z "$EC_P2P_PORT" ]; then
+        CMD="$CMD --port $EC_P2P_PORT"
+    fi
+
+    if [ ! -z "$ERIGON_TORRENT_PORT" ]; then
+        CMD="$CMD --torrent.port $ERIGON_TORRENT_PORT"
+    fi
+
+    exec ${CMD}
+
 fi
