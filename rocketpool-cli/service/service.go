@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/rivo/tview"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
 
@@ -19,7 +18,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -259,9 +257,7 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 
 	isUpdate := !isNew && oldCfg != nil
 
-	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isUpdate, isNative)
-	err = app.Run()
+	md, err := runConfigTUI(oldCfg, cfg, isNew, isUpdate, isNative)
 	if err != nil {
 		return err
 	}
