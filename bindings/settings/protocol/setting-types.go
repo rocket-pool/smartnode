@@ -123,6 +123,21 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MegapoolUserDistributeDelayPath:          settingKindUint256,
 		MegapoolUserDistributeDelayShortfallPath: settingKindUint256,
 		MegapoolPenaltyThreshold:                 settingKindUint256,
+		MegapoolPrestakeChallengePeriodPath:      settingKindUint256,
+	},
+	PerformanceSettingsContractName: {
+		PerformanceExitsEnabledSettingPath:    settingKindBool,
+		PerformancePeriodSettingPath:          settingKindUint256,
+		ProofBufferSettingPath:                settingKindUint256,
+		PerformanceThresholdSettingPath:       settingKindUint256,
+		PerformanceChallengePeriodSettingPath: settingKindUint256,
+		PerformanceChallengeBondSettingPath:   settingKindUint256,
+	},
+	ExitSettingsContractName: {
+		CooperativeExitPhaseSettingPath:  settingKindUint256,
+		DidNotExitPenaltyBaseSettingPath: settingKindUint256,
+		DidNotExitBaseSettingPath:        settingKindUint256,
+		DidNotExitBackoffSettingPath:     settingKindUint256,
 	},
 }
 
