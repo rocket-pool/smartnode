@@ -13,6 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Interface assertion
@@ -27,12 +29,24 @@ var _ RewardsExecutionClient = &defaultRewardsExecutionClient{}
 // in tests.
 type defaultRewardsExecutionClient struct {
 	*rocketpool.RocketPool
+	network       string
+	eventCacheDir string
 }
 
-func NewRewardsExecutionClient(rp *rocketpool.RocketPool) RewardsExecutionClient {
+func NewRewardsExecutionClient(rp *rocketpool.RocketPool, network string, eventCacheDir string) RewardsExecutionClient {
 	out := new(defaultRewardsExecutionClient)
 	out.RocketPool = rp
+	out.network = network
+	out.eventCacheDir = eventCacheDir
 	return out
+}
+
+func NewRewardsExecutionClientFromConfig(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig) RewardsExecutionClient {
+	return NewRewardsExecutionClient(
+		rp,
+		string(cfg.Smartnode.Network.Value.(cfgtypes.Network)),
+		cfg.Smartnode.GetRewardsTreeDirectory(true),
+	)
 }
 
 func (client *defaultRewardsExecutionClient) GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error) {
@@ -48,7 +62,7 @@ func (client *defaultRewardsExecutionClient) HeaderByHash(ctx context.Context, h
 }
 
 func (client *defaultRewardsExecutionClient) GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {
-	found, rewardsEvent, err := rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
+	found, rewardsEvent, err := rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, client.network, client.eventCacheDir, opts)
 	if err == nil && found {
 		return found, rewardsEvent, nil
 	}

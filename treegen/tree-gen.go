@@ -171,7 +171,7 @@ func GenerateTree(c *cli.Command) error {
 	generator := treeGenerator{
 		log:                 &logger,
 		errLog:              &errLogger,
-		rp:                  rprewards.NewRewardsExecutionClient(rp),
+		rp:                  rprewards.NewRewardsExecutionClientFromConfig(rp, cfg),
 		rpNative:            rp,
 		cfg:                 cfg,
 		bn:                  bn,

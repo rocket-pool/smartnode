@@ -22,7 +22,7 @@ func getRewardsEvent(c *cli.Command, interval uint64) (*api.RewardsEventResponse
 	}
 
 	previousRewardsPoolAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-	rewardsClient := rprewards.NewRewardsExecutionClient(rp)
+	rewardsClient := rprewards.NewRewardsExecutionClientFromConfig(rp, cfg)
 
 	event, err := rewardsClient.GetRewardSnapshotEvent(previousRewardsPoolAddresses, interval, nil)
 	if err != nil {

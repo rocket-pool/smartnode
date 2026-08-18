@@ -111,7 +111,7 @@ func (c *liveSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkSta
 		ExecutionBlock: ns.ElBlockNumber,
 	}
 
-	treegen, err := rprewards.NewTreeGenerator(c.log, "[Balances]", rprewards.NewRewardsExecutionClient(c.client), c.cfg, c.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), ns)
+	treegen, err := rprewards.NewTreeGenerator(c.log, "[Balances]", rprewards.NewRewardsExecutionClientFromConfig(c.client, c.cfg), c.cfg, c.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), ns)
 	if err != nil {
 		return nil, fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 	}

@@ -142,7 +142,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Get previous rewards pool addresses
 	previousRewardsPoolAddresses := t.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
-	rewardsClient := rprewards.NewRewardsExecutionClient(t.rp)
+	rewardsClient := rprewards.NewRewardsExecutionClientFromConfig(t.rp, t.cfg)
 
 	// Find the event for this interval
 	rewardsEvent, err := rewardsClient.GetRewardSnapshotEvent(previousRewardsPoolAddresses, index, nil)
@@ -241,7 +241,7 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rprewards.NewRewardsExecutionClient(rp), t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, snapshotEnd, elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rprewards.NewRewardsExecutionClientFromConfig(rp, t.cfg), t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, snapshotEnd, elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return
