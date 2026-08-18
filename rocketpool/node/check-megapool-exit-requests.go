@@ -116,6 +116,12 @@ func newCheckMegapoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 
 // Check for megapool validators that did not respond to an exit request
 func (t *checkMegapoolExitRequests) run(state *state.NetworkState) error {
+	// Check if Saturn 2 is deployed
+	if !state.Saturn2Deployed {
+		t.log.Println("Saturn 2 is not deployed, skipping megapool exit requests check.")
+		return nil
+	}
+
 	// Log
 	t.log.Println("Checking for megapool validators that did not respond to an exit request...")
 

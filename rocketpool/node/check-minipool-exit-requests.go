@@ -126,6 +126,12 @@ func newCheckMinipoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 
 // Check for minipool validators that did not respond to an exit request
 func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
+	// Check if Saturn 2 is deployed
+	if !state.Saturn2Deployed {
+		t.log.Println("Saturn 2 is not deployed, skipping minipool exit requests check.")
+		return nil
+	}
+
 	// Log
 	t.log.Println("Checking for minipool validators that did not respond to an exit request...")
 
