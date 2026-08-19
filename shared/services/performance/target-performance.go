@@ -55,9 +55,9 @@ func GetPerformanceThresholdPct(rp *rocketpool.RocketPool) (float64, error) {
 	return math.WeiToEth(thresholdWei) * 100.0, nil
 }
 
-// Defaults used before Saturn 2 deploys.
+// DefaultPerformancePeriodEpochs is used by verify-performance when Saturn 2
+// is not deployed and there is no on-chain performance_period to read.
 const DefaultPerformancePeriodEpochs uint64 = 44032
-const defaultProofBufferEpochs uint64 = 225
 
 // ChallengeParams are the pDAO settings governing performance challenges.
 type ChallengeParams struct {
@@ -66,19 +66,15 @@ type ChallengeParams struct {
 	ProofBufferEpochs uint64
 }
 
-// GetChallengeParams fetches the pDAO performance-challenge settings, using
-// the pre-Saturn-2 defaults when Saturn 2 is not deployed yet.
+// GetChallengeParams fetches the pDAO performance-challenge settings.
+// Before Saturn 2 the contracts do not exist, so challenges are disabled.
 func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
 	saturn2Deployed, err := state.IsSaturn2Deployed(rp, nil)
 	if err != nil {
 		return ChallengeParams{}, fmt.Errorf("error checking if Saturn 2 is deployed: %w", err)
 	}
 	if !saturn2Deployed {
-		return ChallengeParams{
-			ExitsEnabled:      true,
-			PeriodEpochs:      DefaultPerformancePeriodEpochs,
-			ProofBufferEpochs: defaultProofBufferEpochs,
-		}, nil
+		return ChallengeParams{}, nil
 	}
 	exitsEnabled, err := protocol.GetPerformanceExitsEnabled(rp, nil)
 	if err != nil {
