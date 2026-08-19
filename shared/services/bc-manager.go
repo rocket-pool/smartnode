@@ -348,6 +348,16 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) (beacon.Commi
 	return result.(beacon.Committees), nil
 }
 
+func (m *BeaconClientManager) GetHistoricalCommitteesForEpoch(epoch uint64) (beacon.Committees, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetHistoricalCommitteesForEpoch(epoch)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(beacon.Committees), nil
+}
+
 // Change the withdrawal credentials for a validator
 func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
 	err := m.runFunction0(func(client beacon.Client) error {

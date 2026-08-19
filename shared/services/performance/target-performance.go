@@ -184,7 +184,7 @@ type PerformanceSummary struct {
 // block-based target-vote engine.
 type PerformanceBeaconClient interface {
 	GetEth2Config() (beacon.Eth2Config, error)
-	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
+	GetHistoricalCommitteesForEpoch(epoch uint64) (beacon.Committees, error)
 	GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error)
 	GetBeaconBlockHeader(blockId string) (beacon.BeaconBlockHeader, bool, error)
 	GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error)
@@ -684,7 +684,7 @@ func (c *epochCache) ensureEpochDuties(epoch uint64) error {
 		return nil
 	}
 
-	committees, err := c.bc.GetCommitteesForEpoch(&epoch)
+	committees, err := c.bc.GetHistoricalCommitteesForEpoch(epoch)
 	if err != nil {
 		return fmt.Errorf("error getting committees for epoch %d: %w", epoch, err)
 	}

@@ -751,33 +751,35 @@ func (c *StandardHttpClient) GetBeaconBlockHeader(blockId string) (beacon.Beacon
 	return beaconBlock, true, nil
 }
 
-// Get the attestation committees for the given epoch, or the current epoch if nil.
-// For historical epochs the request uses the beacon state at the epoch's first
-// slot so archival nodes return the correct shuffling. If that state is
-// unavailable, head is tried as a fallback.
+// Get the attestation committees for the given epoch, or the current epoch if nil
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
-	if epoch == nil {
-		response, err := c.getCommittees("head", nil)
-		if err != nil {
-			return nil, err
-		}
-		return &response, nil
+	response, err := c.getCommittees("head", epoch)
+	if err != nil {
+		return nil, err
 	}
 
+	return &response, nil
+}
+
+// GetHistoricalCommitteesForEpoch returns committees for a past epoch. The
+// request uses the beacon state at the epoch's first slot so archival nodes
+// return the correct shuffling. If that state is unavailable, head is tried
+// as a fallback
+func (c *StandardHttpClient) GetHistoricalCommitteesForEpoch(epoch uint64) (beacon.Committees, error) {
 	eth2Config, err := c.getEth2Config()
 	if err != nil {
 		return nil, err
 	}
 
-	stateSlot := *epoch * uint64(eth2Config.Data.SlotsPerEpoch)
-	response, err := c.getCommittees(strconv.FormatUint(stateSlot, 10), epoch)
+	stateSlot := epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+	response, err := c.getCommittees(strconv.FormatUint(stateSlot, 10), &epoch)
 	if err == nil && len(response.Data) > 0 {
 		return &response, nil
 	}
 
 	// Some clients can resolve historical shuffling from head; others only
 	// serve epoch E from a state at or after epoch E.
-	headResponse, headErr := c.getCommittees("head", epoch)
+	headResponse, headErr := c.getCommittees("head", &epoch)
 	if headErr == nil && len(headResponse.Data) > 0 {
 		return &headResponse, nil
 	}
@@ -788,7 +790,7 @@ func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Commit
 	if headErr != nil {
 		return nil, headErr
 	}
-	return nil, fmt.Errorf("Could not get committees for epoch %d: no committee data returned (archival beacon node may be required)", *epoch)
+	return nil, fmt.Errorf("Could not get committees for epoch %d: no committee data returned (archival beacon node may be required)", epoch)
 }
 
 // Perform a withdrawal credentials change on a validator

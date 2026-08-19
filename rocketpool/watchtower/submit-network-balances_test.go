@@ -529,6 +529,9 @@ func (s *stubBeaconClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth1D
 func (s *stubBeaconClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
 	return nil, nil
 }
+func (s *stubBeaconClient) GetHistoricalCommitteesForEpoch(epoch uint64) (beacon.Committees, error) {
+	return nil, nil
+}
 func (s *stubBeaconClient) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey rptypes.ValidatorPubkey, toExecutionAddress common.Address, signature rptypes.ValidatorSignature) error {
 	return nil
 }

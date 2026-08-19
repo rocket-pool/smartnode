@@ -210,6 +210,10 @@ func (c *StaticBeaconClient) GetCommitteesForEpoch(_ *uint64) (beacon.Committees
 	return nil, ErrStaticMode
 }
 
+func (c *StaticBeaconClient) GetHistoricalCommitteesForEpoch(_ uint64) (beacon.Committees, error) {
+	return nil, ErrStaticMode
+}
+
 func (c *StaticBeaconClient) ChangeWithdrawalCredentials(_ string, _ types.ValidatorPubkey, _ common.Address, _ types.ValidatorSignature) error {
 	return ErrStaticMode
 }
