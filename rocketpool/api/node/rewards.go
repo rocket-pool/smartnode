@@ -275,6 +275,45 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	}
 	response.BeaconRewards = totalNodeShare - totalDepositBalance
 
+	// Add the megapool's unskimmed CL rewards
+	nodeDetails, exists := networkState.NodeDetailsByAddress[nodeAccount.Address]
+	if exists && nodeDetails.MegapoolDeployed {
+		megapoolDetails, mdExists := networkState.MegapoolDetails[nodeDetails.MegapoolAddress]
+		if mdExists && !megapoolDetails.DelegateExpired {
+			var totalBeaconBalance, totalEffectiveBeaconBalance uint64
+			for _, pubkey := range networkState.MegapoolToPubkeysMap[nodeDetails.MegapoolAddress] {
+				info, infoExists := networkState.GetMegapoolValidatorInfo(nodeDetails.MegapoolAddress, pubkey)
+				if !infoExists {
+					continue
+				}
+				vi := info.ValidatorInfo
+				if !vi.Staked || vi.Exited || vi.Exiting {
+					continue
+				}
+				beaconStatus, statusExists := networkState.MegapoolValidatorDetails[pubkey]
+				if statusExists && beaconStatus.Exists && intervalEndEpoch > beaconStatus.ActivationEpoch {
+					totalBeaconBalance += beaconStatus.Balance
+					totalEffectiveBeaconBalance += beaconStatus.EffectiveBalance
+				}
+			}
+
+			megapoolReward := big.NewInt(0)
+			if totalBeaconBalance > totalEffectiveBeaconBalance {
+				weiPerGwei := big.NewInt(int64(math.WeiPerGwei))
+				totalBeaconBalanceWei := new(big.Int).Mul(new(big.Int).SetUint64(totalBeaconBalance), weiPerGwei)
+				totalEffectiveBeaconBalanceWei := new(big.Int).Mul(new(big.Int).SetUint64(totalEffectiveBeaconBalance), weiPerGwei)
+				toBeSkimmed := new(big.Int).Sub(totalBeaconBalanceWei, totalEffectiveBeaconBalanceWei)
+
+				rewardSplit, err := services.CalculateRewards(rp, toBeSkimmed, nodeAccount.Address)
+				if err != nil {
+					return nil, fmt.Errorf("Error calculating megapool rewards split for amount %s: %w", toBeSkimmed.String(), err)
+				}
+				megapoolReward = rewardSplit.RewardSplit.NodeRewards
+			}
+			response.BeaconRewards += math.WeiToEth(megapoolReward)
+		}
+	}
+
 	// Calculate the estimated rewards
 	rewardsIntervalDays := response.RewardsInterval.Seconds() / (60 * 60 * 24)
 	inflationPerDay := math.WeiToEth(inflationInterval)
