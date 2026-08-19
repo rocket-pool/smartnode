@@ -261,7 +261,12 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		if mpd.Status != types.Initialized && mpd.Status != types.Prelaunch {
 			validator, exists := networkState.MinipoolValidatorDetails[mpd.Pubkey]
 			if exists && validator.Exists && validator.ActivationEpoch < intervalEndEpoch {
-				nodeShare = mpd.NodeShareOfBeaconBalance
+				if validator.ExitEpoch <= intervalEndEpoch {
+					// Exited but not finalized -- funds already swept to the minipool's own balance
+					nodeShare = mpd.NodeShareOfBalanceIncludingBeacon
+				} else {
+					nodeShare = mpd.NodeShareOfBeaconBalance
+				}
 			}
 		}
 
