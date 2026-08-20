@@ -18,3 +18,4 @@ Dockerfile
 /rocketpool/rocketpool-daemon-linux-arm64
 .vscode-ctags
 build/
+*api-token

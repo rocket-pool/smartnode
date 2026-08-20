@@ -55,4 +55,3 @@ func PortModes(warningOverride string) []ParameterOption {
 		Value:       RPC_OpenExternal,
 	}}
 }
-

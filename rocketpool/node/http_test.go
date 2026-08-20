@@ -138,13 +138,52 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
+func TestRateLimitMiddleware(t *testing.T) {
+	okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	t.Run("unlimited when zero", func(t *testing.T) {
+		handler := rateLimitMiddleware(newTokenBucket(0), okHandler)
+		for i := 0; i < 20; i++ {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+			handler.ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("request %d: status %d", i, rec.Code)
+			}
+		}
+	})
+
+	t.Run("rejects after burst", func(t *testing.T) {
+		handler := rateLimitMiddleware(newTokenBucket(5), okHandler)
+		var saw429 bool
+		for i := 0; i < 10; i++ {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+			handler.ServeHTTP(rec, req)
+			if rec.Code == http.StatusTooManyRequests {
+				saw429 = true
+				assertAPIError(t, rec, http.StatusTooManyRequests, "too many requests")
+				break
+			}
+			if rec.Code != http.StatusOK {
+				t.Fatalf("request %d: status %d", i, rec.Code)
+			}
+		}
+		if !saw429 {
+			t.Fatal("expected a 429 after exceeding 5 req/s burst")
+		}
+	})
+}
+
 func TestAPIListenHost(t *testing.T) {
 	cfgNative := &config.RocketPoolConfig{IsNativeMode: true}
-	host, ok := apiListenHost(cfgNative, cfgtypes.RPC_Closed)
+	_, ok := apiListenHost(cfgNative, cfgtypes.RPC_Closed)
 	if ok {
 		t.Fatal("native closed should not listen")
 	}
-	host, ok = apiListenHost(cfgNative, cfgtypes.RPC_OpenLocalhost)
+	host, ok := apiListenHost(cfgNative, cfgtypes.RPC_OpenLocalhost)
 	if !ok || host != "127.0.0.1" {
 		t.Fatalf("native localhost: %s %v", host, ok)
 	}

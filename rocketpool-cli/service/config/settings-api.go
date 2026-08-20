@@ -44,7 +44,7 @@ func (configPage *ApiConfigPage) initPage(isNative bool) {
 		configPage.homePage,
 		id,
 		"API",
-		"Select this to configure the Smart Node HTTP API, including the listen port, how it is exposed, and the bearer token.",
+		"Select this to configure the Smart Node HTTP API, including the listen port, how it is exposed, the bearer token, and the request rate limit.",
 		configPage.layout.grid,
 	)
 }

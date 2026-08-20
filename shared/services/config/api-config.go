@@ -12,10 +12,12 @@ const (
 	openApiPortID     string = "openApiPort"
 	apiTokenID        string = "apiToken"
 	tokenScopeID      string = "tokenScope"
+	rateLimitID       string = "rateLimit"
 	apiTokenFile      string = "api-token"
 	defaultApiPort    uint16 = 8280
 	defaultOpenPort          = config.RPC_OpenLocalhost
 	defaultTokenScope        = config.APITokenScope_All
+	defaultRateLimit  uint16 = 5
 )
 
 // Configuration for the Smart Node HTTP API
@@ -33,8 +35,11 @@ type ApiConfig struct {
 	// Bearer token (stored in a sidecar file)
 	APIToken config.Parameter `yaml:"-"`
 
-	// Which routes require the bearer token for non-loopback clients
+	// Which routes require the bearer token
 	TokenScope config.Parameter `yaml:"tokenScope,omitempty"`
+
+	// Maximum requests per second (0 disables the limit)
+	RateLimit config.Parameter `yaml:"rateLimit,omitempty"`
 }
 
 func NewApiConfig(cfg *RocketPoolConfig) *ApiConfig {
@@ -101,6 +106,17 @@ func NewApiConfig(cfg *RocketPoolConfig) *ApiConfig {
 				Value:       config.APITokenScope_Sensitive,
 			}},
 		},
+
+		RateLimit: config.Parameter{
+			ID:                 rateLimitID,
+			Name:               "API Rate Limit",
+			Description:        "Maximum number of API requests per second. The default is 5. Set to 0 to disable rate limiting.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultRateLimit},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -110,6 +126,7 @@ func (cfg *ApiConfig) GetParameters() []*config.Parameter {
 		&cfg.OpenApiPort,
 		&cfg.APIToken,
 		&cfg.TokenScope,
+		&cfg.RateLimit,
 	}
 }
 

@@ -29,6 +29,14 @@ func TestGetNodeOpenPorts(t *testing.T) {
 	}
 }
 
+func TestDefaultRateLimit(t *testing.T) {
+	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
+	got, ok := cfg.Api.RateLimit.Value.(uint16)
+	if !ok || got != 5 {
+		t.Fatalf("default rate limit %v (%T), want 5", cfg.Api.RateLimit.Value, cfg.Api.RateLimit.Value)
+	}
+}
+
 func TestSensitiveTokenNotSerialized(t *testing.T) {
 	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
 	cfg.Api.APIToken.Value = "rpsn_secret"
