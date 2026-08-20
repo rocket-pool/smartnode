@@ -5,13 +5,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/node/routes"
+	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
+
+const healthzPath = "/healthz"
 
 // statusRecorder wraps http.ResponseWriter to capture the written status code.
 type statusRecorder struct {
@@ -40,33 +46,92 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func authMiddleware(expectedToken string, sensitiveOnly bool, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == healthzPath {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if sensitiveOnly && !isSensitiveAPIPath(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if expectedToken == "" || !apitoken.Equal(expectedToken, bearerToken(r)) {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			response.WriteErrorResponse(w, &response.UnauthorizedError{})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func bearerToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return ""
+	}
+	return strings.TrimSpace(strings.TrimPrefix(header, prefix))
+}
+
+func apiListenHost(cfg *config.RocketPoolConfig, mode cfgtypes.RPCMode) (string, bool) {
+	if cfg.IsNativeMode {
+		switch mode {
+		case cfgtypes.RPC_OpenExternal:
+			return "0.0.0.0", true
+		case cfgtypes.RPC_OpenLocalhost:
+			return "127.0.0.1", true
+		default:
+			return "", false
+		}
+	}
+	// Docker: always bind on all interfaces inside the container so published
+	// host ports (and other compose services) can reach the server.
+	return "0.0.0.0", true
+}
+
 // startHTTP starts the node's HTTP API server and returns immediately.
 // The server runs in the background for the lifetime of the process.
 func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig) {
-	port, ok := cfg.Smartnode.APIPort.Value.(uint16)
+	port, ok := cfg.Api.ApiPort.Value.(uint16)
 	if !ok || port == 0 {
 		log.Println("Warning: APIPort not configured, HTTP API server will not start.")
 		return
 	}
 
-	var host string
-	if !cfg.IsNativeMode {
-		// In Docker mode the server must bind to 0.0.0.0, so other containers can reach it.
-		host = "0.0.0.0"
-	} else {
-		host = "127.0.0.1"
+	mode, _ := cfg.Api.OpenApiPort.Value.(cfgtypes.RPCMode)
+	host, listen := apiListenHost(cfg, mode)
+	if !listen {
+		log.Println("Node HTTP API server is closed; not listening.")
+		return
 	}
+
+	tokenPath := cfg.Api.GetAPITokenPath()
+	if err := cfg.SyncAPITokenFromDisk(false); err != nil {
+		log.Printf("Warning: could not load API token from %s: %v", tokenPath, err)
+	}
+	expectedToken, _ := cfg.Api.APIToken.Value.(string)
+	if expectedToken == "" {
+		log.Printf("Warning: API token is empty (file %s); authenticated API routes will reject all requests.", tokenPath)
+	}
+
+	scope, _ := cfg.Api.TokenScope.Value.(cfgtypes.APITokenScope)
+	sensitiveOnly := scope == cfgtypes.APITokenScope_Sensitive
 
 	mux := http.NewServeMux()
 	routes.RegisterRoutes(mux, c)
 
+	handler := loggingMiddleware(authMiddleware(expectedToken, sensitiveOnly, mux))
+
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", host, port),
-		Handler: loggingMiddleware(mux),
+		Addr:              fmt.Sprintf("%s:%d", host, port),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {
-		log.Printf("Node HTTP API server listening on %s:%d\n", host, port)
+		log.Printf("Node HTTP API server listening on %s:%d (token file %s)\n", host, port, tokenPath)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Node HTTP API server error: %v\n", err)
 		}
