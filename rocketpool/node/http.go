@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -66,6 +67,56 @@ func authMiddleware(expectedToken string, sensitiveOnly bool, next http.Handler)
 	})
 }
 
+// tokenBucket is a simple per-process limiter: refill at `rate` tokens per
+// second, capacity equal to the rate (burst of one second).
+type tokenBucket struct {
+	mu     sync.Mutex
+	rate   float64
+	tokens float64
+	last   time.Time
+}
+
+func newTokenBucket(perSecond float64) *tokenBucket {
+	if perSecond <= 0 {
+		return nil
+	}
+	return &tokenBucket{
+		rate:   perSecond,
+		tokens: perSecond,
+		last:   time.Now(),
+	}
+}
+
+func (b *tokenBucket) allow() bool {
+	if b == nil {
+		return true
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	now := time.Now()
+	b.tokens += now.Sub(b.last).Seconds() * b.rate
+	if b.tokens > b.rate {
+		b.tokens = b.rate
+	}
+	b.last = now
+	if b.tokens < 1 {
+		return false
+	}
+	b.tokens--
+	return true
+}
+
+func rateLimitMiddleware(limiter *tokenBucket, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if limiter.allow() {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("Retry-After", "1")
+		response.WriteErrorResponse(w, &response.TooManyRequestsError{})
+	})
+}
+
 func bearerToken(r *http.Request) string {
 	header := r.Header.Get("Authorization")
 	const prefix = "Bearer "
@@ -119,10 +170,15 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 	scope, _ := cfg.Api.TokenScope.Value.(cfgtypes.APITokenScope)
 	sensitiveOnly := scope == cfgtypes.APITokenScope_Sensitive
 
+	var perSecond float64
+	v := cfg.Api.RateLimit.Value.(uint16)
+	perSecond = float64(v)
+	limiter := newTokenBucket(perSecond)
+
 	mux := http.NewServeMux()
 	routes.RegisterRoutes(mux, c)
 
-	handler := loggingMiddleware(authMiddleware(expectedToken, sensitiveOnly, mux))
+	handler := loggingMiddleware(rateLimitMiddleware(limiter, authMiddleware(expectedToken, sensitiveOnly, mux)))
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", host, port),

@@ -1333,13 +1333,6 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 
 }
 
-// getAPIURL returns the base URL for the node's HTTP API server, e.g.
-// "http://127.0.0.1:8280".  The result is derived from config and cached.
-func (c *Client) getAPIURL() string {
-	c.loadAPIAuth()
-	return c.apiURL
-}
-
 func (c *Client) loadAPIAuth() {
 	c.apiURLOnce.Do(func() {
 		cfg, _, err := c.LoadConfig()
