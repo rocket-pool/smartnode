@@ -356,7 +356,7 @@ if [ "$CLIENT" = "besu" ]; then
         fi
 
         if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
-            CMD="$CMD --snapsync-synchronizer-pre-checkpoint-headers-only-enabled=false --snapsync-server-enabled"
+            CMD="$CMD --snapsync-server-enabled"
         fi
 
         if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
