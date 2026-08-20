@@ -165,6 +165,127 @@ func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []by
 	return validator, nil
 }
 
+// Get all validators for a single megapool, via its own local index -- unlike
+// GetAllMegapoolValidators, which walks the network-wide global index on RocketMegapoolManager.
+func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts, megapoolAddress common.Address) ([]megapool.ValidatorInfoFromGlobalIndex, error) {
+	opts := &bind.CallOpts{
+		BlockNumber: contracts.ElBlockNumber,
+	}
+
+	if contracts.Multicaller == nil {
+		return nil, fmt.Errorf("multicaller is nil")
+	}
+
+	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating megapool contract for %s: %w", megapoolAddress.Hex(), err)
+	}
+
+	validatorCount, err := mp.GetValidatorCount(opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validator count for megapool %s: %w", megapoolAddress.Hex(), err)
+	}
+
+	count := int(validatorCount)
+	validators := make([]megapool.ValidatorInfoFromGlobalIndex, count)
+	if count == 0 {
+		return validators, nil
+	}
+
+	// Capture values before launching goroutines
+	multicallerAddress := contracts.Multicaller.ContractAddress
+	megapoolContract := mp.GetContract()
+
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	for i := 0; i < count; i += megapoolValidatorsBatchSize {
+		i := i
+		m := min(i+megapoolValidatorsBatchSize, count)
+
+		wg.Go(func() error {
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			var dummy *big.Int
+			for j := i; j < m; j++ {
+				err = mc.AddCall(megapoolContract, &dummy, "getValidatorInfoAndPubkey", uint32(j))
+				if err != nil {
+					return fmt.Errorf("error adding validator info call for local index %d: %w", j, err)
+				}
+			}
+			responses, err := mc.Execute(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing megapool validator multicall for %s: %w", megapoolAddress.Hex(), err)
+			}
+			for idx, response := range responses {
+				if !response.Status {
+					return fmt.Errorf("megapool validator call failed for local index %d", i+idx)
+				}
+				validator, err := unpackValidatorInfoAndPubkey(megapoolContract, response.ReturnDataRaw)
+				if err != nil {
+					return fmt.Errorf("error unpacking validator info for local index %d: %w", i+idx, err)
+				}
+				validator.MegapoolAddress = megapoolAddress
+				validator.ValidatorId = uint32(i + idx)
+				validators[i+idx] = validator
+			}
+			return nil
+		})
+	}
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting megapool validators for %s: %w", megapoolAddress.Hex(), err)
+	}
+
+	return validators, nil
+}
+
+// Manually unpack a getValidatorInfoAndPubkey response (nested structs don't work with UnpackIntoInterface)
+func unpackValidatorInfoAndPubkey(contract *rocketpool.Contract, data []byte) (megapool.ValidatorInfoFromGlobalIndex, error) {
+	iface, err := contract.ABI.Unpack("getValidatorInfoAndPubkey", data)
+	if err != nil {
+		return megapool.ValidatorInfoFromGlobalIndex{}, err
+	}
+
+	src := iface[0].(struct {
+		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
+		LastRequestedValue uint32 `json:"lastRequestedValue"`
+		LastRequestedBond  uint32 `json:"lastRequestedBond"`
+		DepositValue       uint32 `json:"depositValue"`
+
+		Staked      bool `json:"staked"`
+		Exited      bool `json:"exited"`
+		InQueue     bool `json:"inQueue"`
+		InPrestake  bool `json:"inPrestake"`
+		ExpressUsed bool `json:"expressUsed"`
+		Dissolved   bool `json:"dissolved"`
+		Exiting     bool `json:"exiting"`
+		Locked      bool `json:"locked"`
+
+		ExitBalance uint64 `json:"exitBalance"`
+		LockedTime  uint64 `json:"lockedTime"`
+	})
+
+	var validator megapool.ValidatorInfoFromGlobalIndex
+	validator.Pubkey = iface[1].([]byte)
+	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
+	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
+	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
+	validator.ValidatorInfo.DepositValue = src.DepositValue
+	validator.ValidatorInfo.Staked = src.Staked
+	validator.ValidatorInfo.Exited = src.Exited
+	validator.ValidatorInfo.InQueue = src.InQueue
+	validator.ValidatorInfo.InPrestake = src.InPrestake
+	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
+	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Exiting = src.Exiting
+	validator.ValidatorInfo.Locked = src.Locked
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
+	validator.ValidatorInfo.LockedTime = src.LockedTime
+
+	return validator, nil
+}
+
 // Get multiple megapool details at once using batched multicalls
 func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, megapoolAddresses []common.Address) (map[common.Address]NativeMegapoolDetails, error) {
 	opts := &bind.CallOpts{

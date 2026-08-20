@@ -325,9 +325,23 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
 
-	state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+	if allNodes {
+		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+	} else {
+		state.MegapoolValidatorGlobalIndex = []megapool.ValidatorInfoFromGlobalIndex{}
+		for _, nd := range state.NodeDetails {
+			if !nd.MegapoolDeployed {
+				continue
+			}
+			validators, err := rpstate.GetNodeMegapoolValidators(m.rp, contracts, nd.MegapoolAddress)
+			if err != nil {
+				return nil, fmt.Errorf("error getting megapool validator details for %s: %w", nd.MegapoolAddress.Hex(), err)
+			}
+			state.MegapoolValidatorGlobalIndex = append(state.MegapoolValidatorGlobalIndex, validators...)
+		}
 	}
 	currentStep++
 	m.logLine("%d/%d - Retrieved megapool validator global index (%s so far)", currentStep, steps, time.Since(start))
