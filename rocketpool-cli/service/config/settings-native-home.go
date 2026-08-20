@@ -15,6 +15,7 @@ type settingsNativeHome struct {
 	saveButton       *tview.Button
 	wizardButton     *tview.Button
 	smartnodePage    *NativeSmartnodeConfigPage
+	apiPage          *ApiConfigPage
 	nativePage       *NativePage
 	fallbackPage     *NativeFallbackConfigPage
 	metricsPage      *NativeMetricsConfigPage
@@ -38,12 +39,14 @@ func newSettingsNativeHome(md *MainDisplay) *settingsNativeHome {
 
 	// Create the settings subpages
 	home.smartnodePage = NewNativeSmartnodeConfigPage(home)
+	home.apiPage = NewApiConfigPageForNative(home)
 	home.nativePage = NewNativePage(home)
 	home.fallbackPage = NewNativeFallbackConfigPage(home)
 	home.metricsPage = NewNativeMetricsConfigPage(home)
 	home.alertingPage = NewAlertingConfigPageForNative(home)
 	settingsSubpages := []*page{
 		home.smartnodePage.page,
+		home.apiPage.page,
 		home.nativePage.page,
 		home.fallbackPage.page,
 		home.metricsPage.page,
@@ -209,6 +212,10 @@ func (home *settingsNativeHome) refresh() {
 		if home.smartnodePage != nil {
 			home.smartnodePage.layout.refresh()
 		}*/
+
+	if home.apiPage != nil {
+		home.apiPage.handleLayoutChanged()
+	}
 
 	if home.nativePage != nil {
 		home.nativePage.layout.refresh()

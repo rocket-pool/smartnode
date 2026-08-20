@@ -24,6 +24,11 @@ type NotFoundError struct{ Path string }
 
 func (e *NotFoundError) Error() string { return fmt.Sprintf("not found: %s", e.Path) }
 
+// UnauthorizedError signals that the caller did not supply a valid API token.
+type UnauthorizedError struct{}
+
+func (e *UnauthorizedError) Error() string { return "unauthorized" }
+
 // WriteResponse serialises response as JSON and writes it to w.
 // response must be a pointer to a struct with string fields named Status and Error.
 // On error it writes 400 for BadRequestError and 500 for everything else.
@@ -66,9 +71,12 @@ func WriteResponse(w http.ResponseWriter, response interface{}, responseError er
 	if ef.String() != "" {
 		var br *BadRequestError
 		var nf *NotFoundError
+		var unauth *UnauthorizedError
 		switch {
 		case errors.As(responseError, &br):
 			statusCode = http.StatusBadRequest
+		case errors.As(responseError, &unauth):
+			statusCode = http.StatusUnauthorized
 		case errors.As(responseError, &nf):
 			statusCode = http.StatusNotFound
 		default:

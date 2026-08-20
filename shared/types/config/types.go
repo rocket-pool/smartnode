@@ -45,6 +45,14 @@ const (
 	Mode_External Mode = "external"
 )
 
+// APITokenScope controls which HTTP API routes require a bearer token.
+type APITokenScope string
+
+const (
+	APITokenScope_All       APITokenScope = "all"
+	APITokenScope_Sensitive APITokenScope = "sensitive"
+)
+
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
 const (
 	PruningMode_HistoryExpiry        Mode = "historyExpiry"
