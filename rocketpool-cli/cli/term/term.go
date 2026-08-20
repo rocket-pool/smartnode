@@ -1,5 +1,3 @@
-//go:build windows
-
 package term
 
 import (
@@ -9,7 +7,7 @@ import (
 
 // Clear terminal output
 func Clear() error {
-	cmd := exec.Command("cmd", "/c", "cls")
+	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
