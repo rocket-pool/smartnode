@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -43,7 +44,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
-		log.Printf("%s %s %d %s", r.Method, r.URL.Path, rec.status, time.Since(start))
+		log.Printf("%s %s %s %d %s", requestIP(r), r.Method, r.URL.Path, rec.status, time.Since(start))
 	})
 }
 
@@ -115,6 +116,14 @@ func rateLimitMiddleware(limiter *tokenBucket, next http.Handler) http.Handler {
 		w.Header().Set("Retry-After", "1")
 		response.WriteErrorResponse(w, &response.TooManyRequestsError{})
 	})
+}
+
+func requestIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 func bearerToken(r *http.Request) string {
