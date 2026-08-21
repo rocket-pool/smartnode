@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mitchellh/go-homedir"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -148,5 +150,10 @@ func (cfg *ApiConfig) GetAPITokenPathInCLI() string {
 }
 
 func tokenPath(dataDir string) string {
-	return filepath.Join(os.ExpandEnv(dataDir), apiTokenFile)
+	dataDir = os.ExpandEnv(dataDir)
+	expanded, err := homedir.Expand(dataDir)
+	if err == nil {
+		dataDir = expanded
+	}
+	return filepath.Join(dataDir, apiTokenFile)
 }
