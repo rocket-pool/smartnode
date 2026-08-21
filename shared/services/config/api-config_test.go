@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
@@ -26,6 +27,16 @@ func TestGetNodeOpenPorts(t *testing.T) {
 	got = cfg.GetNodeOpenPorts()
 	if got != `"8280:8280/tcp"` {
 		t.Fatalf("external: %q", got)
+	}
+}
+
+func TestTokenPathExpandsTilde(t *testing.T) {
+	got := tokenPath("~/.rocketpool/data")
+	if got[0] == '~' {
+		t.Fatalf("tilde was not expanded: %q", got)
+	}
+	if filepath.Base(got) != "api-token" {
+		t.Fatalf("unexpected token file %q", got)
 	}
 }
 

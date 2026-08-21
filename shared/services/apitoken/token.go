@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 const (
@@ -61,7 +62,7 @@ func ReadFile(path string) (string, error) {
 		if os.IsNotExist(err) {
 			return "", nil
 		}
-		return "", fmt.Errorf("could not read API token file: %w", err)
+		return "", fmt.Errorf("could not read API token file: %w (if Docker created this file as root, run: sudo chown \"$USER\" %s)", err, path)
 	}
 	return strings.TrimSpace(string(data)), nil
 }
@@ -103,6 +104,9 @@ func WriteFile(path, token string) error {
 	if err := os.Chmod(path, fileMode); err != nil {
 		return fmt.Errorf("could not set API token file permissions: %w", err)
 	}
+	if err := alignOwnership(path); err != nil {
+		return fmt.Errorf("could not set API token file ownership: %w", err)
+	}
 	return nil
 }
 
@@ -115,6 +119,7 @@ func EnsureFile(path string) (string, error) {
 		return "", err
 	}
 	if existing != "" {
+		_ = alignOwnership(path)
 		return existing, nil
 	}
 
@@ -150,5 +155,23 @@ func EnsureFile(path string) (string, error) {
 	if err := f.Close(); err != nil {
 		return "", fmt.Errorf("could not close API token file: %w", err)
 	}
+	if err := alignOwnership(path); err != nil {
+		return "", fmt.Errorf("could not set API token file ownership: %w", err)
+	}
 	return token, nil
+}
+
+func alignOwnership(path string) error {
+	info, err := os.Stat(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil
+	}
+	if err := os.Chown(path, int(stat.Uid), int(stat.Gid)); err != nil {
+		return err
+	}
+	return os.Chmod(path, fileMode)
 }
