@@ -80,8 +80,11 @@ type Client struct {
 
 	// apiURL is the base URL for the node's HTTP API server.
 	// It is derived lazily from config on first use.
-	apiURL     string
-	apiURLOnce sync.Once
+	apiURL       string
+	apiToken     string
+	apiTokenPath string
+	apiAuthErr   error
+	apiURLOnce   sync.Once
 }
 
 func getClientStatusString(clientStatus api.ClientStatus) string {
@@ -208,7 +211,9 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	if cfg != nil {
-		// A config was loaded, return it now
+		if err := cfg.SyncAPITokenFromDisk(true); err != nil {
+			return nil, false, err
+		}
 		return cfg, false, nil
 	}
 
@@ -1328,21 +1333,26 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 
 }
 
-// getAPIURL returns the base URL for the node's HTTP API server, e.g.
-// "http://127.0.0.1:8280".  The result is derived from config and cached.
-func (c *Client) getAPIURL() string {
+func (c *Client) loadAPIAuth() {
 	c.apiURLOnce.Do(func() {
 		cfg, _, err := c.LoadConfig()
 		if err != nil {
+			c.apiAuthErr = err
 			return
 		}
-		port, ok := cfg.Smartnode.APIPort.Value.(uint16)
+		port, ok := cfg.Api.ApiPort.Value.(uint16)
 		if !ok || port == 0 {
 			return
 		}
 		c.apiURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+		if err := cfg.SyncAPITokenFromDisk(true); err != nil {
+			c.apiAuthErr = err
+			return
+		}
+		token, _ := cfg.Api.APIToken.Value.(string)
+		c.apiToken = token
+		c.apiTokenPath = cfg.Api.GetAPITokenPathInCLI()
 	})
-	return c.apiURL
 }
 
 // callHTTPAPI calls the node's HTTP API server with a 5-minute safety timeout.
@@ -1360,7 +1370,11 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 // when a tighter deadline is required (e.g. optional/informational requests
 // that must not block the user).
 func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params url.Values) ([]byte, error) {
-	base := c.getAPIURL()
+	c.loadAPIAuth()
+	if c.apiAuthErr != nil {
+		return nil, fmt.Errorf("could not load API token: %w", c.apiAuthErr)
+	}
+	base := c.apiURL
 	if base == "" {
 		return nil, fmt.Errorf("node HTTP API URL is not configured (APIPort may be 0)")
 	}
@@ -1404,6 +1418,10 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 		return nil, fmt.Errorf("error building HTTP request for %s %s: %w", method, path, err)
 	}
 
+	if c.apiToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiToken)
+	}
+
 	if c.globals.DebugPrint {
 		fmt.Printf("HTTP API: %s %s\n", method, target)
 	}
@@ -1426,6 +1444,12 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			if c.apiTokenPath != "" {
+				return nil, fmt.Errorf("API unauthorized: CLI token file %s does not match the node daemon. Point -c at the same config directory the daemon is using, or copy that install's data/api-token", c.apiTokenPath)
+			}
+			return nil, errors.New("API unauthorized: check the API Token under the API category in `rocketpool service config`")
+		}
 		var apiErr struct {
 			Error string `json:"error"`
 		}
