@@ -181,7 +181,7 @@ func executeUpgrade(proposal string, yes bool) error {
 	// Execute proposals
 	for _, proposal := range selectedProposals {
 		g.Assign(rp)
-		response, err := rp.ExecuteTNDAOProposal(proposal.ID)
+		response, err := rp.ExecuteUpgradeProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
 			continue
