@@ -98,6 +98,7 @@ func getSettings() error {
 	fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
 	fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
 	fmt.Printf("\tWithdrawal Cooldown:           %s\n", response.Node.WithdrawalCooldown)
+	fmt.Printf("\tMax Stake For Voting Power:    %.2f%%\n", math.WeiToEth(response.Node.MaximumStakeForVotingPower)*100)
 	fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
 	fmt.Println()
 

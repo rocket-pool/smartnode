@@ -658,6 +658,17 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing WithdrawalCooldown: %w", err)
 			}
 
+		// MaximumStakeForVotingPower
+		case protocol.MaximumStakeForVotingPowerSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeMaximumStakeForVotingPowerGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaximumStakeForVotingPower: %w", err)
+			}
+
 		}
 
 	case protocol.ProposalsSettingsContractName:
@@ -1529,6 +1540,17 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeWithdrawalCooldown(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing WithdrawalCooldown: %w", err)
+			}
+
+		// MaximumStakeForVotingPower
+		case protocol.MaximumStakeForVotingPowerSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaximumStakeForVotingPower(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaximumStakeForVotingPower: %w", err)
 			}
 
 		}

@@ -148,6 +148,7 @@ type GetPDAOSettingsResponse struct {
 		ReducedBond                        float64       `json:"reducedBond"`
 		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
 		WithdrawalCooldown                 time.Duration `json:"withdrawalCooldown"`
+		MaximumStakeForVotingPower         *big.Int      `json:"maximumStakeForVotingPower"`
 	} `json:"node"`
 
 	Proposals struct {

@@ -121,6 +121,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
+		response.Node.MaximumStakeForVotingPower, err = protocol.GetMaximumStakeForVotingPower(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
 		response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
 		return err
 	})

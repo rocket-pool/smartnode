@@ -2348,6 +2348,43 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "max-stake-for-voting-power",
+										Aliases:   []string{"msvp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumStakeForVotingPowerSettingPath, unboundedPercentUsage),
+										UsageText: "rocketpool pdao propose setting node max-stake-for-voting-power value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeMaximumStakeForVotingPower(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
 								},
 							},
 

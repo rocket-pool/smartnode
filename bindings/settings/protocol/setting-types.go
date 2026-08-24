@@ -93,6 +93,7 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		ReducedBondSettingPath:                      settingKindUint256,
 		NodeUnstakingPeriodSettingPath:              settingKindUint256,
 		NodeWithdrawalCooldownSettingPath:           settingKindUint256,
+		MaximumStakeForVotingPowerSettingPath:       settingKindUint256,
 	},
 	ProposalsSettingsContractName: {
 		VotePhase1TimeSettingPath:      settingKindUint256,

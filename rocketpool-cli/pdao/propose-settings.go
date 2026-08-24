@@ -230,6 +230,11 @@ func proposeSettingNodeWithdrawalCooldown(value time.Duration, yes bool, toJson 
 	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeWithdrawalCooldownSettingPath, trueValue, yes, toJson)
 }
 
+func proposeSettingNodeMaximumStakeForVotingPower(value *big.Int, yes bool, toJson string) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.MaximumStakeForVotingPowerSettingPath, trueValue, yes, toJson)
+}
+
 func proposeSettingProposalsVotePhase1Time(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue, yes, toJson)

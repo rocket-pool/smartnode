@@ -26,6 +26,7 @@ const (
 	ReducedBondSettingPath                      string = "reduced.bond"
 	NodeUnstakingPeriodSettingPath              string = "node.unstaking.period"
 	NodeWithdrawalCooldownSettingPath           string = "node.withdrawal.cooldown"
+	MaximumStakeForVotingPowerSettingPath       string = "node.voting.power.stake.maximum"
 )
 
 // Node registrations currently enabled
@@ -204,6 +205,25 @@ func ProposeWithdrawalCooldown(rp *rocketpool.RocketPool, value *big.Int, blockN
 }
 func EstimateProposeWithdrawalCooldownGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeWithdrawalCooldownSettingPath), NodeSettingsContractName, NodeWithdrawalCooldownSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// Maximum staked RPL that applies to voting power per minipool, as a fraction of assigned user ETH value (100%-500%)
+func GetMaximumStakeForVotingPower(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getMaximumStakeForVotingPower"); err != nil {
+		return nil, fmt.Errorf("error getting maximum stake for voting power: %w", err)
+	}
+	return *value, nil
+}
+func ProposeMaximumStakeForVotingPower(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumStakeForVotingPowerSettingPath), NodeSettingsContractName, MaximumStakeForVotingPowerSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeMaximumStakeForVotingPowerGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumStakeForVotingPowerSettingPath), NodeSettingsContractName, MaximumStakeForVotingPowerSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
