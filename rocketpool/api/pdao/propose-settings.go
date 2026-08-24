@@ -557,6 +557,17 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing MaxRethBalanceDelta: %w", err)
 			}
 
+		// RethDepositDelay
+		case protocol.NetworkRethDepositDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeRethDepositDelayGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing RethDepositDelay: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -634,6 +645,17 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			response.GasLimits, err = protocol.EstimateProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing NodeUnstakingPeriod: %w", err)
+			}
+
+		// WithdrawalCooldown
+		case protocol.NodeWithdrawalCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeWithdrawalCooldownGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing WithdrawalCooldown: %w", err)
 			}
 
 		}
@@ -1409,6 +1431,17 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing MaxRethBalanceDelta: %w", err)
 			}
 
+		// RethDepositDelay
+		case protocol.NetworkRethDepositDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeRethDepositDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing RethDepositDelay: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -1485,6 +1518,17 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing NodeUnstakingPeriod: %w", err)
+			}
+
+		// WithdrawalCooldown
+		case protocol.NodeWithdrawalCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeWithdrawalCooldown(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing WithdrawalCooldown: %w", err)
 			}
 
 		}

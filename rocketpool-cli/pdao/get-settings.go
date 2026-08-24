@@ -86,6 +86,7 @@ func getSettings() error {
 	fmt.Printf("\tMax Commission Share Security Council Adder:  %.2f%%\n", math.WeiToEth(response.Network.MaxNodeShareSecurityCouncilAdder)*100)
 	fmt.Printf("\tMax rETH balance delta:                       %.2f%%\n", math.WeiToEth(response.Network.MaxRethBalanceDelta)*100)
 	fmt.Printf("\tAllow listed controllers:                     %v\n", response.Network.AllowListedControllers)
+	fmt.Printf("\trETH Deposit Delay:                           %d Blocks\n", response.Network.RethDepositDelay)
 	fmt.Println()
 
 	// Node
@@ -96,6 +97,7 @@ func getSettings() error {
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
 	fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
 	fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
+	fmt.Printf("\tWithdrawal Cooldown:           %s\n", response.Node.WithdrawalCooldown)
 	fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
 	fmt.Println()
 

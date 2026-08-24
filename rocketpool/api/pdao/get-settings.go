@@ -112,6 +112,15 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
+		withdrawalCooldown, err := protocol.GetWithdrawalCooldown(rp, nil)
+		if err == nil {
+			response.Node.WithdrawalCooldown = time.Duration(withdrawalCooldown.Int64()) * time.Second
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
 		response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
 		return err
 	})
@@ -390,6 +399,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Network.IsSubmitRewardsEnabled, err = protocol.GetSubmitRewardsEnabled(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.RethDepositDelay, err = protocol.GetRethDepositDelay(rp, nil)
 		return err
 	})
 

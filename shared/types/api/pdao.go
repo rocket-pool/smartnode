@@ -136,6 +136,7 @@ type GetPDAOSettingsResponse struct {
 		MaxNodeShareSecurityCouncilAdder        *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
 		MaxRethBalanceDelta                     *big.Int         `json:"maxRethBalanceDelta"`
 		AllowListedControllers                  []common.Address `json:"allowListedControllers"`
+		RethDepositDelay                        uint64           `json:"rethDepositDelay"`
 	} `json:"network"`
 
 	Node struct {
@@ -146,6 +147,7 @@ type GetPDAOSettingsResponse struct {
 		MinimumLegacyRplStake              *big.Int      `json:"minimumLegacyRplStake"`
 		ReducedBond                        float64       `json:"reducedBond"`
 		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
+		WithdrawalCooldown                 time.Duration `json:"withdrawalCooldown"`
 	} `json:"node"`
 
 	Proposals struct {

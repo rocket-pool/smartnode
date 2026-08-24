@@ -25,6 +25,7 @@ const (
 	MinimumLegacyRplStakePath                   string = "node.minimum.legacy.staked.rpl"
 	ReducedBondSettingPath                      string = "reduced.bond"
 	NodeUnstakingPeriodSettingPath              string = "node.unstaking.period"
+	NodeWithdrawalCooldownSettingPath           string = "node.withdrawal.cooldown"
 )
 
 // Node registrations currently enabled
@@ -184,6 +185,25 @@ func ProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, block
 }
 func EstimateProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeUnstakingPeriodSettingPath), NodeSettingsContractName, NodeUnstakingPeriodSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// The period of time a node must wait after staking RPL before it can be withdrawn again
+func GetWithdrawalCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getWithdrawalCooldown"); err != nil {
+		return nil, fmt.Errorf("error getting the withdrawal cooldown: %w", err)
+	}
+	return *value, nil
+}
+func ProposeWithdrawalCooldown(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeWithdrawalCooldownSettingPath), NodeSettingsContractName, NodeWithdrawalCooldownSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeWithdrawalCooldownGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeWithdrawalCooldownSettingPath), NodeSettingsContractName, NodeWithdrawalCooldownSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
