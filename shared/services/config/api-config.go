@@ -19,7 +19,7 @@ const (
 	defaultApiPort    uint16 = 8280
 	defaultOpenPort          = config.RPC_OpenLocalhost
 	defaultTokenScope        = config.APITokenScope_All
-	defaultRateLimit  uint16 = 5
+	defaultRateLimit  uint16 = 0
 )
 
 // Configuration for the Smart Node HTTP API
