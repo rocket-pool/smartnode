@@ -125,6 +125,8 @@ func getSettings() error {
 	fmt.Printf("\tProposal Vote Time:    %s\n", response.Security.ProposalVoteTime)
 	fmt.Printf("\tProposal Execute Time: %s\n", response.Security.ProposalExecuteTime)
 	fmt.Printf("\tProposal Action Time:  %s\n", response.Security.ProposalActionTime)
+	fmt.Printf("\tUpgrade Veto Quorum:   %.2f%%\n", math.WeiToEth(response.Security.UpgradeVetoQuorum)*100)
+	fmt.Printf("\tUpgrade Delay:         %s\n", response.Security.UpgradeDelay)
 	fmt.Println()
 
 	// Megapool

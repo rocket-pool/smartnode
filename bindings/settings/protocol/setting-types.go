@@ -113,6 +113,8 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		SecurityProposalVoteTimeSettingPath:    settingKindUint256,
 		SecurityProposalExecuteTimeSettingPath: settingKindUint256,
 		SecurityProposalActionTimeSettingPath:  settingKindUint256,
+		SecurityUpgradeVetoQuorumSettingPath:   settingKindUint256,
+		SecurityUpgradeDelaySettingPath:        settingKindUint256,
 	},
 	MegapoolSettingsContractName: {
 		MegapoolTimeBeforeDissolveSettingsPath:   settingKindUint256,

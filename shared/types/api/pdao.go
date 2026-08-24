@@ -171,6 +171,8 @@ type GetPDAOSettingsResponse struct {
 		ProposalVoteTime    time.Duration `json:"proposalVoteTime"`
 		ProposalExecuteTime time.Duration `json:"proposalExecuteTime"`
 		ProposalActionTime  time.Duration `json:"proposalActionTime"`
+		UpgradeVetoQuorum   *big.Int      `json:"upgradeVetoQuorum"`
+		UpgradeDelay        time.Duration `json:"upgradeDelay"`
 	} `json:"security"`
 
 	Megapool struct {

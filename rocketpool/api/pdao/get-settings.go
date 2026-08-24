@@ -521,6 +521,18 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeVetoQuorum, err = protocol.GetSecurityUpgradeVetoQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeDelay, err = protocol.GetSecurityUpgradeDelay(rp, nil)
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err

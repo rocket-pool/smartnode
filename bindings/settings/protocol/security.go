@@ -23,6 +23,8 @@ const (
 	SecurityProposalVoteTimeSettingPath    string = "proposal.vote.time"
 	SecurityProposalExecuteTimeSettingPath string = "proposal.execute.time"
 	SecurityProposalActionTimeSettingPath  string = "proposal.action.time"
+	SecurityUpgradeVetoQuorumSettingPath   string = "upgradeveto.quorum"
+	SecurityUpgradeDelaySettingPath        string = "upgrade.delay"
 )
 
 // Security council member quorum threshold that must be met for proposals to pass
@@ -118,6 +120,44 @@ func ProposeSecurityProposalActionTime(rp *rocketpool.RocketPool, value *big.Int
 }
 func EstimateProposeSecurityProposalActionTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalActionTimeSettingPath), SecuritySettingsContractName, SecurityProposalActionTimeSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// Security council quorum threshold that must be met to veto a protocol upgrade
+func GetSecurityUpgradeVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := securitySettingsContract.Call(opts, value, "getUpgradeVetoQuorum"); err != nil {
+		return nil, fmt.Errorf("error getting security upgrade veto quorum: %w", err)
+	}
+	return *value, nil
+}
+func ProposeSecurityUpgradeVetoQuorum(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityUpgradeVetoQuorumSettingPath), SecuritySettingsContractName, SecurityUpgradeVetoQuorumSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeSecurityUpgradeVetoQuorumGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityUpgradeVetoQuorumSettingPath), SecuritySettingsContractName, SecurityUpgradeVetoQuorumSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// How long after a protocol upgrade proposal passes that the security council has to veto it
+func GetSecurityUpgradeDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := securitySettingsContract.Call(opts, value, "getUpgradeDelay"); err != nil {
+		return 0, fmt.Errorf("error getting security upgrade delay: %w", err)
+	}
+	return time.Second * time.Duration((*value).Uint64()), nil
+}
+func ProposeSecurityUpgradeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityUpgradeDelaySettingPath), SecuritySettingsContractName, SecurityUpgradeDelaySettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeSecurityUpgradeDelayGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityUpgradeDelaySettingPath), SecuritySettingsContractName, SecurityUpgradeDelaySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

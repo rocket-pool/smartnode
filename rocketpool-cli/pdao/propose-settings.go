@@ -305,6 +305,16 @@ func proposeSettingSecurityProposalActionTime(value time.Duration, yes bool, toJ
 	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue, yes, toJson)
 }
 
+func proposeSettingSecurityUpgradeVetoQuorum(value *big.Int, yes bool, toJson string) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityUpgradeVetoQuorumSettingPath, trueValue, yes, toJson)
+}
+
+func proposeSettingSecurityUpgradeDelay(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityUpgradeDelaySettingPath, trueValue, yes, toJson)
+}
+
 func proposeSettingMegapoolTimeBeforeDissolve(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue, yes, toJson)
