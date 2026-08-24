@@ -225,6 +225,16 @@ func proposeSettingNodeUnstakingPeriod(value time.Duration, yes bool, toJson str
 	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue, yes, toJson)
 }
 
+func proposeSettingNodeWithdrawalCooldown(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeWithdrawalCooldownSettingPath, trueValue, yes, toJson)
+}
+
+func proposeSettingNodeMaximumStakeForVotingPower(value *big.Int, yes bool, toJson string) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.MaximumStakeForVotingPowerSettingPath, trueValue, yes, toJson)
+}
+
 func proposeSettingProposalsVotePhase1Time(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue, yes, toJson)
@@ -305,6 +315,16 @@ func proposeSettingSecurityProposalActionTime(value time.Duration, yes bool, toJ
 	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue, yes, toJson)
 }
 
+func proposeSettingSecurityUpgradeVetoQuorum(value *big.Int, yes bool, toJson string) error {
+	trueValue := value.String()
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityUpgradeVetoQuorumSettingPath, trueValue, yes, toJson)
+}
+
+func proposeSettingSecurityUpgradeDelay(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityUpgradeDelaySettingPath, trueValue, yes, toJson)
+}
+
 func proposeSettingMegapoolTimeBeforeDissolve(value time.Duration, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue, yes, toJson)
@@ -373,6 +393,11 @@ func proposeMaxNodeShareSecurityCouncilAdder(value *big.Int, yes bool, toJson st
 func proposeMaxRethBalanceDelta(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
 	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue, yes, toJson)
+}
+
+func proposeRethDepositDelay(value uint64, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkRethDepositDelaySettingPath, trueValue, yes, toJson)
 }
 
 // Master general proposal function

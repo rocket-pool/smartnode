@@ -112,6 +112,21 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
+		withdrawalCooldown, err := protocol.GetWithdrawalCooldown(rp, nil)
+		if err == nil {
+			response.Node.WithdrawalCooldown = time.Duration(withdrawalCooldown.Int64()) * time.Second
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Node.MaximumStakeForVotingPower, err = protocol.GetMaximumStakeForVotingPower(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
 		response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
 		return err
 	})
@@ -393,6 +408,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Network.RethDepositDelay, err = protocol.GetRethDepositDelay(rp, nil)
+		return err
+	})
+
 	// === Node ===
 
 	wg.Go(func() error {
@@ -518,6 +539,18 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Security.ProposalActionTime, err = protocol.GetSecurityProposalActionTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeVetoQuorum, err = protocol.GetSecurityUpgradeVetoQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeDelay, err = protocol.GetSecurityUpgradeDelay(rp, nil)
 		return err
 	})
 
