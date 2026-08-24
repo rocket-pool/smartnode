@@ -21,7 +21,6 @@ type MevBoostConfigPage struct {
 	regulatedAllMevBox    *parameterizedFormItem
 	unregulatedAllMevBox  *parameterizedFormItem
 	flashbotsBox          *parameterizedFormItem
-	bloxrouteMaxProfitBox *parameterizedFormItem
 	bloxrouteRegulatedBox *parameterizedFormItem
 	ultrasoundBox         *parameterizedFormItem
 	ultrasoundFilteredBox *parameterizedFormItem
@@ -82,7 +81,6 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout)
 
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.FlashbotsRelay)
-	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay)
 	configPage.bloxrouteRegulatedBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteRegulatedRelay)
 	configPage.ultrasoundBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.UltrasoundRelay)
 	configPage.ultrasoundFilteredBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.UltrasoundFilteredRelay)
@@ -93,7 +91,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.ultrasoundBox, configPage.ultrasoundFilteredBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox, configPage.btcsOfacBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteRegulatedBox, configPage.ultrasoundBox, configPage.ultrasoundFilteredBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox, configPage.btcsOfacBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -170,8 +168,6 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 			switch relay.ID {
 			case cfgtypes.MevRelayID_Flashbots:
 				configPage.layout.form.AddFormItem(configPage.flashbotsBox.item)
-			case cfgtypes.MevRelayID_BloxrouteMaxProfit:
-				configPage.layout.form.AddFormItem(configPage.bloxrouteMaxProfitBox.item)
 			case cfgtypes.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
 			case cfgtypes.MevRelayID_Ultrasound:

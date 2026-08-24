@@ -40,9 +40,6 @@ type CommitBoostConfig struct {
 	// Flashbots relay
 	FlashbotsRelay config.Parameter `yaml:"cbFlashbotsEnabled,omitempty"`
 
-	// bloXroute max profit relay
-	BloxRouteMaxProfitRelay config.Parameter `yaml:"cbBloxRouteMaxProfitEnabled,omitempty"`
-
 	// bloXroute regulated relay
 	BloxRouteRegulatedRelay config.Parameter `yaml:"cbBloxRouteRegulatedEnabled,omitempty"`
 
@@ -136,7 +133,6 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 		},
 
 		FlashbotsRelay:          generateCbRelayParameter("cbFlashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
-		BloxRouteMaxProfitRelay: generateCbRelayParameter("cbBloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateCbRelayParameter("cbBloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		TitanRegionalRelay:      generateCbRelayParameter("cbTitanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
 		UltrasoundFilteredRelay: generateCbRelayParameter("cbUltrasoundFilteredEnabled", relayMap[config.MevRelayID_UltrasoundFiltered]),
@@ -212,7 +208,6 @@ func (cfg *CommitBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.Mode,
 		&cfg.RelaySelectionMode,
 		&cfg.FlashbotsRelay,
-		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.TitanRegionalRelay,
 		&cfg.UltrasoundFilteredRelay,
@@ -304,7 +299,6 @@ func (cfg *CommitBoostConfig) getEnabledRelays() []config.MevRelay {
 
 	case PbsRelaySelectionMode_Manual:
 		relays = cfg.maybeAddRelay(relays, cfg.FlashbotsRelay, config.MevRelayID_Flashbots, currentNetwork)
-		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteMaxProfitRelay, config.MevRelayID_BloxrouteMaxProfit, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.TitanRegionalRelay, config.MevRelayID_TitanRegional, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundFilteredRelay, config.MevRelayID_UltrasoundFiltered, currentNetwork)
@@ -372,19 +366,6 @@ func createCommitBoostRelays() []config.MevRelay {
 				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
 				config.Network_Testnet: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
 				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
-			},
-			Regulated: true,
-		},
-
-		// bloXroute Max Profit
-		{
-			ID:          config.MevRelayID_BloxrouteMaxProfit,
-			Name:        "bloXroute Max Profit",
-			Description: "Select this to enable the \"max profit\" relay from bloXroute.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
-				config.Network_Testnet: "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
-				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
 			},
 			Regulated: true,
 		},
