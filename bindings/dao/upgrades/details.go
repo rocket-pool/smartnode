@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -23,6 +24,23 @@ type UpgradeProposalDetails struct {
 	Type           [32]byte                     `json:"type"`
 	UpgradeAddress common.Address               `json:"upgradeAddress"`
 	UpgradeAbi     string                       `json:"upgradeAbi"`
+}
+
+// On-chain upgrade types are stored as keccak256 of the type string
+var upgradeProposalTypeNames = map[common.Hash]string{
+	crypto.Keccak256Hash([]byte("upgradeContract")): "UpgradeContract",
+	crypto.Keccak256Hash([]byte("addContract")):     "AddContract",
+	crypto.Keccak256Hash([]byte("addABI")):          "AddABI",
+	crypto.Keccak256Hash([]byte("upgradeABI")):      "UpgradeABI",
+}
+
+// TypeName returns the interpreted upgrade type, or the type hash if unknown
+func (p UpgradeProposalDetails) TypeName() string {
+	hash := common.Hash(p.Type)
+	if name, ok := upgradeProposalTypeNames[hash]; ok {
+		return name
+	}
+	return hash.Hex()
 }
 
 // Get all upgrade proposal details

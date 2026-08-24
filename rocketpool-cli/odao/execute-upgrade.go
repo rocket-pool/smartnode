@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -16,18 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
-
-var upgradeTypeMap = map[string]string{
-	"0x529a09aed0ded46c4cc64a5f9a6cb6dbde240a9e9c966041749f311248110e11": "UpgradeContract",
-	"0x19f10da52b60efe9f5ee07f5d429a865c0bda23ae1482284927780c41b724cef": "AddContract",
-	"0x1ca99adef8e0f1a6fa2cbc2b46aedc54c66479f38df59bff3575de40893db660": "AddABI",
-	"0xbe19c295254203061a6ecbbdd7353a2134a6bae25c11f27532123ce4a4be1600": "UpgradeABI",
-}
-
-// getUpgradeTypeName decodes an upgrade proposal's raw type hash into its human-readable name.
-func getUpgradeTypeName(t [32]byte) string {
-	return upgradeTypeMap[common.BytesToHash([]byte(t[:])).String()]
-}
 
 func getUpgradeProposals() error {
 
@@ -51,7 +37,7 @@ func getUpgradeProposals() error {
 		fmt.Printf("Upgrade proposal %d: %s\n", proposal.ID, proposal.Name)
 		fmt.Printf("  State: %s\n", types.UpgradeProposalStates[types.UpgradeProposalState(proposal.State)])
 		fmt.Printf("  End time: %s\n", time.Unix(proposal.EndTime.Int64(), 0).Format(time.RFC3339))
-		fmt.Printf("  Type: %s\n", getUpgradeTypeName(proposal.Type))
+		fmt.Printf("  Type: %s\n", proposal.TypeName())
 		fmt.Printf("  Upgrade address: %s\n", proposal.UpgradeAddress)
 		fmt.Printf("  Upgrade ABI: %s\n", proposal.UpgradeAbi)
 
@@ -99,7 +85,7 @@ func executeUpgrade(proposal string, yes bool) error {
 				fmt.Printf("    ID %d: %s\n", proposal.ID, proposal.Name)
 				fmt.Printf("    State: %s\n", types.UpgradeProposalStates[types.UpgradeProposalState(proposal.State)])
 				fmt.Printf("    End time: %s\n", time.Unix(proposal.EndTime.Int64(), 0).Format(time.RFC3339))
-				fmt.Printf("    Type: %s\n", getUpgradeTypeName(proposal.Type))
+				fmt.Printf("    Type: %s\n", proposal.TypeName())
 				fmt.Printf("    Upgrade address: %s\n", proposal.UpgradeAddress)
 				fmt.Printf("    Upgrade ABI: %s\n\n", proposal.UpgradeAbi)
 			}
@@ -142,7 +128,7 @@ func executeUpgrade(proposal string, yes bool) error {
 		options := make([]string, len(executableProposals)+1)
 		options[0] = "All available proposals"
 		for pi, proposal := range executableProposals {
-			options[pi+1] = fmt.Sprintf("proposal %d (name: '%s', type: '%s', upgrade address: '%s', upgrade ABI: '%s')", proposal.ID, proposal.Name, getUpgradeTypeName(proposal.Type), proposal.UpgradeAddress, proposal.UpgradeAbi)
+			options[pi+1] = fmt.Sprintf("proposal %d (name: '%s', type: '%s', upgrade address: '%s', upgrade ABI: '%s')", proposal.ID, proposal.Name, proposal.TypeName(), proposal.UpgradeAddress, proposal.UpgradeAbi)
 		}
 		selected, _ := prompt.Select("Please select a proposal to execute:", options)
 
