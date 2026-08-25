@@ -2,15 +2,14 @@ package megapool
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -113,7 +112,8 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 
 }
 
-func dissolveWithProof(c *cli.Command, validatorId uint32, opts *bind.TransactOpts) (*api.DissolveWithProofResponse, error) {
+func dissolveWithProof(c *cli.Command, validatorId uint32, t *snroute.TransactOpts) (*api.DissolveWithProofResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -180,31 +180,27 @@ func dissolveWithProof(c *cli.Command, validatorId uint32, opts *bind.TransactOp
 
 }
 
-func canDissolveWithProofHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canDissolveWithProof(c, validatorId)
-		response.WriteResponse(w, resp, err)
+func canDissolveWithProofHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canDissolveWithProof(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func dissolveWithProofHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := dissolveWithProof(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
+func dissolveWithProofHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := dissolveWithProof(ctx.Command(), validatorId, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

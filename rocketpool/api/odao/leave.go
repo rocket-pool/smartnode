@@ -2,15 +2,14 @@ package odao
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -83,7 +82,8 @@ func canLeave(c *cli.Command) (*api.CanLeaveTNDAOResponse, error) {
 
 }
 
-func leave(c *cli.Command, bondRefundAddress common.Address, opts *bind.TransactOpts) (*api.LeaveTNDAOResponse, error) {
+func leave(c *cli.Command, bondRefundAddress common.Address, t *snroute.TransactOpts) (*api.LeaveTNDAOResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -109,26 +109,22 @@ func leave(c *cli.Command, bondRefundAddress common.Address, opts *bind.Transact
 
 }
 
-func canLeaveHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canLeave(c)
-		response.WriteResponse(w, resp, err)
-	}
+func canLeaveHandler(ctx snroute.Context) {
+	resp, err := canLeave(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func leaveHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		bondRefundStr := r.FormValue("bondRefundAddress")
-		if bondRefundStr == "" {
-			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: bondRefundAddress"))
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := leave(c, common.HexToAddress(bondRefundStr), opts)
-		response.WriteResponse(w, resp, err)
+func leaveHandler(ctx snroute.WriteContext) {
+	bondRefundStr := ctx.Request.FormValue("bondRefundAddress")
+	if bondRefundStr == "" {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("missing required parameter: bondRefundAddress"))
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := leave(ctx.Command(), common.HexToAddress(bondRefundStr), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -7,167 +7,165 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/urfave/cli/v3"
-
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 )
 
 // RegisterRoutes registers the node module's HTTP routes onto router.
-func RegisterRoutes(router *snroute.Router, c *cli.Command) {
-	snroute.Read("/api/node/status", statusHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/alerts", alertsHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/sync", syncHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/get-eth-balance", getEthBalanceHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/check-collateral", checkCollateralHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/rewards", rewardsHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/deposit-contract-info", depositContractInfoHandler(c)).RegisterTo(router)
+func RegisterRoutes(router *snroute.Router) {
+	snroute.Read("/api/node/status", statusHandler).RegisterTo(router)
+	snroute.Read("/api/node/alerts", alertsHandler).RegisterTo(router)
+	snroute.Read("/api/node/sync", syncHandler).RegisterTo(router)
+	snroute.Read("/api/node/get-eth-balance", getEthBalanceHandler).RegisterTo(router)
+	snroute.Read("/api/node/check-collateral", checkCollateralHandler).RegisterTo(router)
+	snroute.Read("/api/node/rewards", rewardsHandler).RegisterTo(router)
+	snroute.Read("/api/node/deposit-contract-info", depositContractInfoHandler).RegisterTo(router)
 
 	// --- Register ---
 
-	snroute.Read("/api/node/can-register", canRegisterHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/register", registerHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-register", canRegisterHandler).RegisterTo(router)
+	snroute.Write("/api/node/register", registerHandler).RegisterTo(router)
 
 	// --- Timezone ---
 
-	snroute.Read("/api/node/can-set-timezone", canSetTimezoneHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-timezone", setTimezoneHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-timezone", canSetTimezoneHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-timezone", setTimezoneHandler).RegisterTo(router)
 
 	// --- Primary withdrawal address ---
 
-	snroute.Read("/api/node/can-set-primary-withdrawal-address", canSetPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-primary-withdrawal-address", setPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-confirm-primary-withdrawal-address", canConfirmPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/confirm-primary-withdrawal-address", confirmPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-primary-withdrawal-address", canSetPrimaryWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-primary-withdrawal-address", setPrimaryWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-confirm-primary-withdrawal-address", canConfirmPrimaryWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Write("/api/node/confirm-primary-withdrawal-address", confirmPrimaryWithdrawalAddressHandler).RegisterTo(router)
 
 	// --- RPL withdrawal address ---
 
-	snroute.Read("/api/node/can-set-rpl-withdrawal-address", canSetRplWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-rpl-withdrawal-address", setRplWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-confirm-rpl-withdrawal-address", canConfirmRplWithdrawalAddressHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/confirm-rpl-withdrawal-address", confirmRplWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-rpl-withdrawal-address", canSetRplWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-rpl-withdrawal-address", setRplWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-confirm-rpl-withdrawal-address", canConfirmRplWithdrawalAddressHandler).RegisterTo(router)
+	snroute.Write("/api/node/confirm-rpl-withdrawal-address", confirmRplWithdrawalAddressHandler).RegisterTo(router)
 
 	// --- Swap RPL ---
 
-	snroute.Read("/api/node/swap-rpl-allowance", swapRplAllowanceHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-swap-rpl", canSwapRplHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/get-swap-rpl-approval-gas", getSwapRplApprovalGasHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/swap-rpl-approve-rpl", swapRplApproveRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/wait-and-swap-rpl", waitAndSwapRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/swap-rpl", swapRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/swap-rpl-allowance", swapRplAllowanceHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-swap-rpl", canSwapRplHandler).RegisterTo(router)
+	snroute.Read("/api/node/get-swap-rpl-approval-gas", getSwapRplApprovalGasHandler).RegisterTo(router)
+	snroute.Write("/api/node/swap-rpl-approve-rpl", swapRplApproveRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/wait-and-swap-rpl", waitAndSwapRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/swap-rpl", swapRplHandler).RegisterTo(router)
 
 	// --- Stake RPL ---
 
-	snroute.Read("/api/node/stake-rpl-allowance", stakeRplAllowanceHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-stake-rpl", canStakeRplHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/get-stake-rpl-approval-gas", getStakeRplApprovalGasHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/stake-rpl-approve-rpl", stakeRplApproveRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/wait-and-stake-rpl", waitAndStakeRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/stake-rpl", stakeRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/stake-rpl-allowance", stakeRplAllowanceHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-stake-rpl", canStakeRplHandler).RegisterTo(router)
+	snroute.Read("/api/node/get-stake-rpl-approval-gas", getStakeRplApprovalGasHandler).RegisterTo(router)
+	snroute.Write("/api/node/stake-rpl-approve-rpl", stakeRplApproveRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/wait-and-stake-rpl", waitAndStakeRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/stake-rpl", stakeRplHandler).RegisterTo(router)
 
 	// --- RPL locking ---
 
-	snroute.Read("/api/node/can-set-rpl-locking-allowed", canSetRplLockingAllowedHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-rpl-locking-allowed", setRplLockingAllowedHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-rpl-locking-allowed", canSetRplLockingAllowedHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-rpl-locking-allowed", setRplLockingAllowedHandler).RegisterTo(router)
 
 	// --- Stake RPL for allowed ---
 
-	snroute.Read("/api/node/can-set-stake-rpl-for-allowed", canSetStakeRplForAllowedHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-stake-rpl-for-allowed", setStakeRplForAllowedHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-stake-rpl-for-allowed", canSetStakeRplForAllowedHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-stake-rpl-for-allowed", setStakeRplForAllowedHandler).RegisterTo(router)
 
 	// --- Withdraw RPL ---
 
-	snroute.Read("/api/node/can-withdraw-rpl", canWithdrawRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/withdraw-rpl", withdrawRplHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-unstake-legacy-rpl", canUnstakeLegacyRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/unstake-legacy-rpl", unstakeLegacyRplHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-withdraw-rpl-v131", canWithdrawRplV131Handler(c)).RegisterTo(router)
-	snroute.Write("/api/node/withdraw-rpl-v131", withdrawRplV131Handler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-unstake-rpl", canUnstakeRplHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/unstake-rpl", unstakeRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-rpl", canWithdrawRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-rpl", withdrawRplHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-unstake-legacy-rpl", canUnstakeLegacyRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/unstake-legacy-rpl", unstakeLegacyRplHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-rpl-v131", canWithdrawRplV131Handler).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-rpl-v131", withdrawRplV131Handler).RegisterTo(router)
+	snroute.Read("/api/node/can-unstake-rpl", canUnstakeRplHandler).RegisterTo(router)
+	snroute.Write("/api/node/unstake-rpl", unstakeRplHandler).RegisterTo(router)
 
 	// --- Withdraw ETH / credit ---
 
-	snroute.Read("/api/node/can-withdraw-eth", canWithdrawEthHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/withdraw-eth", withdrawEthHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-withdraw-credit", canWithdrawCreditHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/withdraw-credit", withdrawCreditHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-eth", canWithdrawEthHandler).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-eth", withdrawEthHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-credit", canWithdrawCreditHandler).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-credit", withdrawCreditHandler).RegisterTo(router)
 
 	// --- Deposit ---
 
-	snroute.Read("/api/node/can-deposit", canDepositHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/deposit", depositHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-deposit", canDepositHandler).RegisterTo(router)
+	snroute.Write("/api/node/deposit", depositHandler).RegisterTo(router)
 
 	// --- Send / burn ---
 
-	snroute.Read("/api/node/can-send", canSendHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/send", sendHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/send-all", sendAllHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-burn", canBurnHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/burn", burnHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-send", canSendHandler).RegisterTo(router)
+	snroute.Write("/api/node/send", sendHandler).RegisterTo(router)
+	snroute.Write("/api/node/send-all", sendAllHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-burn", canBurnHandler).RegisterTo(router)
+	snroute.Write("/api/node/burn", burnHandler).RegisterTo(router)
 
 	// --- RPL claim ---
 
-	snroute.Read("/api/node/can-claim-rpl-rewards", canClaimRplRewardsHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/claim-rpl-rewards", claimRplRewardsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-rpl-rewards", canClaimRplRewardsHandler).RegisterTo(router)
+	snroute.Write("/api/node/claim-rpl-rewards", claimRplRewardsHandler).RegisterTo(router)
 
 	// --- Fee distributor ---
 
-	snroute.Read("/api/node/is-fee-distributor-initialized", isFeeDistributorInitializedHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/get-initialize-fee-distributor-gas", getInitializeFeeDistributorGasHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/initialize-fee-distributor", initializeFeeDistributorHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-distribute", canDistributeHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/distribute", distributeHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/is-fee-distributor-initialized", isFeeDistributorInitializedHandler).RegisterTo(router)
+	snroute.Read("/api/node/get-initialize-fee-distributor-gas", getInitializeFeeDistributorGasHandler).RegisterTo(router)
+	snroute.Write("/api/node/initialize-fee-distributor", initializeFeeDistributorHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-distribute", canDistributeHandler).RegisterTo(router)
+	snroute.Write("/api/node/distribute", distributeHandler).RegisterTo(router)
 
 	// --- Interval rewards ---
 
-	snroute.Read("/api/node/get-rewards-info", getRewardsInfoHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-claim-rewards", canClaimRewardsHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/claim-rewards", claimRewardsHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-claim-and-stake-rewards", canClaimAndStakeRewardsHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/claim-and-stake-rewards", claimAndStakeRewardsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-rewards-info", getRewardsInfoHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-rewards", canClaimRewardsHandler).RegisterTo(router)
+	snroute.Write("/api/node/claim-rewards", claimRewardsHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-and-stake-rewards", canClaimAndStakeRewardsHandler).RegisterTo(router)
+	snroute.Write("/api/node/claim-and-stake-rewards", claimAndStakeRewardsHandler).RegisterTo(router)
 
 	// --- Smoothing pool ---
 
-	snroute.Read("/api/node/get-smoothing-pool-registration-status", getSmoothingPoolRegistrationStatusHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-set-smoothing-pool-status", canSetSmoothingPoolStatusHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/set-smoothing-pool-status", setSmoothingPoolStatusHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-smoothing-pool-registration-status", getSmoothingPoolRegistrationStatusHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-set-smoothing-pool-status", canSetSmoothingPoolStatusHandler).RegisterTo(router)
+	snroute.Write("/api/node/set-smoothing-pool-status", setSmoothingPoolStatusHandler).RegisterTo(router)
 
 	// --- ENS ---
 
-	snroute.Read("/api/node/resolve-ens-name", resolveEnsNameHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/reverse-resolve-ens-name", reverseResolveEnsNameHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/resolve-ens-name", resolveEnsNameHandler).RegisterTo(router)
+	snroute.Read("/api/node/reverse-resolve-ens-name", reverseResolveEnsNameHandler).RegisterTo(router)
 
 	// --- Sign ---
 
-	snroute.Write("/api/node/sign-message", signMessageHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/sign", signHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/sign-message", signMessageHandler).RegisterTo(router)
+	snroute.Write("/api/node/sign", signHandler).RegisterTo(router)
 
 	// --- Vacant minipool ---
 
-	snroute.Read("/api/node/can-create-vacant-minipool", canCreateVacantMinipoolHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/create-vacant-minipool", createVacantMinipoolHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-create-vacant-minipool", canCreateVacantMinipoolHandler).RegisterTo(router)
+	snroute.Write("/api/node/create-vacant-minipool", createVacantMinipoolHandler).RegisterTo(router)
 
 	// --- Send message ---
 
-	snroute.Read("/api/node/can-send-message", canSendMessageHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/send-message", sendMessageHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-send-message", canSendMessageHandler).RegisterTo(router)
+	snroute.Write("/api/node/send-message", sendMessageHandler).RegisterTo(router)
 
 	// --- Express tickets ---
 
-	snroute.Read("/api/node/get-express-ticket-count", getExpressTicketCountHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/get-express-tickets-provisioned", getExpressTicketsProvisionedHandler(c)).RegisterTo(router)
-	snroute.Read("/api/node/can-provision-express-tickets", canProvisionExpressTicketsHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/provision-express-tickets", provisionExpressTicketsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-express-ticket-count", getExpressTicketCountHandler).RegisterTo(router)
+	snroute.Read("/api/node/get-express-tickets-provisioned", getExpressTicketsProvisionedHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-provision-express-tickets", canProvisionExpressTicketsHandler).RegisterTo(router)
+	snroute.Write("/api/node/provision-express-tickets", provisionExpressTicketsHandler).RegisterTo(router)
 
 	// --- Unclaimed rewards ---
 
-	snroute.Read("/api/node/can-claim-unclaimed-rewards", canClaimUnclaimedRewardsHandler(c)).RegisterTo(router)
-	snroute.Write("/api/node/claim-unclaimed-rewards", claimUnclaimedRewardsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-unclaimed-rewards", canClaimUnclaimedRewardsHandler).RegisterTo(router)
+	snroute.Write("/api/node/claim-unclaimed-rewards", claimUnclaimedRewardsHandler).RegisterTo(router)
 
 	// --- Bond requirement ---
 
-	snroute.Read("/api/node/get-bond-requirement", getBondRequirementHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-bond-requirement", getBondRequirementHandler).RegisterTo(router)
 }
 
 // --- Helper types and functions ---

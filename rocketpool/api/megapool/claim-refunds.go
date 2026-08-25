@@ -2,13 +2,12 @@ package megapool
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -85,7 +84,8 @@ func canClaimRefund(c *cli.Command) (*api.CanClaimRefundResponse, error) {
 
 }
 
-func claimRefund(c *cli.Command, opts *bind.TransactOpts) (*api.ClaimRefundResponse, error) {
+func claimRefund(c *cli.Command, t *snroute.TransactOpts) (*api.ClaimRefundResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -133,21 +133,17 @@ func claimRefund(c *cli.Command, opts *bind.TransactOpts) (*api.ClaimRefundRespo
 
 }
 
-func canClaimRefundHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canClaimRefund(c)
-		response.WriteResponse(w, resp, err)
-	}
+func canClaimRefundHandler(ctx snroute.Context) {
+	resp, err := canClaimRefund(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func claimRefundHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimRefund(c, opts)
-		response.WriteResponse(w, resp, err)
+func claimRefundHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := claimRefund(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -1,7 +1,6 @@
 package pdao
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -565,9 +565,7 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 	return &response, nil
 }
 
-func getSettingsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getSettings(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getSettingsHandler(ctx snroute.Context) {
+	resp, err := getSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -3,7 +3,6 @@ package minipool
 import (
 	"fmt"
 	"math/big"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +16,7 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -284,7 +284,8 @@ func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, 
 
 }
 
-func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool, opts *bind.TransactOpts) (*api.RescueDissolvedMinipoolResponse, error) {
+func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool, t *snroute.TransactOpts) (*api.RescueDissolvedMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -332,33 +333,29 @@ func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amo
 
 }
 
-func getRescueDissolvedDetailsForNodeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMinipoolRescueDissolvedDetailsForNode(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getRescueDissolvedDetailsForNodeHandler(ctx snroute.Context) {
+	resp, err := getMinipoolRescueDissolvedDetailsForNode(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func rescueDissolvedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		amountStr := r.FormValue("amount")
-		amount, ok := new(big.Int).SetString(amountStr, 10)
-		if !ok {
-			response.WriteErrorResponse(w, fmt.Errorf("invalid amount: %s", amountStr))
-			return
-		}
-		submit := r.FormValue("submit") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := rescueDissolvedMinipool(c, addr, amount, submit, opts)
-		response.WriteResponse(w, resp, err)
+func rescueDissolvedHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	amountStr := ctx.Request.FormValue("amount")
+	amount, ok := new(big.Int).SetString(amountStr, 10)
+	if !ok {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid amount: %s", amountStr))
+		return
+	}
+	submit := ctx.Request.FormValue("submit") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := rescueDissolvedMinipool(ctx.Command(), addr, amount, submit, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

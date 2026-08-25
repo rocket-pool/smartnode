@@ -2,14 +2,13 @@ package node
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -57,7 +56,8 @@ func canSetPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Add
 	return &response, nil
 }
 
-func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
+func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, t *snroute.TransactOpts) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -151,7 +151,8 @@ func canConfirmPrimaryWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodePrim
 	return &response, nil
 }
 
-func confirmPrimaryWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
+func confirmPrimaryWithdrawalAddress(c *cli.Command, t *snroute.TransactOpts) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -197,44 +198,36 @@ func confirmPrimaryWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*
 
 }
 
-func canSetPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.URL.Query().Get("address"))
-		confirm := r.URL.Query().Get("confirm") == "true"
-		resp, err := canSetPrimaryWithdrawalAddress(c, addr, confirm)
-		response.WriteResponse(w, resp, err)
-	}
+func canSetPrimaryWithdrawalAddressHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(ctx.Request.URL.Query().Get("address"))
+	confirm := ctx.Request.URL.Query().Get("confirm") == "true"
+	resp, err := canSetPrimaryWithdrawalAddress(ctx.Command(), addr, confirm)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func setPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.FormValue("address"))
-		confirm := r.FormValue("confirm") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setPrimaryWithdrawalAddress(c, addr, confirm, opts)
-		response.WriteResponse(w, resp, err)
+func setPrimaryWithdrawalAddressHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(ctx.Request.FormValue("address"))
+	confirm := ctx.Request.FormValue("confirm") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := setPrimaryWithdrawalAddress(ctx.Command(), addr, confirm, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func canConfirmPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canConfirmPrimaryWithdrawalAddress(c)
-		response.WriteResponse(w, resp, err)
-	}
+func canConfirmPrimaryWithdrawalAddressHandler(ctx snroute.Context) {
+	resp, err := canConfirmPrimaryWithdrawalAddress(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func confirmPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := confirmPrimaryWithdrawalAddress(c, opts)
-		response.WriteResponse(w, resp, err)
+func confirmPrimaryWithdrawalAddressHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := confirmPrimaryWithdrawalAddress(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

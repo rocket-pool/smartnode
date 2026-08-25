@@ -2,9 +2,7 @@ package node
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/urfave/cli/v3"
@@ -13,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -146,7 +145,8 @@ func allowanceRpl(c *cli.Command) (*api.NodeStakeRplAllowanceResponse, error) {
 	return &response, nil
 }
 
-func approveRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeStakeRplApproveResponse, error) {
+func approveRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeStakeRplApproveResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -179,8 +179,7 @@ func approveRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*a
 
 }
 
-func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash, opts *bind.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
-
+func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -197,11 +196,12 @@ func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.
 	}
 
 	// Perform the stake
-	return stakeRpl(c, amountWei, opts)
+	return stakeRpl(c, amountWei, t)
 
 }
 
-func stakeRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
+func stakeRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -228,85 +228,73 @@ func stakeRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api
 
 }
 
-func stakeRplAllowanceHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := allowanceRpl(c)
-		response.WriteResponse(w, resp, err)
-	}
+func stakeRplAllowanceHandler(ctx snroute.Context) {
+	resp, err := allowanceRpl(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func canStakeRplHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeStakeRpl(c, amountWei)
-		response.WriteResponse(w, resp, err)
+func canStakeRplHandler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canNodeStakeRpl(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func getStakeRplApprovalGasHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := getStakeApprovalGas(c, amountWei)
-		response.WriteResponse(w, resp, err)
+func getStakeRplApprovalGasHandler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := getStakeApprovalGas(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func stakeRplApproveRplHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := approveRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
+func stakeRplApproveRplHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := approveRpl(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func waitAndStakeRplHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		hash := common.HexToHash(r.FormValue("approvalTxHash"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := waitForApprovalAndStakeRpl(c, amountWei, hash, opts)
-		response.WriteResponse(w, resp, err)
+func waitAndStakeRplHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	hash := common.HexToHash(ctx.Request.FormValue("approvalTxHash"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := waitForApprovalAndStakeRpl(ctx.Command(), amountWei, hash, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func stakeRplHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := stakeRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
+func stakeRplHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := stakeRpl(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

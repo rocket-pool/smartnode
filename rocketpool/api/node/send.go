@@ -5,10 +5,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -16,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -208,7 +207,8 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 
 }
 
-func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -310,7 +310,8 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 // the recipient, using the exact *big.Int balance to avoid float64 rounding
 // errors that would cause "transfer amount exceeds balance" failures.
 // ETH is not supported here; use nodeSend with a pre-computed amount instead.
-func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
+func nodeSendAllTokens(c *cli.Command, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -416,49 +417,43 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bi
 
 }
 
-func canSendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountRaw, err := parseNodeFloat64(r, "amountRaw")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.URL.Query().Get("token")
-		to := common.HexToAddress(r.URL.Query().Get("to"))
-		resp, err := canNodeSend(c, amountRaw, token, to)
-		response.WriteResponse(w, resp, err)
+func canSendHandler(ctx snroute.Context) {
+	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	token := ctx.Request.URL.Query().Get("token")
+	to := common.HexToAddress(ctx.Request.URL.Query().Get("to"))
+	resp, err := canNodeSend(ctx.Command(), amountRaw, token, to)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func sendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountRaw, err := parseNodeFloat64(r, "amountRaw")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.FormValue("token")
-		to := common.HexToAddress(r.FormValue("to"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeSend(c, amountRaw, token, to, opts)
-		response.WriteResponse(w, resp, err)
+func sendHandler(ctx snroute.WriteContext) {
+	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	token := ctx.Request.FormValue("token")
+	to := common.HexToAddress(ctx.Request.FormValue("to"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeSend(ctx.Command(), amountRaw, token, to, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func sendAllHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		token := r.FormValue("token")
-		to := common.HexToAddress(r.FormValue("to"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeSendAllTokens(c, token, to, opts)
-		response.WriteResponse(w, resp, err)
+func sendAllHandler(ctx snroute.WriteContext) {
+	token := ctx.Request.FormValue("token")
+	to := common.HexToAddress(ctx.Request.FormValue("to"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := nodeSendAllTokens(ctx.Command(), token, to, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -1,15 +1,13 @@
 package pdao
 
 import (
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -82,7 +80,9 @@ func canProposeAllowListedControllers(c *cli.Command, addressList []common.Addre
 	return &response, nil
 }
 
-func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeAllowListedControllersResponse, error) {
+func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeAllowListedControllersResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -117,37 +117,33 @@ func proposeAllowListedControllers(c *cli.Command, addressList []common.Address,
 	return &response, nil
 }
 
-func canProposeAllowListedControllersHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addressList := paramVal(r, "addressList")
-		addresses, err := parseAddressList(r, "addressList")
-		if err != nil {
-			// Fall back to the raw comma-separated string if address parsing fails
-			addresses = parseRawAddressList(addressList)
-		}
-		resp, err := canProposeAllowListedControllers(c, addresses)
-		response.WriteResponse(w, resp, err)
+func canProposeAllowListedControllersHandler(ctx snroute.Context) {
+	addressList := paramVal(ctx.Request, "addressList")
+	addresses, err := parseAddressList(ctx.Request, "addressList")
+	if err != nil {
+		// Fall back to the raw comma-separated string if address parsing fails
+		addresses = parseRawAddressList(addressList)
 	}
+	resp, err := canProposeAllowListedControllers(ctx.Command(), addresses)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeAllowListedControllersHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addressList := paramVal(r, "addressList")
-		addresses, err := parseAddressList(r, "addressList")
-		if err != nil {
-			addresses = parseRawAddressList(addressList)
-		}
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeAllowListedControllers(c, addresses, blockNumber, opts)
-		response.WriteResponse(w, resp, err)
+func proposeAllowListedControllersHandler(ctx snroute.WriteContext) {
+	addressList := paramVal(ctx.Request, "addressList")
+	addresses, err := parseAddressList(ctx.Request, "addressList")
+	if err != nil {
+		addresses = parseRawAddressList(addressList)
 	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeAllowListedControllers(ctx.Command(), addresses, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

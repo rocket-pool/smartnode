@@ -2,13 +2,13 @@ package service
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -76,9 +76,7 @@ func terminateDataFolder(c *cli.Command) (*api.TerminateDataFolderResponse, erro
 
 }
 
-func terminateDataFolderHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := terminateDataFolder(c)
-		response.WriteResponse(w, resp, err)
-	}
+func terminateDataFolderHandler(ctx snroute.WriteContext) {
+	resp, err := terminateDataFolder(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

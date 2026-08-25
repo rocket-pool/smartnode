@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -184,27 +184,23 @@ func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, addre
 
 }
 
-func testRecoverHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		mnemonic := r.FormValue("mnemonic")
-		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
-		derivationPath := r.FormValue("derivationPath")
-		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
-		resp, err := withRecoveryLock("wallet test-recovery", func() (*api.RecoverWalletResponse, error) {
-			return testRecoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
-		})
-		response.WriteResponse(w, resp, err)
-	}
+func testRecoverHandler(ctx snroute.Context) {
+	mnemonic := ctx.Request.FormValue("mnemonic")
+	skipRecovery := ctx.Request.FormValue("skipValidatorKeyRecovery") == "true"
+	derivationPath := ctx.Request.FormValue("derivationPath")
+	walletIndex, _ := strconv.ParseUint(ctx.Request.FormValue("walletIndex"), 10, 64)
+	resp, err := withRecoveryLock("wallet test-recovery", func() (*api.RecoverWalletResponse, error) {
+		return testRecoverWalletWithParams(ctx.Command(), mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+	})
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func testSearchAndRecoverHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		mnemonic := r.FormValue("mnemonic")
-		address := common.HexToAddress(r.FormValue("address"))
-		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
-		resp, err := withRecoveryLock("wallet test-recovery --address", func() (*api.SearchAndRecoverWalletResponse, error) {
-			return testSearchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
-		})
-		response.WriteResponse(w, resp, err)
-	}
+func testSearchAndRecoverHandler(ctx snroute.Context) {
+	mnemonic := ctx.Request.FormValue("mnemonic")
+	address := common.HexToAddress(ctx.Request.FormValue("address"))
+	skipRecovery := ctx.Request.FormValue("skipValidatorKeyRecovery") == "true"
+	resp, err := withRecoveryLock("wallet test-recovery --address", func() (*api.SearchAndRecoverWalletResponse, error) {
+		return testSearchAndRecoverWalletWithParams(ctx.Command(), mnemonic, address, skipRecovery)
+	})
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -2,14 +2,13 @@ package auction
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -94,7 +93,8 @@ func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotRespo
 
 }
 
-func claimFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*api.ClaimFromLotResponse, error) {
+func claimFromLot(c *cli.Command, lotIndex uint64, t *snroute.TransactOpts) (*api.ClaimFromLotResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -123,31 +123,27 @@ func claimFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*ap
 
 }
 
-func canClaimLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lotIndex, err := parseLotIndex(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canClaimFromLot(c, lotIndex)
-		response.WriteResponse(w, resp, err)
+func canClaimLotHandler(ctx snroute.Context) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canClaimFromLot(ctx.Command(), lotIndex)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func claimLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lotIndex, err := parseLotIndex(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimFromLot(c, lotIndex, opts)
-		response.WriteResponse(w, resp, err)
+func claimLotHandler(ctx snroute.WriteContext) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := claimFromLot(ctx.Command(), lotIndex, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

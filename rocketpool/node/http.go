@@ -152,8 +152,8 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 	perSecond = float64(v)
 	limiter := newTokenBucket(perSecond)
 
-	router := snroute.NewRouter(expectedToken, sensitiveOnly)
-	routes.RegisterRoutes(router, c)
+	router := snroute.NewRouter(c, expectedToken, sensitiveOnly)
+	routes.RegisterRoutes(router)
 
 	handler := loggingMiddleware(rateLimitMiddleware(limiter, router))
 

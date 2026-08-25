@@ -3,9 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 
@@ -13,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -116,7 +114,8 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 
 }
 
-func setSmoothingPoolStatus(c *cli.Command, status bool, opts *bind.TransactOpts) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
+func setSmoothingPoolStatus(c *cli.Command, status bool, t *snroute.TransactOpts) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -217,34 +216,28 @@ func GetSmoothingPoolBalance(rp *rocketpoolapi.RocketPool, ec *services.Executio
 	return &response, nil
 }
 
-func getSmoothingPoolRegistrationStatusHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getSmoothingPoolRegistrationStatus(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getSmoothingPoolRegistrationStatusHandler(ctx snroute.Context) {
+	resp, err := getSmoothingPoolRegistrationStatus(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func canSetSmoothingPoolStatusHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !r.URL.Query().Has("status") {
-			response.WriteErrorResponse(w, &response.BadRequestError{Err: fmt.Errorf("missing required parameter 'status'")})
-			return
-		}
-		status := r.URL.Query().Get("status") == "true"
-		resp, err := canSetSmoothingPoolStatus(c, status)
-		response.WriteResponse(w, resp, err)
+func canSetSmoothingPoolStatusHandler(ctx snroute.Context) {
+	if !ctx.Request.URL.Query().Has("status") {
+		response.WriteErrorResponse(ctx.Writer, &response.BadRequestError{Err: fmt.Errorf("missing required parameter 'status'")})
+		return
 	}
+	status := ctx.Request.URL.Query().Get("status") == "true"
+	resp, err := canSetSmoothingPoolStatus(ctx.Command(), status)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func setSmoothingPoolStatusHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status := r.FormValue("status") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setSmoothingPoolStatus(c, status, opts)
-		response.WriteResponse(w, resp, err)
+func setSmoothingPoolStatusHandler(ctx snroute.WriteContext) {
+	status := ctx.Request.FormValue("status") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := setSmoothingPoolStatus(ctx.Command(), status, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

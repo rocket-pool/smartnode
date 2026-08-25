@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -314,7 +314,8 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
 }
 
-func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts, bundle bool) (*api.CloseMinipoolResponse, error) {
+func closeMinipool(c *cli.Command, minipoolAddress common.Address, t *snroute.TransactOpts, bundle bool) (*api.CloseMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -472,27 +473,23 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 
 }
 
-func getMinipoolCloseDetailsForNodeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMinipoolCloseDetailsForNode(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getMinipoolCloseDetailsForNodeHandler(ctx snroute.Context) {
+	resp, err := getMinipoolCloseDetailsForNode(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func closeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		bundle := r.FormValue("bundle") == "true"
-		resp, err := closeMinipool(c, addr, opts, bundle)
-		response.WriteResponse(w, resp, err)
+func closeHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	bundle := ctx.Request.FormValue("bundle") == "true"
+	resp, err := closeMinipool(ctx.Command(), addr, opts, bundle)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

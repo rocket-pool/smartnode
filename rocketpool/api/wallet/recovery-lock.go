@@ -2,11 +2,11 @@ package wallet
 
 import (
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -110,6 +110,6 @@ func recoveryInProgressError(busy api.KeyRecoveryStatus) error {
 	return fmt.Errorf("a validator key recovery (%s) is already running on the node daemon: it started %s ago and %s. Closing the CLI does not stop it; wait for it to finish and try again, or restart the node daemon if it is stuck", busy.Operation, elapsed, progress)
 }
 
-func recoveryStatusHandler(w http.ResponseWriter, r *http.Request) {
-	response.WriteResponse(w, &api.KeyRecoveryStatusResponse{Recovery: activeRecovery.status()}, nil)
+func recoveryStatusHandler(ctx snroute.Context) {
+	response.WriteResponse(ctx.Writer, &api.KeyRecoveryStatusResponse{Recovery: activeRecovery.status()}, nil)
 }

@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -92,16 +92,14 @@ func getVanityArtifacts(c *cli.Command, depositAmount *big.Int, nodeAddressStr s
 
 }
 
-func getVanityArtifactsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		depositAmountStr := r.URL.Query().Get("depositAmount")
-		depositAmount, ok := new(big.Int).SetString(depositAmountStr, 10)
-		if !ok {
-			response.WriteErrorResponse(w, fmt.Errorf("invalid depositAmount: %s", depositAmountStr))
-			return
-		}
-		nodeAddressStr := r.URL.Query().Get("nodeAddress")
-		resp, err := getVanityArtifacts(c, depositAmount, nodeAddressStr)
-		response.WriteResponse(w, resp, err)
+func getVanityArtifactsHandler(ctx snroute.Context) {
+	depositAmountStr := ctx.Request.URL.Query().Get("depositAmount")
+	depositAmount, ok := new(big.Int).SetString(depositAmountStr, 10)
+	if !ok {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid depositAmount: %s", depositAmountStr))
+		return
 	}
+	nodeAddressStr := ctx.Request.URL.Query().Get("nodeAddress")
+	resp, err := getVanityArtifacts(ctx.Command(), depositAmount, nodeAddressStr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

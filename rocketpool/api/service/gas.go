@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -33,9 +33,7 @@ func getGasPriceFromLatestBlock(c *cli.Command) (*api.GasPriceFromLatestBlockRes
 
 }
 
-func getGasPriceFromLatestBlockHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getGasPriceFromLatestBlock(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getGasPriceFromLatestBlockHandler(ctx snroute.Context) {
+	resp, err := getGasPriceFromLatestBlock(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

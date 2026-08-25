@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,6 +25,7 @@ import (
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -577,9 +577,7 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 
 }
 
-func statusHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStatus(c)
-		response.WriteResponse(w, resp, err)
-	}
+func statusHandler(ctx snroute.Context) {
+	resp, err := getStatus(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

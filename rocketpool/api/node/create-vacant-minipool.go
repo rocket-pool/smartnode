@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -18,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -157,7 +155,8 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 
 }
 
-func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, opts *bind.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
+func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, t *snroute.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -268,31 +267,27 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 
 }
 
-func canCreateVacantMinipoolHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseVacantMinipoolParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canCreateVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey)
-		response.WriteResponse(w, resp, err)
+func canCreateVacantMinipoolHandler(ctx snroute.Context) {
+	params, err := parseVacantMinipoolParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canCreateVacantMinipool(ctx.Command(), params.amountWei, params.minFee, params.salt, params.pubkey)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func createVacantMinipoolHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseVacantMinipoolParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := createVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey, opts)
-		response.WriteResponse(w, resp, err)
+func createVacantMinipoolHandler(ctx snroute.WriteContext) {
+	params, err := parseVacantMinipoolParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := createVacantMinipool(ctx.Command(), params.amountWei, params.minFee, params.salt, params.pubkey, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

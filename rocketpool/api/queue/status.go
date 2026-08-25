@@ -1,14 +1,13 @@
 package queue
 
 import (
-	"net/http"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -62,9 +61,7 @@ func getStatus(c *cli.Command) (*api.QueueStatusResponse, error) {
 
 }
 
-func statusHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStatus(c)
-		response.WriteResponse(w, resp, err)
-	}
+func statusHandler(ctx snroute.Context) {
+	resp, err := getStatus(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

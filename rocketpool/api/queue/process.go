@@ -2,15 +2,14 @@ package queue
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -73,7 +72,8 @@ func canProcessQueue(c *cli.Command, m int64) (*api.CanProcessQueueResponse, err
 
 }
 
-func processQueue(c *cli.Command, m int64, opts *bind.TransactOpts) (*api.ProcessQueueResponse, error) {
+func processQueue(c *cli.Command, m int64, t *snroute.TransactOpts) (*api.ProcessQueueResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -103,31 +103,27 @@ func processQueue(c *cli.Command, m int64, opts *bind.TransactOpts) (*api.Proces
 
 }
 
-func canProcessHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProcessQueue(c, int64(m))
-		response.WriteResponse(w, resp, err)
+func canProcessHandler(ctx snroute.Context) {
+	m, err := parseUint32Param(ctx.Request, "max")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProcessQueue(ctx.Command(), int64(m))
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func processHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := processQueue(c, int64(m), opts)
-		response.WriteResponse(w, resp, err)
+func processHandler(ctx snroute.WriteContext) {
+	m, err := parseUint32Param(ctx.Request, "max")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := processQueue(ctx.Command(), int64(m), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

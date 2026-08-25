@@ -1,10 +1,7 @@
 package pdao
 
 import (
-	"net/http"
 	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -12,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -111,7 +109,9 @@ func canDefeatProposal(c *cli.Command, proposalId uint64, index uint64) (*api.PD
 	return &response, nil
 }
 
-func defeatProposal(c *cli.Command, proposalId uint64, index uint64, opts *bind.TransactOpts) (*api.PDAODefeatProposalResponse, error) {
+func defeatProposal(c *cli.Command, proposalId uint64, index uint64, t *snroute.TransactOpts) (*api.PDAODefeatProposalResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -138,41 +138,37 @@ func defeatProposal(c *cli.Command, proposalId uint64, index uint64, opts *bind.
 	return &response, nil
 }
 
-func canDefeatProposalHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64Param(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		index, err := parseUint64Param(r, "index")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canDefeatProposal(c, id, index)
-		response.WriteResponse(w, resp, err)
+func canDefeatProposalHandler(ctx snroute.Context) {
+	id, err := parseUint64Param(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	index, err := parseUint64Param(ctx.Request, "index")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canDefeatProposal(ctx.Command(), id, index)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func defeatProposalHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64Param(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		index, err := parseUint64Param(r, "index")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := defeatProposal(c, id, index, opts)
-		response.WriteResponse(w, resp, err)
+func defeatProposalHandler(ctx snroute.WriteContext) {
+	id, err := parseUint64Param(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	index, err := parseUint64Param(ctx.Request, "index")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := defeatProposal(ctx.Command(), id, index, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

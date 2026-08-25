@@ -2,13 +2,13 @@ package wallet
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -53,11 +53,9 @@ func masquerade(c *cli.Command, address common.Address, observe bool) (*api.Masq
 
 }
 
-func masqueradeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.FormValue("address"))
-		observe := r.FormValue("observe") == "true"
-		resp, err := masquerade(c, address, observe)
-		response.WriteResponse(w, resp, err)
-	}
+func masqueradeHandler(ctx snroute.WriteContext) {
+	address := common.HexToAddress(ctx.Request.FormValue("address"))
+	observe := ctx.Request.FormValue("observe") == "true"
+	resp, err := masquerade(ctx.Command(), address, observe)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

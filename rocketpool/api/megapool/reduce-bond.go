@@ -2,13 +2,12 @@ package megapool
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -92,7 +91,8 @@ func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse,
 
 }
 
-func reduceBond(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.ReduceBondResponse, error) {
+func reduceBond(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.ReduceBondResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -140,31 +140,27 @@ func reduceBond(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.
 
 }
 
-func canReduceBondHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canReduceBond(c, amountWei)
-		response.WriteResponse(w, resp, err)
+func canReduceBondHandler(ctx snroute.Context) {
+	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canReduceBond(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func reduceBondHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := reduceBond(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
+func reduceBondHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := reduceBond(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

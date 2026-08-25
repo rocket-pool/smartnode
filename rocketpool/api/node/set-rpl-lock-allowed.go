@@ -1,14 +1,11 @@
 package node
 
 import (
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -66,7 +63,8 @@ func canSetRplLockAllowed(c *cli.Command, allowed bool) (*api.CanSetRplLockingAl
 
 }
 
-func setRplLockAllowed(c *cli.Command, allowed bool, opts *bind.TransactOpts) (*api.SetRplLockingAllowedResponse, error) {
+func setRplLockAllowed(c *cli.Command, allowed bool, t *snroute.TransactOpts) (*api.SetRplLockingAllowedResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -102,23 +100,19 @@ func setRplLockAllowed(c *cli.Command, allowed bool, opts *bind.TransactOpts) (*
 
 }
 
-func canSetRplLockingAllowedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		allowed := r.URL.Query().Get("allowed") == "true"
-		resp, err := canSetRplLockAllowed(c, allowed)
-		response.WriteResponse(w, resp, err)
-	}
+func canSetRplLockingAllowedHandler(ctx snroute.Context) {
+	allowed := ctx.Request.URL.Query().Get("allowed") == "true"
+	resp, err := canSetRplLockAllowed(ctx.Command(), allowed)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func setRplLockingAllowedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		allowed := r.FormValue("allowed") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setRplLockAllowed(c, allowed, opts)
-		response.WriteResponse(w, resp, err)
+func setRplLockingAllowedHandler(ctx snroute.WriteContext) {
+	allowed := ctx.Request.FormValue("allowed") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := setRplLockAllowed(ctx.Command(), allowed, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

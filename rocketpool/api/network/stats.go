@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -16,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -263,9 +263,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 
 }
 
-func statsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStats(c)
-		response.WriteResponse(w, resp, err)
-	}
+func statsHandler(ctx snroute.Context) {
+	resp, err := getStats(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

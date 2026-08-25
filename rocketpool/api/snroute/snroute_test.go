@@ -10,9 +10,8 @@ import (
 )
 
 func TestRequiresToken(t *testing.T) {
-	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	ok := func(ctx Context) { ctx.Writer.WriteHeader(http.StatusOK) }
+	writeOK := func(ctx WriteContext) { ctx.Writer.WriteHeader(http.StatusOK) }
 
 	if Open("/healthz", ok).RequiresToken(false) || Open("/healthz", ok).RequiresToken(true) {
 		t.Fatal("Open must never require a token")
@@ -23,19 +22,18 @@ func TestRequiresToken(t *testing.T) {
 	if Read("/api/version", ok).RequiresToken(true) {
 		t.Fatal("Read must not require a token when scope is sensitive only")
 	}
-	if !Write("/api/node/send", ok).RequiresToken(false) || !Write("/api/node/send", ok).RequiresToken(true) {
+	if !Write("/api/node/send", writeOK).RequiresToken(false) || !Write("/api/node/send", writeOK).RequiresToken(true) {
 		t.Fatal("Write must always require a token")
 	}
 }
 
 func TestRouterAuth(t *testing.T) {
 	const token = "rpsn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	ok := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
+	ok := func(ctx Context) { ctx.Writer.WriteHeader(http.StatusOK) }
+	writeOK := func(ctx WriteContext) { ctx.Writer.WriteHeader(http.StatusOK) }
 
 	t.Run("open without token", func(t *testing.T) {
-		r := NewRouter(token, false)
+		r := NewRouter(nil, token, false)
 		r.Handle(Open("/healthz", ok))
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
@@ -45,7 +43,7 @@ func TestRouterAuth(t *testing.T) {
 	})
 
 	t.Run("read without token when all endpoints", func(t *testing.T) {
-		r := NewRouter(token, false)
+		r := NewRouter(nil, token, false)
 		r.Handle(Read("/api/version", ok))
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/version", nil))
@@ -53,7 +51,7 @@ func TestRouterAuth(t *testing.T) {
 	})
 
 	t.Run("read without token when sensitive only", func(t *testing.T) {
-		r := NewRouter(token, true)
+		r := NewRouter(nil, token, true)
 		r.Handle(Read("/api/node/status", ok))
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/node/status", nil))
@@ -63,8 +61,8 @@ func TestRouterAuth(t *testing.T) {
 	})
 
 	t.Run("write without token when sensitive only", func(t *testing.T) {
-		r := NewRouter(token, true)
-		r.Handle(Write("/api/node/send", ok))
+		r := NewRouter(nil, token, true)
+		r.Handle(Write("/api/node/send", writeOK))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/node/send", nil)
 		req.RemoteAddr = "127.0.0.1:54321"
@@ -73,8 +71,8 @@ func TestRouterAuth(t *testing.T) {
 	})
 
 	t.Run("write with token", func(t *testing.T) {
-		r := NewRouter(token, true)
-		r.Handle(Write("/api/node/send", ok))
+		r := NewRouter(nil, token, true)
+		r.Handle(Write("/api/node/send", writeOK))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/node/send", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -86,13 +84,12 @@ func TestRouterAuth(t *testing.T) {
 }
 
 func TestRegisterTo(t *testing.T) {
-	ok := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
-	r := NewRouter("token", true)
+	ok := func(ctx Context) { ctx.Writer.WriteHeader(http.StatusOK) }
+	writeOK := func(ctx WriteContext) { ctx.Writer.WriteHeader(http.StatusOK) }
+	r := NewRouter(nil, "token", true)
 	Open("/healthz", ok).RegisterTo(r)
 	Read("/api/version", ok).RegisterTo(r)
-	Write("/api/node/send", ok).RegisterTo(r)
+	Write("/api/node/send", writeOK).RegisterTo(r)
 
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))

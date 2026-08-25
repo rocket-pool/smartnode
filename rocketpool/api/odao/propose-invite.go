@@ -2,15 +2,14 @@ package odao
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -84,7 +83,8 @@ func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, me
 
 }
 
-func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string, opts *bind.TransactOpts) (*api.ProposeTNDAOInviteResponse, error) {
+func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string, t *snroute.TransactOpts) (*api.ProposeTNDAOInviteResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -112,31 +112,27 @@ func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, membe
 
 }
 
-func canProposeInviteHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, memberId, memberUrl, err := parseInviteParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeInvite(c, addr, memberId, memberUrl)
-		response.WriteResponse(w, resp, err)
+func canProposeInviteHandler(ctx snroute.Context) {
+	addr, memberId, memberUrl, err := parseInviteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProposeInvite(ctx.Command(), addr, memberId, memberUrl)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeInviteHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, memberId, memberUrl, err := parseInviteParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeInvite(c, addr, memberId, memberUrl, opts)
-		response.WriteResponse(w, resp, err)
+func proposeInviteHandler(ctx snroute.WriteContext) {
+	addr, memberId, memberUrl, err := parseInviteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeInvite(ctx.Command(), addr, memberId, memberUrl, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

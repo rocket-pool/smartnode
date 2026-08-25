@@ -2,14 +2,13 @@ package minipool
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -71,7 +70,8 @@ func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Can
 
 }
 
-func refundMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.RefundMinipoolResponse, error) {
+func refundMinipool(c *cli.Command, minipoolAddress common.Address, t *snroute.TransactOpts) (*api.RefundMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -103,31 +103,27 @@ func refundMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.T
 
 }
 
-func canRefundHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canRefundMinipool(c, addr)
-		response.WriteResponse(w, resp, err)
+func canRefundHandler(ctx snroute.Context) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canRefundMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func refundHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := refundMinipool(c, addr, opts)
-		response.WriteResponse(w, resp, err)
+func refundHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := refundMinipool(ctx.Command(), addr, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

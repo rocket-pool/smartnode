@@ -2,12 +2,12 @@ package odao
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -148,23 +148,17 @@ func getMinipoolSettings(c *cli.Command) (*api.GetTNDAOMinipoolSettingsResponse,
 
 }
 
-func getMemberSettingsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMemberSettings(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getMemberSettingsHandler(ctx snroute.Context) {
+	resp, err := getMemberSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func getProposalSettingsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getProposalSettings(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getProposalSettingsHandler(ctx snroute.Context) {
+	resp, err := getProposalSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func getMinipoolSettingsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMinipoolSettings(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getMinipoolSettingsHandler(ctx snroute.Context) {
+	resp, err := getMinipoolSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

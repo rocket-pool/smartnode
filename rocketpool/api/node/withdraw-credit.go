@@ -2,15 +2,13 @@ package node
 
 import (
 	"math/big"
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -77,7 +75,8 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 
 }
 
-func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
+func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -103,31 +102,27 @@ func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, opts *bind.TransactO
 
 }
 
-func canWithdrawCreditHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeWithdrawCredit(c, amountWei)
-		response.WriteResponse(w, resp, err)
+func canWithdrawCreditHandler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canNodeWithdrawCredit(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func withdrawCreditHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeWithdrawCredit(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
+func withdrawCreditHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeWithdrawCredit(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

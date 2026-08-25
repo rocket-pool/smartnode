@@ -1,14 +1,13 @@
 package megapool
 
 import (
-	"net/http"
-
 	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -157,26 +156,22 @@ func exitValidator(c *cli.Command, validatorId uint32) (*api.ExitValidatorRespon
 
 }
 
-func canExitValidatorHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExitValidator(c, validatorId)
-		response.WriteResponse(w, resp, err)
+func canExitValidatorHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canExitValidator(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func exitValidatorHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := exitValidator(c, validatorId)
-		response.WriteResponse(w, resp, err)
+func exitValidatorHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := exitValidator(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -1,8 +1,6 @@
 package pdao
 
 import (
-	"net/http"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -11,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -173,21 +172,17 @@ func getProposal(c *cli.Command, id uint64) (*api.PDAOProposalResponse, error) {
 
 }
 
-func proposalsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getProposals(c)
-		response.WriteResponse(w, resp, err)
-	}
+func proposalsHandler(ctx snroute.Context) {
+	resp, err := getProposals(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposalDetailsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64Param(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := getProposal(c, id)
-		response.WriteResponse(w, resp, err)
+func proposalDetailsHandler(ctx snroute.Context) {
+	id, err := parseUint64Param(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := getProposal(ctx.Command(), id)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

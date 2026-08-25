@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -173,9 +173,7 @@ func formatResolvedAddress(c *cli.Command, address common.Address) string {
 	return fmt.Sprintf("%s (%s)", name, address.Hex())
 }
 
-func daoProposalsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getActiveDAOProposals(c)
-		response.WriteResponse(w, resp, err)
-	}
+func daoProposalsHandler(ctx snroute.Context) {
+	resp, err := getActiveDAOProposals(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

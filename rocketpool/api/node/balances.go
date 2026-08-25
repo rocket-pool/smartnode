@@ -3,11 +3,11 @@ package node
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -43,9 +43,7 @@ func getNodeEthBalance(c *cli.Command) (*api.NodeEthBalanceResponse, error) {
 	return &response, nil
 }
 
-func getEthBalanceHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getNodeEthBalance(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getEthBalanceHandler(ctx snroute.Context) {
+	resp, err := getNodeEthBalance(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

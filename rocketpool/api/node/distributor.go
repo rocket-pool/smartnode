@@ -3,15 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -100,7 +98,8 @@ func getInitializeFeeDistributorGas(c *cli.Command) (*api.NodeInitializeFeeDistr
 
 }
 
-func initializeFeeDistributor(c *cli.Command, opts *bind.TransactOpts) (*api.NodeInitializeFeeDistributorResponse, error) {
+func initializeFeeDistributor(c *cli.Command, t *snroute.TransactOpts) (*api.NodeInitializeFeeDistributorResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -204,7 +203,9 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 
 }
 
-func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeResponse, error) {
+func distribute(c *cli.Command, t *snroute.TransactOpts) (*api.NodeDistributeResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -253,47 +254,37 @@ func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeRes
 
 }
 
-func isFeeDistributorInitializedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := isFeeDistributorInitialized(c)
-		response.WriteResponse(w, resp, err)
-	}
+func isFeeDistributorInitializedHandler(ctx snroute.Context) {
+	resp, err := isFeeDistributorInitialized(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func getInitializeFeeDistributorGasHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getInitializeFeeDistributorGas(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getInitializeFeeDistributorGasHandler(ctx snroute.Context) {
+	resp, err := getInitializeFeeDistributorGas(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func initializeFeeDistributorHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := initializeFeeDistributor(c, opts)
-		response.WriteResponse(w, resp, err)
+func initializeFeeDistributorHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := initializeFeeDistributor(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func canDistributeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canDistribute(c)
-		response.WriteResponse(w, resp, err)
-	}
+func canDistributeHandler(ctx snroute.Context) {
+	resp, err := canDistribute(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func distributeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := distribute(c, opts)
-		response.WriteResponse(w, resp, err)
+func distributeHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := distribute(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

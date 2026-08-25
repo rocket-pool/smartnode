@@ -2,11 +2,11 @@ package wallet
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -58,13 +58,11 @@ func initWalletWithPath(c *cli.Command, derivationPath string) (*api.InitWalletR
 
 }
 
-func initHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		derivationPath := r.URL.Query().Get("derivationPath")
-		if derivationPath == "" {
-			derivationPath = r.FormValue("derivationPath")
-		}
-		resp, err := initWalletWithPath(c, derivationPath)
-		response.WriteResponse(w, resp, err)
+func initHandler(ctx snroute.WriteContext) {
+	derivationPath := ctx.Request.URL.Query().Get("derivationPath")
+	if derivationPath == "" {
+		derivationPath = ctx.Request.FormValue("derivationPath")
 	}
+	resp, err := initWalletWithPath(ctx.Command(), derivationPath)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

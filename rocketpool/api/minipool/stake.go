@@ -3,10 +3,8 @@ package minipool
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -15,6 +13,7 @@ import (
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -152,7 +151,8 @@ func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanS
 
 }
 
-func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.StakeMinipoolResponse, error) {
+func stakeMinipool(c *cli.Command, minipoolAddress common.Address, t *snroute.TransactOpts) (*api.StakeMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -237,31 +237,27 @@ func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 
 }
 
-func canStakeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canStakeMinipool(c, addr)
-		response.WriteResponse(w, resp, err)
+func canStakeHandler(ctx snroute.Context) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canStakeMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func stakeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := stakeMinipool(c, addr, opts)
-		response.WriteResponse(w, resp, err)
+func stakeHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := stakeMinipool(ctx.Command(), addr, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

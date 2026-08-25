@@ -14,21 +14,24 @@ import (
 
 func TestAuthMiddleware(t *testing.T) {
 	const token = "rpsn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	ok := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	ok := func(ctx snroute.Context) {
+		ctx.Writer.WriteHeader(http.StatusOK)
+	}
+	writeOK := func(ctx snroute.WriteContext) {
+		ctx.Writer.WriteHeader(http.StatusOK)
 	}
 
 	register := func(sensitiveOnly bool) *snroute.Router {
-		r := snroute.NewRouter(token, sensitiveOnly)
+		r := snroute.NewRouter(nil, token, sensitiveOnly)
 		r.Handle(snroute.Open("/healthz", ok))
-		r.Handle(snroute.Read("/api/version", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"success"}`))
+		r.Handle(snroute.Read("/api/version", func(ctx snroute.Context) {
+			ctx.Writer.Header().Set("Content-Type", "application/json")
+			_, _ = ctx.Writer.Write([]byte(`{"status":"success"}`))
 		}))
 		r.Handle(snroute.Read("/api/node/status", ok))
-		r.Handle(snroute.Write("/api/node/send", ok))
-		r.Handle(snroute.Write("/api/wallet/export", ok))
-		r.Handle(snroute.Write("/api/megapool/exit-validator", ok))
+		r.Handle(snroute.Write("/api/node/send", writeOK))
+		r.Handle(snroute.Write("/api/wallet/export", writeOK))
+		r.Handle(snroute.Write("/api/megapool/exit-validator", writeOK))
 		return r
 	}
 

@@ -2,14 +2,13 @@ package auction
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -99,7 +98,8 @@ func canRecoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.CanRecoverRPLFr
 
 }
 
-func recoverRplFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*api.RecoverRPLFromLotResponse, error) {
+func recoverRplFromLot(c *cli.Command, lotIndex uint64, t *snroute.TransactOpts) (*api.RecoverRPLFromLotResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -128,31 +128,27 @@ func recoverRplFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts)
 
 }
 
-func canRecoverLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lotIndex, err := parseLotIndex(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canRecoverRplFromLot(c, lotIndex)
-		response.WriteResponse(w, resp, err)
+func canRecoverLotHandler(ctx snroute.Context) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canRecoverRplFromLot(ctx.Command(), lotIndex)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func recoverLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lotIndex, err := parseLotIndex(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := recoverRplFromLot(c, lotIndex, opts)
-		response.WriteResponse(w, resp, err)
+func recoverLotHandler(ctx snroute.WriteContext) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := recoverRplFromLot(ctx.Command(), lotIndex, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

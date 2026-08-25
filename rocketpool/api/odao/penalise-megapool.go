@@ -2,14 +2,13 @@ package odao
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -60,7 +59,8 @@ func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *
 
 }
 
-func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (*api.PenaliseMegapoolResponse, error) {
+func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int, t *snroute.TransactOpts) (*api.PenaliseMegapoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -86,31 +86,27 @@ func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big
 
 }
 
-func canPenaliseMegapoolHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		megapool, block, amount, err := parsePenaliseParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canPenaliseMegapool(c, megapool, block, amount)
-		response.WriteResponse(w, resp, err)
+func canPenaliseMegapoolHandler(ctx snroute.Context) {
+	megapool, block, amount, err := parsePenaliseParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canPenaliseMegapool(ctx.Command(), megapool, block, amount)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func penaliseMegapoolHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		megapool, block, amount, err := parsePenaliseParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := penaliseMegapool(c, megapool, block, amount, opts)
-		response.WriteResponse(w, resp, err)
+func penaliseMegapoolHandler(ctx snroute.WriteContext) {
+	megapool, block, amount, err := parsePenaliseParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := penaliseMegapool(ctx.Command(), megapool, block, amount, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

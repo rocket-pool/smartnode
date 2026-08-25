@@ -2,16 +2,15 @@ package pdao
 
 import (
 	"math/big"
-	"net/http"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -84,7 +83,9 @@ func canProposeRecurringSpend(c *cli.Command, contractName string, recipient com
 	return &response, nil
 }
 
-func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string, t *snroute.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -119,36 +120,32 @@ func proposeRecurringSpend(c *cli.Command, contractName string, recipient common
 	return &response, nil
 }
 
-func canProposeRecurringSpendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage)
-		response.WriteResponse(w, resp, err)
+func canProposeRecurringSpendHandler(ctx snroute.Context) {
+	contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(ctx.Request, false)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProposeRecurringSpend(ctx.Command(), contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeRecurringSpendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, opts)
-		response.WriteResponse(w, resp, err)
+func proposeRecurringSpendHandler(ctx snroute.WriteContext) {
+	contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(ctx.Request, false)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeRecurringSpend(ctx.Command(), contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

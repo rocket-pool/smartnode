@@ -3,15 +3,14 @@ package megapool
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -146,7 +145,8 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 
 }
 
-func notifyValidatorExit(c *cli.Command, validatorId uint32, opts *bind.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -224,31 +224,27 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, opts *bind.Transact
 
 }
 
-func canNotifyValidatorExitHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNotifyValidatorExit(c, validatorId)
-		response.WriteResponse(w, resp, err)
+func canNotifyValidatorExitHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canNotifyValidatorExit(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func notifyValidatorExitHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := notifyValidatorExit(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
+func notifyValidatorExitHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := notifyValidatorExit(ctx.Command(), validatorId, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

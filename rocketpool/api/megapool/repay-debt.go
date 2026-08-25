@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -106,7 +105,8 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 
 }
 
-func repayDebt(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.RepayDebtResponse, error) {
+func repayDebt(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.RepayDebtResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -166,31 +166,27 @@ func repayDebt(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.R
 
 }
 
-func canRepayDebtHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canRepayDebt(c, amountWei)
-		response.WriteResponse(w, resp, err)
+func canRepayDebtHandler(ctx snroute.Context) {
+	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canRepayDebt(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func repayDebtHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := repayDebt(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
+func repayDebtHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := repayDebt(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

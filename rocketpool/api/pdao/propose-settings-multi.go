@@ -3,9 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -114,7 +113,9 @@ func canProposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, cus
 	return &response, nil
 }
 
-func proposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, customMessage string, blockNumber uint32, opts *bind.TransactOpts) (*api.ProposePDAOSettingMultiResponse, error) {
+func proposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, customMessage string, blockNumber uint32, t *snroute.TransactOpts) (*api.ProposePDAOSettingMultiResponse, error) {
+	opts := t.Opts()
+
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
@@ -155,36 +156,32 @@ func proposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, custom
 	}, nil
 }
 
-func canProposeSettingMultiHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		settings, customMessage, err := parseBatchSettings(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingMulti(c, settings, customMessage)
-		response.WriteResponse(w, resp, err)
+func canProposeSettingMultiHandler(ctx snroute.Context) {
+	settings, customMessage, err := parseBatchSettings(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProposeSettingMulti(ctx.Command(), settings, customMessage)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeSettingMultiHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		settings, customMessage, err := parseBatchSettings(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingMulti(c, settings, customMessage, blockNumber, opts)
-		response.WriteResponse(w, resp, err)
+func proposeSettingMultiHandler(ctx snroute.WriteContext) {
+	settings, customMessage, err := parseBatchSettings(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeSettingMulti(ctx.Command(), settings, customMessage, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

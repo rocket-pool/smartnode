@@ -3,15 +3,14 @@ package odao
 import (
 	"fmt"
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -94,7 +93,8 @@ func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei 
 
 }
 
-func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *big.Int, opts *bind.TransactOpts) (*api.ProposeTNDAOKickResponse, error) {
+func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *big.Int, t *snroute.TransactOpts) (*api.ProposeTNDAOKickResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -144,31 +144,27 @@ func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *bi
 
 }
 
-func canProposeKickHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, fine, err := parseKickParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeKick(c, addr, fine)
-		response.WriteResponse(w, resp, err)
+func canProposeKickHandler(ctx snroute.Context) {
+	addr, fine, err := parseKickParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProposeKick(ctx.Command(), addr, fine)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeKickHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, fine, err := parseKickParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeKick(c, addr, fine, opts)
-		response.WriteResponse(w, resp, err)
+func proposeKickHandler(ctx snroute.WriteContext) {
+	addr, fine, err := parseKickParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeKick(ctx.Command(), addr, fine, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

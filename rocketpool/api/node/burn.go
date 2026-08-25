@@ -2,15 +2,13 @@ package node
 
 import (
 	"math/big"
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -106,7 +104,8 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 
 }
 
-func nodeBurn(c *cli.Command, amountWei *big.Int, token string, opts *bind.TransactOpts) (*api.NodeBurnResponse, error) {
+func nodeBurn(c *cli.Command, amountWei *big.Int, token string, t *snroute.TransactOpts) (*api.NodeBurnResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -141,33 +140,29 @@ func nodeBurn(c *cli.Command, amountWei *big.Int, token string, opts *bind.Trans
 
 }
 
-func canBurnHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.URL.Query().Get("token")
-		resp, err := canNodeBurn(c, amountWei, token)
-		response.WriteResponse(w, resp, err)
+func canBurnHandler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	token := ctx.Request.URL.Query().Get("token")
+	resp, err := canNodeBurn(ctx.Command(), amountWei, token)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func burnHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.FormValue("token")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeBurn(c, amountWei, token, opts)
-		response.WriteResponse(w, resp, err)
+func burnHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	token := ctx.Request.FormValue("token")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeBurn(ctx.Command(), amountWei, token, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

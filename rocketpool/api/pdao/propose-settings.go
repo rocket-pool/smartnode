@@ -3,9 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/urfave/cli/v3"
@@ -15,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -974,7 +973,8 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 
 }
 
-func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, opts *bind.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, t *snroute.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -1863,32 +1863,28 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	return &response, nil
 }
 
-func canProposeSettingHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		contract := paramVal(r, "contract")
-		setting := paramVal(r, "setting")
-		value := paramVal(r, "value")
-		resp, err := canProposeSetting(c, contract, setting, value)
-		response.WriteResponse(w, resp, err)
-	}
+func canProposeSettingHandler(ctx snroute.Context) {
+	contract := paramVal(ctx.Request, "contract")
+	setting := paramVal(ctx.Request, "setting")
+	value := paramVal(ctx.Request, "value")
+	resp, err := canProposeSetting(ctx.Command(), contract, setting, value)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeSettingHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		contract := paramVal(r, "contract")
-		setting := paramVal(r, "setting")
-		value := paramVal(r, "value")
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSetting(c, contract, setting, value, blockNumber, opts)
-		response.WriteResponse(w, resp, err)
+func proposeSettingHandler(ctx snroute.WriteContext) {
+	contract := paramVal(ctx.Request, "contract")
+	setting := paramVal(ctx.Request, "setting")
+	value := paramVal(ctx.Request, "value")
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeSetting(ctx.Command(), contract, setting, value, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

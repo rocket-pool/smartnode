@@ -9,8 +9,8 @@ import (
 )
 
 func TestRouteClassification(t *testing.T) {
-	r := snroute.NewRouter("", true)
-	RegisterRoutes(r, nil)
+	r := snroute.NewRouter(nil, "", true)
+	RegisterRoutes(r)
 
 	byPath := map[string]snroute.Route{}
 	var writes int

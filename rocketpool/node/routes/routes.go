@@ -3,8 +3,6 @@ package routes
 import (
 	"net/http"
 
-	"github.com/urfave/cli/v3"
-
 	apiroutes "github.com/rocket-pool/smartnode/rocketpool/api"
 	auctionroutes "github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	debugroutes "github.com/rocket-pool/smartnode/rocketpool/api/debug"
@@ -25,34 +23,34 @@ import (
 
 // RegisterRoutes registers all HTTP API routes onto router.
 // Each migration branch adds additional module registrations here.
-func RegisterRoutes(router *snroute.Router, c *cli.Command) {
+func RegisterRoutes(router *snroute.Router) {
 	snroute.Open("/healthz", healthzHandler).RegisterTo(router)
 
 	apiroutes.RegisterVersionRoute(router)
-	apiroutes.RegisterWaitRoute(router, c)
-	auctionroutes.RegisterRoutes(router, c)
-	debugroutes.RegisterRoutes(router, c)
-	megapoolroutes.RegisterRoutes(router, c)
-	minipoolroutes.RegisterRoutes(router, c)
-	networkroutes.RegisterRoutes(router, c)
-	noderoutes.RegisterRoutes(router, c)
-	odaoroutes.RegisterRoutes(router, c)
-	pdaoroutes.RegisterRoutes(router, c)
-	queueroutes.RegisterRoutes(router, c)
-	securityroutes.RegisterRoutes(router, c)
-	serviceroutes.RegisterRoutes(router, c)
-	upgraderoutes.RegisterRoutes(router, c)
-	walletroutes.RegisterRoutes(router, c)
+	apiroutes.RegisterWaitRoute(router)
+	auctionroutes.RegisterRoutes(router)
+	debugroutes.RegisterRoutes(router)
+	megapoolroutes.RegisterRoutes(router)
+	minipoolroutes.RegisterRoutes(router)
+	networkroutes.RegisterRoutes(router)
+	noderoutes.RegisterRoutes(router)
+	odaoroutes.RegisterRoutes(router)
+	pdaoroutes.RegisterRoutes(router)
+	queueroutes.RegisterRoutes(router)
+	securityroutes.RegisterRoutes(router)
+	serviceroutes.RegisterRoutes(router)
+	upgraderoutes.RegisterRoutes(router)
+	walletroutes.RegisterRoutes(router)
 
 	// Catch-all: any path not matched by a specific route gets a JSON 404.
 	snroute.Read("/", notFoundHandler).RegisterTo(router)
 
 }
 
-func healthzHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func healthzHandler(ctx snroute.Context) {
+	ctx.Writer.WriteHeader(http.StatusOK)
 }
 
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	response.WriteErrorResponse(w, &response.NotFoundError{Path: r.URL.Path})
+func notFoundHandler(ctx snroute.Context) {
+	response.WriteErrorResponse(ctx.Writer, &response.NotFoundError{Path: ctx.Request.URL.Path})
 }

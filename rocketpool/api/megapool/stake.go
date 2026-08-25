@@ -1,15 +1,14 @@
 package megapool
 
 import (
-	"net/http"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -117,7 +116,8 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 
 }
 
-func stake(c *cli.Command, validatorId uint64, opts *bind.TransactOpts) (*api.StakeResponse, error) {
+func stake(c *cli.Command, validatorId uint64, t *snroute.TransactOpts) (*api.StakeResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -184,31 +184,27 @@ func stake(c *cli.Command, validatorId uint64, opts *bind.TransactOpts) (*api.St
 
 }
 
-func canStakeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint64(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canStake(c, validatorId)
-		response.WriteResponse(w, resp, err)
+func canStakeHandler(ctx snroute.Context) {
+	validatorId, err := parseUint64(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canStake(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func stakeHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint64(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := stake(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
+func stakeHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint64(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := stake(ctx.Command(), validatorId, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

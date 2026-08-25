@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -14,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -195,7 +194,8 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 
 }
 
-func distributeBalance(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.CloseMinipoolResponse, error) {
+func distributeBalance(c *cli.Command, minipoolAddress common.Address, t *snroute.TransactOpts) (*api.CloseMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -231,26 +231,22 @@ func distributeBalance(c *cli.Command, minipoolAddress common.Address, opts *bin
 
 }
 
-func getDistributeBalanceDetailsHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getDistributeBalanceDetails(c)
-		response.WriteResponse(w, resp, err)
-	}
+func getDistributeBalanceDetailsHandler(ctx snroute.Context) {
+	resp, err := getDistributeBalanceDetails(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func distributeBalanceHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := distributeBalance(c, addr, opts)
-		response.WriteResponse(w, resp, err)
+func distributeBalanceHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := distributeBalance(ctx.Command(), addr, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

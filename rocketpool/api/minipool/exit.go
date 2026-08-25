@@ -1,8 +1,6 @@
 package minipool
 
 import (
-	"net/http"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -11,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -133,26 +132,22 @@ func exitMinipool(c *cli.Command, minipoolAddress common.Address) (*api.ExitMini
 
 }
 
-func canExitHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExitMinipool(c, addr)
-		response.WriteResponse(w, resp, err)
+func canExitHandler(ctx snroute.Context) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canExitMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func exitHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := exitMinipool(c, addr)
-		response.WriteResponse(w, resp, err)
+func exitHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := exitMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

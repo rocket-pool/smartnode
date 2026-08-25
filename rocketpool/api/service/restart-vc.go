@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -41,9 +41,7 @@ func restartVc(c *cli.Command) (*api.RestartVcResponse, error) {
 
 }
 
-func restartVcHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := restartVc(c)
-		response.WriteResponse(w, resp, err)
-	}
+func restartVcHandler(ctx snroute.WriteContext) {
+	resp, err := restartVc(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

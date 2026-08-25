@@ -1,15 +1,13 @@
 package auction
 
 import (
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -81,7 +79,8 @@ func canCreateLot(c *cli.Command) (*api.CanCreateLotResponse, error) {
 
 }
 
-func createLot(c *cli.Command, opts *bind.TransactOpts) (*api.CreateLotResponse, error) {
+func createLot(c *cli.Command, t *snroute.TransactOpts) (*api.CreateLotResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -111,21 +110,17 @@ func createLot(c *cli.Command, opts *bind.TransactOpts) (*api.CreateLotResponse,
 
 }
 
-func canCreateLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canCreateLot(c)
-		response.WriteResponse(w, resp, err)
-	}
+func canCreateLotHandler(ctx snroute.Context) {
+	resp, err := canCreateLot(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func createLotHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := createLot(c, opts)
-		response.WriteResponse(w, resp, err)
+func createLotHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := createLot(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

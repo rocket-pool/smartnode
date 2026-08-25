@@ -1,13 +1,11 @@
 package megapool
 
 import (
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -77,7 +75,8 @@ func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueRespo
 
 }
 
-func exitQueue(c *cli.Command, validatorIndex uint32, opts *bind.TransactOpts) (*api.ExitQueueResponse, error) {
+func exitQueue(c *cli.Command, validatorIndex uint32, t *snroute.TransactOpts) (*api.ExitQueueResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -127,31 +126,27 @@ func exitQueue(c *cli.Command, validatorIndex uint32, opts *bind.TransactOpts) (
 
 }
 
-func canExitQueueHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorIndex, err := parseUint32(r, "validatorIndex")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExitQueue(c, validatorIndex)
-		response.WriteResponse(w, resp, err)
+func canExitQueueHandler(ctx snroute.Context) {
+	validatorIndex, err := parseUint32(ctx.Request, "validatorIndex")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canExitQueue(ctx.Command(), validatorIndex)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func exitQueueHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		validatorIndex, err := parseUint32(r, "validatorIndex")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := exitQueue(c, validatorIndex, opts)
-		response.WriteResponse(w, resp, err)
+func exitQueueHandler(ctx snroute.WriteContext) {
+	validatorIndex, err := parseUint32(ctx.Request, "validatorIndex")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := exitQueue(ctx.Command(), validatorIndex, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

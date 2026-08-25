@@ -2,15 +2,14 @@ package pdao
 
 import (
 	"math/big"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -83,7 +82,9 @@ func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.A
 	return &response, nil
 }
 
-func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string, t *snroute.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -117,36 +118,32 @@ func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Addr
 	return &response, nil
 }
 
-func canProposeOneTimeSpendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeOneTimeSpend(c, invoiceID, recipient, amount, customMessage)
-		response.WriteResponse(w, resp, err)
+func canProposeOneTimeSpendHandler(ctx snroute.Context) {
+	invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := canProposeOneTimeSpend(ctx.Command(), invoiceID, recipient, amount, customMessage)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeOneTimeSpendHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, customMessage, opts)
-		response.WriteResponse(w, resp, err)
+func proposeOneTimeSpendHandler(ctx snroute.WriteContext) {
+	invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeOneTimeSpend(ctx.Command(), invoiceID, recipient, amount, blockNumber, customMessage, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

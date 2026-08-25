@@ -2,9 +2,7 @@ package pdao
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -12,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -91,7 +90,9 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddr
 	return &response, nil
 }
 
-func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -133,32 +134,28 @@ func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress
 	return &response, nil
 }
 
-func canProposeReplaceMemberOfSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		existing := common.HexToAddress(paramVal(r, "existingAddress"))
-		newID := paramVal(r, "newId")
-		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
-		resp, err := canProposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr)
-		response.WriteResponse(w, resp, err)
-	}
+func canProposeReplaceMemberOfSecurityCouncilHandler(ctx snroute.Context) {
+	existing := common.HexToAddress(paramVal(ctx.Request, "existingAddress"))
+	newID := paramVal(ctx.Request, "newId")
+	newAddr := common.HexToAddress(paramVal(ctx.Request, "newAddress"))
+	resp, err := canProposeReplaceMemberOfSecurityCouncil(ctx.Command(), existing, newID, newAddr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func proposeReplaceMemberOfSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		existing := common.HexToAddress(paramVal(r, "existingAddress"))
-		newID := paramVal(r, "newId")
-		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
-		blockNumber, err := parseUint32Param(r, "blockNumber")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, blockNumber, opts)
-		response.WriteResponse(w, resp, err)
+func proposeReplaceMemberOfSecurityCouncilHandler(ctx snroute.WriteContext) {
+	existing := common.HexToAddress(paramVal(ctx.Request, "existingAddress"))
+	newID := paramVal(ctx.Request, "newId")
+	newAddr := common.HexToAddress(paramVal(ctx.Request, "newAddress"))
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeReplaceMemberOfSecurityCouncil(ctx.Command(), existing, newID, newAddr, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

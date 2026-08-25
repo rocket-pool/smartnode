@@ -1,14 +1,12 @@
 package node
 
 import (
-	"net/http"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -49,7 +47,8 @@ func canSetStakeRplForAllowed(c *cli.Command, caller common.Address, allowed boo
 
 }
 
-func setStakeRplForAllowed(c *cli.Command, caller common.Address, allowed bool, opts *bind.TransactOpts) (*api.SetStakeRplForAllowedResponse, error) {
+func setStakeRplForAllowed(c *cli.Command, caller common.Address, allowed bool, t *snroute.TransactOpts) (*api.SetStakeRplForAllowedResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -76,25 +75,21 @@ func setStakeRplForAllowed(c *cli.Command, caller common.Address, allowed bool, 
 
 }
 
-func canSetStakeRplForAllowedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		caller := common.HexToAddress(r.URL.Query().Get("caller"))
-		allowed := r.URL.Query().Get("allowed") == "true"
-		resp, err := canSetStakeRplForAllowed(c, caller, allowed)
-		response.WriteResponse(w, resp, err)
-	}
+func canSetStakeRplForAllowedHandler(ctx snroute.Context) {
+	caller := common.HexToAddress(ctx.Request.URL.Query().Get("caller"))
+	allowed := ctx.Request.URL.Query().Get("allowed") == "true"
+	resp, err := canSetStakeRplForAllowed(ctx.Command(), caller, allowed)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
 
-func setStakeRplForAllowedHandler(c *cli.Command) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		caller := common.HexToAddress(r.FormValue("caller"))
-		allowed := r.FormValue("allowed") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setStakeRplForAllowed(c, caller, allowed, opts)
-		response.WriteResponse(w, resp, err)
+func setStakeRplForAllowedHandler(ctx snroute.WriteContext) {
+	caller := common.HexToAddress(ctx.Request.FormValue("caller"))
+	allowed := ctx.Request.FormValue("allowed") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
 	}
+	resp, err := setStakeRplForAllowed(ctx.Command(), caller, allowed, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
