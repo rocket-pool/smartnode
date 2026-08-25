@@ -1,11 +1,14 @@
 package pdao
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -88,4 +91,38 @@ func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Addr
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeKickMultiFromSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addresses, err := parseAddressList(r, "addresses")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeKickMultiFromSecurityCouncil(c, addresses)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeKickMultiFromSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addresses, err := parseAddressList(r, "addresses")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

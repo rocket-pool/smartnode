@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -59,4 +61,11 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 	}
 
 	return
+}
+
+func checkCollateralHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := checkCollateral(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -2,12 +2,14 @@ package odao
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -82,4 +84,33 @@ func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big
 	// Return response
 	return &response, nil
 
+}
+
+func canPenaliseMegapoolHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		megapool, block, amount, err := parsePenaliseParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canPenaliseMegapool(c, megapool, block, amount)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func penaliseMegapoolHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		megapool, block, amount, err := parsePenaliseParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := penaliseMegapool(c, megapool, block, amount, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

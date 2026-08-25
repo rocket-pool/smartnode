@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -224,4 +226,87 @@ func swapRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.
 	// Return response
 	return &response, nil
 
+}
+
+func swapRplAllowanceHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := allowanceFsRpl(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canSwapRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canNodeSwapRpl(c, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getSwapRplApprovalGasHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getSwapApprovalGas(c, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func swapRplApproveRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := approveFsRpl(c, amountWei, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func waitAndSwapRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		hash := common.HexToHash(r.FormValue("approvalTxHash"))
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := waitForApprovalAndSwapFsRpl(c, amountWei, hash, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func swapRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := swapRpl(c, amountWei, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -14,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/erc20"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/math"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -412,4 +414,51 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bi
 	// Return response
 	return &response, nil
 
+}
+
+func canSendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountRaw, err := parseNodeFloat64(r, "amountRaw")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		token := r.URL.Query().Get("token")
+		to := common.HexToAddress(r.URL.Query().Get("to"))
+		resp, err := canNodeSend(c, amountRaw, token, to)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func sendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountRaw, err := parseNodeFloat64(r, "amountRaw")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		token := r.FormValue("token")
+		to := common.HexToAddress(r.FormValue("to"))
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeSend(c, amountRaw, token, to, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func sendAllHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.FormValue("token")
+		to := common.HexToAddress(r.FormValue("to"))
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeSendAllTokens(c, token, to, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -2,12 +2,14 @@ package wallet
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -85,4 +87,33 @@ func setEnsName(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.Tr
 	}
 
 	return &response, nil
+}
+
+func estimateGasSetEnsNameHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			name = r.FormValue("name")
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setEnsName(c, name, true, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setEnsNameHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.FormValue("name")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setEnsName(c, name, false, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

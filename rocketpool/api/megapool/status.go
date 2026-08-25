@@ -3,10 +3,12 @@ package megapool
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -258,4 +260,38 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 
 	// Return response
 	return &response, nil
+}
+
+func statusHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		finalizedState := r.URL.Query().Get("finalizedState") == "true"
+		resp, err := getStatus(c, finalizedState)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func validatorMapAndBalancesHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getValidatorMapAndBalances(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func pendingRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := calculatePendingRewards(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func calculateRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := calculateRewards(c, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
 }

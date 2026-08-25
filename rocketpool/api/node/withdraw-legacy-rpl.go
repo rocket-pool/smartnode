@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -138,4 +140,33 @@ func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int, opts *bind.Transac
 	// Return response
 	return &response, nil
 
+}
+
+func canUnstakeLegacyRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canNodeUnstakeLegacyRpl(c, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func unstakeLegacyRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeUnstakeLegacyRpl(c, amountWei, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

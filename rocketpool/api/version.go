@@ -16,8 +16,10 @@ type VersionResponse struct {
 
 // RegisterVersionRoute registers the /api/version endpoint on router.
 func RegisterVersionRoute(router *snroute.Router) {
-	router.Handle(snroute.Read("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		resp := VersionResponse{Version: shared.RocketPoolVersion()}
-		response.WriteResponse(w, &resp, nil)
-	}))
+	snroute.Read("/api/version", versionHandler).RegisterTo(router)
+}
+
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	resp := VersionResponse{Version: shared.RocketPoolVersion()}
+	response.WriteResponse(w, &resp, nil)
 }

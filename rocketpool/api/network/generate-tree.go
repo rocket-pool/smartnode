@@ -2,11 +2,13 @@ package network
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -75,4 +77,28 @@ func generateRewardsTree(c *cli.Command, index uint64) (*api.NetworkGenerateRewa
 
 	return &response, nil
 
+}
+
+func canGenerateRewardsTreeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		index, err := parseUint64Param(r, "index")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canGenerateRewardsTree(c, index)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func generateRewardsTreeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		index, err := parseUint64Param(r, "index")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := generateRewardsTree(c, index)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -1,6 +1,8 @@
 package node
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -111,4 +114,25 @@ func registerNode(c *cli.Command, timezoneLocation string, opts *bind.TransactOp
 	// Return response
 	return &response, nil
 
+}
+
+func canRegisterHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tz := r.URL.Query().Get("timezoneLocation")
+		resp, err := canRegisterNode(c, tz)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func registerHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tz := r.FormValue("timezoneLocation")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := registerNode(c, tz, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

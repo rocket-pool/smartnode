@@ -1,10 +1,13 @@
 package megapool
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -137,4 +140,23 @@ func distributeMegapool(c *cli.Command, opts *bind.TransactOpts) (*api.Distribut
 
 	// Return response
 	return &response, nil
+}
+
+func canDistributeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canDistributeMegapool(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func distributeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := distributeMegapool(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

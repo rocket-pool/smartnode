@@ -2,6 +2,7 @@ package odao
 
 import (
 	"bytes"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -116,4 +118,33 @@ func cancelProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts) 
 	// Return response
 	return &response, nil
 
+}
+
+func canCancelProposalHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUint64(r, "id")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canCancelProposal(c, id)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func cancelProposalHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUint64(r, "id")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := cancelProposal(c, id, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -1,6 +1,7 @@
 package megapool
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -180,4 +182,33 @@ func stake(c *cli.Command, validatorId uint64, opts *bind.TransactOpts) (*api.St
 	// Return response
 	return &response, nil
 
+}
+
+func canStakeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		validatorId, err := parseUint64(r, "validatorId")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canStake(c, validatorId)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func stakeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		validatorId, err := parseUint64(r, "validatorId")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := stake(c, validatorId, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

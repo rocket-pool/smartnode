@@ -2,12 +2,14 @@ package node
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -193,4 +195,46 @@ func confirmPrimaryWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*
 	// Return response
 	return &response, nil
 
+}
+
+func canSetPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(r.URL.Query().Get("address"))
+		confirm := r.URL.Query().Get("confirm") == "true"
+		resp, err := canSetPrimaryWithdrawalAddress(c, addr, confirm)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(r.FormValue("address"))
+		confirm := r.FormValue("confirm") == "true"
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setPrimaryWithdrawalAddress(c, addr, confirm, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canConfirmPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canConfirmPrimaryWithdrawalAddress(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func confirmPrimaryWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := confirmPrimaryWithdrawalAddress(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

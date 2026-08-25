@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -264,4 +266,33 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	// Return response
 	return &response, nil
 
+}
+
+func canCreateVacantMinipoolHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params, err := parseVacantMinipoolParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canCreateVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func createVacantMinipoolHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params, err := parseVacantMinipoolParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := createVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

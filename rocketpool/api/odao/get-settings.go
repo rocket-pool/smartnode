@@ -2,10 +2,12 @@ package odao
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -144,4 +146,25 @@ func getMinipoolSettings(c *cli.Command) (*api.GetTNDAOMinipoolSettingsResponse,
 	// Return response
 	return &response, nil
 
+}
+
+func getMemberSettingsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getMemberSettings(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getProposalSettingsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getProposalSettings(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getMinipoolSettingsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getMinipoolSettings(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

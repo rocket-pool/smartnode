@@ -18,6 +18,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -341,4 +342,11 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 	}
 
 	return &votingPower, nil
+}
+
+func statusHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getStatus(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

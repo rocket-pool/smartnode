@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -439,4 +442,29 @@ func checkForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMa
 
 	return pubkeyMap, nil
 
+}
+
+func recoverHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mnemonic := r.FormValue("mnemonic")
+		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
+		derivationPath := r.FormValue("derivationPath")
+		walletIndex, _ := strconv.ParseUint(r.FormValue("walletIndex"), 10, 64)
+		resp, err := withRecoveryLock("wallet recover", func() (*api.RecoverWalletResponse, error) {
+			return recoverWalletWithParams(c, mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+		})
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func searchAndRecoverHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mnemonic := r.FormValue("mnemonic")
+		address := common.HexToAddress(r.FormValue("address"))
+		skipRecovery := r.FormValue("skipValidatorKeyRecovery") == "true"
+		resp, err := withRecoveryLock("wallet recover --address", func() (*api.SearchAndRecoverWalletResponse, error) {
+			return searchAndRecoverWalletWithParams(c, mnemonic, address, skipRecovery)
+		})
+		response.WriteResponse(w, resp, err)
+	}
 }

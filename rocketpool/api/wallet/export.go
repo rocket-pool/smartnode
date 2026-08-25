@@ -2,9 +2,11 @@ package wallet
 
 import (
 	"encoding/hex"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -51,4 +53,11 @@ func exportWallet(c *cli.Command) (*api.ExportWalletResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func exportHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := exportWallet(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

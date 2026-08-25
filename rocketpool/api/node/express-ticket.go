@@ -1,11 +1,14 @@
 package node
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -153,4 +156,37 @@ func provisionExpressTickets(c *cli.Command, opts *bind.TransactOpts) (*api.Prov
 	// Return response
 	return &response, nil
 
+}
+
+func getExpressTicketCountHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getExpressTicketCount(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getExpressTicketsProvisionedHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getExpressTicketsProvisioned(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProvisionExpressTicketsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canProvisionExpressTickets(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func provisionExpressTicketsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := provisionExpressTickets(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

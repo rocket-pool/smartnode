@@ -1,11 +1,14 @@
 package security
 
 import (
+	"net/http"
+
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -117,4 +120,11 @@ func getStatus(c *cli.Command) (*api.SecurityStatusResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func statusHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getStatus(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -2,6 +2,7 @@ package odao
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -793,4 +795,344 @@ func proposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWindow
 	// Return response
 	return &response, nil
 
+}
+
+func canProposeMembersQuorumHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		quorum, err := parseFloat64(r, "quorum")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingMembersQuorum(c, quorum)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeMembersQuorumHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		quorum, err := parseFloat64(r, "quorum")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMembersQuorum(c, quorum, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeMembersRplbondHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bond, err := parseBigInt(r, "bondAmountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingMembersRplBond(c, bond)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeMembersRplbondHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bond, err := parseBigInt(r, "bondAmountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMembersRplBond(c, bond, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeProposalCooldownHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingProposalCooldown(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeProposalCooldownHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalCooldown(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeProposalVoteTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingProposalVoteTimespan(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeProposalVoteTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalVoteTimespan(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeProposalVoteDelayTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingProposalVoteDelayTimespan(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeProposalVoteDelayTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalVoteDelayTimespan(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeProposalExecuteTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingProposalExecuteTimespan(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeProposalExecuteTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalExecuteTimespan(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeProposalActionTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingProposalActionTimespan(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeProposalActionTimespanHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalActionTimespan(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeScrubPeriodHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingScrubPeriod(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeScrubPeriodHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingScrubPeriod(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposePromotionScrubPeriodHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingPromotionScrubPeriod(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposePromotionScrubPeriodHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingPromotionScrubPeriod(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeScrubPenaltyEnabledHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		enabledStr := r.URL.Query().Get("enabled")
+		resp, err := canProposeSettingScrubPenaltyEnabled(c, enabledStr == "true")
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeScrubPenaltyEnabledHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		enabledStr := r.FormValue("enabled")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingScrubPenaltyEnabled(c, enabledStr == "true", opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeBondReductionWindowStartHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingBondReductionWindowStart(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeBondReductionWindowStartHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingBondReductionWindowStart(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeBondReductionWindowLengthHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingBondReductionWindowLength(c, val)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeBondReductionWindowLengthHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		val, err := parseUint64(r, "value")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingBondReductionWindowLength(c, val, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

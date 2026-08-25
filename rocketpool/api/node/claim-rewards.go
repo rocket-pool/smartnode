@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -440,4 +442,63 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	// Return
 	return claims, nil
 
+}
+
+func getRewardsInfoHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getRewardsInfo(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canClaimRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices := r.URL.Query().Get("indices")
+		resp, err := canClaimRewards(c, indices)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func claimRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices := r.FormValue("indices")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimRewards(c, indices, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canClaimAndStakeRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices := r.URL.Query().Get("indices")
+		stakeAmount, err := parseNodeBigInt(r, "stakeAmount")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canClaimAndStakeRewards(c, indices, stakeAmount)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func claimAndStakeRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices := r.FormValue("indices")
+		stakeAmount, err := parseNodeBigInt(r, "stakeAmount")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimAndStakeRewards(c, indices, stakeAmount, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

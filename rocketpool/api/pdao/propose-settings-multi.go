@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
@@ -11,6 +12,7 @@ import (
 	daoprotocol "github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -151,4 +153,38 @@ func proposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, custom
 		ProposalId: proposalID,
 		TxHash:     hash,
 	}, nil
+}
+
+func canProposeSettingMultiHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		settings, customMessage, err := parseBatchSettings(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeSettingMulti(c, settings, customMessage)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeSettingMultiHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		settings, customMessage, err := parseBatchSettings(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMulti(c, settings, customMessage, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

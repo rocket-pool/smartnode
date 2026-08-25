@@ -2,6 +2,7 @@ package auction
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -128,4 +130,33 @@ func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, opts *bind.Tr
 	// Return response
 	return &response, nil
 
+}
+
+func canBidLotHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		lotIndex, amountWei, err := parseLotIndexAndAmount(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canBidOnLot(c, lotIndex, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func bidLotHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		lotIndex, amountWei, err := parseLotIndexAndAmount(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := bidOnLot(c, lotIndex, amountWei, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

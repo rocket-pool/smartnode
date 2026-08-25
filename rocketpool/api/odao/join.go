@@ -1,7 +1,9 @@
 package odao
 
 import (
+	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,6 +14,7 @@ import (
 	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -200,4 +203,41 @@ func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, opts *bind.Transac
 	// Return response
 	return &response, nil
 
+}
+
+func canJoinHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canJoin(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func joinApproveRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := approveRpl(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func joinHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hashStr := r.FormValue("approvalTxHash")
+		if hashStr == "" {
+			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: approvalTxHash"))
+			return
+		}
+		hash := common.HexToHash(hashStr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := waitForApprovalAndJoin(c, hash, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

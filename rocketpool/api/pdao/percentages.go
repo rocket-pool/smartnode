@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	rpnode "github.com/rocket-pool/smartnode/bindings/node"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -168,4 +170,45 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 
 	// Return response
 	return &response, nil
+}
+
+func getRewardsPercentagesHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getRewardsPercentages(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canProposeRewardsPercentagesHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		node, odaoAmt, pdaoAmt, err := parseRewardPercentages(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeRewardsPercentages(c, node, odaoAmt, pdaoAmt)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeRewardsPercentagesHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		node, odaoAmt, pdaoAmt, err := parseRewardPercentages(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeRewardsPercentages(c, node, odaoAmt, pdaoAmt, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

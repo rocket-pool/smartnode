@@ -1,6 +1,7 @@
 package pdao
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -134,4 +136,43 @@ func defeatProposal(c *cli.Command, proposalId uint64, index uint64, opts *bind.
 
 	// Return response
 	return &response, nil
+}
+
+func canDefeatProposalHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUint64Param(r, "id")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		index, err := parseUint64Param(r, "index")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canDefeatProposal(c, id, index)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func defeatProposalHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUint64Param(r, "id")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		index, err := parseUint64Param(r, "index")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := defeatProposal(c, id, index, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -16,7 +16,11 @@ import (
 // RegisterWaitRoute registers the /api/wait endpoint on router.
 // It waits for a transaction hash to be mined.
 func RegisterWaitRoute(router *snroute.Router, c *cli.Command) {
-	router.Handle(snroute.Read("/api/wait", func(w http.ResponseWriter, r *http.Request) {
+	snroute.Read("/api/wait", waitHandler(c)).RegisterTo(router)
+}
+
+func waitHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		hash := common.HexToHash(r.URL.Query().Get("txHash"))
 		rp, err := services.GetRocketPool(c)
 		if err != nil {
@@ -26,5 +30,5 @@ func RegisterWaitRoute(router *snroute.Router, c *cli.Command) {
 		resp := apitypes.APIResponse{}
 		_, err = utils.WaitForTransactionWithContext(r.Context(), rp.Client, hash)
 		response.WriteResponse(w, &resp, err)
-	}))
+	}
 }

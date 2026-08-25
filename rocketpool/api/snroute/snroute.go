@@ -73,6 +73,12 @@ func (OpenRoute) RequiresToken(bool) bool               { return false }
 func (ReadRoute) RequiresToken(sensitiveOnly bool) bool { return !sensitiveOnly }
 func (WriteRoute) RequiresToken(bool) bool              { return true }
 
+// RegisterTo adds the route to router. Handle remains the primitive that
+// applies auth; this is the one-line registration used in routes.go files.
+func (r OpenRoute) RegisterTo(router *Router)  { router.Handle(r) }
+func (r ReadRoute) RegisterTo(router *Router)  { router.Handle(r) }
+func (r WriteRoute) RegisterTo(router *Router) { router.Handle(r) }
+
 // Router registers typed routes and applies per-route bearer auth.
 type Router struct {
 	mux           *http.ServeMux

@@ -3,12 +3,14 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -108,4 +110,23 @@ func nodeClaimRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeClaimRplRes
 	// Return response
 	return &response, nil
 
+}
+
+func canClaimRplRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canNodeClaimRpl(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func claimRplRewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeClaimRpl(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

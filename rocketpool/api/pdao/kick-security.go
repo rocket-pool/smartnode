@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -115,4 +117,30 @@ func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, bloc
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeKickFromSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		resp, err := canProposeKickFromSecurityCouncil(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeKickFromSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeKickFromSecurityCouncil(c, addr, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

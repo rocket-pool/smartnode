@@ -6,72 +6,17 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-	"github.com/rocket-pool/smartnode/shared/services"
 )
 
 // RegisterRoutes registers the queue module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router, c *cli.Command) {
-	router.Handle(snroute.Read("/api/queue/status", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStatus(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/queue/can-process", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProcessQueue(c, int64(m))
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/queue/process", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := processQueue(c, int64(m), opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/queue/get-queue-details", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getQueueDetails(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/queue/can-assign-deposits", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canAssignDeposits(c, int64(m))
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/queue/assign-deposits", func(w http.ResponseWriter, r *http.Request) {
-		m, err := parseUint32Param(r, "max")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := assignDeposits(c, int64(m), opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/queue/status", statusHandler(c)).RegisterTo(router)
+	snroute.Read("/api/queue/can-process", canProcessHandler(c)).RegisterTo(router)
+	snroute.Write("/api/queue/process", processHandler(c)).RegisterTo(router)
+	snroute.Read("/api/queue/get-queue-details", getQueueDetailsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/queue/can-assign-deposits", canAssignDepositsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/queue/assign-deposits", assignDepositsHandler(c)).RegisterTo(router)
 }
 
 func parseUint32Param(r *http.Request, name string) (uint32, error) {

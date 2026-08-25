@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -24,6 +25,7 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -519,4 +521,33 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
 	return err
 
+}
+
+func canDepositHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params, err := parseDepositParams(r, false)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canNodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.expressTickets)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func depositHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params, err := parseDepositParams(r, true)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

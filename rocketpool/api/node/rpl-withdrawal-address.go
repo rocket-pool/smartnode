@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -220,4 +222,46 @@ func confirmRPLWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.
 
 	// Return response
 	return &response, nil
+}
+
+func canSetRplWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(r.URL.Query().Get("address"))
+		confirm := r.URL.Query().Get("confirm") == "true"
+		resp, err := canSetRPLWithdrawalAddress(c, addr, confirm)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setRplWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(r.FormValue("address"))
+		confirm := r.FormValue("confirm") == "true"
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setRPLWithdrawalAddress(c, addr, confirm, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canConfirmRplWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canConfirmRPLWithdrawalAddress(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func confirmRplWithdrawalAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := confirmRPLWithdrawalAddress(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

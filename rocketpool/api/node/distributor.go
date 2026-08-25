@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -249,4 +251,49 @@ func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeRes
 	// Return response
 	return &response, nil
 
+}
+
+func isFeeDistributorInitializedHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := isFeeDistributorInitialized(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getInitializeFeeDistributorGasHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getInitializeFeeDistributorGas(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func initializeFeeDistributorHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := initializeFeeDistributor(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canDistributeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canDistribute(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func distributeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := distribute(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

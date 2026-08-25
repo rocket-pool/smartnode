@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -344,4 +346,110 @@ func getEffectiveDelegate(c *cli.Command, minipoolAddress common.Address) (*api.
 	response.Address = address
 	return &response, nil
 
+}
+
+func canDelegateUpgradeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canDelegateUpgrade(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func delegateUpgradeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := delegateUpgrade(c, addr, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canSetUseLatestDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canSetUseLatestDelegate(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setUseLatestDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setUseLatestDelegate(c, addr, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getUseLatestDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getUseLatestDelegate(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getDelegate(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getEffectiveDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getEffectiveDelegate(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getPreviousDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getPreviousDelegate(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
 }

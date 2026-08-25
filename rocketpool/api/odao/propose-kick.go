@@ -3,6 +3,7 @@ package odao
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -140,4 +142,33 @@ func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *bi
 	// Return response
 	return &response, nil
 
+}
+
+func canProposeKickHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, fine, err := parseKickParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeKick(c, addr, fine)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeKickHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, fine, err := parseKickParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeKick(c, addr, fine, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

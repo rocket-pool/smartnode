@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -129,4 +131,34 @@ func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeReplaceMemberOfSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		existing := common.HexToAddress(paramVal(r, "existingAddress"))
+		newID := paramVal(r, "newId")
+		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
+		resp, err := canProposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeReplaceMemberOfSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		existing := common.HexToAddress(paramVal(r, "existingAddress"))
+		newID := paramVal(r, "newId")
+		newAddr := common.HexToAddress(paramVal(r, "newAddress"))
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeReplaceMemberOfSecurityCouncil(c, existing, newID, newAddr, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

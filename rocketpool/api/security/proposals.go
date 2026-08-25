@@ -1,9 +1,12 @@
 package security
 
 import (
+	"net/http"
+
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -87,4 +90,23 @@ func getProposal(c *cli.Command, id uint64) (*api.SecurityProposalResponse, erro
 	// Return response
 	return &response, nil
 
+}
+
+func proposalsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getProposals(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposalDetailsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUint64(r, "id")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := getProposal(c, id)
+		response.WriteResponse(w, resp, err)
+	}
 }

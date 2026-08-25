@@ -1,11 +1,14 @@
 package pdao
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -104,4 +107,32 @@ func getCurrentVotingDelegate(c *cli.Command) (*api.PDAOCurrentVotingDelegateRes
 	// Return response
 	return &response, nil
 
+}
+
+func estimateSetVotingDelegateGasHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		resp, err := estimateSetVotingDelegateGas(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setVotingDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setVotingDelegate(c, addr, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func getCurrentVotingDelegateHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getCurrentVotingDelegate(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

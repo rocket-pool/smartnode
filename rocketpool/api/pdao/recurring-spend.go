@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -115,4 +117,38 @@ func proposeRecurringSpend(c *cli.Command, contractName string, recipient common
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeRecurringSpendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeRecurringSpendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, customMessage, err := parseRecurringSpendParams(r, false)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, customMessage, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

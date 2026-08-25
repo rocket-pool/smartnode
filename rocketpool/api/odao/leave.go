@@ -1,12 +1,16 @@
 package odao
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -103,4 +107,28 @@ func leave(c *cli.Command, bondRefundAddress common.Address, opts *bind.Transact
 	// Return response
 	return &response, nil
 
+}
+
+func canLeaveHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canLeave(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func leaveHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bondRefundStr := r.FormValue("bondRefundAddress")
+		if bondRefundStr == "" {
+			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: bondRefundAddress"))
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := leave(c, common.HexToAddress(bondRefundStr), opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

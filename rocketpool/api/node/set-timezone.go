@@ -1,6 +1,7 @@
 package node
 
 import (
+	"net/http"
 	_ "time/tzdata" // Load the embedded tz data
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -8,6 +9,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -70,4 +72,25 @@ func setTimezoneLocation(c *cli.Command, timezoneLocation string, opts *bind.Tra
 	// Return response
 	return &response, nil
 
+}
+
+func canSetTimezoneHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tz := r.URL.Query().Get("timezoneLocation")
+		resp, err := canSetTimezoneLocation(c, tz)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setTimezoneHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tz := r.FormValue("timezoneLocation")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setTimezoneLocation(c, tz, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

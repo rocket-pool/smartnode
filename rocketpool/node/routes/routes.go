@@ -26,9 +26,7 @@ import (
 // RegisterRoutes registers all HTTP API routes onto router.
 // Each migration branch adds additional module registrations here.
 func RegisterRoutes(router *snroute.Router, c *cli.Command) {
-	router.Handle(snroute.Open("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
+	snroute.Open("/healthz", healthzHandler).RegisterTo(router)
 
 	apiroutes.RegisterVersionRoute(router)
 	apiroutes.RegisterWaitRoute(router, c)
@@ -47,8 +45,14 @@ func RegisterRoutes(router *snroute.Router, c *cli.Command) {
 	walletroutes.RegisterRoutes(router, c)
 
 	// Catch-all: any path not matched by a specific route gets a JSON 404.
-	router.Handle(snroute.Read("/", func(w http.ResponseWriter, r *http.Request) {
-		response.WriteErrorResponse(w, &response.NotFoundError{Path: r.URL.Path})
-	}))
+	snroute.Read("/", notFoundHandler).RegisterTo(router)
 
+}
+
+func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	response.WriteErrorResponse(w, &response.NotFoundError{Path: r.URL.Path})
 }

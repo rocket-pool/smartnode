@@ -3,9 +3,11 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -28,4 +30,12 @@ func signMessage(c *cli.Command, message string) (*api.NodeSignResponse, error) 
 	// Return response
 	return &response, nil
 
+}
+
+func signMessageHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		message := r.FormValue("message")
+		resp, err := signMessage(c, message)
+		response.WriteResponse(w, resp, err)
+	}
 }

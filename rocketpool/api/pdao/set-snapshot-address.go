@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/eip712"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
@@ -258,4 +260,46 @@ func clearSignallingAddress(c *cli.Command, opts *bind.TransactOpts) (*api.PDAOC
 	// Return response
 	return &response, nil
 
+}
+
+func canSetSignallingAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		sig := paramVal(r, "signature")
+		resp, err := canSetSignallingAddress(c, addr, sig)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func setSignallingAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr := common.HexToAddress(paramVal(r, "address"))
+		sig := paramVal(r, "signature")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setSignallingAddress(c, addr, sig, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canClearSignallingAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canClearSignallingAddress(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func clearSignallingAddressHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := clearSignallingAddress(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

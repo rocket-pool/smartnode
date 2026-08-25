@@ -2,11 +2,13 @@ package network
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -55,4 +57,11 @@ func getRplPrice(c *cli.Command) (*api.RplPriceResponse, error) {
 	response.RplPrice = rplPrice
 	return &response, nil
 
+}
+
+func rplPriceHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getRplPrice(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,6 +14,7 @@ import (
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -329,4 +331,52 @@ func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, opts *bind.Transa
 
 	// Return response
 	return &response, nil
+}
+
+func canWithdrawRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := canNodeWithdrawRpl(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func withdrawRplHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawRpl(c, opts)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func canWithdrawRplV131Handler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canNodeWithdrawRplv1_3_1(c, amountWei)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func withdrawRplV131Handler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		amountWei, err := parseNodeBigInt(r, "amountWei")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawRplv1_3_1(c, amountWei, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

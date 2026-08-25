@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -468,4 +470,29 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 	// Return response
 	return &response, nil
 
+}
+
+func getMinipoolCloseDetailsForNodeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getMinipoolCloseDetailsForNode(c)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func closeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		bundle := r.FormValue("bundle") == "true"
+		resp, err := closeMinipool(c, addr, opts, bundle)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -9,563 +9,63 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
-	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-	"github.com/rocket-pool/smartnode/shared/services"
 )
 
 // RegisterRoutes registers the odao module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router, c *cli.Command) {
-	router.Handle(snroute.Read("/api/odao/status", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStatus(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/members", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMembers(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/proposals", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getProposals(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/proposal-details", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := getProposal(c, id)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-invite", func(w http.ResponseWriter, r *http.Request) {
-		addr, memberId, memberUrl, err := parseInviteParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeInvite(c, addr, memberId, memberUrl)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-invite", func(w http.ResponseWriter, r *http.Request) {
-		addr, memberId, memberUrl, err := parseInviteParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeInvite(c, addr, memberId, memberUrl, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-leave", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canProposeLeave(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-leave", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeLeave(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-kick", func(w http.ResponseWriter, r *http.Request) {
-		addr, fine, err := parseKickParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeKick(c, addr, fine)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-kick", func(w http.ResponseWriter, r *http.Request) {
-		addr, fine, err := parseKickParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeKick(c, addr, fine, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canCancelProposal(c, id)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := cancelProposal(c, id, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canVoteOnProposal(c, id)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		supportStr := r.FormValue("support")
-		support := supportStr == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := voteOnProposal(c, id, support, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExecuteProposal(c, id)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
-		id, err := parseUint64(r, "id")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := executeProposal(c, id, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-join", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canJoin(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/join-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := approveRpl(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/join", func(w http.ResponseWriter, r *http.Request) {
-		hashStr := r.FormValue("approvalTxHash")
-		if hashStr == "" {
-			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: approvalTxHash"))
-			return
-		}
-		hash := common.HexToHash(hashStr)
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := waitForApprovalAndJoin(c, hash, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-leave", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canLeave(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/leave", func(w http.ResponseWriter, r *http.Request) {
-		bondRefundStr := r.FormValue("bondRefundAddress")
-		if bondRefundStr == "" {
-			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: bondRefundAddress"))
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := leave(c, common.HexToAddress(bondRefundStr), opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/get-member-settings", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMemberSettings(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/get-proposal-settings", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getProposalSettings(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/get-minipool-settings", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getMinipoolSettings(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
-		megapool, block, amount, err := parsePenaliseParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canPenaliseMegapool(c, megapool, block, amount)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
-		megapool, block, amount, err := parsePenaliseParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := penaliseMegapool(c, megapool, block, amount, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/odao/status", statusHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/members", membersHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/proposals", proposalsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/proposal-details", proposalDetailsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-invite", canProposeInviteHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-invite", proposeInviteHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-leave", canProposeLeaveHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-leave", proposeLeaveHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-kick", canProposeKickHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-kick", proposeKickHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-cancel-proposal", canCancelProposalHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/cancel-proposal", cancelProposalHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-vote-proposal", canVoteProposalHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/vote-proposal", voteProposalHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-execute-proposal", canExecuteProposalHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/execute-proposal", executeProposalHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-join", canJoinHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/join-approve-rpl", joinApproveRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/join", joinHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-leave", canLeaveHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/leave", leaveHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/get-member-settings", getMemberSettingsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/get-proposal-settings", getProposalSettingsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/get-minipool-settings", getMinipoolSettingsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-penalise-megapool", canPenaliseMegapoolHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/penalise-megapool", penaliseMegapoolHandler(c)).RegisterTo(router)
 
 	// propose-settings endpoints
-	router.Handle(snroute.Read("/api/odao/can-propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
-		quorum, err := parseFloat64(r, "quorum")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingMembersQuorum(c, quorum)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
-		quorum, err := parseFloat64(r, "quorum")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingMembersQuorum(c, quorum, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
-		bond, err := parseBigInt(r, "bondAmountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingMembersRplBond(c, bond)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
-		bond, err := parseBigInt(r, "bondAmountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingMembersRplBond(c, bond, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingProposalCooldown(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingProposalCooldown(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingProposalVoteTimespan(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingProposalVoteTimespan(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingProposalVoteDelayTimespan(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingProposalVoteDelayTimespan(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingProposalExecuteTimespan(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingProposalExecuteTimespan(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingProposalActionTimespan(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingProposalActionTimespan(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingScrubPeriod(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingScrubPeriod(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingPromotionScrubPeriod(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingPromotionScrubPeriod(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
-		enabledStr := r.URL.Query().Get("enabled")
-		resp, err := canProposeSettingScrubPenaltyEnabled(c, enabledStr == "true")
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
-		enabledStr := r.FormValue("enabled")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingScrubPenaltyEnabled(c, enabledStr == "true", opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingBondReductionWindowStart(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingBondReductionWindowStart(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/odao/can-propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canProposeSettingBondReductionWindowLength(c, val)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/odao/propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
-		val, err := parseUint64(r, "value")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := proposeSettingBondReductionWindowLength(c, val, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/odao/can-propose-members-quorum", canProposeMembersQuorumHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-members-quorum", proposeMembersQuorumHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-members-rplbond", canProposeMembersRplbondHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-members-rplbond", proposeMembersRplbondHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-proposal-cooldown", canProposeProposalCooldownHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-proposal-cooldown", proposeProposalCooldownHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-proposal-vote-timespan", canProposeProposalVoteTimespanHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-proposal-vote-timespan", proposeProposalVoteTimespanHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-proposal-vote-delay-timespan", canProposeProposalVoteDelayTimespanHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-proposal-vote-delay-timespan", proposeProposalVoteDelayTimespanHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-proposal-execute-timespan", canProposeProposalExecuteTimespanHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-proposal-execute-timespan", proposeProposalExecuteTimespanHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-proposal-action-timespan", canProposeProposalActionTimespanHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-proposal-action-timespan", proposeProposalActionTimespanHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-scrub-period", canProposeScrubPeriodHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-scrub-period", proposeScrubPeriodHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-promotion-scrub-period", canProposePromotionScrubPeriodHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-promotion-scrub-period", proposePromotionScrubPeriodHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-scrub-penalty-enabled", canProposeScrubPenaltyEnabledHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-scrub-penalty-enabled", proposeScrubPenaltyEnabledHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-bond-reduction-window-start", canProposeBondReductionWindowStartHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-bond-reduction-window-start", proposeBondReductionWindowStartHandler(c)).RegisterTo(router)
+	snroute.Read("/api/odao/can-propose-bond-reduction-window-length", canProposeBondReductionWindowLengthHandler(c)).RegisterTo(router)
+	snroute.Write("/api/odao/propose-bond-reduction-window-length", proposeBondReductionWindowLengthHandler(c)).RegisterTo(router)
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

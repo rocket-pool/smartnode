@@ -1,12 +1,14 @@
 package pdao
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -561,4 +563,11 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	// Return response
 	return &response, nil
+}
+
+func getSettingsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getSettings(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

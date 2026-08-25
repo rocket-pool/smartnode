@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -13,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -1859,4 +1861,34 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeSettingHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		contract := paramVal(r, "contract")
+		setting := paramVal(r, "setting")
+		value := paramVal(r, "value")
+		resp, err := canProposeSetting(c, contract, setting, value)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeSettingHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		contract := paramVal(r, "contract")
+		setting := paramVal(r, "setting")
+		value := paramVal(r, "value")
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSetting(c, contract, setting, value, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

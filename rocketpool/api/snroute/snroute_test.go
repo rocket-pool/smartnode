@@ -85,6 +85,32 @@ func TestRouterAuth(t *testing.T) {
 	})
 }
 
+func TestRegisterTo(t *testing.T) {
+	ok := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	r := NewRouter("token", true)
+	Open("/healthz", ok).RegisterTo(r)
+	Read("/api/version", ok).RegisterTo(r)
+	Write("/api/node/send", ok).RegisterTo(r)
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("open status %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/version", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("read status %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/node/send", nil))
+	assertUnauthorized(t, rec)
+}
+
 func assertUnauthorized(t *testing.T, rec *httptest.ResponseRecorder) {
 	t.Helper()
 	if rec.Code != http.StatusUnauthorized {

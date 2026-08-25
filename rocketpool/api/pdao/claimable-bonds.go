@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/urfave/cli/v3"
 
@@ -278,4 +280,11 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 		}
 	}
 	return false
+}
+
+func getClaimableBondsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getClaimableBonds(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

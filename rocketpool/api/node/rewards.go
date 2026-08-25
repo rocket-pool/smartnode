@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,6 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	mpApi "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -502,4 +504,11 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func rewardsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getRewards(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

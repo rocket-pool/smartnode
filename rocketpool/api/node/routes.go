@@ -7,864 +7,167 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-
-	"github.com/rocket-pool/smartnode/shared/services"
 )
 
 // RegisterRoutes registers the node module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router, c *cli.Command) {
-	router.Handle(snroute.Read("/api/node/status", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getStatus(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/alerts", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getAlerts(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/sync", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getSyncProgress(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/get-eth-balance", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getNodeEthBalance(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/check-collateral", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := checkCollateral(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/rewards", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getRewards(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/deposit-contract-info", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getDepositContractInfo(c)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/status", statusHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/alerts", alertsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/sync", syncHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-eth-balance", getEthBalanceHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/check-collateral", checkCollateralHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/rewards", rewardsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/deposit-contract-info", depositContractInfoHandler(c)).RegisterTo(router)
 
 	// --- Register ---
 
-	router.Handle(snroute.Read("/api/node/can-register", func(w http.ResponseWriter, r *http.Request) {
-		tz := r.URL.Query().Get("timezoneLocation")
-		resp, err := canRegisterNode(c, tz)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/register", func(w http.ResponseWriter, r *http.Request) {
-		tz := r.FormValue("timezoneLocation")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := registerNode(c, tz, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-register", canRegisterHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/register", registerHandler(c)).RegisterTo(router)
 
 	// --- Timezone ---
 
-	router.Handle(snroute.Read("/api/node/can-set-timezone", func(w http.ResponseWriter, r *http.Request) {
-		tz := r.URL.Query().Get("timezoneLocation")
-		resp, err := canSetTimezoneLocation(c, tz)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-timezone", func(w http.ResponseWriter, r *http.Request) {
-		tz := r.FormValue("timezoneLocation")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setTimezoneLocation(c, tz, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-set-timezone", canSetTimezoneHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-timezone", setTimezoneHandler(c)).RegisterTo(router)
 
 	// --- Primary withdrawal address ---
 
-	router.Handle(snroute.Read("/api/node/can-set-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.URL.Query().Get("address"))
-		confirm := r.URL.Query().Get("confirm") == "true"
-		resp, err := canSetPrimaryWithdrawalAddress(c, addr, confirm)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.FormValue("address"))
-		confirm := r.FormValue("confirm") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setPrimaryWithdrawalAddress(c, addr, confirm, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-confirm-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canConfirmPrimaryWithdrawalAddress(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/confirm-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := confirmPrimaryWithdrawalAddress(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-set-primary-withdrawal-address", canSetPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-primary-withdrawal-address", setPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-confirm-primary-withdrawal-address", canConfirmPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/confirm-primary-withdrawal-address", confirmPrimaryWithdrawalAddressHandler(c)).RegisterTo(router)
 
 	// --- RPL withdrawal address ---
 
-	router.Handle(snroute.Read("/api/node/can-set-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.URL.Query().Get("address"))
-		confirm := r.URL.Query().Get("confirm") == "true"
-		resp, err := canSetRPLWithdrawalAddress(c, addr, confirm)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.FormValue("address"))
-		confirm := r.FormValue("confirm") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setRPLWithdrawalAddress(c, addr, confirm, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-confirm-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canConfirmRPLWithdrawalAddress(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/confirm-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := confirmRPLWithdrawalAddress(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-set-rpl-withdrawal-address", canSetRplWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-rpl-withdrawal-address", setRplWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-confirm-rpl-withdrawal-address", canConfirmRplWithdrawalAddressHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/confirm-rpl-withdrawal-address", confirmRplWithdrawalAddressHandler(c)).RegisterTo(router)
 
 	// --- Swap RPL ---
 
-	router.Handle(snroute.Read("/api/node/swap-rpl-allowance", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := allowanceFsRpl(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-swap-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeSwapRpl(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/get-swap-rpl-approval-gas", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := getSwapApprovalGas(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/swap-rpl-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := approveFsRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/wait-and-swap-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		hash := common.HexToHash(r.FormValue("approvalTxHash"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := waitForApprovalAndSwapFsRpl(c, amountWei, hash, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/swap-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := swapRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/swap-rpl-allowance", swapRplAllowanceHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-swap-rpl", canSwapRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-swap-rpl-approval-gas", getSwapRplApprovalGasHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/swap-rpl-approve-rpl", swapRplApproveRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/wait-and-swap-rpl", waitAndSwapRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/swap-rpl", swapRplHandler(c)).RegisterTo(router)
 
 	// --- Stake RPL ---
 
-	router.Handle(snroute.Read("/api/node/stake-rpl-allowance", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := allowanceRpl(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-stake-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeStakeRpl(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/get-stake-rpl-approval-gas", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := getStakeApprovalGas(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/stake-rpl-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := approveRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/wait-and-stake-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		hash := common.HexToHash(r.FormValue("approvalTxHash"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := waitForApprovalAndStakeRpl(c, amountWei, hash, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/stake-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := stakeRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/stake-rpl-allowance", stakeRplAllowanceHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-stake-rpl", canStakeRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-stake-rpl-approval-gas", getStakeRplApprovalGasHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/stake-rpl-approve-rpl", stakeRplApproveRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/wait-and-stake-rpl", waitAndStakeRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/stake-rpl", stakeRplHandler(c)).RegisterTo(router)
 
 	// --- RPL locking ---
 
-	router.Handle(snroute.Read("/api/node/can-set-rpl-locking-allowed", func(w http.ResponseWriter, r *http.Request) {
-		allowed := r.URL.Query().Get("allowed") == "true"
-		resp, err := canSetRplLockAllowed(c, allowed)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-rpl-locking-allowed", func(w http.ResponseWriter, r *http.Request) {
-		allowed := r.FormValue("allowed") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setRplLockAllowed(c, allowed, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-set-rpl-locking-allowed", canSetRplLockingAllowedHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-rpl-locking-allowed", setRplLockingAllowedHandler(c)).RegisterTo(router)
 
 	// --- Stake RPL for allowed ---
 
-	router.Handle(snroute.Read("/api/node/can-set-stake-rpl-for-allowed", func(w http.ResponseWriter, r *http.Request) {
-		caller := common.HexToAddress(r.URL.Query().Get("caller"))
-		allowed := r.URL.Query().Get("allowed") == "true"
-		resp, err := canSetStakeRplForAllowed(c, caller, allowed)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-stake-rpl-for-allowed", func(w http.ResponseWriter, r *http.Request) {
-		caller := common.HexToAddress(r.FormValue("caller"))
-		allowed := r.FormValue("allowed") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setStakeRplForAllowed(c, caller, allowed, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-set-stake-rpl-for-allowed", canSetStakeRplForAllowedHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-stake-rpl-for-allowed", setStakeRplForAllowedHandler(c)).RegisterTo(router)
 
 	// --- Withdraw RPL ---
 
-	router.Handle(snroute.Read("/api/node/can-withdraw-rpl", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canNodeWithdrawRpl(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/withdraw-rpl", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeWithdrawRpl(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-unstake-legacy-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeUnstakeLegacyRpl(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/unstake-legacy-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeUnstakeLegacyRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-withdraw-rpl-v131", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeWithdrawRplv1_3_1(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/withdraw-rpl-v131", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeWithdrawRplv1_3_1(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-unstake-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeUnstakeRpl(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/unstake-rpl", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeUnstakeRpl(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-withdraw-rpl", canWithdrawRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-rpl", withdrawRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-unstake-legacy-rpl", canUnstakeLegacyRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/unstake-legacy-rpl", unstakeLegacyRplHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-rpl-v131", canWithdrawRplV131Handler(c)).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-rpl-v131", withdrawRplV131Handler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-unstake-rpl", canUnstakeRplHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/unstake-rpl", unstakeRplHandler(c)).RegisterTo(router)
 
 	// --- Withdraw ETH / credit ---
 
-	router.Handle(snroute.Read("/api/node/can-withdraw-eth", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeWithdrawEth(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/withdraw-eth", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeWithdrawEth(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-withdraw-credit", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeWithdrawCredit(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/withdraw-credit", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeWithdrawCredit(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-withdraw-eth", canWithdrawEthHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-eth", withdrawEthHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-withdraw-credit", canWithdrawCreditHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/withdraw-credit", withdrawCreditHandler(c)).RegisterTo(router)
 
 	// --- Deposit ---
 
-	router.Handle(snroute.Read("/api/node/can-deposit", func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseDepositParams(r, false)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.expressTickets)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/deposit", func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseDepositParams(r, true)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-deposit", canDepositHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/deposit", depositHandler(c)).RegisterTo(router)
 
 	// --- Send / burn ---
 
-	router.Handle(snroute.Read("/api/node/can-send", func(w http.ResponseWriter, r *http.Request) {
-		amountRaw, err := parseNodeFloat64(r, "amountRaw")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.URL.Query().Get("token")
-		to := common.HexToAddress(r.URL.Query().Get("to"))
-		resp, err := canNodeSend(c, amountRaw, token, to)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/send", func(w http.ResponseWriter, r *http.Request) {
-		amountRaw, err := parseNodeFloat64(r, "amountRaw")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.FormValue("token")
-		to := common.HexToAddress(r.FormValue("to"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeSend(c, amountRaw, token, to, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/send-all", func(w http.ResponseWriter, r *http.Request) {
-		token := r.FormValue("token")
-		to := common.HexToAddress(r.FormValue("to"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeSendAllTokens(c, token, to, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-burn", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.URL.Query().Get("token")
-		resp, err := canNodeBurn(c, amountWei, token)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/burn", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseNodeBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		token := r.FormValue("token")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeBurn(c, amountWei, token, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-send", canSendHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/send", sendHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/send-all", sendAllHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-burn", canBurnHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/burn", burnHandler(c)).RegisterTo(router)
 
 	// --- RPL claim ---
 
-	router.Handle(snroute.Read("/api/node/can-claim-rpl-rewards", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canNodeClaimRpl(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/claim-rpl-rewards", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := nodeClaimRpl(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-claim-rpl-rewards", canClaimRplRewardsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/claim-rpl-rewards", claimRplRewardsHandler(c)).RegisterTo(router)
 
 	// --- Fee distributor ---
 
-	router.Handle(snroute.Read("/api/node/is-fee-distributor-initialized", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := isFeeDistributorInitialized(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/get-initialize-fee-distributor-gas", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getInitializeFeeDistributorGas(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/initialize-fee-distributor", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := initializeFeeDistributor(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-distribute", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canDistribute(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/distribute", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := distribute(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/is-fee-distributor-initialized", isFeeDistributorInitializedHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-initialize-fee-distributor-gas", getInitializeFeeDistributorGasHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/initialize-fee-distributor", initializeFeeDistributorHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-distribute", canDistributeHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/distribute", distributeHandler(c)).RegisterTo(router)
 
 	// --- Interval rewards ---
 
-	router.Handle(snroute.Read("/api/node/get-rewards-info", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getRewardsInfo(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-claim-rewards", func(w http.ResponseWriter, r *http.Request) {
-		indices := r.URL.Query().Get("indices")
-		resp, err := canClaimRewards(c, indices)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/claim-rewards", func(w http.ResponseWriter, r *http.Request) {
-		indices := r.FormValue("indices")
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimRewards(c, indices, opts)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-claim-and-stake-rewards", func(w http.ResponseWriter, r *http.Request) {
-		indices := r.URL.Query().Get("indices")
-		stakeAmount, err := parseNodeBigInt(r, "stakeAmount")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canClaimAndStakeRewards(c, indices, stakeAmount)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/claim-and-stake-rewards", func(w http.ResponseWriter, r *http.Request) {
-		indices := r.FormValue("indices")
-		stakeAmount, err := parseNodeBigInt(r, "stakeAmount")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimAndStakeRewards(c, indices, stakeAmount, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/get-rewards-info", getRewardsInfoHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-rewards", canClaimRewardsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/claim-rewards", claimRewardsHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-claim-and-stake-rewards", canClaimAndStakeRewardsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/claim-and-stake-rewards", claimAndStakeRewardsHandler(c)).RegisterTo(router)
 
 	// --- Smoothing pool ---
 
-	router.Handle(snroute.Read("/api/node/get-smoothing-pool-registration-status", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getSmoothingPoolRegistrationStatus(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-set-smoothing-pool-status", func(w http.ResponseWriter, r *http.Request) {
-		if !r.URL.Query().Has("status") {
-			response.WriteErrorResponse(w, &response.BadRequestError{Err: fmt.Errorf("missing required parameter 'status'")})
-			return
-		}
-		status := r.URL.Query().Get("status") == "true"
-		resp, err := canSetSmoothingPoolStatus(c, status)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/set-smoothing-pool-status", func(w http.ResponseWriter, r *http.Request) {
-		status := r.FormValue("status") == "true"
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setSmoothingPoolStatus(c, status, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/get-smoothing-pool-registration-status", getSmoothingPoolRegistrationStatusHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-set-smoothing-pool-status", canSetSmoothingPoolStatusHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/set-smoothing-pool-status", setSmoothingPoolStatusHandler(c)).RegisterTo(router)
 
 	// --- ENS ---
 
-	router.Handle(snroute.Read("/api/node/resolve-ens-name", func(w http.ResponseWriter, r *http.Request) {
-		name := r.URL.Query().Get("name")
-		resp, err := resolveEnsName(c, name)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/reverse-resolve-ens-name", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := reverseResolveEnsName(c, addr)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/resolve-ens-name", resolveEnsNameHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/reverse-resolve-ens-name", reverseResolveEnsNameHandler(c)).RegisterTo(router)
 
 	// --- Sign ---
 
-	router.Handle(snroute.Write("/api/node/sign-message", func(w http.ResponseWriter, r *http.Request) {
-		message := r.FormValue("message")
-		resp, err := signMessage(c, message)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/sign", func(w http.ResponseWriter, r *http.Request) {
-		serializedTx := r.FormValue("serializedTx")
-		resp, err := sign(c, serializedTx)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Write("/api/node/sign-message", signMessageHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/sign", signHandler(c)).RegisterTo(router)
 
 	// --- Vacant minipool ---
 
-	router.Handle(snroute.Read("/api/node/can-create-vacant-minipool", func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseVacantMinipoolParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canCreateVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/create-vacant-minipool", func(w http.ResponseWriter, r *http.Request) {
-		params, err := parseVacantMinipoolParams(r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := createVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-create-vacant-minipool", canCreateVacantMinipoolHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/create-vacant-minipool", createVacantMinipoolHandler(c)).RegisterTo(router)
 
 	// --- Send message ---
 
-	router.Handle(snroute.Read("/api/node/can-send-message", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.URL.Query().Get("address"))
-		msgBytes, err := hex.DecodeString(r.URL.Query().Get("message"))
-		if err != nil {
-			response.WriteErrorResponse(w, fmt.Errorf("invalid message hex: %w", err))
-			return
-		}
-		resp, err := canSendMessage(c, addr, msgBytes)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/send-message", func(w http.ResponseWriter, r *http.Request) {
-		addr := common.HexToAddress(r.FormValue("address"))
-		msgBytes, err := hex.DecodeString(r.FormValue("message"))
-		if err != nil {
-			response.WriteErrorResponse(w, fmt.Errorf("invalid message hex: %w", err))
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := sendMessage(c, addr, msgBytes, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-send-message", canSendMessageHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/send-message", sendMessageHandler(c)).RegisterTo(router)
 
 	// --- Express tickets ---
 
-	router.Handle(snroute.Read("/api/node/get-express-ticket-count", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getExpressTicketCount(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/get-express-tickets-provisioned", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getExpressTicketsProvisioned(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Read("/api/node/can-provision-express-tickets", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canProvisionExpressTickets(c)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/provision-express-tickets", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := provisionExpressTickets(c, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/get-express-ticket-count", getExpressTicketCountHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/get-express-tickets-provisioned", getExpressTicketsProvisionedHandler(c)).RegisterTo(router)
+	snroute.Read("/api/node/can-provision-express-tickets", canProvisionExpressTicketsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/provision-express-tickets", provisionExpressTicketsHandler(c)).RegisterTo(router)
 
 	// --- Unclaimed rewards ---
 
-	router.Handle(snroute.Read("/api/node/can-claim-unclaimed-rewards", func(w http.ResponseWriter, r *http.Request) {
-		nodeAddr := common.HexToAddress(r.URL.Query().Get("nodeAddress"))
-		resp, err := canClaimUnclaimedRewards(c, nodeAddr)
-		response.WriteResponse(w, resp, err)
-	}))
-
-	router.Handle(snroute.Write("/api/node/claim-unclaimed-rewards", func(w http.ResponseWriter, r *http.Request) {
-		nodeAddr := common.HexToAddress(r.FormValue("nodeAddress"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimUnclaimedRewards(c, nodeAddr, opts)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/can-claim-unclaimed-rewards", canClaimUnclaimedRewardsHandler(c)).RegisterTo(router)
+	snroute.Write("/api/node/claim-unclaimed-rewards", claimUnclaimedRewardsHandler(c)).RegisterTo(router)
 
 	// --- Bond requirement ---
 
-	router.Handle(snroute.Read("/api/node/get-bond-requirement", func(w http.ResponseWriter, r *http.Request) {
-		numValidators, err := strconv.ParseUint(r.URL.Query().Get("numValidators"), 10, 64)
-		if err != nil {
-			response.WriteErrorResponse(w, fmt.Errorf("invalid numValidators: %w", err))
-			return
-		}
-		resp, err := getBondRequirement(c, numValidators)
-		response.WriteResponse(w, resp, err)
-	}))
+	snroute.Read("/api/node/get-bond-requirement", getBondRequirementHandler(c)).RegisterTo(router)
 }
 
 // --- Helper types and functions ---

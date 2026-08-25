@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -131,4 +133,32 @@ func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Ad
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeInviteToSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := paramVal(r, "id")
+		addr := common.HexToAddress(paramVal(r, "address"))
+		resp, err := canProposeInviteToSecurityCouncil(c, id, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeInviteToSecurityCouncilHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := paramVal(r, "id")
+		addr := common.HexToAddress(paramVal(r, "address"))
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeInviteToSecurityCouncil(c, id, addr, blockNumber, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

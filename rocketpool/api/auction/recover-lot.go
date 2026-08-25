@@ -2,12 +2,14 @@ package auction
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -124,4 +126,33 @@ func recoverRplFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts)
 	// Return response
 	return &response, nil
 
+}
+
+func canRecoverLotHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		lotIndex, err := parseLotIndex(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canRecoverRplFromLot(c, lotIndex)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func recoverLotHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		lotIndex, err := parseLotIndex(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := recoverRplFromLot(c, lotIndex, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

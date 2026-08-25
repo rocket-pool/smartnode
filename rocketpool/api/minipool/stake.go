@@ -3,6 +3,7 @@ package minipool
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -233,4 +235,33 @@ func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 	// Return response
 	return &response, nil
 
+}
+
+func canStakeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canStakeMinipool(c, addr)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func stakeHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := stakeMinipool(c, addr, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

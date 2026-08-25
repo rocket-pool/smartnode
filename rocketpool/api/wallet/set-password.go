@@ -2,9 +2,11 @@ package wallet
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -33,4 +35,12 @@ func setPassword(c *cli.Command, password string) (*api.SetPasswordResponse, err
 	// Return response
 	return &response, nil
 
+}
+
+func setPasswordHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		password := r.FormValue("password")
+		resp, err := setPassword(c, password)
+		response.WriteResponse(w, resp, err)
+	}
 }

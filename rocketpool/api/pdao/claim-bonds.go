@@ -1,6 +1,8 @@
 package pdao
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/urfave/cli/v3"
@@ -9,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -132,4 +135,34 @@ func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []ui
 
 	// Return response
 	return &response, nil
+}
+
+func canClaimBondsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		proposalID, indices, err := parseClaimBondsParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canClaimBonds(c, proposalID, indices)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func claimBondsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		proposalID, indices, err := parseClaimBondsParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		isProposer := paramVal(r, "isProposer") == "true"
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimBonds(c, isProposer, proposalID, indices, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }

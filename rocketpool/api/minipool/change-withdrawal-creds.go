@@ -3,6 +3,7 @@ package minipool
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -12,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -225,4 +227,30 @@ func changeWithdrawalCreds(c *cli.Command, minipoolAddress common.Address, mnemo
 
 	// Return response
 	return &response, nil
+}
+
+func canChangeWithdrawalCredsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		mnemonic := r.URL.Query().Get("mnemonic")
+		resp, err := canChangeWithdrawalCreds(c, addr, mnemonic)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func changeWithdrawalCredsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		mnemonic := r.FormValue("mnemonic")
+		resp, err := changeWithdrawalCreds(c, addr, mnemonic)
+		response.WriteResponse(w, resp, err)
+	}
 }

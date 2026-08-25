@@ -3,9 +3,11 @@ package megapool
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -68,4 +70,11 @@ func getLatestBlockWithdrawals(c *cli.Command) (*api.LatestBlockWithdrawalsRespo
 		Withdrawals: block.Withdrawals,
 	}
 	return response, nil
+}
+
+func latestBlockWithdrawalsHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getLatestBlockWithdrawals(c)
+		response.WriteResponse(w, resp, err)
+	}
 }

@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -113,4 +115,38 @@ func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Addr
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeOneTimeSpendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canProposeOneTimeSpend(c, invoiceID, recipient, amount, customMessage)
+		response.WriteResponse(w, resp, err)
+	}
+}
+
+func proposeOneTimeSpendHandler(c *cli.Command) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		invoiceID, recipient, amount, customMessage, err := parseOneTimeSpendParams(r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		blockNumber, err := parseUint32Param(r, "blockNumber")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, customMessage, opts)
+		response.WriteResponse(w, resp, err)
+	}
 }
