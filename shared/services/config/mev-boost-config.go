@@ -37,9 +37,6 @@ type MevBoostConfig struct {
 	// Flashbots relay
 	FlashbotsRelay config.Parameter `yaml:"flashbotsEnabled,omitempty"`
 
-	// bloXroute max profit relay
-	BloxRouteMaxProfitRelay config.Parameter `yaml:"bloxRouteMaxProfitEnabled,omitempty"`
-
 	// bloXroute regulated relay
 	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
 
@@ -146,7 +143,6 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 
 		// Explicit relay params
 		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
-		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[config.MevRelayID_Ultrasound]),
 		UltrasoundFilteredRelay: generateRelayParameter("ultrasoundFilteredEnabled", relayMap[config.MevRelayID_UltrasoundFiltered]),
@@ -228,7 +224,6 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.EnableRegulatedAllMev,
 		&cfg.EnableUnregulatedAllMev,
 		&cfg.FlashbotsRelay,
-		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.UltrasoundRelay,
 		&cfg.UltrasoundFilteredRelay,
@@ -303,7 +298,6 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 
 	case config.MevSelectionMode_Relay:
 		relays = cfg.maybeAddRelay(relays, cfg.FlashbotsRelay, config.MevRelayID_Flashbots, currentNetwork)
-		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteMaxProfitRelay, config.MevRelayID_BloxrouteMaxProfit, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundRelay, config.MevRelayID_Ultrasound, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundFilteredRelay, config.MevRelayID_UltrasoundFiltered, currentNetwork)
@@ -346,24 +340,11 @@ func createDefaultRelays() []config.MevRelay {
 			Regulated: true,
 		},
 
-		// bloXroute Max Profit
-		{
-			ID:          config.MevRelayID_BloxrouteMaxProfit,
-			Name:        "bloXroute Max Profit",
-			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Max Profit\". (Both bloXroute relays propagate the same transactions...)",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
-				config.Network_Testnet: "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
-				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
-			},
-			Regulated: true,
-		},
-
 		// bloXroute Regulated
 		{
 			ID:          config.MevRelayID_BloxrouteRegulated,
 			Name:        "bloXroute Regulated",
-			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Regulated\". (Both bloXroute relays propagate the same transactions...)",
+			Description: "Select this to enable the bloXroute relay.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
 			},

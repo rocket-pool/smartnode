@@ -19,7 +19,6 @@ type CommitBoostConfigPage struct {
 	localItems            []*parameterizedFormItem
 	externalItems         []*parameterizedFormItem
 	flashbotsBox          *parameterizedFormItem
-	bloxrouteMaxProfitBox *parameterizedFormItem
 	bloxrouteRegulatedBox *parameterizedFormItem
 	titanRegionalBox      *parameterizedFormItem
 	ultrasoundFilteredBox *parameterizedFormItem
@@ -78,7 +77,6 @@ func (configPage *CommitBoostConfigPage) createContent() {
 
 	// Relay checkboxes - using CommitBoost's own relay parameters
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.FlashbotsRelay)
-	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.BloxRouteMaxProfitRelay)
 	configPage.bloxrouteRegulatedBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.BloxRouteRegulatedRelay)
 	configPage.titanRegionalBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.TitanRegionalRelay)
 	configPage.ultrasoundFilteredBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.UltrasoundFilteredRelay)
@@ -86,7 +84,7 @@ func (configPage *CommitBoostConfigPage) createContent() {
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.titanRegionalBox, configPage.ultrasoundFilteredBox, configPage.btcsOfacBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteRegulatedBox, configPage.titanRegionalBox, configPage.ultrasoundFilteredBox, configPage.btcsOfacBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -177,8 +175,6 @@ func (configPage *CommitBoostConfigPage) handleSelectionModeChanged() {
 			switch relay.ID {
 			case cfgtypes.MevRelayID_Flashbots:
 				configPage.layout.form.AddFormItem(configPage.flashbotsBox.item)
-			case cfgtypes.MevRelayID_BloxrouteMaxProfit:
-				configPage.layout.form.AddFormItem(configPage.bloxrouteMaxProfitBox.item)
 			case cfgtypes.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
 			case cfgtypes.MevRelayID_TitanRegional:
