@@ -10,27 +10,28 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 )
 
-// RegisterRoutes registers the odao module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
-	mux.HandleFunc("/api/odao/status", func(w http.ResponseWriter, r *http.Request) {
+// RegisterRoutes registers the odao module's HTTP routes onto router.
+func RegisterRoutes(router *snroute.Router, c *cli.Command) {
+	router.Handle(snroute.Read("/api/odao/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/members", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/members", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getMembers(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/proposals", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/proposals", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getProposals(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/proposal-details", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/proposal-details", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -38,9 +39,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := getProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-invite", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-invite", func(w http.ResponseWriter, r *http.Request) {
 		addr, memberId, memberUrl, err := parseInviteParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -48,9 +49,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeInvite(c, addr, memberId, memberUrl)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-invite", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-invite", func(w http.ResponseWriter, r *http.Request) {
 		addr, memberId, memberUrl, err := parseInviteParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -63,14 +64,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeInvite(c, addr, memberId, memberUrl, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-leave", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canProposeLeave(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-leave", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -78,9 +79,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeLeave(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-kick", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-kick", func(w http.ResponseWriter, r *http.Request) {
 		addr, fine, err := parseKickParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -88,9 +89,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeKick(c, addr, fine)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-kick", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-kick", func(w http.ResponseWriter, r *http.Request) {
 		addr, fine, err := parseKickParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -103,9 +104,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeKick(c, addr, fine, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -113,9 +114,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canCancelProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -128,9 +129,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := cancelProposal(c, id, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -138,9 +139,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canVoteOnProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -155,9 +156,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := voteOnProposal(c, id, support, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -165,9 +166,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canExecuteProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -180,14 +181,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := executeProposal(c, id, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-join", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-join", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canJoin(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/join-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/join-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -195,9 +196,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := approveRpl(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/join", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/join", func(w http.ResponseWriter, r *http.Request) {
 		hashStr := r.FormValue("approvalTxHash")
 		if hashStr == "" {
 			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: approvalTxHash"))
@@ -211,14 +212,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := waitForApprovalAndJoin(c, hash, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-leave", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canLeave(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/leave", func(w http.ResponseWriter, r *http.Request) {
 		bondRefundStr := r.FormValue("bondRefundAddress")
 		if bondRefundStr == "" {
 			response.WriteErrorResponse(w, fmt.Errorf("missing required parameter: bondRefundAddress"))
@@ -231,24 +232,24 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := leave(c, common.HexToAddress(bondRefundStr), opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/get-member-settings", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/get-member-settings", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getMemberSettings(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/get-proposal-settings", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/get-proposal-settings", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getProposalSettings(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/get-minipool-settings", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/get-minipool-settings", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getMinipoolSettings(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
 		megapool, block, amount, err := parsePenaliseParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -256,9 +257,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canPenaliseMegapool(c, megapool, block, amount)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/penalise-megapool", func(w http.ResponseWriter, r *http.Request) {
 		megapool, block, amount, err := parsePenaliseParams(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -271,10 +272,10 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := penaliseMegapool(c, megapool, block, amount, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
 	// propose-settings endpoints
-	mux.HandleFunc("/api/odao/can-propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
 		quorum, err := parseFloat64(r, "quorum")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -282,9 +283,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingMembersQuorum(c, quorum)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-members-quorum", func(w http.ResponseWriter, r *http.Request) {
 		quorum, err := parseFloat64(r, "quorum")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -297,9 +298,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingMembersQuorum(c, quorum, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
 		bond, err := parseBigInt(r, "bondAmountWei")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -307,9 +308,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingMembersRplBond(c, bond)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-members-rplbond", func(w http.ResponseWriter, r *http.Request) {
 		bond, err := parseBigInt(r, "bondAmountWei")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -322,9 +323,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingMembersRplBond(c, bond, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -332,9 +333,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingProposalCooldown(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-proposal-cooldown", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -347,9 +348,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingProposalCooldown(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -357,9 +358,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingProposalVoteTimespan(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-proposal-vote-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -372,9 +373,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingProposalVoteTimespan(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -382,9 +383,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingProposalVoteDelayTimespan(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-proposal-vote-delay-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -397,9 +398,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingProposalVoteDelayTimespan(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -407,9 +408,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingProposalExecuteTimespan(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-proposal-execute-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -422,9 +423,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingProposalExecuteTimespan(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -432,9 +433,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingProposalActionTimespan(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-proposal-action-timespan", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -447,9 +448,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingProposalActionTimespan(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -457,9 +458,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingScrubPeriod(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-scrub-period", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -472,9 +473,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingScrubPeriod(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -482,9 +483,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingPromotionScrubPeriod(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-promotion-scrub-period", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -497,15 +498,15 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingPromotionScrubPeriod(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
 		enabledStr := r.URL.Query().Get("enabled")
 		resp, err := canProposeSettingScrubPenaltyEnabled(c, enabledStr == "true")
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
 		enabledStr := r.FormValue("enabled")
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
@@ -514,9 +515,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingScrubPenaltyEnabled(c, enabledStr == "true", opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -524,9 +525,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingBondReductionWindowStart(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-bond-reduction-window-start", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -539,9 +540,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingBondReductionWindowStart(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/can-propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/odao/can-propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -549,9 +550,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canProposeSettingBondReductionWindowLength(c, val)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/odao/propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/odao/propose-bond-reduction-window-length", func(w http.ResponseWriter, r *http.Request) {
 		val, err := parseUint64(r, "value")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -564,7 +565,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSettingBondReductionWindowLength(c, val, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

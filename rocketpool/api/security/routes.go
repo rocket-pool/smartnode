@@ -7,27 +7,28 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 )
 
-// RegisterRoutes registers the security module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
-	mux.HandleFunc("/api/security/status", func(w http.ResponseWriter, r *http.Request) {
+// RegisterRoutes registers the security module's HTTP routes onto router.
+func RegisterRoutes(router *snroute.Router, c *cli.Command) {
+	router.Handle(snroute.Read("/api/security/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/members", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/members", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getMembers(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/proposals", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/proposals", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getProposals(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/proposal-details", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/proposal-details", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -35,14 +36,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := getProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-propose-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-propose-leave", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canProposeLeave(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/propose-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/propose-leave", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -50,17 +51,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeLeave(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-propose-setting", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-propose-setting", func(w http.ResponseWriter, r *http.Request) {
 		contractName := r.URL.Query().Get("contractName")
 		settingName := r.URL.Query().Get("settingName")
 		value := r.URL.Query().Get("value")
 		resp, err := canProposeSetting(c, contractName, settingName, value)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/propose-setting", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/propose-setting", func(w http.ResponseWriter, r *http.Request) {
 		contractName := r.FormValue("contractName")
 		settingName := r.FormValue("settingName")
 		value := r.FormValue("value")
@@ -71,9 +72,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := proposeSetting(c, contractName, settingName, value, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -81,9 +82,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canCancelProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/cancel-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -96,9 +97,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := cancelProposal(c, id, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -106,9 +107,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canVoteOnProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/vote-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -122,9 +123,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := voteOnProposal(c, id, support, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -132,9 +133,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canExecuteProposal(c, id)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/execute-proposal", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUint64(r, "id")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -147,14 +148,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := executeProposal(c, id, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-join", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-join", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canJoin(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/join", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/join", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -162,14 +163,14 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := join(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/can-leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/security/can-leave", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canLeave(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/security/leave", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/security/leave", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -177,7 +178,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := leave(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

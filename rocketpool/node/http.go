@@ -6,20 +6,17 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/node/routes"
-	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
-
-const healthzPath = "/healthz"
 
 // statusRecorder wraps http.ResponseWriter to capture the written status code.
 type statusRecorder struct {
@@ -45,26 +42,6 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
 		log.Printf("%s %s %s %d %s", requestIP(r), r.Method, r.URL.Path, rec.status, time.Since(start))
-	})
-}
-
-func authMiddleware(expectedToken string, sensitiveOnly bool, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == healthzPath {
-			next.ServeHTTP(w, r)
-			return
-		}
-		if sensitiveOnly && !isSensitiveAPIPath(r.URL.Path) {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		if expectedToken == "" || !apitoken.Equal(expectedToken, bearerToken(r)) {
-			w.Header().Set("WWW-Authenticate", "Bearer")
-			response.WriteErrorResponse(w, &response.UnauthorizedError{})
-			return
-		}
-		next.ServeHTTP(w, r)
 	})
 }
 
@@ -126,15 +103,6 @@ func requestIP(r *http.Request) string {
 	return host
 }
 
-func bearerToken(r *http.Request) string {
-	header := r.Header.Get("Authorization")
-	const prefix = "Bearer "
-	if !strings.HasPrefix(header, prefix) {
-		return ""
-	}
-	return strings.TrimSpace(strings.TrimPrefix(header, prefix))
-}
-
 func apiListenHost(cfg *config.RocketPoolConfig, mode cfgtypes.RPCMode) (string, bool) {
 	if cfg.IsNativeMode {
 		switch mode {
@@ -184,10 +152,10 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 	perSecond = float64(v)
 	limiter := newTokenBucket(perSecond)
 
-	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, c)
+	router := snroute.NewRouter(expectedToken, sensitiveOnly)
+	routes.RegisterRoutes(router, c)
 
-	handler := loggingMiddleware(rateLimitMiddleware(limiter, authMiddleware(expectedToken, sensitiveOnly, mux)))
+	handler := loggingMiddleware(rateLimitMiddleware(limiter, router))
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", host, port),

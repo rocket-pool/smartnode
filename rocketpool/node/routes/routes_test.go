@@ -1,10 +1,50 @@
-package node
+package routes
 
-import "testing"
+import (
+	"path"
+	"strings"
+	"testing"
 
-func TestIsSensitiveAPIPath(t *testing.T) {
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
+)
+
+func TestRouteClassification(t *testing.T) {
+	r := snroute.NewRouter("", true)
+	RegisterRoutes(r, nil)
+
+	byPath := map[string]snroute.Route{}
+	var writes int
+	var opens int
+	for _, rt := range r.Routes() {
+		if _, dup := byPath[rt.Path()]; dup {
+			t.Errorf("duplicate route %s", rt.Path())
+		}
+		byPath[rt.Path()] = rt
+		switch rt.(type) {
+		case snroute.WriteRoute:
+			writes++
+			name := path.Base(rt.Path())
+			for _, prefix := range []string{"can-", "get-", "is-", "estimate-", "check-"} {
+				if strings.HasPrefix(name, prefix) {
+					t.Errorf("write route %s starts with %s", rt.Path(), prefix)
+				}
+			}
+		case snroute.OpenRoute:
+			opens++
+		case snroute.ReadRoute:
+		default:
+			t.Errorf("untyped route %s %T", rt.Path(), rt)
+		}
+	}
+
+	if _, ok := byPath["/healthz"].(snroute.OpenRoute); !ok {
+		t.Fatal("/healthz must be Open")
+	}
+	if opens != 1 {
+		t.Errorf("expected 1 Open route, got %d", opens)
+	}
+
 	safe := []string{
-		"/healthz",
 		"/api/version",
 		"/api/wait",
 		"/api/node/status",
@@ -24,12 +64,16 @@ func TestIsSensitiveAPIPath(t *testing.T) {
 		"/api/service/get-gas-price-from-latest-block",
 		"/api/wallet/estimate-gas-set-ens-name",
 		"/api/pdao/estimate-set-voting-delegate-gas",
-		"/api/minipool/can-exit",
 		"/api/megapool/can-exit-validator",
 	}
-	for _, path := range safe {
-		if isSensitiveAPIPath(path) {
-			t.Errorf("%s should not be sensitive", path)
+	for _, p := range safe {
+		rt, ok := byPath[p]
+		if !ok {
+			t.Errorf("missing route %s", p)
+			continue
+		}
+		if _, isWrite := rt.(snroute.WriteRoute); isWrite {
+			t.Errorf("%s should not be Write", p)
 		}
 	}
 
@@ -67,9 +111,18 @@ func TestIsSensitiveAPIPath(t *testing.T) {
 		"/api/security/execute-proposal",
 		"/api/upgrade/execute-upgrade",
 	}
-	for _, path := range sensitive {
-		if !isSensitiveAPIPath(path) {
-			t.Errorf("%s should be sensitive", path)
+	for _, p := range sensitive {
+		rt, ok := byPath[p]
+		if !ok {
+			t.Errorf("missing route %s", p)
+			continue
 		}
+		if _, isWrite := rt.(snroute.WriteRoute); !isWrite {
+			t.Errorf("%s should be Write, got %T", p, rt)
+		}
+	}
+
+	if writes == 0 {
+		t.Fatal("expected write routes")
 	}
 }

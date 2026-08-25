@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -13,25 +14,25 @@ import (
 
 func TestAuthMiddleware(t *testing.T) {
 	const token = "rpsn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	ok := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"success"}`))
-	})
-	mux.HandleFunc("/api/node/status", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	mux.HandleFunc("/api/node/send", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	mux.HandleFunc("/api/wallet/export", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	handler := authMiddleware(token, false, mux)
+	register := func(sensitiveOnly bool) *snroute.Router {
+		r := snroute.NewRouter(token, sensitiveOnly)
+		r.Handle(snroute.Open("/healthz", ok))
+		r.Handle(snroute.Read("/api/version", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"success"}`))
+		}))
+		r.Handle(snroute.Read("/api/node/status", ok))
+		r.Handle(snroute.Write("/api/node/send", ok))
+		r.Handle(snroute.Write("/api/wallet/export", ok))
+		r.Handle(snroute.Write("/api/megapool/exit-validator", ok))
+		return r
+	}
+
+	handler := register(false)
 
 	t.Run("healthz without token", func(t *testing.T) {
 		rec := httptest.NewRecorder()
@@ -90,7 +91,7 @@ func TestAuthMiddleware(t *testing.T) {
 		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
 	})
 
-	sensitiveOnly := authMiddleware(token, true, mux)
+	sensitiveOnly := register(true)
 
 	t.Run("sensitive-only status without token", func(t *testing.T) {
 		rec := httptest.NewRecorder()
@@ -110,9 +111,6 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("sensitive-only exit-validator without token", func(t *testing.T) {
-		mux.HandleFunc("/api/megapool/exit-validator", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/api/megapool/exit-validator?validatorId=0", nil)
 		req.RemoteAddr = "127.0.0.1:54321"

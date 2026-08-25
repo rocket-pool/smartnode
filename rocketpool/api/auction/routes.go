@@ -9,27 +9,28 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 )
 
-// RegisterRoutes registers the auction module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
-	mux.HandleFunc("/api/auction/status", func(w http.ResponseWriter, r *http.Request) {
+// RegisterRoutes registers the auction module's HTTP routes onto router.
+func RegisterRoutes(router *snroute.Router, c *cli.Command) {
+	router.Handle(snroute.Read("/api/auction/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/lots", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/auction/lots", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getLots(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/can-create-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/auction/can-create-lot", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := canCreateLot(c)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/create-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/auction/create-lot", func(w http.ResponseWriter, r *http.Request) {
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -37,9 +38,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := createLot(c, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/can-bid-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/auction/can-bid-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, amountWei, err := parseLotIndexAndAmount(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -47,9 +48,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canBidOnLot(c, lotIndex, amountWei)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/bid-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/auction/bid-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, amountWei, err := parseLotIndexAndAmount(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -62,9 +63,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := bidOnLot(c, lotIndex, amountWei, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/can-claim-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/auction/can-claim-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, err := parseLotIndex(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -72,9 +73,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canClaimFromLot(c, lotIndex)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/claim-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/auction/claim-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, err := parseLotIndex(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -87,9 +88,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := claimFromLot(c, lotIndex, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/can-recover-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/api/auction/can-recover-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, err := parseLotIndex(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -97,9 +98,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := canRecoverRplFromLot(c, lotIndex)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 
-	mux.HandleFunc("/api/auction/recover-lot", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Write("/api/auction/recover-lot", func(w http.ResponseWriter, r *http.Request) {
 		lotIndex, err := parseLotIndex(r)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -112,7 +113,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		resp, err := recoverRplFromLot(c, lotIndex, opts)
 		response.WriteResponse(w, resp, err)
-	})
+	}))
 }
 
 func parseLotIndex(r *http.Request) (uint64, error) {

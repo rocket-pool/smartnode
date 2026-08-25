@@ -18,36 +18,37 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	securityroutes "github.com/rocket-pool/smartnode/rocketpool/api/security"
 	serviceroutes "github.com/rocket-pool/smartnode/rocketpool/api/service"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	upgraderoutes "github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
 	walletroutes "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
 )
 
-// RegisterRoutes registers all HTTP API routes onto mux.
+// RegisterRoutes registers all HTTP API routes onto router.
 // Each migration branch adds additional module registrations here.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+func RegisterRoutes(router *snroute.Router, c *cli.Command) {
+	router.Handle(snroute.Open("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})
+	}))
 
-	apiroutes.RegisterVersionRoute(mux)
-	apiroutes.RegisterWaitRoute(mux, c)
-	auctionroutes.RegisterRoutes(mux, c)
-	debugroutes.RegisterRoutes(mux, c)
-	megapoolroutes.RegisterRoutes(mux, c)
-	minipoolroutes.RegisterRoutes(mux, c)
-	networkroutes.RegisterRoutes(mux, c)
-	noderoutes.RegisterRoutes(mux, c)
-	odaoroutes.RegisterRoutes(mux, c)
-	pdaoroutes.RegisterRoutes(mux, c)
-	queueroutes.RegisterRoutes(mux, c)
-	securityroutes.RegisterRoutes(mux, c)
-	serviceroutes.RegisterRoutes(mux, c)
-	upgraderoutes.RegisterRoutes(mux, c)
-	walletroutes.RegisterRoutes(mux, c)
+	apiroutes.RegisterVersionRoute(router)
+	apiroutes.RegisterWaitRoute(router, c)
+	auctionroutes.RegisterRoutes(router, c)
+	debugroutes.RegisterRoutes(router, c)
+	megapoolroutes.RegisterRoutes(router, c)
+	minipoolroutes.RegisterRoutes(router, c)
+	networkroutes.RegisterRoutes(router, c)
+	noderoutes.RegisterRoutes(router, c)
+	odaoroutes.RegisterRoutes(router, c)
+	pdaoroutes.RegisterRoutes(router, c)
+	queueroutes.RegisterRoutes(router, c)
+	securityroutes.RegisterRoutes(router, c)
+	serviceroutes.RegisterRoutes(router, c)
+	upgraderoutes.RegisterRoutes(router, c)
+	walletroutes.RegisterRoutes(router, c)
 
 	// Catch-all: any path not matched by a specific route gets a JSON 404.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(snroute.Read("/", func(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, &response.NotFoundError{Path: r.URL.Path})
-	})
+	}))
 
 }
