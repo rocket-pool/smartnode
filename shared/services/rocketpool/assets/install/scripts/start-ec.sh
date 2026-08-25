@@ -359,10 +359,6 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --snapsync-server-enabled"
         fi
 
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
-            CMD="$CMD --history-expiry-prune"
-        fi
-
         if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
             CMD="$CMD --snapsync-server-enabled --Xchain-pruning-enabled=ALL --Xchain-pruning-blocks-retained=2628000"
         fi
