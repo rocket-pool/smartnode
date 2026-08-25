@@ -21,6 +21,7 @@ type Parameter struct {
 	CanBeBlank            bool               `yaml:"canBeBlank,omitempty"`
 	OverwriteOnUpgrade    bool               `yaml:"overwriteOnUpgrade,omitempty"`
 	Sensitive             bool               `yaml:"sensitive,omitempty"`
+	SkipUserSettings      bool               `yaml:"-"`
 	Options               []ParameterOption  `yaml:"options,omitempty"`
 	Value                 any                `yaml:"-"`
 	DescriptionsByNetwork map[Network]string `yaml:"-"`
@@ -58,7 +59,7 @@ func (param *Parameter) ChangeNetwork(oldNetwork Network, newNetwork Network) {
 
 // Serializes the parameter's value into a string
 func (param *Parameter) Serialize(serializedParams map[string]string) {
-	if param.Sensitive {
+	if param.Sensitive || param.SkipUserSettings {
 		return
 	}
 
@@ -77,7 +78,7 @@ func (param *Parameter) Deserialize(serializedParams map[string]string, network 
 	// Update the description, if applicable
 	param.UpdateDescription(network)
 
-	if param.Sensitive {
+	if param.Sensitive || param.SkipUserSettings {
 		return param.SetToDefault(network)
 	}
 

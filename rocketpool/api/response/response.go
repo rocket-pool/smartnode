@@ -29,6 +29,12 @@ type UnauthorizedError struct{}
 
 func (e *UnauthorizedError) Error() string { return "unauthorized" }
 
+// ForbiddenError signals that the caller supplied a token that is not allowed
+// to use this route (for example a read-scoped token on a write route).
+type ForbiddenError struct{}
+
+func (e *ForbiddenError) Error() string { return "forbidden" }
+
 // TooManyRequestsError signals that the caller exceeded the API rate limit.
 type TooManyRequestsError struct{}
 
@@ -77,12 +83,15 @@ func WriteResponse(w http.ResponseWriter, response interface{}, responseError er
 		var br *BadRequestError
 		var nf *NotFoundError
 		var unauth *UnauthorizedError
+		var forbid *ForbiddenError
 		var tooMany *TooManyRequestsError
 		switch {
 		case errors.As(responseError, &br):
 			statusCode = http.StatusBadRequest
 		case errors.As(responseError, &unauth):
 			statusCode = http.StatusUnauthorized
+		case errors.As(responseError, &forbid):
+			statusCode = http.StatusForbidden
 		case errors.As(responseError, &tooMany):
 			statusCode = http.StatusTooManyRequests
 		case errors.As(responseError, &nf):

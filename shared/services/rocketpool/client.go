@@ -211,14 +211,17 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	if cfg != nil {
-		if err := cfg.SyncAPITokenFromDisk(true); err != nil {
+		cfg.IsCLI = true
+		if err := cfg.SyncAPITokenFromDisk(); err != nil {
 			return nil, false, err
 		}
 		return cfg, false, nil
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	return config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != ""), true, nil
+	cfg = config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != "")
+	cfg.IsCLI = true
+	return cfg, true, nil
 }
 
 // Load the backup config
@@ -1345,13 +1348,13 @@ func (c *Client) loadAPIAuth() {
 			return
 		}
 		c.apiURL = fmt.Sprintf("http://127.0.0.1:%d", port)
-		if err := cfg.SyncAPITokenFromDisk(true); err != nil {
+		if err := cfg.SyncAPITokenFromDisk(); err != nil {
 			c.apiAuthErr = err
 			return
 		}
 		token, _ := cfg.Api.APIToken.Value.(string)
 		c.apiToken = token
-		c.apiTokenPath = cfg.Api.GetAPITokenPathInCLI()
+		c.apiTokenPath = cfg.Api.GetAPITokenPath()
 	})
 }
 
@@ -1446,7 +1449,7 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusUnauthorized {
 			if c.apiTokenPath != "" {
-				return nil, fmt.Errorf("API unauthorized: CLI token file %s does not match the node daemon. Point -c at the same config directory the daemon is using, or copy that install's data/api-token", c.apiTokenPath)
+				return nil, fmt.Errorf("API unauthorized: CLI token file %s does not match the node daemon. Point -c at the same config directory the daemon is using, or copy that install's data/api-tokens.json", c.apiTokenPath)
 			}
 			return nil, errors.New("API unauthorized: check the API Token under the API category in `rocketpool service config`")
 		}

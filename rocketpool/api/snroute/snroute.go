@@ -129,9 +129,11 @@ func (r OpenRoute) serve(ctx Context)  { r.handler(ctx) }
 func (r ReadRoute) serve(ctx Context)  { r.handler(ctx) }
 func (r WriteRoute) serve(ctx Context) { r.handler(WriteContext{ctx}) }
 
-func (OpenRoute) RequiresToken(bool) bool               { return false }
-func (ReadRoute) RequiresToken(sensitiveOnly bool) bool { return !sensitiveOnly }
-func (WriteRoute) RequiresToken(bool) bool              { return true }
+func (OpenRoute) RequiresToken(bool) bool { return false }
+func (ReadRoute) RequiresToken(unauthenticatedReads bool) bool {
+	return !unauthenticatedReads
+}
+func (WriteRoute) RequiresToken(bool) bool { return true }
 
 // RegisterTo adds the route to router. Handle remains the primitive that
 // applies auth; this is the one-line registration used in routes.go files.
@@ -141,22 +143,22 @@ func (r WriteRoute) RegisterTo(router *Router) { router.Handle(r) }
 
 // Router registers typed routes and applies per-route bearer auth.
 type Router struct {
-	mux           *http.ServeMux
-	cmd           *cli.Command
-	expectedToken string
-	sensitiveOnly bool
-	routes        []Route
+	mux                  *http.ServeMux
+	cmd                  *cli.Command
+	tokens               []apitoken.Record
+	unauthenticatedReads bool
+	routes               []Route
 }
 
-// NewRouter returns a router that requires a bearer token according to each
-// route's class and the API Token Scope setting. cmd is injected into every
-// request context so handlers are not factories over the CLI command.
-func NewRouter(cmd *cli.Command, expectedToken string, sensitiveOnly bool) *Router {
+// NewRouter returns a router that authenticates against tokens.
+// unauthenticatedReads allows Read routes without a bearer token; Write
+// routes always require a write-scoped token.
+func NewRouter(cmd *cli.Command, tokens []apitoken.Record, unauthenticatedReads bool) *Router {
 	return &Router{
-		mux:           http.NewServeMux(),
-		cmd:           cmd,
-		expectedToken: expectedToken,
-		sensitiveOnly: sensitiveOnly,
+		mux:                  http.NewServeMux(),
+		cmd:                  cmd,
+		tokens:               tokens,
+		unauthenticatedReads: unauthenticatedReads,
 	}
 }
 
@@ -167,8 +169,15 @@ func (r *Router) Handle(rt Route) {
 	var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		rt.serve(Context{Writer: w, Request: req, cmd: r.cmd})
 	})
-	if rt.RequiresToken(r.sensitiveOnly) {
-		h = requireBearer(r.expectedToken, h)
+	switch rt.(type) {
+	case OpenRoute:
+		// never authed
+	case ReadRoute:
+		if !r.unauthenticatedReads {
+			h = requireToken(r.tokens, false, h)
+		}
+	default:
+		h = requireToken(r.tokens, true, h)
 	}
 	r.mux.Handle(rt.Path(), h)
 }
@@ -182,11 +191,16 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(w, req)
 }
 
-func requireBearer(expectedToken string, next http.Handler) http.Handler {
+func requireToken(tokens []apitoken.Record, writeOnly bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if expectedToken == "" || !apitoken.Equal(expectedToken, bearerToken(r)) {
+		rec, ok := (apitoken.File{Tokens: tokens}).Lookup(bearerToken(r))
+		if !ok {
 			w.Header().Set("WWW-Authenticate", "Bearer")
 			response.WriteErrorResponse(w, &response.UnauthorizedError{})
+			return
+		}
+		if writeOnly && rec.Scope != apitoken.ScopeWrite {
+			response.WriteErrorResponse(w, &response.ForbiddenError{})
 			return
 		}
 		next.ServeHTTP(w, r)

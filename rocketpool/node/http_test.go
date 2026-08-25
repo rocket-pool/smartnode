@@ -7,22 +7,44 @@ import (
 	"testing"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
+	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
+const (
+	writeTokenStr = "rpsn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	readTokenStr  = "rpsn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+)
+
+func testRecords(t *testing.T) []apitoken.Record {
+	t.Helper()
+	writeTok, err := apitoken.Parse(writeTokenStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	readTok, err := apitoken.Parse(readTokenStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []apitoken.Record{
+		{Token: writeTok, Comment: "cli", Scope: apitoken.ScopeWrite},
+		{Token: readTok, Comment: "app", Scope: apitoken.ScopeRead},
+	}
+}
+
 func TestAuthMiddleware(t *testing.T) {
-	const token = "rpsn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	ok := func(ctx snroute.Context) {
 		ctx.Writer.WriteHeader(http.StatusOK)
 	}
 	writeOK := func(ctx snroute.WriteContext) {
 		ctx.Writer.WriteHeader(http.StatusOK)
 	}
+	tokens := testRecords(t)
 
-	register := func(sensitiveOnly bool) *snroute.Router {
-		r := snroute.NewRouter(nil, token, sensitiveOnly)
+	register := func(unauthenticatedReads bool) *snroute.Router {
+		r := snroute.NewRouter(nil, tokens, unauthenticatedReads)
 		r.Handle(snroute.Open("/healthz", ok))
 		r.Handle(snroute.Read("/api/version", func(ctx snroute.Context) {
 			ctx.Writer.Header().Set("Content-Type", "application/json")
@@ -56,7 +78,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("wrong scheme", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
-		req.Header.Set("Authorization", "Basic "+token)
+		req.Header.Set("Authorization", "Basic "+writeTokenStr)
 		handler.ServeHTTP(rec, req)
 		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
 	})
@@ -71,15 +93,15 @@ func TestAuthMiddleware(t *testing.T) {
 
 	t.Run("query token ignored", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/api/version?token="+token, nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/version?token="+writeTokenStr, nil)
 		handler.ServeHTTP(rec, req)
 		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
 	})
 
-	t.Run("matching token", func(t *testing.T) {
+	t.Run("matching write token", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Authorization", "Bearer "+writeTokenStr)
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
@@ -94,45 +116,38 @@ func TestAuthMiddleware(t *testing.T) {
 		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
 	})
 
-	sensitiveOnly := register(true)
+	openReads := register(true)
 
-	t.Run("sensitive-only status without token", func(t *testing.T) {
+	t.Run("unauthenticated reads status without token", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/api/node/status", nil)
-		sensitiveOnly.ServeHTTP(rec, req)
+		openReads.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status %d", rec.Code)
 		}
 	})
 
-	t.Run("sensitive-only send without token", func(t *testing.T) {
+	t.Run("unauthenticated reads send without token", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/node/send", nil)
 		req.RemoteAddr = "127.0.0.1:54321"
-		sensitiveOnly.ServeHTTP(rec, req)
+		openReads.ServeHTTP(rec, req)
 		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
 	})
 
-	t.Run("sensitive-only exit-validator without token", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/api/megapool/exit-validator?validatorId=0", nil)
-		req.RemoteAddr = "127.0.0.1:54321"
-		sensitiveOnly.ServeHTTP(rec, req)
-		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
-	})
-
-	t.Run("sensitive-only wallet export without token", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/api/wallet/export", nil)
-		sensitiveOnly.ServeHTTP(rec, req)
-		assertAPIError(t, rec, http.StatusUnauthorized, "unauthorized")
-	})
-
-	t.Run("sensitive-only send with token", func(t *testing.T) {
+	t.Run("read token forbidden on write", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/node/send", nil)
-		req.Header.Set("Authorization", "Bearer "+token)
-		sensitiveOnly.ServeHTTP(rec, req)
+		req.Header.Set("Authorization", "Bearer "+readTokenStr)
+		handler.ServeHTTP(rec, req)
+		assertAPIError(t, rec, http.StatusForbidden, "forbidden")
+	})
+
+	t.Run("write token on send", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/node/send", nil)
+		req.Header.Set("Authorization", "Bearer "+writeTokenStr)
+		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status %d", rec.Code)
 		}

@@ -3,9 +3,11 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mitchellh/go-homedir"
 
+	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -13,9 +15,10 @@ const (
 	apiPortID         string = "apiPort"
 	openApiPortID     string = "openApiPort"
 	apiTokenID        string = "apiToken"
+	tokenCommentID    string = "apiTokenComment"
 	tokenScopeID      string = "tokenScope"
 	rateLimitID       string = "rateLimit"
-	apiTokenFile      string = "api-token"
+	apiTokenFile      string = "api-tokens.json"
 	defaultApiPort    uint16 = 8280
 	defaultOpenPort          = config.RPC_OpenLocalhost
 	defaultTokenScope        = config.APITokenScope_All
@@ -34,14 +37,19 @@ type ApiConfig struct {
 	// How the API port is published
 	OpenApiPort config.Parameter `yaml:"openApiPort,omitempty"`
 
-	// Bearer token (stored in a sidecar file)
+	// Bearer token for the CLI write token (stored in the sidecar JSON file)
 	APIToken config.Parameter `yaml:"-"`
 
-	// Which routes require the bearer token
+	// Comment stored with the CLI write token
+	TokenComment config.Parameter `yaml:"-"`
+
+	// Whether Read routes may be called without a bearer token. Server config, not per individual token
 	TokenScope config.Parameter `yaml:"tokenScope,omitempty"`
 
 	// Maximum requests per second (0 disables the limit)
 	RateLimit config.Parameter `yaml:"rateLimit,omitempty"`
+
+	records []apitoken.Record
 }
 
 func NewApiConfig(cfg *RocketPoolConfig) *ApiConfig {
@@ -78,33 +86,46 @@ func NewApiConfig(cfg *RocketPoolConfig) *ApiConfig {
 		APIToken: config.Parameter{
 			ID:   apiTokenID,
 			Name: "API Token",
-			Description: "Bearer token required by the API according to Token Requirement below. Treat this like a password: copy it to a password manager. " +
+			Description: "Write-scoped bearer token for the rocketpool CLI. Treat this like a password: copy it to a password manager. " +
 				"Clients send `Authorization: Bearer <token>`. The rocketpool CLI on this machine sends it automatically. " +
-				"Clearing the field regenerates a new token on save.",
+				"Clearing the field regenerates a new token on save. Additional tokens can be added in data/api-tokens.json.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 			Sensitive:          true,
+			SkipUserSettings:   true,
+		},
+
+		TokenComment: config.Parameter{
+			ID:                 tokenCommentID,
+			Name:               "API Token Comment",
+			Description:        "A short note stored with this token so you remember why it was created. Not a secret.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: apitoken.CLIComment},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+			SkipUserSettings:   true,
 		},
 
 		TokenScope: config.Parameter{
 			ID:                 tokenScopeID,
-			Name:               "Token Requirement",
-			Description:        "Which API routes require the bearer token. Sensitive endpoints include every route that submits an on-chain or validator-exit transaction, plus wallet operations and similar mutating actions. Status, balances, and gas estimates (can-*) stay open if you choose sensitive-only.",
+			Name:               "Unauthenticated Reads",
+			Description:        "Whether read-only API routes (status, balances, can-* estimates) may be called without a bearer token. Write routes always require a write-scoped token. This does not change the privilege of existing tokens.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultTokenScope},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
-				Name:        "Require token for all endpoints",
-				Description: "Every API request except /healthz must include the bearer token.",
+				Name:        "Require a token for read routes",
+				Description: "Every API request except /healthz must include a valid bearer token. Read-scoped tokens may call read routes; write-scoped tokens may call everything.",
 				Value:       config.APITokenScope_All,
 			}, {
-				Name:        "Require token for sensitive endpoints only",
-				Description: "Only mutating routes need the token: every endpoint that submits a transaction, plus wallet operations, exiting validators, staking, withdrawals, DAO votes, and similar. Read-only status and can-* estimates do not.",
+				Name:        "Allow unauthenticated reads",
+				Description: "Status, balances, and can-* estimates do not require a token. Wallet operations, transactions, and other write routes still need a write-scoped token.",
 				Value:       config.APITokenScope_Sensitive,
 			}},
 		},
@@ -127,6 +148,7 @@ func (cfg *ApiConfig) GetParameters() []*config.Parameter {
 		&cfg.ApiPort,
 		&cfg.OpenApiPort,
 		&cfg.APIToken,
+		&cfg.TokenComment,
 		&cfg.TokenScope,
 		&cfg.RateLimit,
 	}
@@ -136,17 +158,23 @@ func (cfg *ApiConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// GetAPITokenPath is the token file path as seen by the node daemon.
+// Records is the loaded token list used by the HTTP API for auth.
+func (cfg *ApiConfig) Records() []apitoken.Record {
+	return cfg.records
+}
+
+// UnauthenticatedReads reports whether Read routes may be called without a token.
+func (cfg *ApiConfig) UnauthenticatedReads() bool {
+	scope, _ := cfg.TokenScope.Value.(config.APITokenScope)
+	return scope == config.APITokenScope_Sensitive
+}
+
+// GetAPITokenPath is the sidecar JSON file path for this process.
 func (cfg *ApiConfig) GetAPITokenPath() string {
-	if cfg.parent != nil && cfg.parent.IsNativeMode {
+	if cfg.parent != nil && (cfg.parent.IsCLI || cfg.parent.IsNativeMode) {
 		return tokenPath(cfg.parent.Smartnode.DataPath.Value.(string))
 	}
 	return tokenPath(DaemonDataPath)
-}
-
-// GetAPITokenPathInCLI is the token file path as seen by the host CLI / TUI.
-func (cfg *ApiConfig) GetAPITokenPathInCLI() string {
-	return tokenPath(cfg.parent.Smartnode.DataPath.Value.(string))
 }
 
 func tokenPath(dataDir string) string {
@@ -156,4 +184,53 @@ func tokenPath(dataDir string) string {
 		dataDir = expanded
 	}
 	return filepath.Join(dataDir, apiTokenFile)
+}
+
+func (cfg *ApiConfig) applyFile(f apitoken.File) {
+	cfg.records = f.Tokens
+	idx := f.CLIIndex()
+	if idx < 0 {
+		cfg.APIToken.Value = ""
+		return
+	}
+	cfg.APIToken.Value = f.Tokens[idx].Token.String()
+	comment := f.Tokens[idx].Comment
+	if comment == "" {
+		comment = apitoken.CLIComment
+	}
+	cfg.TokenComment.Value = comment
+}
+
+func (cfg *ApiConfig) fileFromForm() (apitoken.File, error) {
+	records := append([]apitoken.Record(nil), cfg.records...)
+	comment, _ := cfg.TokenComment.Value.(string)
+	comment = strings.TrimSpace(comment)
+	if comment == "" {
+		comment = apitoken.CLIComment
+	}
+
+	tokenStr, _ := cfg.APIToken.Value.(string)
+	tokenStr = strings.TrimSpace(tokenStr)
+	var tok apitoken.Token
+	var err error
+	if tokenStr == "" {
+		tok, err = apitoken.Generate()
+		if err != nil {
+			return apitoken.File{}, err
+		}
+	} else {
+		tok, err = apitoken.Parse(tokenStr)
+		if err != nil {
+			return apitoken.File{}, err
+		}
+	}
+
+	cli := apitoken.Record{Token: tok, Comment: comment, Scope: apitoken.ScopeWrite}
+	idx := (apitoken.File{Tokens: records}).CLIIndex()
+	if idx >= 0 {
+		records[idx] = cli
+	} else {
+		records = append([]apitoken.Record{cli}, records...)
+	}
+	return apitoken.File{Tokens: records}, nil
 }

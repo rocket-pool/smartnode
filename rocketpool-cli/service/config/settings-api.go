@@ -44,7 +44,7 @@ func (configPage *ApiConfigPage) initPage(isNative bool) {
 		configPage.homePage,
 		id,
 		"API",
-		"Select this to configure the Smart Node HTTP API, including the listen port, how it is exposed, the bearer token, and the request rate limit.",
+		"Select this to configure the Smart Node HTTP API, including the listen port, how it is exposed, the bearer token, unauthenticated reads, and the request rate limit.",
 		configPage.layout.grid,
 	)
 }
@@ -58,7 +58,8 @@ func (configPage *ApiConfigPage) createContent() {
 	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "API Settings")
 	configPage.layout.setupEscapeReturnHomeHandler(configPage.mainDisplay, configPage.homePage)
 
-	_ = configPage.masterConfig.SyncAPITokenFromDisk(true)
+	configPage.masterConfig.IsCLI = true
+	_ = configPage.masterConfig.SyncAPITokenFromDisk()
 
 	items := createParameterizedFormItems(configPage.masterConfig.Api.GetParameters(), configPage.layout)
 	configPage.layout.mapParameterizedFormItems(items...)

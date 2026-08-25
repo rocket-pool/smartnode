@@ -136,23 +136,19 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 	}
 
 	tokenPath := cfg.Api.GetAPITokenPath()
-	if err := cfg.SyncAPITokenFromDisk(false); err != nil {
+	if err := cfg.SyncAPITokenFromDisk(); err != nil {
 		log.Printf("Warning: could not load API token from %s: %v", tokenPath, err)
 	}
-	expectedToken, _ := cfg.Api.APIToken.Value.(string)
-	if expectedToken == "" {
-		log.Printf("Warning: API token is empty (file %s); authenticated API routes will reject all requests.", tokenPath)
+	if len(cfg.Api.Records()) == 0 {
+		log.Printf("Warning: API token file %s has no tokens; authenticated API routes will reject all requests.", tokenPath)
 	}
-
-	scope, _ := cfg.Api.TokenScope.Value.(cfgtypes.APITokenScope)
-	sensitiveOnly := scope == cfgtypes.APITokenScope_Sensitive
 
 	var perSecond float64
 	v := cfg.Api.RateLimit.Value.(uint16)
 	perSecond = float64(v)
 	limiter := newTokenBucket(perSecond)
 
-	router := snroute.NewRouter(c, expectedToken, sensitiveOnly)
+	router := snroute.NewRouter(c, cfg.Api.Records(), cfg.Api.UnauthenticatedReads())
 	routes.RegisterRoutes(router)
 
 	handler := loggingMiddleware(rateLimitMiddleware(limiter, router))

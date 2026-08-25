@@ -35,7 +35,7 @@ func TestTokenPathExpandsTilde(t *testing.T) {
 	if got[0] == '~' {
 		t.Fatalf("tilde was not expanded: %q", got)
 	}
-	if filepath.Base(got) != "api-token" {
+	if filepath.Base(got) != "api-tokens.json" {
 		t.Fatalf("unexpected token file %q", got)
 	}
 }
@@ -51,9 +51,30 @@ func TestDefaultRateLimit(t *testing.T) {
 func TestSensitiveTokenNotSerialized(t *testing.T) {
 	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
 	cfg.Api.APIToken.Value = "rpsn_secret"
+	cfg.Api.TokenComment.Value = "not in yaml"
 	serialized := cfg.Serialize()
 	if _, exists := serialized["api"]["apiToken"]; exists {
 		t.Fatal("API token must not be written to user-settings.yml")
+	}
+	if _, exists := serialized["api"]["apiTokenComment"]; exists {
+		t.Fatal("API token comment must not be written to user-settings.yml")
+	}
+}
+
+func TestTokenPathUsesCLIFlag(t *testing.T) {
+	cfg := NewRocketPoolConfig("/tmp/rp-cli", false)
+	cfg.IsCLI = true
+	got := cfg.Api.GetAPITokenPath()
+	if filepath.Base(got) != "api-tokens.json" {
+		t.Fatalf("cli path %q", got)
+	}
+	if got == tokenPath(DaemonDataPath) {
+		t.Fatal("CLI should not use the in-container data path")
+	}
+
+	daemon := NewRocketPoolConfig("/tmp/rp-daemon", false)
+	if daemon.Api.GetAPITokenPath() != tokenPath(DaemonDataPath) {
+		t.Fatalf("docker daemon path %q", daemon.Api.GetAPITokenPath())
 	}
 }
 

@@ -64,6 +64,9 @@ type RocketPoolConfig struct {
 
 	IsNativeMode bool `yaml:"-"`
 
+	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
+	IsCLI bool `yaml:"-"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -1383,22 +1386,17 @@ func (cfg *RocketPoolConfig) GetNodeOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
-// SyncAPITokenFromDisk loads the API token from the sidecar file, creating one
-// if needed. forCLI selects the host data-dir path; the daemon uses the
-// in-container path.
-func (cfg *RocketPoolConfig) SyncAPITokenFromDisk(forCLI bool) error {
+// SyncAPITokenFromDisk loads the API token sidecar file, creating a CLI write
+// token if needed. Path selection uses IsCLI and IsNativeMode.
+func (cfg *RocketPoolConfig) SyncAPITokenFromDisk() error {
 	if cfg.Api == nil {
 		return nil
 	}
-	path := cfg.Api.GetAPITokenPath()
-	if forCLI {
-		path = cfg.Api.GetAPITokenPathInCLI()
-	}
-	token, err := apitoken.EnsureFile(path)
+	f, err := apitoken.EnsureFile(cfg.Api.GetAPITokenPath())
 	if err != nil {
 		return err
 	}
-	cfg.Api.APIToken.Value = token
+	cfg.Api.applyFile(f)
 	return nil
 }
 
@@ -1406,18 +1404,15 @@ func (cfg *RocketPoolConfig) persistAPIToken() error {
 	if cfg.Api == nil {
 		return nil
 	}
-	path := cfg.Api.GetAPITokenPathInCLI()
-	token, _ := cfg.Api.APIToken.Value.(string)
-	token = strings.TrimSpace(token)
-	if token == "" {
-		generated, err := apitoken.EnsureFile(path)
-		if err != nil {
-			return err
-		}
-		cfg.Api.APIToken.Value = generated
-		return nil
+	f, err := cfg.Api.fileFromForm()
+	if err != nil {
+		return err
 	}
-	return apitoken.WriteFile(path, token)
+	if err := apitoken.WriteFile(cfg.Api.GetAPITokenPath(), f); err != nil {
+		return err
+	}
+	cfg.Api.applyFile(f)
+	return nil
 }
 
 // Gets the stop signal of the ec container
