@@ -3,12 +3,13 @@ package auction
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -99,7 +100,8 @@ func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanB
 
 }
 
-func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, opts *bind.TransactOpts) (*api.BidOnLotResponse, error) {
+func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, t *snroute.TransactOpts) (*api.BidOnLotResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -128,4 +130,29 @@ func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, opts *bind.Tr
 	// Return response
 	return &response, nil
 
+}
+
+func canBidLotHandler(ctx snroute.Context) {
+	lotIndex, amountWei, err := parseLotIndexAndAmount(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canBidOnLot(ctx.Command(), lotIndex, amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func bidLotHandler(ctx snroute.WriteContext) {
+	lotIndex, amountWei, err := parseLotIndexAndAmount(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := bidOnLot(ctx.Command(), lotIndex, amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

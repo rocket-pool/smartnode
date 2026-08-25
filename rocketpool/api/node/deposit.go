@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	"github.com/urfave/cli/v3"
@@ -24,6 +23,8 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -294,7 +295,8 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 
 }
 
-func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, opts *bind.TransactOpts) (*api.NodeDepositsResponse, error) {
+func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, t *snroute.TransactOpts) (*api.NodeDepositsResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -519,4 +521,29 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
 	return err
 
+}
+
+func canDepositHandler(ctx snroute.Context) {
+	params, err := parseDepositParams(ctx.Request, false)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canNodeDeposits(ctx.Command(), params.count, params.amountWei, params.minFee, params.salt, params.expressTickets)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func depositHandler(ctx snroute.WriteContext) {
+	params, err := parseDepositParams(ctx.Request, true)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeDeposits(ctx.Command(), params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

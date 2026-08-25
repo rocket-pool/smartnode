@@ -24,6 +24,8 @@ import (
 
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -573,4 +575,9 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 
 	return eligibleBorrowedEth, eligibleBondedEth, pendingEligibleBorrowedEth, pendingEligibleBondedEth, nil
 
+}
+
+func statusHandler(ctx snroute.Context) {
+	resp, err := getStatus(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -3,13 +3,14 @@ package security
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/security"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -214,7 +215,8 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 
 }
 
-func proposeSetting(c *cli.Command, contractName string, settingName string, value string, opts *bind.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Command, contractName string, settingName string, value string, t *snroute.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -404,4 +406,25 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeSettingHandler(ctx snroute.Context) {
+	contractName := ctx.Request.URL.Query().Get("contractName")
+	settingName := ctx.Request.URL.Query().Get("settingName")
+	value := ctx.Request.URL.Query().Get("value")
+	resp, err := canProposeSetting(ctx.Command(), contractName, settingName, value)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeSettingHandler(ctx snroute.WriteContext) {
+	contractName := ctx.Request.FormValue("contractName")
+	settingName := ctx.Request.FormValue("settingName")
+	value := ctx.Request.FormValue("value")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeSetting(ctx.Command(), contractName, settingName, value, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	rpnode "github.com/rocket-pool/smartnode/bindings/node"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -127,7 +127,9 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -168,4 +170,39 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 
 	// Return response
 	return &response, nil
+}
+
+func getRewardsPercentagesHandler(ctx snroute.Context) {
+	resp, err := getRewardsPercentages(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canProposeRewardsPercentagesHandler(ctx snroute.Context) {
+	node, odaoAmt, pdaoAmt, err := parseRewardPercentages(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canProposeRewardsPercentages(ctx.Command(), node, odaoAmt, pdaoAmt)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeRewardsPercentagesHandler(ctx snroute.WriteContext) {
+	node, odaoAmt, pdaoAmt, err := parseRewardPercentages(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeRewardsPercentages(ctx.Command(), node, odaoAmt, pdaoAmt, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

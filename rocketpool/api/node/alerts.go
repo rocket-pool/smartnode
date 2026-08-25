@@ -3,6 +3,8 @@ package node
 import (
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -34,4 +36,9 @@ func getAlerts(c *cli.Command) (*api.NodeAlertsResponse, error) {
 	}
 
 	return &response, nil
+}
+
+func alertsHandler(ctx snroute.Context) {
+	resp, err := getAlerts(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

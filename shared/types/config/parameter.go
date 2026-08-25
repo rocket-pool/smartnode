@@ -20,6 +20,8 @@ type Parameter struct {
 	AffectsContainers     []ContainerID      `yaml:"affectsContainers,omitempty"`
 	CanBeBlank            bool               `yaml:"canBeBlank,omitempty"`
 	OverwriteOnUpgrade    bool               `yaml:"overwriteOnUpgrade,omitempty"`
+	Sensitive             bool               `yaml:"sensitive,omitempty"`
+	SkipUserSettings      bool               `yaml:"-"`
 	Options               []ParameterOption  `yaml:"options,omitempty"`
 	Value                 any                `yaml:"-"`
 	DescriptionsByNetwork map[Network]string `yaml:"-"`
@@ -57,6 +59,10 @@ func (param *Parameter) ChangeNetwork(oldNetwork Network, newNetwork Network) {
 
 // Serializes the parameter's value into a string
 func (param *Parameter) Serialize(serializedParams map[string]string) {
+	if param.Sensitive || param.SkipUserSettings {
+		return
+	}
+
 	var value string
 	if param.Value == nil {
 		value = ""
@@ -71,6 +77,10 @@ func (param *Parameter) Serialize(serializedParams map[string]string) {
 func (param *Parameter) Deserialize(serializedParams map[string]string, network Network) error {
 	// Update the description, if applicable
 	param.UpdateDescription(network)
+
+	if param.Sensitive || param.SkipUserSettings {
+		return param.SetToDefault(network)
+	}
 
 	value, exists := serializedParams[param.ID]
 	if !exists {

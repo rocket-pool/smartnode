@@ -1,9 +1,8 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -13,10 +12,12 @@ type VersionResponse struct {
 	Version string `json:"version"`
 }
 
-// RegisterVersionRoute registers the /api/version endpoint on mux.
-func RegisterVersionRoute(mux *http.ServeMux) {
-	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		resp := VersionResponse{Version: shared.RocketPoolVersion()}
-		response.WriteResponse(w, &resp, nil)
-	})
+// RegisterVersionRoute registers the /api/version endpoint on router.
+func RegisterVersionRoute(router *snroute.Router) {
+	snroute.Read("/api/version", versionHandler).RegisterTo(router)
+}
+
+func versionHandler(ctx snroute.Context) {
+	resp := VersionResponse{Version: shared.RocketPoolVersion()}
+	response.WriteResponse(ctx.Writer, &resp, nil)
 }

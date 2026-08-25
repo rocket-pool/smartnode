@@ -6,6 +6,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -152,4 +154,24 @@ func exitValidator(c *cli.Command, validatorId uint32) (*api.ExitValidatorRespon
 	// Return response
 	return &response, nil
 
+}
+
+func canExitValidatorHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canExitValidator(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func exitValidatorHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := exitValidator(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

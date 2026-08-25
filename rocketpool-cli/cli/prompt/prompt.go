@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
+
+	"golang.org/x/term"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 )
@@ -30,6 +33,31 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 	// Return user input
 	return scanner.Text()
 
+}
+
+// PromptPassword reads a password from the terminal without echoing it.
+func PromptPassword(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
+	fmt.Println(initialPrompt)
+
+	var input string
+	var init bool
+	for !init || !regexp.MustCompile(expectedFormat).MatchString(input) {
+		if init {
+			fmt.Println("")
+			fmt.Println(incorrectFormatPrompt)
+		} else {
+			init = true
+		}
+
+		if bytes, err := term.ReadPassword(syscall.Stdin); err != nil {
+			fmt.Println(fmt.Errorf("Could not read password: %w", err))
+		} else {
+			input = string(bytes)
+		}
+	}
+	fmt.Println("")
+
+	return input
 }
 
 // Prompt for confirmation

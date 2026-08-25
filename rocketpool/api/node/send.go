@@ -7,13 +7,14 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/erc20"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -206,7 +207,8 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 
 }
 
-func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -308,7 +310,8 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 // the recipient, using the exact *big.Int balance to avoid float64 rounding
 // errors that would cause "transfer amount exceeds balance" failures.
 // ETH is not supported here; use nodeSend with a pre-computed amount instead.
-func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
+func nodeSendAllTokens(c *cli.Command, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -412,4 +415,45 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bi
 	// Return response
 	return &response, nil
 
+}
+
+func canSendHandler(ctx snroute.Context) {
+	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	token := ctx.Request.URL.Query().Get("token")
+	to := common.HexToAddress(ctx.Request.URL.Query().Get("to"))
+	resp, err := canNodeSend(ctx.Command(), amountRaw, token, to)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func sendHandler(ctx snroute.WriteContext) {
+	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	token := ctx.Request.FormValue("token")
+	to := common.HexToAddress(ctx.Request.FormValue("to"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeSend(ctx.Command(), amountRaw, token, to, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func sendAllHandler(ctx snroute.WriteContext) {
+	token := ctx.Request.FormValue("token")
+	to := common.HexToAddress(ctx.Request.FormValue("to"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeSendAllTokens(ctx.Command(), token, to, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

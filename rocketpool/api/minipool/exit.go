@@ -8,6 +8,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -128,4 +130,24 @@ func exitMinipool(c *cli.Command, minipoolAddress common.Address) (*api.ExitMini
 	// Return response
 	return &response, nil
 
+}
+
+func canExitHandler(ctx snroute.Context) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canExitMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func exitHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := exitMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

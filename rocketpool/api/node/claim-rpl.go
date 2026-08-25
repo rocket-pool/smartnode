@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -76,7 +76,8 @@ func canNodeClaimRpl(c *cli.Command) (*api.CanNodeClaimRplResponse, error) {
 	return &response, nil
 }
 
-func nodeClaimRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeClaimRplResponse, error) {
+func nodeClaimRpl(c *cli.Command, t *snroute.TransactOpts) (*api.NodeClaimRplResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -108,4 +109,19 @@ func nodeClaimRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeClaimRplRes
 	// Return response
 	return &response, nil
 
+}
+
+func canClaimRplRewardsHandler(ctx snroute.Context) {
+	resp, err := canNodeClaimRpl(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func claimRplRewardsHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeClaimRpl(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

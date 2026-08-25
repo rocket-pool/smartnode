@@ -44,7 +44,30 @@ func upgradeFromV1210(serializedConfig map[string]map[string]string) error {
 
 	migrateMevBoostMaxProfit(serializedConfig["mevBoost"], network)
 	migrateCommitBoostMaxProfit(serializedConfig["commitBoostConfig"], network)
+	migrateApiPort(serializedConfig)
 	return nil
+}
+
+func migrateApiPort(serializedConfig map[string]map[string]string) {
+	smartnode, exists := serializedConfig["smartnode"]
+	if !exists {
+		return
+	}
+
+	port, exists := smartnode["apiPort"]
+	if !exists || port == "" {
+		return
+	}
+
+	api, exists := serializedConfig["api"]
+	if !exists {
+		api = map[string]string{}
+		serializedConfig["api"] = api
+	}
+	if api["apiPort"] == "" {
+		api["apiPort"] = port
+	}
+	delete(smartnode, "apiPort")
 }
 
 func migrateMevBoostMaxProfit(section map[string]string, network string) {

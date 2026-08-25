@@ -24,6 +24,22 @@ type NotFoundError struct{ Path string }
 
 func (e *NotFoundError) Error() string { return fmt.Sprintf("not found: %s", e.Path) }
 
+// UnauthorizedError signals that the caller did not supply a valid API token.
+type UnauthorizedError struct{}
+
+func (e *UnauthorizedError) Error() string { return "unauthorized" }
+
+// ForbiddenError signals that the caller supplied a token that is not allowed
+// to use this route (for example a read-scoped token on a write route).
+type ForbiddenError struct{}
+
+func (e *ForbiddenError) Error() string { return "forbidden" }
+
+// TooManyRequestsError signals that the caller exceeded the API rate limit.
+type TooManyRequestsError struct{}
+
+func (e *TooManyRequestsError) Error() string { return "too many requests" }
+
 // WriteResponse serialises response as JSON and writes it to w.
 // response must be a pointer to a struct with string fields named Status and Error.
 // On error it writes 400 for BadRequestError and 500 for everything else.
@@ -66,9 +82,18 @@ func WriteResponse(w http.ResponseWriter, response interface{}, responseError er
 	if ef.String() != "" {
 		var br *BadRequestError
 		var nf *NotFoundError
+		var unauth *UnauthorizedError
+		var forbid *ForbiddenError
+		var tooMany *TooManyRequestsError
 		switch {
 		case errors.As(responseError, &br):
 			statusCode = http.StatusBadRequest
+		case errors.As(responseError, &unauth):
+			statusCode = http.StatusUnauthorized
+		case errors.As(responseError, &forbid):
+			statusCode = http.StatusForbidden
+		case errors.As(responseError, &tooMany):
+			statusCode = http.StatusTooManyRequests
 		case errors.As(responseError, &nf):
 			statusCode = http.StatusNotFound
 		default:

@@ -7,6 +7,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -75,4 +77,24 @@ func generateRewardsTree(c *cli.Command, index uint64) (*api.NetworkGenerateRewa
 
 	return &response, nil
 
+}
+
+func canGenerateRewardsTreeHandler(ctx snroute.Context) {
+	index, err := parseUint64Param(ctx.Request, "index")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canGenerateRewardsTree(ctx.Command(), index)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func generateRewardsTreeHandler(ctx snroute.WriteContext) {
+	index, err := parseUint64Param(ctx.Request, "index")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := generateRewardsTree(ctx.Command(), index)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

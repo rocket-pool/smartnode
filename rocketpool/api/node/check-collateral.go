@@ -10,6 +10,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -59,4 +61,9 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 	}
 
 	return
+}
+
+func checkCollateralHandler(ctx snroute.Context) {
+	resp, err := checkCollateral(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

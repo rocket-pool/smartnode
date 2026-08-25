@@ -3,11 +3,12 @@ package auction
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -92,7 +93,8 @@ func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotRespo
 
 }
 
-func claimFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*api.ClaimFromLotResponse, error) {
+func claimFromLot(c *cli.Command, lotIndex uint64, t *snroute.TransactOpts) (*api.ClaimFromLotResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -119,4 +121,29 @@ func claimFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*ap
 	// Return response
 	return &response, nil
 
+}
+
+func canClaimLotHandler(ctx snroute.Context) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canClaimFromLot(ctx.Command(), lotIndex)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func claimLotHandler(ctx snroute.WriteContext) {
+	lotIndex, err := parseLotIndex(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := claimFromLot(ctx.Command(), lotIndex, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

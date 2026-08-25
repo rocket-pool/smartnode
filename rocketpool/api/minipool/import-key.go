@@ -11,6 +11,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -91,4 +93,15 @@ func importKey(c *cli.Command, minipoolAddress common.Address, mnemonic string) 
 
 	// Return response
 	return &response, nil
+}
+
+func importKeyHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	mnemonic := ctx.Request.FormValue("mnemonic")
+	resp, err := importKey(ctx.Command(), addr, mnemonic)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

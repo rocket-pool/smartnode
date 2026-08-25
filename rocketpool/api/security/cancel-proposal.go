@@ -3,14 +3,14 @@ package security
 import (
 	"bytes"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -92,7 +92,8 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCance
 
 }
 
-func cancelProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts) (*api.SecurityCancelProposalResponse, error) {
+func cancelProposal(c *cli.Command, proposalId uint64, t *snroute.TransactOpts) (*api.SecurityCancelProposalResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {
@@ -116,4 +117,29 @@ func cancelProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts) 
 	// Return response
 	return &response, nil
 
+}
+
+func canCancelProposalHandler(ctx snroute.Context) {
+	id, err := parseUint64(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canCancelProposal(ctx.Command(), id)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func cancelProposalHandler(ctx snroute.WriteContext) {
+	id, err := parseUint64(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := cancelProposal(ctx.Command(), id, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

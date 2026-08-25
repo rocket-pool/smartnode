@@ -1,14 +1,14 @@
 package odao
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -111,7 +111,8 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.CanVoteOnTNDAOPr
 
 }
 
-func voteOnProposal(c *cli.Command, proposalId uint64, support bool, opts *bind.TransactOpts) (*api.VoteOnTNDAOProposalResponse, error) {
+func voteOnProposal(c *cli.Command, proposalId uint64, support bool, t *snroute.TransactOpts) (*api.VoteOnTNDAOProposalResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -135,4 +136,31 @@ func voteOnProposal(c *cli.Command, proposalId uint64, support bool, opts *bind.
 	// Return response
 	return &response, nil
 
+}
+
+func canVoteProposalHandler(ctx snroute.Context) {
+	id, err := parseUint64(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canVoteOnProposal(ctx.Command(), id)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func voteProposalHandler(ctx snroute.WriteContext) {
+	id, err := parseUint64(ctx.Request, "id")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	supportStr := ctx.Request.FormValue("support")
+	support := supportStr == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := voteOnProposal(ctx.Command(), id, support, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

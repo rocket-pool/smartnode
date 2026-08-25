@@ -13,6 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -169,4 +171,9 @@ func formatResolvedAddress(c *cli.Command, address common.Address) string {
 		return address.Hex()
 	}
 	return fmt.Sprintf("%s (%s)", name, address.Hex())
+}
+
+func daoProposalsHandler(ctx snroute.Context) {
+	resp, err := getActiveDAOProposals(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

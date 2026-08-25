@@ -126,9 +126,6 @@ type SmartnodeConfig struct {
 	// Delay for automatic queue assignment
 	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
 
-	// Port for the node's HTTP API webserver
-	APIPort config.Parameter `yaml:"apiPort,omitempty"`
-
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -431,17 +428,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: true,
 		},
 
-		APIPort: config.Parameter{
-			ID:                 "apiPort",
-			Name:               "API Port",
-			Description:        "The port your Smartnode's HTTP API server should listen on.",
-			Type:               config.ParameterType_Uint16,
-			Default:            map[config.Network]interface{}{config.Network_All: uint16(8280)},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Devnet:  "",
@@ -674,7 +660,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.ArchiveECUrl,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
-		&cfg.APIPort,
 	}
 }
 

@@ -9,6 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/eip712"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
@@ -108,7 +110,8 @@ func canSetSignallingAddress(c *cli.Command, signallingAddress common.Address, s
 	return &response, nil
 }
 
-func setSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string, opts *bind.TransactOpts) (*api.PDAOSetSignallingAddressResponse, error) {
+func setSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string, t *snroute.TransactOpts) (*api.PDAOSetSignallingAddressResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -229,7 +232,9 @@ func canClearSignallingAddress(c *cli.Command) (*api.PDAOCanClearSignallingAddre
 	return &response, nil
 }
 
-func clearSignallingAddress(c *cli.Command, opts *bind.TransactOpts) (*api.PDAOClearSignallingAddressResponse, error) {
+func clearSignallingAddress(c *cli.Command, t *snroute.TransactOpts) (*api.PDAOClearSignallingAddressResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -258,4 +263,38 @@ func clearSignallingAddress(c *cli.Command, opts *bind.TransactOpts) (*api.PDAOC
 	// Return response
 	return &response, nil
 
+}
+
+func canSetSignallingAddressHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	sig := paramVal(ctx.Request, "signature")
+	resp, err := canSetSignallingAddress(ctx.Command(), addr, sig)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setSignallingAddressHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	sig := paramVal(ctx.Request, "signature")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setSignallingAddress(ctx.Command(), addr, sig, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canClearSignallingAddressHandler(ctx snroute.Context) {
+	resp, err := canClearSignallingAddress(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func clearSignallingAddressHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := clearSignallingAddress(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

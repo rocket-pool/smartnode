@@ -6,6 +6,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -57,4 +59,9 @@ func getStatus(c *cli.Command) (*api.QueueStatusResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func statusHandler(ctx snroute.Context) {
+	resp, err := getStatus(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

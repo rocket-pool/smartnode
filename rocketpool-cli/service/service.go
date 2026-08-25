@@ -257,6 +257,13 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 		return err
 	}
 
+	// Native vs Docker is stored in user-settings.yml. The --daemon-path flag is
+	// the historical CLI hint, but a native install opened without -d must not
+	// take the Docker restart path (e.g. rocketpool3_node).
+	if cfg != nil && cfg.IsNativeMode {
+		isNative = true
+	}
+
 	isUpdate := !isNew && oldCfg != nil
 
 	app := tview.NewApplication()

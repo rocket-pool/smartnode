@@ -1,13 +1,13 @@
 package node
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -84,7 +84,8 @@ func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterN
 
 }
 
-func registerNode(c *cli.Command, timezoneLocation string, opts *bind.TransactOpts) (*api.RegisterNodeResponse, error) {
+func registerNode(c *cli.Command, timezoneLocation string, t *snroute.TransactOpts) (*api.RegisterNodeResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -111,4 +112,21 @@ func registerNode(c *cli.Command, timezoneLocation string, opts *bind.TransactOp
 	// Return response
 	return &response, nil
 
+}
+
+func canRegisterHandler(ctx snroute.Context) {
+	tz := ctx.Request.URL.Query().Get("timezoneLocation")
+	resp, err := canRegisterNode(ctx.Command(), tz)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func registerHandler(ctx snroute.WriteContext) {
+	tz := ctx.Request.FormValue("timezoneLocation")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := registerNode(ctx.Command(), tz, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

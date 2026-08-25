@@ -7,6 +7,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -72,4 +74,9 @@ func terminateDataFolder(c *cli.Command) (*api.TerminateDataFolderResponse, erro
 	// Return response
 	return &response, nil
 
+}
+
+func terminateDataFolderHandler(ctx snroute.WriteContext) {
+	resp, err := terminateDataFolder(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

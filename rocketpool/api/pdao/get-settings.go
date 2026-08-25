@@ -7,6 +7,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -561,4 +563,9 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	// Return response
 	return &response, nil
+}
+
+func getSettingsHandler(ctx snroute.Context) {
+	resp, err := getSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

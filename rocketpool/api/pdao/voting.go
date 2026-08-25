@@ -1,11 +1,12 @@
 package pdao
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -46,7 +47,8 @@ func estimateSetVotingDelegateGas(c *cli.Command, address common.Address) (*api.
 
 }
 
-func setVotingDelegate(c *cli.Command, address common.Address, opts *bind.TransactOpts) (*api.PDAOSetVotingDelegateResponse, error) {
+func setVotingDelegate(c *cli.Command, address common.Address, t *snroute.TransactOpts) (*api.PDAOSetVotingDelegateResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -104,4 +106,26 @@ func getCurrentVotingDelegate(c *cli.Command) (*api.PDAOCurrentVotingDelegateRes
 	// Return response
 	return &response, nil
 
+}
+
+func estimateSetVotingDelegateGasHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	resp, err := estimateSetVotingDelegateGas(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setVotingDelegateHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setVotingDelegate(ctx.Command(), addr, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func getCurrentVotingDelegateHandler(ctx snroute.Context) {
+	resp, err := getCurrentVotingDelegate(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -18,6 +17,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -239,7 +240,8 @@ func canClaimRewards(c *cli.Command, indicesString string) (*api.CanNodeClaimRew
 	return &response, nil
 }
 
-func claimRewards(c *cli.Command, indicesString string, opts *bind.TransactOpts) (*api.NodeClaimRewardsResponse, error) {
+func claimRewards(c *cli.Command, indicesString string, t *snroute.TransactOpts) (*api.NodeClaimRewardsResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -332,7 +334,8 @@ func canClaimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *
 
 }
 
-func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int, opts *bind.TransactOpts) (*api.NodeClaimAndStakeRewardsResponse, error) {
+func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int, t *snroute.TransactOpts) (*api.NodeClaimAndStakeRewardsResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -440,4 +443,53 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	// Return
 	return claims, nil
 
+}
+
+func getRewardsInfoHandler(ctx snroute.Context) {
+	resp, err := getRewardsInfo(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canClaimRewardsHandler(ctx snroute.Context) {
+	indices := ctx.Request.URL.Query().Get("indices")
+	resp, err := canClaimRewards(ctx.Command(), indices)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func claimRewardsHandler(ctx snroute.WriteContext) {
+	indices := ctx.Request.FormValue("indices")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := claimRewards(ctx.Command(), indices, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canClaimAndStakeRewardsHandler(ctx snroute.Context) {
+	indices := ctx.Request.URL.Query().Get("indices")
+	stakeAmount, err := parseNodeBigInt(ctx.Request, "stakeAmount")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canClaimAndStakeRewards(ctx.Command(), indices, stakeAmount)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func claimAndStakeRewardsHandler(ctx snroute.WriteContext) {
+	indices := ctx.Request.FormValue("indices")
+	stakeAmount, err := parseNodeBigInt(ctx.Request, "stakeAmount")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := claimAndStakeRewards(ctx.Command(), indices, stakeAmount, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

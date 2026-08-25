@@ -3,11 +3,12 @@ package megapool
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -50,7 +51,8 @@ func canDelegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Me
 	return &response, nil
 }
 
-func delegateUpgrade(c *cli.Command, megapoolAddress common.Address, opts *bind.TransactOpts) (*api.MegapoolDelegateUpgradeResponse, error) {
+func delegateUpgrade(c *cli.Command, megapoolAddress common.Address, t *snroute.TransactOpts) (*api.MegapoolDelegateUpgradeResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -186,7 +188,9 @@ func canSetUseLatestDelegate(c *cli.Command, useLatest bool) (*api.MegapoolCanSe
 
 }
 
-func setUseLatestDelegate(c *cli.Command, useLatest bool, opts *bind.TransactOpts) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, useLatest bool, t *snroute.TransactOpts) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -320,4 +324,61 @@ func getEffectiveDelegate(c *cli.Command) (*api.MegapoolGetEffectiveDelegateResp
 	// Return response
 	response.Address = address
 	return &response, nil
+}
+
+func getUseLatestDelegateHandler(ctx snroute.Context) {
+	resp, err := getUseLatestDelegate(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canDelegateUpgradeHandler(ctx snroute.Context) {
+	address := common.HexToAddress(ctx.Request.URL.Query().Get("address"))
+	resp, err := canDelegateUpgrade(ctx.Command(), address)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func delegateUpgradeHandler(ctx snroute.WriteContext) {
+	address := common.HexToAddress(ctx.Request.FormValue("address"))
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := delegateUpgrade(ctx.Command(), address, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canSetUseLatestDelegateHandler(ctx snroute.Context) {
+	setLatest, err := parseBool(ctx.Request, "setLatest")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canSetUseLatestDelegate(ctx.Command(), setLatest)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setUseLatestDelegateHandler(ctx snroute.WriteContext) {
+	setting, err := parseBool(ctx.Request, "setting")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setUseLatestDelegate(ctx.Command(), setting, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func getDelegateHandler(ctx snroute.Context) {
+	resp, err := getDelegate(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func getEffectiveDelegateHandler(ctx snroute.Context) {
+	resp, err := getEffectiveDelegate(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

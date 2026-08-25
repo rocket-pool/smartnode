@@ -1,11 +1,13 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -48,7 +50,8 @@ func canSendMessage(c *cli.Command, address common.Address, message []byte) (*ap
 
 }
 
-func sendMessage(c *cli.Command, address common.Address, message []byte, opts *bind.TransactOpts) (*api.NodeSendMessageResponse, error) {
+func sendMessage(c *cli.Command, address common.Address, message []byte, t *snroute.TransactOpts) (*api.NodeSendMessageResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -76,4 +79,31 @@ func sendMessage(c *cli.Command, address common.Address, message []byte, opts *b
 	// Return response
 	return &response, nil
 
+}
+
+func canSendMessageHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(ctx.Request.URL.Query().Get("address"))
+	msgBytes, err := hex.DecodeString(ctx.Request.URL.Query().Get("message"))
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid message hex: %ctx.Writer", err))
+		return
+	}
+	resp, err := canSendMessage(ctx.Command(), addr, msgBytes)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func sendMessageHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(ctx.Request.FormValue("address"))
+	msgBytes, err := hex.DecodeString(ctx.Request.FormValue("message"))
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid message hex: %ctx.Writer", err))
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := sendMessage(ctx.Command(), addr, msgBytes, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

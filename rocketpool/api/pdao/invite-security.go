@@ -3,7 +3,6 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -11,6 +10,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -98,7 +99,9 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -131,4 +134,28 @@ func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Ad
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeInviteToSecurityCouncilHandler(ctx snroute.Context) {
+	id := paramVal(ctx.Request, "id")
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	resp, err := canProposeInviteToSecurityCouncil(ctx.Command(), id, addr)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeInviteToSecurityCouncilHandler(ctx snroute.WriteContext) {
+	id := paramVal(ctx.Request, "id")
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeInviteToSecurityCouncil(ctx.Command(), id, addr, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

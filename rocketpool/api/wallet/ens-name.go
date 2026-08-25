@@ -8,6 +8,8 @@ import (
 	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -17,8 +19,24 @@ const (
 	MaxGasLimit        uint64  = 30000000
 )
 
+func estimateSetEnsNameGas(c *cli.Command, name string) (*api.SetEnsNameResponse, error) {
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+	return setEnsNameWithOpts(c, name, true, opts)
+}
+
 // Set a name to the node wallet's ENS reverse record.
-func setEnsName(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.TransactOpts) (*api.SetEnsNameResponse, error) {
+func setEnsName(c *cli.Command, name string, t *snroute.TransactOpts) (*api.SetEnsNameResponse, error) {
+	return setEnsNameWithOpts(c, name, false, t.Opts())
+}
+
+func setEnsNameWithOpts(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.TransactOpts) (*api.SetEnsNameResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -85,4 +103,24 @@ func setEnsName(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.Tr
 	}
 
 	return &response, nil
+}
+
+func estimateGasSetEnsNameHandler(ctx snroute.Context) {
+	name := ctx.Request.URL.Query().Get("name")
+	if name == "" {
+		name = ctx.Request.FormValue("name")
+	}
+	resp, err := estimateSetEnsNameGas(ctx.Command(), name)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setEnsNameHandler(ctx snroute.WriteContext) {
+	name := ctx.Request.FormValue("name")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setEnsName(ctx.Command(), name, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

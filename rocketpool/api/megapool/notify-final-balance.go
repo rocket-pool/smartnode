@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -139,7 +140,8 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 
 }
 
-func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64, opts *bind.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64, t *snroute.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -260,4 +262,39 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 	// Return response
 	return &response, nil
 
+}
+
+func canNotifyFinalBalanceHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	slot, err := parseUint64(ctx.Request, "slot")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canNotifyFinalBalance(ctx.Command(), validatorId, slot)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func notifyFinalBalanceHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	slot, err := parseUint64(ctx.Request, "slot")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := notifyFinalBalance(ctx.Command(), validatorId, slot, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -13,6 +12,8 @@ import (
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -129,7 +130,8 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 
 }
 
-func nodeWithdrawRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRpl(c *cli.Command, t *snroute.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -295,7 +297,8 @@ func canNodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.CanNodeW
 }
 
 // Used if saturn is not deployed (v1.3.1)
-func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -329,4 +332,44 @@ func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, opts *bind.Transa
 
 	// Return response
 	return &response, nil
+}
+
+func canWithdrawRplHandler(ctx snroute.Context) {
+	resp, err := canNodeWithdrawRpl(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func withdrawRplHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeWithdrawRpl(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canWithdrawRplV131Handler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canNodeWithdrawRplv1_3_1(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func withdrawRplV131Handler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeWithdrawRplv1_3_1(ctx.Command(), amountWei, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

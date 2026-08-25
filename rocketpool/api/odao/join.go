@@ -1,9 +1,9 @@
 package odao
 
 import (
+	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -12,6 +12,8 @@ import (
 	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -118,7 +120,8 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 
 }
 
-func approveRpl(c *cli.Command, opts *bind.TransactOpts) (*api.JoinTNDAOApproveResponse, error) {
+func approveRpl(c *cli.Command, t *snroute.TransactOpts) (*api.JoinTNDAOApproveResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -169,7 +172,8 @@ func approveRpl(c *cli.Command, opts *bind.TransactOpts) (*api.JoinTNDAOApproveR
 
 }
 
-func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, opts *bind.TransactOpts) (*api.JoinTNDAOJoinResponse, error) {
+func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, t *snroute.TransactOpts) (*api.JoinTNDAOJoinResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -200,4 +204,35 @@ func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, opts *bind.Transac
 	// Return response
 	return &response, nil
 
+}
+
+func canJoinHandler(ctx snroute.Context) {
+	resp, err := canJoin(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func joinApproveRplHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := approveRpl(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func joinHandler(ctx snroute.WriteContext) {
+	hashStr := ctx.Request.FormValue("approvalTxHash")
+	if hashStr == "" {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("missing required parameter: approvalTxHash"))
+		return
+	}
+	hash := common.HexToHash(hashStr)
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := waitForApprovalAndJoin(ctx.Command(), hash, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
@@ -63,6 +64,9 @@ type RocketPoolConfig struct {
 
 	IsNativeMode bool `yaml:"-"`
 
+	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
+	IsCLI bool `yaml:"-"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -92,6 +96,9 @@ type RocketPoolConfig struct {
 
 	// The Smart Node configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
+
+	// HTTP API configuration
+	Api *ApiConfig `yaml:"api,omitempty"`
 
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
@@ -257,6 +264,10 @@ func (cfg *RocketPoolConfig) Save(directory, filename string) error {
 	// Just in case the rename didn't overwrite (and preserve the perms of) the original file, set them now.
 	if err := os.Chmod(path, 0664); err != nil {
 		return fmt.Errorf("error updating permissions of %s: %w", path, err)
+	}
+
+	if err := cfg.persistAPIToken(); err != nil {
+		return err
 	}
 
 	return nil
@@ -559,6 +570,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.ConsensusClientMode.Default[config.Network_All] = cfg.ConsensusClientMode.Options[0].Value
 
 	cfg.Smartnode = NewSmartnodeConfig(cfg)
+	cfg.Api = NewApiConfig(cfg)
 	cfg.ExecutionCommon = NewExecutionCommonConfig(cfg)
 	cfg.Geth = NewGethConfig(cfg)
 	cfg.Nethermind = NewNethermindConfig(cfg)
@@ -679,6 +691,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 	return map[string]config.Config{
 		"smartnode":          cfg.Smartnode,
+		"api":                cfg.Api,
 		"executionCommon":    cfg.ExecutionCommon,
 		"geth":               cfg.Geth,
 		"nethermind":         cfg.Nethermind,
@@ -1365,8 +1378,41 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 }
 
 func (cfg *RocketPoolConfig) GetNodeOpenPorts() string {
-	port := cfg.Smartnode.APIPort.Value.(uint16)
-	return fmt.Sprintf("\"127.0.0.1:%d:%d/tcp\"", port, port)
+	portMode, ok := cfg.Api.OpenApiPort.Value.(config.RPCMode)
+	if !ok || !portMode.Open() {
+		return ""
+	}
+	port := cfg.Api.ApiPort.Value.(uint16)
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+}
+
+// SyncAPITokenFromDisk loads the API token sidecar file, creating a CLI write
+// token if needed. Path selection uses IsCLI and IsNativeMode.
+func (cfg *RocketPoolConfig) SyncAPITokenFromDisk() error {
+	if cfg.Api == nil {
+		return nil
+	}
+	f, err := apitoken.EnsureFile(cfg.Api.GetAPITokenPath())
+	if err != nil {
+		return err
+	}
+	cfg.Api.applyFile(f)
+	return nil
+}
+
+func (cfg *RocketPoolConfig) persistAPIToken() error {
+	if cfg.Api == nil {
+		return nil
+	}
+	f, err := cfg.Api.fileFromForm()
+	if err != nil {
+		return err
+	}
+	if err := apitoken.WriteFile(cfg.Api.GetAPITokenPath(), f); err != nil {
+		return err
+	}
+	cfg.Api.applyFile(f)
+	return nil
 }
 
 // Gets the stop signal of the ec container
@@ -1818,6 +1864,9 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
+	if cfg.Api != nil {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Api.ApiPort, errors)
+	}
 	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lighthouse {
 		_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
 	}
@@ -1901,6 +1950,10 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 		oldValString := fmt.Sprint(oldParams[i].Value)
 		newValString := fmt.Sprint(param.Value)
 		if oldValString != newValString {
+			if param.Sensitive {
+				oldValString = maskSensitive(oldValString)
+				newValString = maskSensitive(newValString)
+			}
 			changedSettings = append(changedSettings, config.ChangedSetting{
 				Name:               param.Name,
 				OldValue:           oldValString,
@@ -1911,6 +1964,13 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 	}
 
 	return changedSettings
+}
+
+func maskSensitive(value string) string {
+	if value == "" {
+		return "(empty)"
+	}
+	return "********"
 }
 
 func getAffectedContainers(param *config.Parameter) map[config.ContainerID]bool {

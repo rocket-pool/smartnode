@@ -1,7 +1,7 @@
 package upgrade
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"strconv"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -9,7 +9,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -94,7 +96,8 @@ func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecut
 
 }
 
-func executeUpgrade(c *cli.Command, upgradeProposalId uint64, opts *bind.TransactOpts) (*api.ExecuteTNDAOUpgradeResponse, error) {
+func executeUpgrade(c *cli.Command, upgradeProposalId uint64, t *snroute.TransactOpts) (*api.ExecuteTNDAOUpgradeResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -121,4 +124,29 @@ func executeUpgrade(c *cli.Command, upgradeProposalId uint64, opts *bind.Transac
 	// Return response
 	return &response, nil
 
+}
+
+func canExecuteUpgradeHandler(ctx snroute.Context) {
+	id, err := cliutils.ValidatePositiveUint("upgrade proposal ID", ctx.Request.URL.Query().Get("id"))
+	if err != nil {
+		response.WriteResponse(ctx.Writer, nil, err)
+		return
+	}
+	resp, err := canExecuteUpgrade(ctx.Command(), id)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func executeUpgradeHandler(ctx snroute.WriteContext) {
+	id, err := strconv.ParseUint(ctx.Request.URL.Query().Get("id"), 10, 64)
+	if err != nil {
+		response.WriteResponse(ctx.Writer, nil, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := executeUpgrade(ctx.Command(), id, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }
