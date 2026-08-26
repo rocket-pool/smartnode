@@ -89,10 +89,8 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	var wg errgroup.Group
 	nodeCount := float64(-1)
 	nodeFee := state.NetworkDetails.NodeFee
-	initializedCount := float64(-1)
-	prelaunchCount := float64(-1)
+	totalMinipoolCount := float64(-1)
 	stakingCount := float64(-1)
-	dissolvedCount := float64(-1)
 	finalizedCount := float64(-1)
 
 	// Get total number of Rocket Pool nodes
@@ -108,23 +106,23 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the total number of Rocket Pool minipools
 	wg.Go(func() error {
-		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, nil)
+		totalMinipoolCountUint, err := minipool.GetMinipoolCount(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
 		}
+		totalMinipoolCount = float64(totalMinipoolCountUint)
 
-		initializedCount = float64(minipoolCounts.Initialized.Uint64())
-		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
-		stakingCount = float64(minipoolCounts.Staking.Uint64())
-		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
+		stakingCountUint, err := minipool.GetStakingMinipoolCount(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting number of staking Rocket Pool minipools: %w", err)
+		}
+		stakingCount = float64(stakingCountUint)
 
 		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
 		if err != nil {
-			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+			return fmt.Errorf("Error getting total number of finalized Rocket Pool minipools: %w", err)
 		}
-
 		finalizedCount = float64(finalizedCountUint)
-		stakingCount -= finalizedCount // Remove finalized minipools from the staking count
 		return nil
 	})
 
@@ -134,14 +132,14 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
+	// totalMinipoolCount - stakingCount - finalizedCount = Initialized + Prelaunch + Dissolved
+	// Minipool creation is permanently disabled, so Initialized and Prelaunch are always zero
+	dissolvedCount := totalMinipoolCount - stakingCount - finalizedCount
+
 	channel <- prometheus.MustNewConstMetric(
 		collector.nodeCount, prometheus.GaugeValue, nodeCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.nodeFee, prometheus.GaugeValue, nodeFee)
-	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
-	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
 	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
 	channel <- prometheus.MustNewConstMetric(
@@ -149,13 +147,11 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
 
-	// Set the total and active count
-	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + dissolvedCount + finalizedCount
-	activeMinipoolCount := totalMinipoolCount - finalizedCount
+	activeCount := totalMinipoolCount - finalizedCount
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
+		collector.activeMinipools, prometheus.GaugeValue, activeCount)
 }
 
 // Log error messages
