@@ -3,12 +3,13 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -82,7 +83,9 @@ func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (
 	return &response, nil
 }
 
-func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -115,4 +118,26 @@ func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, bloc
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeKickFromSecurityCouncilHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	resp, err := canProposeKickFromSecurityCouncil(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeKickFromSecurityCouncilHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(paramVal(ctx.Request, "address"))
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeKickFromSecurityCouncil(ctx.Command(), addr, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

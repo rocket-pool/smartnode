@@ -345,6 +345,16 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --p2p-host=$EXTERNAL_IP"
         fi
 
+        if [ "$ENABLE_IPV6" = "true" ]; then
+            CMD="$CMD --discovery-mode=V5 --p2p-ipv6-outbound-enabled --p2p-interface-ipv6=::"
+            if [ ! -z "$EC_P2P_PORT" ]; then
+                CMD="$CMD --p2p-port-ipv6=$EC_P2P_PORT"
+            fi
+            if [ ! -z "$EXTERNAL_IP6" ]; then
+                CMD="$CMD --p2p-host-ipv6=$EXTERNAL_IP6"
+            fi
+        fi
+
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --target-gas-limit=$EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi
@@ -356,11 +366,7 @@ if [ "$CLIENT" = "besu" ]; then
         fi
 
         if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
-            CMD="$CMD --snapsync-synchronizer-pre-checkpoint-headers-only-enabled=false --snapsync-server-enabled"
-        fi
-
-        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
-            CMD="$CMD --history-expiry-prune"
+            CMD="$CMD --snapsync-server-enabled"
         fi
 
         if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
@@ -565,7 +571,7 @@ if [ "$CLIENT" = "erigon" ]; then
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
-        CMD="$CMD --prune.mode=blocks"
+        CMD="$CMD --prune.mode=blocks --prune.include-receipts --prune.receipts.distance=keep-all"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then

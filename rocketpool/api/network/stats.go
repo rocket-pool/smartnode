@@ -14,6 +14,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -259,4 +261,9 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func statsHandler(ctx snroute.Context) {
+	resp, err := getStats(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

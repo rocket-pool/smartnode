@@ -7,6 +7,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -40,4 +42,10 @@ func sign(c *cli.Command, serializedTx string) (*api.NodeSignResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func signHandler(ctx snroute.WriteContext) {
+	serializedTx := ctx.Request.FormValue("serializedTx")
+	resp, err := sign(ctx.Command(), serializedTx)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

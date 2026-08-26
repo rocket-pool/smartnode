@@ -7,6 +7,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -258,4 +260,30 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 
 	// Return response
 	return &response, nil
+}
+
+func statusHandler(ctx snroute.Context) {
+	finalizedState := ctx.Request.URL.Query().Get("finalizedState") == "true"
+	resp, err := getStatus(ctx.Command(), finalizedState)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func validatorMapAndBalancesHandler(ctx snroute.Context) {
+	resp, err := getValidatorMapAndBalances(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func pendingRewardsHandler(ctx snroute.Context) {
+	resp, err := calculatePendingRewards(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func calculateRewardsHandler(ctx snroute.Context) {
+	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := calculateRewards(ctx.Command(), amountWei)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

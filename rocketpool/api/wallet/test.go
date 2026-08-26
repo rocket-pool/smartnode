@@ -2,11 +2,14 @@ package wallet
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -179,4 +182,25 @@ func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, addre
 	// Return response
 	return &response, nil
 
+}
+
+func testRecoverHandler(ctx snroute.Context) {
+	mnemonic := ctx.Request.FormValue("mnemonic")
+	skipRecovery := ctx.Request.FormValue("skipValidatorKeyRecovery") == "true"
+	derivationPath := ctx.Request.FormValue("derivationPath")
+	walletIndex, _ := strconv.ParseUint(ctx.Request.FormValue("walletIndex"), 10, 64)
+	resp, err := withRecoveryLock("wallet test-recovery", func() (*api.RecoverWalletResponse, error) {
+		return testRecoverWalletWithParams(ctx.Command(), mnemonic, skipRecovery, derivationPath, uint(walletIndex))
+	})
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func testSearchAndRecoverHandler(ctx snroute.Context) {
+	mnemonic := ctx.Request.FormValue("mnemonic")
+	address := common.HexToAddress(ctx.Request.FormValue("address"))
+	skipRecovery := ctx.Request.FormValue("skipValidatorKeyRecovery") == "true"
+	resp, err := withRecoveryLock("wallet test-recovery --address", func() (*api.SearchAndRecoverWalletResponse, error) {
+		return testSearchAndRecoverWalletWithParams(ctx.Command(), mnemonic, address, skipRecovery)
+	})
+	response.WriteResponse(ctx.Writer, resp, err)
 }

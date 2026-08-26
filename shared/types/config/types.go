@@ -45,6 +45,16 @@ const (
 	Mode_External Mode = "external"
 )
 
+// APITokenScope controls whether Read routes may be called without a token.
+// Write routes always require a write-scoped token. This is server policy,
+// not the privilege of an individual token.
+type APITokenScope string
+
+const (
+	APITokenScope_All       APITokenScope = "all"       // Read and Write require a token
+	APITokenScope_Sensitive APITokenScope = "sensitive" // unauthenticated reads; Write still requires a write token
+)
+
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
 const (
 	PruningMode_HistoryExpiry        Mode = "historyExpiry"
@@ -106,7 +116,6 @@ const (
 	MevRelayID_Unknown            MevRelayID = ""
 	MevRelayID_Flashbots          MevRelayID = "flashbots"
 	MevRelayID_BloxrouteEthical   MevRelayID = "bloxrouteEthical"
-	MevRelayID_BloxrouteMaxProfit MevRelayID = "bloxrouteMaxProfit"
 	MevRelayID_BloxrouteRegulated MevRelayID = "bloxrouteRegulated"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
 	MevRelayID_UltrasoundFiltered MevRelayID = "ultrasoundFiltered"

@@ -6,372 +6,48 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli/v3"
-
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 )
 
-// RegisterRoutes registers the megapool module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
-	mux.HandleFunc("/api/megapool/status", func(w http.ResponseWriter, r *http.Request) {
-		finalizedState := r.URL.Query().Get("finalizedState") == "true"
-		resp, err := getStatus(c, finalizedState)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/validator-map-and-balances", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getValidatorMapAndBalances(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-claim-refund", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canClaimRefund(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/claim-refund", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := claimRefund(c, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-repay-debt", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canRepayDebt(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/repay-debt", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := repayDebt(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-reduce-bond", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canReduceBond(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/reduce-bond", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := reduceBond(c, amountWei, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-stake", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint64(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canStake(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/stake", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint64(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := stake(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-dissolve-validator", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canDissolveValidator(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/dissolve-validator", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := dissolveValidator(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-dissolve-with-proof", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canDissolveWithProof(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/dissolve-with-proof", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := dissolveWithProof(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-exit-validator", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExitValidator(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/exit-validator", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := exitValidator(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-notify-validator-exit", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNotifyValidatorExit(c, validatorId)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/notify-validator-exit", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := notifyValidatorExit(c, validatorId, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-notify-final-balance", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		slot, err := parseUint64(r, "slot")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canNotifyFinalBalance(c, validatorId, slot)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/notify-final-balance", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		slot, err := parseUint64(r, "slot")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := notifyFinalBalance(c, validatorId, slot, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-exit-queue", func(w http.ResponseWriter, r *http.Request) {
-		validatorIndex, err := parseUint32(r, "validatorIndex")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canExitQueue(c, validatorIndex)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/exit-queue", func(w http.ResponseWriter, r *http.Request) {
-		validatorIndex, err := parseUint32(r, "validatorIndex")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := exitQueue(c, validatorIndex, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-distribute", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := canDistributeMegapool(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/distribute", func(w http.ResponseWriter, r *http.Request) {
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := distributeMegapool(c, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/get-new-validator-bond-requirement", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getNewValidatorBondRequirement(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/pending-rewards", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := calculatePendingRewards(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/calculate-rewards", func(w http.ResponseWriter, r *http.Request) {
-		amountWei, err := parseBigInt(r, "amountWei")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := calculateRewards(c, amountWei)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/get-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getUseLatestDelegate(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-delegate-upgrade", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := canDelegateUpgrade(c, address)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/delegate-upgrade", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.FormValue("address"))
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := delegateUpgrade(c, address, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/can-set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		setLatest, err := parseBool(r, "setLatest")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canSetUseLatestDelegate(c, setLatest)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		setting, err := parseBool(r, "setting")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := setUseLatestDelegate(c, setting, opts)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/get-delegate", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getDelegate(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/get-effective-delegate", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getEffectiveDelegate(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/latest-block-withdrawals", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getLatestBlockWithdrawals(c)
-		response.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/megapool/beacon-withdrawal-queue-estimate", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getBeaconWithdrawalQueueEstimate(c)
-		response.WriteResponse(w, resp, err)
-	})
+// RegisterRoutes registers the megapool module's HTTP routes onto router.
+func RegisterRoutes(router *snroute.Router) {
+	snroute.Read("/api/megapool/status", statusHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/validator-map-and-balances", validatorMapAndBalancesHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-claim-refund", canClaimRefundHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/claim-refund", claimRefundHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-repay-debt", canRepayDebtHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/repay-debt", repayDebtHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-reduce-bond", canReduceBondHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/reduce-bond", reduceBondHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-stake", canStakeHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/stake", stakeHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-dissolve-validator", canDissolveValidatorHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/dissolve-validator", dissolveValidatorHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-dissolve-with-proof", canDissolveWithProofHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/dissolve-with-proof", dissolveWithProofHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-exit-validator", canExitValidatorHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/exit-validator", exitValidatorHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-notify-validator-exit", canNotifyValidatorExitHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/notify-validator-exit", notifyValidatorExitHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-notify-final-balance", canNotifyFinalBalanceHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/notify-final-balance", notifyFinalBalanceHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-exit-queue", canExitQueueHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/exit-queue", exitQueueHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-distribute", canDistributeHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/distribute", distributeHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/get-new-validator-bond-requirement", getNewValidatorBondRequirementHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/pending-rewards", pendingRewardsHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/calculate-rewards", calculateRewardsHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/get-use-latest-delegate", getUseLatestDelegateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-delegate-upgrade", canDelegateUpgradeHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/delegate-upgrade", delegateUpgradeHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-set-use-latest-delegate", canSetUseLatestDelegateHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/set-use-latest-delegate", setUseLatestDelegateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/get-delegate", getDelegateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/get-effective-delegate", getEffectiveDelegateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/latest-block-withdrawals", latestBlockWithdrawalsHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/beacon-withdrawal-queue-estimate", beaconWithdrawalQueueEstimateHandler).RegisterTo(router)
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

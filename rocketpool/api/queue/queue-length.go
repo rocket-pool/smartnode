@@ -6,6 +6,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -61,4 +63,9 @@ func getQueueDetails(c *cli.Command) (*api.GetQueueDetailsResponse, error) {
 	}
 	return &response, nil
 
+}
+
+func getQueueDetailsHandler(ctx snroute.Context) {
+	resp, err := getQueueDetails(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

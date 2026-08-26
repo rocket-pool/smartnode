@@ -39,6 +39,7 @@ const (
 	NetworkPDAOSharePath                               string = "network.pdao.share"
 	NetworkMaxNodeShareSecurityCouncilAdderPath        string = "network.max.node.commission.share.council.adder"
 	NetworkMaxRethBalanceDeltaPath                     string = "network.max.reth.balance.delta"
+	NetworkRethDepositDelaySettingPath                 string = "network.reth.deposit.delay"
 )
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it
@@ -517,6 +518,25 @@ func ProposeMaxRethDelta(rp *rocketpool.RocketPool, value *big.Int, blockNumber 
 }
 func EstimateMaxRethDeltaGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkMaxRethBalanceDeltaPath), NetworkSettingsContractName, NetworkMaxRethBalanceDeltaPath, value, blockNumber, treeNodes, opts)
+}
+
+// The number of blocks that must pass after a deposit before a user's rETH can be transferred
+func GetRethDepositDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getRethDepositDelay"); err != nil {
+		return 0, fmt.Errorf("error getting reth deposit delay: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func ProposeRethDepositDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkRethDepositDelaySettingPath), NetworkSettingsContractName, NetworkRethDepositDelaySettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeRethDepositDelayGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkRethDepositDelaySettingPath), NetworkSettingsContractName, NetworkRethDepositDelaySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

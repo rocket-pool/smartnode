@@ -5,6 +5,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -49,4 +51,14 @@ func downloadRewardsFile(c *cli.Command, interval uint64) (*api.DownloadRewardsF
 
 	// Return response
 	return &response, nil
+}
+
+func downloadRewardsFileHandler(ctx snroute.WriteContext) {
+	interval, err := parseUint64Param(ctx.Request, "interval")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := downloadRewardsFile(ctx.Command(), interval)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

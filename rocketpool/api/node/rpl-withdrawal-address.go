@@ -3,13 +3,14 @@ package node
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -103,7 +104,9 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	return &response, nil
 }
 
-func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
+func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, t *snroute.TransactOpts) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -188,7 +191,9 @@ func canConfirmRPLWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodeRPLWithd
 	return &response, nil
 }
 
-func confirmRPLWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
+func confirmRPLWithdrawalAddress(c *cli.Command, t *snroute.TransactOpts) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -220,4 +225,38 @@ func confirmRPLWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.
 
 	// Return response
 	return &response, nil
+}
+
+func canSetRplWithdrawalAddressHandler(ctx snroute.Context) {
+	addr := common.HexToAddress(ctx.Request.URL.Query().Get("address"))
+	confirm := ctx.Request.URL.Query().Get("confirm") == "true"
+	resp, err := canSetRPLWithdrawalAddress(ctx.Command(), addr, confirm)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setRplWithdrawalAddressHandler(ctx snroute.WriteContext) {
+	addr := common.HexToAddress(ctx.Request.FormValue("address"))
+	confirm := ctx.Request.FormValue("confirm") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setRPLWithdrawalAddress(ctx.Command(), addr, confirm, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canConfirmRplWithdrawalAddressHandler(ctx snroute.Context) {
+	resp, err := canConfirmRPLWithdrawalAddress(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func confirmRplWithdrawalAddressHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := confirmRPLWithdrawalAddress(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

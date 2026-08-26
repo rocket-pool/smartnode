@@ -3,11 +3,12 @@ package minipool
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -69,7 +70,8 @@ func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Can
 
 }
 
-func refundMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.RefundMinipoolResponse, error) {
+func refundMinipool(c *cli.Command, minipoolAddress common.Address, t *snroute.TransactOpts) (*api.RefundMinipoolResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -99,4 +101,29 @@ func refundMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.T
 	// Return response
 	return &response, nil
 
+}
+
+func canRefundHandler(ctx snroute.Context) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canRefundMinipool(ctx.Command(), addr)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func refundHandler(ctx snroute.WriteContext) {
+	addr, err := parseAddress(ctx.Request, "address")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := refundMinipool(ctx.Command(), addr, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

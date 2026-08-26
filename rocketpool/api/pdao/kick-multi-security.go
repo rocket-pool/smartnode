@@ -1,11 +1,12 @@
 package pdao
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -55,7 +56,9 @@ func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.A
 	return &response, nil
 }
 
-func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
+func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -88,4 +91,34 @@ func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Addr
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeKickMultiFromSecurityCouncilHandler(ctx snroute.Context) {
+	addresses, err := parseAddressList(ctx.Request, "addresses")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canProposeKickMultiFromSecurityCouncil(ctx.Command(), addresses)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeKickMultiFromSecurityCouncilHandler(ctx snroute.WriteContext) {
+	addresses, err := parseAddressList(ctx.Request, "addresses")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeKickMultiFromSecurityCouncil(ctx.Command(), addresses, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

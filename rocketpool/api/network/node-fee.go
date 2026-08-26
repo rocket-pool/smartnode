@@ -6,6 +6,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -66,4 +68,9 @@ func getNodeFee(c *cli.Command) (*api.NodeFeeResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func nodeFeeHandler(ctx snroute.Context) {
+	resp, err := getNodeFee(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -4,6 +4,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -33,4 +35,9 @@ func getMembers(c *cli.Command) (*api.TNDAOMembersResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func membersHandler(ctx snroute.Context) {
+	resp, err := getMembers(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

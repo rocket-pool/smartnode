@@ -3,11 +3,11 @@ package node
 import (
 	_ "time/tzdata" // Load the embedded tz data
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -46,7 +46,8 @@ func canSetTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.CanSe
 
 }
 
-func setTimezoneLocation(c *cli.Command, timezoneLocation string, opts *bind.TransactOpts) (*api.SetNodeTimezoneResponse, error) {
+func setTimezoneLocation(c *cli.Command, timezoneLocation string, t *snroute.TransactOpts) (*api.SetNodeTimezoneResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -70,4 +71,21 @@ func setTimezoneLocation(c *cli.Command, timezoneLocation string, opts *bind.Tra
 	// Return response
 	return &response, nil
 
+}
+
+func canSetTimezoneHandler(ctx snroute.Context) {
+	tz := ctx.Request.URL.Query().Get("timezoneLocation")
+	resp, err := canSetTimezoneLocation(ctx.Command(), tz)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func setTimezoneHandler(ctx snroute.WriteContext) {
+	tz := ctx.Request.FormValue("timezoneLocation")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := setTimezoneLocation(ctx.Command(), tz, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

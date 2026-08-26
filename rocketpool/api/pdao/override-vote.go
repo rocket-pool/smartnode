@@ -1,7 +1,6 @@
 package pdao
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -9,6 +8,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -105,7 +106,9 @@ func canOverrideVote(c *cli.Command, proposalId uint64, voteDirection types.Vote
 	return &response, nil
 }
 
-func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection, opts *bind.TransactOpts) (*api.VoteOnPDAOProposalResponse, error) {
+func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection, t *snroute.TransactOpts) (*api.VoteOnPDAOProposalResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -124,4 +127,29 @@ func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDir
 
 	// Return response
 	return &response, nil
+}
+
+func canOverrideVoteHandler(ctx snroute.Context) {
+	id, voteDir, err := parseProposalVoteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canOverrideVote(ctx.Command(), id, voteDir)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func overrideVoteHandler(ctx snroute.WriteContext) {
+	id, voteDir, err := parseProposalVoteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := overrideVote(ctx.Command(), id, voteDir, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

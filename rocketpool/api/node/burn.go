@@ -3,12 +3,12 @@ package node
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -104,7 +104,8 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 
 }
 
-func nodeBurn(c *cli.Command, amountWei *big.Int, token string, opts *bind.TransactOpts) (*api.NodeBurnResponse, error) {
+func nodeBurn(c *cli.Command, amountWei *big.Int, token string, t *snroute.TransactOpts) (*api.NodeBurnResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -137,4 +138,31 @@ func nodeBurn(c *cli.Command, amountWei *big.Int, token string, opts *bind.Trans
 	// Return response
 	return &response, nil
 
+}
+
+func canBurnHandler(ctx snroute.Context) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	token := ctx.Request.URL.Query().Get("token")
+	resp, err := canNodeBurn(ctx.Command(), amountWei, token)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func burnHandler(ctx snroute.WriteContext) {
+	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	token := ctx.Request.FormValue("token")
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := nodeBurn(ctx.Command(), amountWei, token, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -257,6 +257,13 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 		return err
 	}
 
+	// Native vs Docker is stored in user-settings.yml. The --daemon-path flag is
+	// the historical CLI hint, but a native install opened without -d must not
+	// take the Docker restart path (e.g. rocketpool3_node).
+	if cfg != nil && cfg.IsNativeMode {
+		isNative = true
+	}
+
 	isUpdate := !isNew && oldCfg != nil
 
 	app := tview.NewApplication()
@@ -590,7 +597,7 @@ func recreateDockerNetwork(rp *rocketpool.Client, prefix string) error {
 
 type startServiceParams struct {
 	yes bool // Whether to automatically confirm prompts
-	// N.B.: This should ALYWAYS be false unless --ignore-slash-timer is set!
+	// N.B.: This should ALWAYS be false unless --ignore-slash-timer is set!
 	ignoreSlashTimer       bool     // Whether to ignore the slash timer
 	ignoreConfigSuggestion bool     // Whether to skip suggesting the user run config first
 	composeFiles           []string // The compose files to start the service with

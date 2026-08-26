@@ -1,14 +1,14 @@
 package pdao
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -104,7 +104,9 @@ func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PD
 	return &response, nil
 }
 
-func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []uint64, opts *bind.TransactOpts) (*api.PDAOClaimBondsResponse, error) {
+func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []uint64, t *snroute.TransactOpts) (*api.PDAOClaimBondsResponse, error) {
+	opts := t.Opts()
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -132,4 +134,30 @@ func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []ui
 
 	// Return response
 	return &response, nil
+}
+
+func canClaimBondsHandler(ctx snroute.Context) {
+	proposalID, indices, err := parseClaimBondsParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canClaimBonds(ctx.Command(), proposalID, indices)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func claimBondsHandler(ctx snroute.WriteContext) {
+	proposalID, indices, err := parseClaimBondsParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	isProposer := paramVal(ctx.Request, "isProposer") == "true"
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := claimBonds(ctx.Command(), isProposer, proposalID, indices, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

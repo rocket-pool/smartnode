@@ -18,6 +18,8 @@ import (
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -416,4 +418,9 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func rewardsHandler(ctx snroute.Context) {
+	resp, err := getRewards(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

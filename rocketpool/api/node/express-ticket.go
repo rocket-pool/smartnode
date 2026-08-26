@@ -1,11 +1,11 @@
 package node
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -116,7 +116,8 @@ func canProvisionExpressTickets(c *cli.Command) (*api.CanProvisionExpressTickets
 
 }
 
-func provisionExpressTickets(c *cli.Command, opts *bind.TransactOpts) (*api.ProvisionExpressTicketsResponse, error) {
+func provisionExpressTickets(c *cli.Command, t *snroute.TransactOpts) (*api.ProvisionExpressTicketsResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -153,4 +154,29 @@ func provisionExpressTickets(c *cli.Command, opts *bind.TransactOpts) (*api.Prov
 	// Return response
 	return &response, nil
 
+}
+
+func getExpressTicketCountHandler(ctx snroute.Context) {
+	resp, err := getExpressTicketCount(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func getExpressTicketsProvisionedHandler(ctx snroute.Context) {
+	resp, err := getExpressTicketsProvisioned(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func canProvisionExpressTicketsHandler(ctx snroute.Context) {
+	resp, err := canProvisionExpressTickets(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func provisionExpressTicketsHandler(ctx snroute.WriteContext) {
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := provisionExpressTickets(ctx.Command(), opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -144,7 +145,8 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 
 }
 
-func notifyValidatorExit(c *cli.Command, validatorId uint32, opts *bind.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -220,4 +222,29 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, opts *bind.Transact
 	// Return response
 	return &response, nil
 
+}
+
+func canNotifyValidatorExitHandler(ctx snroute.Context) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canNotifyValidatorExit(ctx.Command(), validatorId)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func notifyValidatorExitHandler(ctx snroute.WriteContext) {
+	validatorId, err := parseUint32(ctx.Request, "validatorId")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := notifyValidatorExit(ctx.Command(), validatorId, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

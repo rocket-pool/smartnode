@@ -3,12 +3,13 @@ package odao
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -82,7 +83,8 @@ func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, me
 
 }
 
-func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string, opts *bind.TransactOpts) (*api.ProposeTNDAOInviteResponse, error) {
+func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string, t *snroute.TransactOpts) (*api.ProposeTNDAOInviteResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -108,4 +110,29 @@ func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, membe
 	// Return response
 	return &response, nil
 
+}
+
+func canProposeInviteHandler(ctx snroute.Context) {
+	addr, memberId, memberUrl, err := parseInviteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := canProposeInvite(ctx.Command(), addr, memberId, memberUrl)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeInviteHandler(ctx snroute.WriteContext) {
+	addr, memberId, memberUrl, err := parseInviteParams(ctx.Request)
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeInvite(ctx.Command(), addr, memberId, memberUrl, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

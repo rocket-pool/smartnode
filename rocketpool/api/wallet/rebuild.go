@@ -3,6 +3,8 @@ package wallet
 import (
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -52,4 +54,11 @@ func rebuildWallet(c *cli.Command) (*api.RebuildWalletResponse, error) {
 	// Return response
 	return &response, nil
 
+}
+
+func rebuildHandler(ctx snroute.WriteContext) {
+	resp, err := withRecoveryLock("wallet rebuild", func() (*api.RebuildWalletResponse, error) {
+		return rebuildWallet(ctx.Command())
+	})
+	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/urfave/cli/v3"
 
@@ -278,4 +280,9 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 		}
 	}
 	return false
+}
+
+func getClaimableBondsHandler(ctx snroute.Context) {
+	resp, err := getClaimableBonds(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }

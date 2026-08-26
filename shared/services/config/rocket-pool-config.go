@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/apitoken"
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
@@ -63,6 +64,9 @@ type RocketPoolConfig struct {
 
 	IsNativeMode bool `yaml:"-"`
 
+	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
+	IsCLI bool `yaml:"-"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -92,6 +96,9 @@ type RocketPoolConfig struct {
 
 	// The Smart Node configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
+
+	// HTTP API configuration
+	Api *ApiConfig `yaml:"api,omitempty"`
 
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
@@ -142,11 +149,10 @@ type RocketPoolConfig struct {
 	RescueNode         addontypes.SmartnodeAddon `yaml:"addon-rescue-node,omitempty"`
 }
 
-// Get the external IP address. Try finding an IPv4 address first to:
-// * Improve peer discovery and node performance
-// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
+// Get the external IPv4 address. IPv6 is reported separately by GetExternalIpv6
+// so EXTERNAL_IP stays IPv4-or-blank and does not flip families (which would
+// recreate containers).
 func getExternalIP() (net.IP, error) {
-	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
 	err := ip4Consensus.UseIPProtocol(4)
@@ -154,18 +160,7 @@ func getExternalIP() (net.IP, error) {
 		// Only panics if the IP protocol isn't one of 0, 4, or 6
 		panic(err)
 	}
-	if ip, err := ip4Consensus.ExternalIP(); err == nil {
-		return ip, nil
-	}
-
-	// Try IPv6 as fallback
-	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	err = ip6Consensus.UseIPProtocol(6)
-	if err != nil {
-		// Only panics if the IP protocol isn't one of 0, 4, or 6
-		panic(err)
-	}
-	return ip6Consensus.ExternalIP()
+	return ip4Consensus.ExternalIP()
 }
 
 // Load configuration settings from a file
@@ -257,6 +252,10 @@ func (cfg *RocketPoolConfig) Save(directory, filename string) error {
 	// Just in case the rename didn't overwrite (and preserve the perms of) the original file, set them now.
 	if err := os.Chmod(path, 0664); err != nil {
 		return fmt.Errorf("error updating permissions of %s: %w", path, err)
+	}
+
+	if err := cfg.persistAPIToken(); err != nil {
+		return err
 	}
 
 	return nil
@@ -559,6 +558,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.ConsensusClientMode.Default[config.Network_All] = cfg.ConsensusClientMode.Options[0].Value
 
 	cfg.Smartnode = NewSmartnodeConfig(cfg)
+	cfg.Api = NewApiConfig(cfg)
 	cfg.ExecutionCommon = NewExecutionCommonConfig(cfg)
 	cfg.Geth = NewGethConfig(cfg)
 	cfg.Nethermind = NewNethermindConfig(cfg)
@@ -627,6 +627,7 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	newConfig.IsCLI = cfg.IsCLI
 
 	// Set the network
 	network := cfg.Smartnode.Network.Value.(config.Network)
@@ -679,6 +680,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 	return map[string]config.Config{
 		"smartnode":          cfg.Smartnode,
+		"api":                cfg.Api,
 		"executionCommon":    cfg.ExecutionCommon,
 		"geth":               cfg.Geth,
 		"nethermind":         cfg.Nethermind,
@@ -1365,8 +1367,41 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 }
 
 func (cfg *RocketPoolConfig) GetNodeOpenPorts() string {
-	port := cfg.Smartnode.APIPort.Value.(uint16)
-	return fmt.Sprintf("\"127.0.0.1:%d:%d/tcp\"", port, port)
+	portMode, ok := cfg.Api.OpenApiPort.Value.(config.RPCMode)
+	if !ok || !portMode.Open() {
+		return ""
+	}
+	port := cfg.Api.ApiPort.Value.(uint16)
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+}
+
+// SyncAPITokenFromDisk loads the API token sidecar file, creating a CLI write
+// token if needed. Path selection uses IsCLI and IsNativeMode.
+func (cfg *RocketPoolConfig) SyncAPITokenFromDisk() error {
+	if cfg.Api == nil {
+		return nil
+	}
+	f, err := apitoken.EnsureFile(cfg.Api.GetAPITokenPath())
+	if err != nil {
+		return err
+	}
+	cfg.Api.applyFile(f)
+	return nil
+}
+
+func (cfg *RocketPoolConfig) persistAPIToken() error {
+	if cfg.Api == nil {
+		return nil
+	}
+	f, err := cfg.Api.fileFromForm()
+	if err != nil {
+		return err
+	}
+	if err := apitoken.WriteFile(cfg.Api.GetAPITokenPath(), f); err != nil {
+		return err
+	}
+	cfg.Api.applyFile(f)
+	return nil
 }
 
 // Gets the stop signal of the ec container
@@ -1432,21 +1467,24 @@ func (cfg *RocketPoolConfig) IsIPv6Enabled() bool {
 	return cfg.EnableIPv6.Value.(bool)
 }
 
-// Used by text/template to format eth1.yml
+// Used by text/template to format eth1.yml and eth2.yml.
+// Returns the external IPv4 address, or empty string if IPv4 is unavailable.
 func (cfg *RocketPoolConfig) GetExternalIp() string {
-	// Get the external IP address
 	ip, err := getExternalIP()
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
+		if !cfg.IsIPv6Enabled() && cfg.GetExternalIpv6() != "" {
+			fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
+		}
 		return ""
 	}
 
-	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
-		fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
+	v4 := ip.To4()
+	if v4 == nil {
+		return ""
 	}
-
-	return ip.String()
+	return v4.String()
 }
 
 // Used by text/template to format eth2.yml when IPv6 is enabled.
@@ -1818,6 +1856,9 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
+	if cfg.Api != nil {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Api.ApiPort, errors)
+	}
 	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lighthouse {
 		_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
 	}
@@ -1901,6 +1942,10 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 		oldValString := fmt.Sprint(oldParams[i].Value)
 		newValString := fmt.Sprint(param.Value)
 		if oldValString != newValString {
+			if param.Sensitive {
+				oldValString = maskSensitive(oldValString)
+				newValString = maskSensitive(newValString)
+			}
 			changedSettings = append(changedSettings, config.ChangedSetting{
 				Name:               param.Name,
 				OldValue:           oldValString,
@@ -1911,6 +1956,13 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 	}
 
 	return changedSettings
+}
+
+func maskSensitive(value string) string {
+	if value == "" {
+		return "(empty)"
+	}
+	return "********"
 }
 
 func getAffectedContainers(param *config.Parameter) map[config.ContainerID]bool {

@@ -82,6 +82,7 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		NetworkPDAOSharePath:                               settingKindUint256,
 		NetworkMaxNodeShareSecurityCouncilAdderPath:        settingKindUint256,
 		NetworkMaxRethBalanceDeltaPath:                     settingKindUint256,
+		NetworkRethDepositDelaySettingPath:                 settingKindUint256,
 	},
 	NodeSettingsContractName: {
 		NodeRegistrationEnabledSettingPath:          settingKindBool,
@@ -91,6 +92,8 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MinimumLegacyRplStakePath:                   settingKindUint256,
 		ReducedBondSettingPath:                      settingKindUint256,
 		NodeUnstakingPeriodSettingPath:              settingKindUint256,
+		NodeWithdrawalCooldownSettingPath:           settingKindUint256,
+		MaximumStakeForVotingPowerSettingPath:       settingKindUint256,
 	},
 	ProposalsSettingsContractName: {
 		VotePhase1TimeSettingPath:      settingKindUint256,
@@ -113,6 +116,8 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		SecurityProposalVoteTimeSettingPath:    settingKindUint256,
 		SecurityProposalExecuteTimeSettingPath: settingKindUint256,
 		SecurityProposalActionTimeSettingPath:  settingKindUint256,
+		SecurityUpgradeVetoQuorumSettingPath:   settingKindUint256,
+		SecurityUpgradeDelaySettingPath:        settingKindUint256,
 	},
 	MegapoolSettingsContractName: {
 		MegapoolTimeBeforeDissolveSettingsPath:   settingKindUint256,

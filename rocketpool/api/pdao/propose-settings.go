@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/urfave/cli/v3"
@@ -13,6 +12,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -557,6 +558,17 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing MaxRethBalanceDelta: %w", err)
 			}
 
+		// RethDepositDelay
+		case protocol.NetworkRethDepositDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeRethDepositDelayGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing RethDepositDelay: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -634,6 +646,28 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			response.GasLimits, err = protocol.EstimateProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing NodeUnstakingPeriod: %w", err)
+			}
+
+		// WithdrawalCooldown
+		case protocol.NodeWithdrawalCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeWithdrawalCooldownGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing WithdrawalCooldown: %w", err)
+			}
+
+		// MaximumStakeForVotingPower
+		case protocol.MaximumStakeForVotingPowerSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeMaximumStakeForVotingPowerGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaximumStakeForVotingPower: %w", err)
 			}
 
 		}
@@ -819,6 +853,28 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalActionTime: %w", err)
 			}
+
+		// SecurityUpgradeVetoQuorum
+		case protocol.SecurityUpgradeVetoQuorumSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeSecurityUpgradeVetoQuorumGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing SecurityUpgradeVetoQuorum: %w", err)
+			}
+
+		// SecurityUpgradeDelay
+		case protocol.SecurityUpgradeDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeSecurityUpgradeDelayGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing SecurityUpgradeDelay: %w", err)
+			}
 		}
 
 	case protocol.MegapoolSettingsContractName:
@@ -917,7 +973,8 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 
 }
 
-func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, opts *bind.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32, t *snroute.TransactOpts) (*api.ProposePDAOSettingResponse, error) {
+	opts := t.Opts()
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -1387,6 +1444,17 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing MaxRethBalanceDelta: %w", err)
 			}
 
+		// RethDepositDelay
+		case protocol.NetworkRethDepositDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeRethDepositDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing RethDepositDelay: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -1463,6 +1531,28 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing NodeUnstakingPeriod: %w", err)
+			}
+
+		// WithdrawalCooldown
+		case protocol.NodeWithdrawalCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeWithdrawalCooldown(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing WithdrawalCooldown: %w", err)
+			}
+
+		// MaximumStakeForVotingPower
+		case protocol.MaximumStakeForVotingPowerSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaximumStakeForVotingPower(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaximumStakeForVotingPower: %w", err)
 			}
 
 		}
@@ -1650,6 +1740,28 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing SecurityProposalActionTime: %w", err)
 			}
+
+		// SecurityUpgradeVetoQuorum
+		case protocol.SecurityUpgradeVetoQuorumSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeSecurityUpgradeVetoQuorum(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing SecurityUpgradeVetoQuorum: %w", err)
+			}
+
+		// SecurityUpgradeDelay
+		case protocol.SecurityUpgradeDelaySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeSecurityUpgradeDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing SecurityUpgradeDelay: %w", err)
+			}
 		}
 
 	case protocol.MegapoolSettingsContractName:
@@ -1749,4 +1861,30 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	response.ProposalId = proposalID
 	response.TxHash = hash
 	return &response, nil
+}
+
+func canProposeSettingHandler(ctx snroute.Context) {
+	contract := paramVal(ctx.Request, "contract")
+	setting := paramVal(ctx.Request, "setting")
+	value := paramVal(ctx.Request, "value")
+	resp, err := canProposeSetting(ctx.Command(), contract, setting, value)
+	response.WriteResponse(ctx.Writer, resp, err)
+}
+
+func proposeSettingHandler(ctx snroute.WriteContext) {
+	contract := paramVal(ctx.Request, "contract")
+	setting := paramVal(ctx.Request, "setting")
+	value := paramVal(ctx.Request, "value")
+	blockNumber, err := parseUint32Param(ctx.Request, "blockNumber")
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	opts, err := ctx.Transactor()
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, err)
+		return
+	}
+	resp, err := proposeSetting(ctx.Command(), contract, setting, value, blockNumber, opts)
+	response.WriteResponse(ctx.Writer, resp, err)
 }

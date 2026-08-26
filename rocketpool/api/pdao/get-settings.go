@@ -7,6 +7,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool/api/response"
+	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -107,6 +109,21 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		if err == nil {
 			response.Node.NodeUnstakingPeriod = time.Duration(nodeUnstakingPeriod.Int64()) * time.Second
 		}
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		withdrawalCooldown, err := protocol.GetWithdrawalCooldown(rp, nil)
+		if err == nil {
+			response.Node.WithdrawalCooldown = time.Duration(withdrawalCooldown.Int64()) * time.Second
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Node.MaximumStakeForVotingPower, err = protocol.GetMaximumStakeForVotingPower(rp, nil)
 		return err
 	})
 
@@ -393,6 +410,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Network.RethDepositDelay, err = protocol.GetRethDepositDelay(rp, nil)
+		return err
+	})
+
 	// === Node ===
 
 	wg.Go(func() error {
@@ -521,6 +544,18 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeVetoQuorum, err = protocol.GetSecurityUpgradeVetoQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.UpgradeDelay, err = protocol.GetSecurityUpgradeDelay(rp, nil)
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
@@ -528,4 +563,9 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	// Return response
 	return &response, nil
+}
+
+func getSettingsHandler(ctx snroute.Context) {
+	resp, err := getSettings(ctx.Command())
+	response.WriteResponse(ctx.Writer, resp, err)
 }
