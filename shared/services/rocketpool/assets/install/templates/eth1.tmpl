@@ -15,7 +15,7 @@ services:
     stop_grace_period: 15m
     {{- $p2p := (or .ExecutionCommon.P2pPort.Value "30303")}}
     {{- $torrent := (or .Erigon.TorrentPort.Value "42069")}}
-    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{if eq .ExecutionClient.String "erigon"}}, "{{$torrent}}:{{$torrent}}/udp", "{{$torrent}}:{{$torrent}}/tcp"{{end}}{{.GetECOpenAPIPorts}} ]
+    ports: [ "{{if .IsIPv6Enabled}}[::]:{{end}}{{$p2p}}:{{$p2p}}/udp", "{{if .IsIPv6Enabled}}[::]:{{end}}{{$p2p}}:{{$p2p}}/tcp"{{if eq .ExecutionClient.String "erigon"}}, "{{$torrent}}:{{$torrent}}/udp", "{{$torrent}}:{{$torrent}}/tcp"{{end}}{{.GetECOpenAPIPorts}} ]
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
@@ -38,6 +38,10 @@ services:
       - EC_WS_PORT={{.ExecutionCommon.WsPort}}
       - EC_ENGINE_PORT={{.ExecutionCommon.EnginePort}}
       - EXTERNAL_IP={{.GetExternalIp}}
+      {{- if .IsIPv6Enabled}}
+      - EXTERNAL_IP6={{.GetExternalIpv6}}
+      {{- end}}
+      - ENABLE_IPV6={{.IsIPv6Enabled}}
       - ENABLE_METRICS={{.EnableMetrics}}
       - EC_METRICS_PORT={{.EcMetricsPort}}
       {{- /* Client-specific values */}}
