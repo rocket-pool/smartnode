@@ -44,7 +44,7 @@ func TestDefaultRateLimit(t *testing.T) {
 	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
 	got, ok := cfg.Api.RateLimit.Value.(uint16)
 	if !ok || got != 0 {
-		t.Fatalf("default rate limit %v (%T), want 5", cfg.Api.RateLimit.Value, cfg.Api.RateLimit.Value)
+		t.Fatalf("default rate limit %v (%T), want 0", cfg.Api.RateLimit.Value, cfg.Api.RateLimit.Value)
 	}
 }
 

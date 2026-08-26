@@ -133,7 +133,7 @@ func NewApiConfig(cfg *RocketPoolConfig) *ApiConfig {
 		RateLimit: config.Parameter{
 			ID:                 rateLimitID,
 			Name:               "API Rate Limit",
-			Description:        "Maximum number of API requests per second. The default is 5. Set to 0 to disable rate limiting.",
+			Description:        "Maximum number of API requests per second. The default is 0, which disables rate limiting.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultRateLimit},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
