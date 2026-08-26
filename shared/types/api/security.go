@@ -9,8 +9,7 @@ import (
 )
 
 type SecurityStatusResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
+	APIResponse
 	IsMember       bool   `json:"isMember"`
 	CanJoin        bool   `json:"canJoin"`
 	CanLeave       bool   `json:"canLeave"`
@@ -28,107 +27,91 @@ type SecurityStatusResponse struct {
 }
 
 type SecurityMembersResponse struct {
-	Status  string                              `json:"status"`
-	Error   string                              `json:"error"`
+	APIResponse
 	Members []security.SecurityDAOMemberDetails `json:"members"`
 }
 
 type SecurityProposalsResponse struct {
-	Status    string                `json:"status"`
-	Error     string                `json:"error"`
+	APIResponse
 	Proposals []dao.ProposalDetails `json:"proposals"`
 }
 
 type SecurityProposalResponse struct {
-	Status   string              `json:"status"`
-	Error    string              `json:"error"`
+	APIResponse
 	Proposal dao.ProposalDetails `json:"proposal"`
 }
 
 type SecurityCanProposeInviteResponse struct {
-	Status              string          `json:"status"`
-	Error               string          `json:"error"`
+	APIResponse
 	CanPropose          bool            `json:"canPropose"`
 	MemberAlreadyExists bool            `json:"memberAlreadyExists"`
 	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeInviteResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type SecurityCanProposeLeaveResponse struct {
-	Status            string          `json:"status"`
-	Error             string          `json:"error"`
+	APIResponse
 	CanPropose        bool            `json:"canPropose"`
 	MemberDoesntExist bool            `json:"memberDoesntExist"`
 	GasLimits         gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeLeaveResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type SecurityCanProposeKickResponse struct {
-	Status     string          `json:"status"`
-	Error      string          `json:"error"`
+	APIResponse
 	CanPropose bool            `json:"canPropose"`
 	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeKickResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type SecurityCanProposeKickMultiResponse struct {
-	Status     string          `json:"status"`
-	Error      string          `json:"error"`
+	APIResponse
 	CanPropose bool            `json:"canPropose"`
 	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeKickMultiResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type SecurityCanProposeSettingResponse struct {
-	Status     string          `json:"status"`
-	Error      string          `json:"error"`
+	APIResponse
 	CanPropose bool            `json:"canPropose"`
 	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeSettingResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type SecurityCanProposeReplaceResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	OldMemberDoesntExist   bool            `json:"oldMemberDoesntExist"`
 	NewMemberAlreadyExists bool            `json:"newMemberAlreadyExists"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityProposeReplaceResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type SecurityCanCancelProposalResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	CanCancel       bool            `json:"canCancel"`
 	DoesNotExist    bool            `json:"doesNotExist"`
 	InvalidState    bool            `json:"invalidState"`
@@ -136,14 +119,12 @@ type SecurityCanCancelProposalResponse struct {
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityCancelProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type SecurityCanVoteOnProposalResponse struct {
-	Status             string          `json:"status"`
-	Error              string          `json:"error"`
+	APIResponse
 	CanVote            bool            `json:"canVote"`
 	DoesNotExist       bool            `json:"doesNotExist"`
 	InvalidState       bool            `json:"invalidState"`
@@ -152,48 +133,41 @@ type SecurityCanVoteOnProposalResponse struct {
 	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityVoteOnProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type SecurityCanExecuteProposalResponse struct {
-	Status       string          `json:"status"`
-	Error        string          `json:"error"`
+	APIResponse
 	CanExecute   bool            `json:"canExecute"`
 	DoesNotExist bool            `json:"doesNotExist"`
 	InvalidState bool            `json:"invalidState"`
 	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityExecuteProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type SecurityCanJoinResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	CanJoin         bool            `json:"canJoin"`
 	ProposalExpired bool            `json:"proposalExpired"`
 	AlreadyMember   bool            `json:"alreadyMember"`
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityJoinResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type SecurityCanLeaveResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	CanLeave        bool            `json:"canLeave"`
 	ProposalExpired bool            `json:"proposalExpired"`
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type SecurityLeaveResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }

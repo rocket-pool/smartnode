@@ -1,29 +1,20 @@
 package rocketpool
 
 import (
-	"fmt"
 	"math/big"
 	"net/url"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // Get minipool status
 func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/status", nil)
+	response, err := c.callAPI[api.MinipoolStatusResponse]("GET", "/api/minipool/status", nil, "Could not get minipool status")
 	if err != nil {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %w", err)
-	}
-	var response api.MinipoolStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not decode minipool status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
+		return response, err
 	}
 	for i := 0; i < len(response.Minipools); i++ {
 		mp := &response.Minipools[i]
@@ -60,354 +51,123 @@ func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
 
 // Check whether a minipool is eligible for a refund
 func (c *Client) CanRefundMinipool(address common.Address) (api.CanRefundMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-refund", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.CanRefundMinipoolResponse{}, fmt.Errorf("Could not get can refund minipool status: %w", err)
-	}
-	var response api.CanRefundMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanRefundMinipoolResponse{}, fmt.Errorf("Could not decode can refund minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanRefundMinipoolResponse{}, fmt.Errorf("Could not get can refund minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanRefundMinipoolResponse]("GET", "/api/minipool/can-refund", url.Values{"address": {address.Hex()}}, "Could not get can refund minipool status")
 }
 
 // Refund ETH from a minipool
 func (c *Client) RefundMinipool(address common.Address) (api.RefundMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/refund", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.RefundMinipoolResponse{}, fmt.Errorf("Could not refund minipool: %w", err)
-	}
-	var response api.RefundMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RefundMinipoolResponse{}, fmt.Errorf("Could not decode refund minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RefundMinipoolResponse{}, fmt.Errorf("Could not refund minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.RefundMinipoolResponse]("POST", "/api/minipool/refund", url.Values{"address": {address.Hex()}}, "Could not refund minipool")
 }
 
 // Check whether a minipool is eligible for staking
 func (c *Client) CanStakeMinipool(address common.Address) (api.CanStakeMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-stake", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not get can stake minipool status: %w", err)
-	}
-	var response api.CanStakeMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not decode can stake minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not get can stake minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanStakeMinipoolResponse]("GET", "/api/minipool/can-stake", url.Values{"address": {address.Hex()}}, "Could not get can stake minipool status")
 }
 
 // Stake a minipool
 func (c *Client) StakeMinipool(address common.Address) (api.StakeMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/stake", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.StakeMinipoolResponse{}, fmt.Errorf("Could not stake minipool: %w", err)
-	}
-	var response api.StakeMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.StakeMinipoolResponse{}, fmt.Errorf("Could not decode stake minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.StakeMinipoolResponse{}, fmt.Errorf("Could not stake minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.StakeMinipoolResponse]("POST", "/api/minipool/stake", url.Values{"address": {address.Hex()}}, "Could not stake minipool")
 }
 
 // Check whether a minipool can be dissolved
 func (c *Client) CanDissolveMinipool(address common.Address) (api.CanDissolveMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-dissolve", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.CanDissolveMinipoolResponse{}, fmt.Errorf("Could not get can dissolve minipool status: %w", err)
-	}
-	var response api.CanDissolveMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanDissolveMinipoolResponse{}, fmt.Errorf("Could not decode can dissolve minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanDissolveMinipoolResponse{}, fmt.Errorf("Could not get can dissolve minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanDissolveMinipoolResponse]("GET", "/api/minipool/can-dissolve", url.Values{"address": {address.Hex()}}, "Could not get can dissolve minipool status")
 }
 
 // Dissolve a minipool
 func (c *Client) DissolveMinipool(address common.Address) (api.DissolveMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/dissolve", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.DissolveMinipoolResponse{}, fmt.Errorf("Could not dissolve minipool: %w", err)
-	}
-	var response api.DissolveMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DissolveMinipoolResponse{}, fmt.Errorf("Could not decode dissolve minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DissolveMinipoolResponse{}, fmt.Errorf("Could not dissolve minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.DissolveMinipoolResponse]("POST", "/api/minipool/dissolve", url.Values{"address": {address.Hex()}}, "Could not dissolve minipool")
 }
 
 // Check whether a minipool can be exited
 func (c *Client) CanExitMinipool(address common.Address) (api.CanExitMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-exit", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.CanExitMinipoolResponse{}, fmt.Errorf("Could not get can exit minipool status: %w", err)
-	}
-	var response api.CanExitMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanExitMinipoolResponse{}, fmt.Errorf("Could not decode can exit minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanExitMinipoolResponse{}, fmt.Errorf("Could not get can exit minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanExitMinipoolResponse]("GET", "/api/minipool/can-exit", url.Values{"address": {address.Hex()}}, "Could not get can exit minipool status")
 }
 
 // Exit a minipool
 func (c *Client) ExitMinipool(address common.Address) (api.ExitMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/exit", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.ExitMinipoolResponse{}, fmt.Errorf("Could not exit minipool: %w", err)
-	}
-	var response api.ExitMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ExitMinipoolResponse{}, fmt.Errorf("Could not decode exit minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ExitMinipoolResponse{}, fmt.Errorf("Could not exit minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.ExitMinipoolResponse]("POST", "/api/minipool/exit", url.Values{"address": {address.Hex()}}, "Could not exit minipool")
 }
 
 // Check all of the node's minipools for closure eligibility, and return the details of the closeable ones
 func (c *Client) GetMinipoolCloseDetailsForNode() (api.GetMinipoolCloseDetailsForNodeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/get-minipool-close-details-for-node", nil)
-	if err != nil {
-		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %w", err)
-	}
-	var response api.GetMinipoolCloseDetailsForNodeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not decode get-minipool-close-details-for-node response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GetMinipoolCloseDetailsForNodeResponse]("GET", "/api/minipool/get-minipool-close-details-for-node", nil, "Could not get get-minipool-close-details-for-node status")
 }
 
 // Close a minipool
 func (c *Client) CloseMinipool(address common.Address, bundle bool) (api.CloseMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/close", url.Values{
+	return c.callAPI[api.CloseMinipoolResponse]("POST", "/api/minipool/close", url.Values{
 		"address": {address.Hex()},
 		"bundle":  {strconv.FormatBool(bundle)},
-	})
-	if err != nil {
-		return api.CloseMinipoolResponse{}, fmt.Errorf("Could not close minipool: %w", err)
-	}
-	var response api.CloseMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CloseMinipoolResponse{}, fmt.Errorf("Could not decode close minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CloseMinipoolResponse{}, fmt.Errorf("Could not close minipool: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not close minipool")
 }
 
 // Check whether a minipool can have its delegate upgraded
 func (c *Client) CanDelegateUpgradeMinipool(address common.Address) (api.CanDelegateUpgradeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-delegate-upgrade", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.CanDelegateUpgradeResponse{}, fmt.Errorf("Could not get can delegate upgrade minipool status: %w", err)
-	}
-	var response api.CanDelegateUpgradeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanDelegateUpgradeResponse{}, fmt.Errorf("Could not decode can delegate upgrade minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanDelegateUpgradeResponse{}, fmt.Errorf("Could not get can delegate upgrade minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanDelegateUpgradeResponse]("GET", "/api/minipool/can-delegate-upgrade", url.Values{"address": {address.Hex()}}, "Could not get can delegate upgrade minipool status")
 }
 
 // Upgrade a minipool delegate
 func (c *Client) DelegateUpgradeMinipool(address common.Address) (api.DelegateUpgradeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/delegate-upgrade", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.DelegateUpgradeResponse{}, fmt.Errorf("Could not upgrade delegate for minipool: %w", err)
-	}
-	var response api.DelegateUpgradeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DelegateUpgradeResponse{}, fmt.Errorf("Could not decode upgrade delegate minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DelegateUpgradeResponse{}, fmt.Errorf("Could not upgrade delegate for minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.DelegateUpgradeResponse]("POST", "/api/minipool/delegate-upgrade", url.Values{"address": {address.Hex()}}, "Could not upgrade delegate for minipool")
 }
 
 // Check whether a minipool can have its auto-upgrade setting changed
 func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address, setLatest bool) (api.CanSetUseLatestDelegateResponse, error) {
 	// pass setLatest as well
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}, "setLatest": {strconv.FormatBool(setLatest)}})
-	if err != nil {
-		return api.CanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for minipool status: %w", err)
-	}
-	var response api.CanSetUseLatestDelegateResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not decode can set use latest delegate for minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for minipool status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanSetUseLatestDelegateResponse]("GET", "/api/minipool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}, "setLatest": {strconv.FormatBool(setLatest)}}, "Could not get can set use latest delegate for minipool status")
 }
 
 // Change a minipool's auto-upgrade setting
 func (c *Client) SetUseLatestDelegateMinipool(address common.Address) (api.SetUseLatestDelegateResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/set-use-latest-delegate", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.SetUseLatestDelegateResponse{}, fmt.Errorf("Could not set use latest delegate for minipool: %w", err)
-	}
-	var response api.SetUseLatestDelegateResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetUseLatestDelegateResponse{}, fmt.Errorf("Could not decode set use latest delegate for minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetUseLatestDelegateResponse{}, fmt.Errorf("Could not set use latest delegate for minipool: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.SetUseLatestDelegateResponse]("POST", "/api/minipool/set-use-latest-delegate", url.Values{"address": {address.Hex()}}, "Could not set use latest delegate for minipool")
 }
 
 // Get the artifacts necessary for vanity address searching
 func (c *Client) GetVanityArtifacts(depositAmount *big.Int, nodeAddress string) (api.GetVanityArtifactsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/get-vanity-artifacts", url.Values{
+	return c.callAPI[api.GetVanityArtifactsResponse]("GET", "/api/minipool/get-vanity-artifacts", url.Values{
 		"depositAmount": {depositAmount.String()},
 		"nodeAddress":   {nodeAddress},
-	})
-	if err != nil {
-		return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %w", err)
-	}
-	var response api.GetVanityArtifactsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not decode get vanity artifacts response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not get vanity artifacts")
 }
 
 // Get the balance distribution details for all of the node's minipools
 func (c *Client) GetDistributeBalanceDetails() (api.GetDistributeBalanceDetailsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/get-distribute-balance-details", nil)
-	if err != nil {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %w", err)
-	}
-	var response api.GetDistributeBalanceDetailsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GetDistributeBalanceDetailsResponse]("GET", "/api/minipool/get-distribute-balance-details", nil, "Could not get distribute balance details")
 }
 
 // Distribute a minipool's ETH balance
 func (c *Client) DistributeBalance(address common.Address) (api.DistributeBalanceResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/distribute-balance", url.Values{"address": {address.Hex()}})
-	if err != nil {
-		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not get distribute balance status: %w", err)
-	}
-	var response api.DistributeBalanceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not decode distribute balance response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not get distribute balance status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.DistributeBalanceResponse]("POST", "/api/minipool/distribute-balance", url.Values{"address": {address.Hex()}}, "Could not get distribute balance status")
 }
 
 // Import a validator private key for a vacant minipool
 func (c *Client) ImportKey(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/import-key", url.Values{
+	return c.callAPI[api.ChangeWithdrawalCredentialsResponse]("POST", "/api/minipool/import-key", url.Values{
 		"address":  {address.Hex()},
 		"mnemonic": {mnemonic},
-	})
-	if err != nil {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not import validator key: %w", err)
-	}
-	var response api.ChangeWithdrawalCredentialsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode import-key response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not import validator key: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not import validator key")
 }
 
 // Check whether a solo validator's withdrawal creds can be migrated to a minipool address
 func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.CanChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-change-withdrawal-creds", url.Values{
+	return c.callAPI[api.CanChangeWithdrawalCredentialsResponse]("GET", "/api/minipool/can-change-withdrawal-creds", url.Values{
 		"address":  {address.Hex()},
 		"mnemonic": {mnemonic},
-	})
-	if err != nil {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %w", err)
-	}
-	var response api.CanChangeWithdrawalCredentialsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode can-change-withdrawal-creds response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not get can-change-withdrawal-creds status")
 }
 
 // Migrate a solo validator's withdrawal creds to a minipool address
 func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/change-withdrawal-creds", url.Values{
+	return c.callAPI[api.ChangeWithdrawalCredentialsResponse]("POST", "/api/minipool/change-withdrawal-creds", url.Values{
 		"address":  {address.Hex()},
 		"mnemonic": {mnemonic},
-	})
-	if err != nil {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not change withdrawal creds: %w", err)
-	}
-	var response api.ChangeWithdrawalCredentialsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode change-withdrawal-creds response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not change withdrawal creds: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not change withdrawal creds")
 }
 
 // Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
 func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/get-rescue-dissolved-details-for-node", nil)
-	if err != nil {
-		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %w", err)
-	}
-	var response api.GetMinipoolRescueDissolvedDetailsForNodeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not decode get-minipool-rescue-dissolved-details-for-node response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GetMinipoolRescueDissolvedDetailsForNodeResponse]("GET", "/api/minipool/get-rescue-dissolved-details-for-node", nil, "Could not get get-minipool-rescue-dissolved-details-for-node status")
 }
 
 // Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract
@@ -416,20 +176,9 @@ func (c *Client) RescueDissolvedMinipool(address common.Address, amount *big.Int
 	if submit {
 		submitStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/rescue-dissolved", url.Values{
+	return c.callAPI[api.RescueDissolvedMinipoolResponse]("POST", "/api/minipool/rescue-dissolved", url.Values{
 		"address": {address.Hex()},
 		"amount":  {amount.String()},
 		"submit":  {submitStr},
-	})
-	if err != nil {
-		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %w", err)
-	}
-	var response api.RescueDissolvedMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not decode rescue dissolved minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not rescue dissolved minipool")
 }

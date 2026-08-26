@@ -11,8 +11,7 @@ import (
 )
 
 type TNDAOStatusResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
+	APIResponse
 	IsMember       bool   `json:"isMember"`
 	CanJoin        bool   `json:"canJoin"`
 	CanLeave       bool   `json:"canLeave"`
@@ -31,86 +30,74 @@ type TNDAOStatusResponse struct {
 }
 
 type TNDAOMembersResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
+	APIResponse
 	Members []tn.MemberDetails `json:"members"`
 }
 
 type TNDAOProposalsResponse struct {
-	Status    string                `json:"status"`
-	Error     string                `json:"error"`
+	APIResponse
 	Proposals []dao.ProposalDetails `json:"proposals"`
 }
 
 type TNDAOProposalResponse struct {
-	Status   string              `json:"status"`
-	Error    string              `json:"error"`
+	APIResponse
 	Proposal dao.ProposalDetails `json:"proposal"`
 }
 
 type CanProposeTNDAOInviteResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
 	MemberAlreadyExists    bool            `json:"memberAlreadyExists"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOInviteResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type CanProposeTNDAOLeaveResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
 	InsufficientMembers    bool            `json:"insufficientMembers"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOLeaveResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type CanProposeTNDAOReplaceResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
 	MemberAlreadyExists    bool            `json:"memberAlreadyExists"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOReplaceResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type CanProposeTNDAOKickResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
 	InsufficientRplBond    bool            `json:"insufficientRplBond"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOKickResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type CanCancelTNDAOProposalResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	CanCancel       bool            `json:"canCancel"`
 	DoesNotExist    bool            `json:"doesNotExist"`
 	InvalidState    bool            `json:"invalidState"`
@@ -118,14 +105,12 @@ type CanCancelTNDAOProposalResponse struct {
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type CancelTNDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanVoteOnTNDAOProposalResponse struct {
-	Status             string          `json:"status"`
-	Error              string          `json:"error"`
+	APIResponse
 	CanVote            bool            `json:"canVote"`
 	DoesNotExist       bool            `json:"doesNotExist"`
 	InvalidState       bool            `json:"invalidState"`
@@ -134,28 +119,24 @@ type CanVoteOnTNDAOProposalResponse struct {
 	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type VoteOnTNDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanExecuteTNDAOProposalResponse struct {
-	Status       string          `json:"status"`
-	Error        string          `json:"error"`
+	APIResponse
 	CanExecute   bool            `json:"canExecute"`
 	DoesNotExist bool            `json:"doesNotExist"`
 	InvalidState bool            `json:"invalidState"`
 	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type ExecuteTNDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanExecuteTNDAOUpgradeResponse struct {
-	Status             string          `json:"status"`
-	Error              string          `json:"error"`
+	APIResponse
 	CanExecute         bool            `json:"canExecute"`
 	InvalidTrustedNode bool            `json:"invalidTrustedNode"`
 	DoesNotExist       bool            `json:"doesNotExist"`
@@ -163,14 +144,12 @@ type CanExecuteTNDAOUpgradeResponse struct {
 	GasLimits          gaslimit.Limits `json:"gasLimits"`
 }
 type ExecuteTNDAOUpgradeResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanJoinTNDAOResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanJoin                bool            `json:"canJoin"`
 	ProposalExpired        bool            `json:"proposalExpired"`
 	AlreadyMember          bool            `json:"alreadyMember"`
@@ -178,127 +157,107 @@ type CanJoinTNDAOResponse struct {
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type JoinTNDAOApproveResponse struct {
-	Status        string      `json:"status"`
-	Error         string      `json:"error"`
+	APIResponse
 	ApproveTxHash common.Hash `json:"approveTxHash"`
 }
 type JoinTNDAOJoinResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	JoinTxHash common.Hash `json:"joinTxHash"`
 }
 
 type CanLeaveTNDAOResponse struct {
-	Status              string          `json:"status"`
-	Error               string          `json:"error"`
+	APIResponse
 	CanLeave            bool            `json:"canLeave"`
 	ProposalExpired     bool            `json:"proposalExpired"`
 	InsufficientMembers bool            `json:"insufficientMembers"`
 	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type LeaveTNDAOResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanReplaceTNDAOPositionResponse struct {
-	Status              string          `json:"status"`
-	Error               string          `json:"error"`
+	APIResponse
 	CanReplace          bool            `json:"canReplace"`
 	ProposalExpired     bool            `json:"proposalExpired"`
 	MemberAlreadyExists bool            `json:"memberAlreadyExists"`
 	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type ReplaceTNDAOPositionResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanProposeTNDAOSettingResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	ProposalCooldownActive bool            `json:"proposalCooldownActive"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type ProposeTNDAOSettingMembersQuorumResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingMembersRplBondResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingProposalCooldownResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingProposalVoteTimespanResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingProposalVoteDelayTimespanResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingProposalExecuteTimespanResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingProposalActionTimespanResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingScrubPeriodResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingPromotionScrubPeriodResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingScrubPenaltyEnabledResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingBondReductionWindowStartResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type GetTNDAOMemberSettingsResponse struct {
-	Status            string   `json:"status"`
-	Error             string   `json:"error"`
+	APIResponse
 	Quorum            float64  `json:"quorum"`
 	RPLBond           *big.Int `json:"rplBond"`
 	ChallengeCooldown uint64   `json:"challengeCooldown"`
@@ -306,8 +265,7 @@ type GetTNDAOMemberSettingsResponse struct {
 	ChallengeCost     *big.Int `json:"challengeCost"`
 }
 type GetTNDAOProposalSettingsResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
+	APIResponse
 	Cooldown      uint64 `json:"cooldown"`
 	VoteTime      uint64 `json:"voteTime"`
 	VoteDelayTime uint64 `json:"voteDelayTime"`
@@ -315,8 +273,7 @@ type GetTNDAOProposalSettingsResponse struct {
 	ActionTime    uint64 `json:"actionTime"`
 }
 type GetTNDAOMinipoolSettingsResponse struct {
-	Status                    string `json:"status"`
-	Error                     string `json:"error"`
+	APIResponse
 	ScrubPeriod               uint64 `json:"scrubPeriod"`
 	PromotionScrubPeriod      uint64 `json:"promotionScrubPeriod"`
 	ScrubPenaltyEnabled       bool   `json:"scrubPenaltyEnabled"`
@@ -325,13 +282,11 @@ type GetTNDAOMinipoolSettingsResponse struct {
 }
 
 type CanPenaliseMegapoolResponse struct {
-	Status      string          `json:"status"`
-	Error       string          `json:"error"`
+	APIResponse
 	CanPenalise bool            `json:"canPenalise"`
 	GasLimits   gaslimit.Limits `json:"gasLimits"`
 }
 type PenaliseMegapoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }

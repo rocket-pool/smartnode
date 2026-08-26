@@ -7,8 +7,7 @@ import (
 )
 
 type NodeFeeResponse struct {
-	Status        string  `json:"status"`
-	Error         string  `json:"error"`
+	APIResponse
 	NodeFee       float64 `json:"nodeFee"`
 	MinNodeFee    float64 `json:"minNodeFee"`
 	TargetNodeFee float64 `json:"targetNodeFee"`
@@ -16,15 +15,13 @@ type NodeFeeResponse struct {
 }
 
 type RplPriceResponse struct {
-	Status        string   `json:"status"`
-	Error         string   `json:"error"`
+	APIResponse
 	RplPrice      *big.Int `json:"rplPrice"`
 	RplPriceBlock uint64   `json:"rplPriceBlock"`
 }
 
 type NetworkStatsResponse struct {
-	Status                           string         `json:"status"`
-	Error                            string         `json:"error"`
+	APIResponse
 	TotalValueLocked                 float64        `json:"totalValueLocked"`
 	DepositPoolBalance               float64        `json:"depositPoolBalance"`
 	MinipoolCapacity                 float64        `json:"minipoolCapacity"`
@@ -58,23 +55,20 @@ type NetworkStatsResponse struct {
 }
 
 type NetworkTimezonesResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
+	APIResponse
 	TimezoneCounts map[string]uint64 `json:"timezoneCounts"`
 	TimezoneTotal  uint64            `json:"timezoneTotal"`
 	NodeTotal      uint64            `json:"nodeTotal"`
 }
 
 type CanNetworkGenerateRewardsTreeResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
+	APIResponse
 	CurrentIndex   uint64 `json:"currentIndex"`
 	TreeFileExists bool   `json:"treeFileExists"`
 }
 
 type NetworkGenerateRewardsTreeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type SnapshotResponseStruct struct {
@@ -84,8 +78,7 @@ type SnapshotResponseStruct struct {
 }
 
 type NetworkDAOProposalsResponse struct {
-	Status                         string                 `json:"status"`
-	Error                          string                 `json:"error"`
+	APIResponse
 	AccountAddress                 common.Address         `json:"accountAddress"`
 	AccountAddressFormatted        string                 `json:"accountAddressFormatted"`
 	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
@@ -115,12 +108,10 @@ func (s *SnapshotResponseStruct) VoteCount() uint {
 }
 
 type DownloadRewardsFileResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type GetLatestDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }

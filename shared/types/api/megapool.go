@@ -15,8 +15,7 @@ import (
 )
 
 type MegapoolStatusResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
+	APIResponse
 	Megapool       MegapoolDetails   `json:"megapoolDetails"`
 	LatestDelegate common.Address    `json:"latestDelegate"`
 	BeaconHead     beacon.BeaconHead `json:"beaconHead"`
@@ -82,8 +81,7 @@ type MegapoolValidatorDetails struct {
 }
 
 type MegapoolValidatorMapAndRewardsResponse struct {
-	Status               string                                `json:"status"`
-	Error                string                                `json:"error"`
+	APIResponse
 	MegapoolValidatorMap map[string][]MegapoolValidatorDetails `json:"megapoolValidatorMap"`
 	TotalBeaconBalance   *big.Int                              `json:"totalBeaconBalance"`
 	NodeShareOfCLBalance *big.Int                              `json:"nodeShareOfCLBalance"`
@@ -91,8 +89,7 @@ type MegapoolValidatorMapAndRewardsResponse struct {
 }
 
 type MegapoolRewardSplitResponse struct {
-	Status      string               `json:"status"`
-	Error       string               `json:"error"`
+	APIResponse
 	RewardSplit megapool.RewardSplit `json:"rewardSplit"`
 	RefundValue *big.Int             `json:"refundValue"`
 }
@@ -105,49 +102,41 @@ type QueueDetails struct {
 }
 
 type MegapoolCanDelegateUpgradeResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type MegapoolDelegateUpgradeResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type MegapoolGetDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }
 
 type MegapoolCanSetUseLatestDelegateResponse struct {
-	Status                string          `json:"status"`
-	Error                 string          `json:"error"`
+	APIResponse
 	GasLimits             gaslimit.Limits `json:"gasLimits"`
 	MatchesCurrentSetting bool            `json:"matchesCurrentSetting"`
 }
 type MegapoolSetUseLatestDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type MegapoolGetUseLatestDelegateResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
-	Setting bool   `json:"setting"`
+	APIResponse
+	Setting bool `json:"setting"`
 }
 
 type MegapoolGetEffectiveDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }
 
 type CanDistributeMegapoolResponse struct {
-	Status                string          `json:"status"`
-	Error                 string          `json:"error"`
+	APIResponse
 	MegapoolAddress       common.Address  `json:"megapoolAddress"`
 	MegapoolNotDeployed   bool            `json:"megapoolNotDeployed"`
 	LastDistributionTime  uint64          `json:"lastDistributionTime"`
@@ -159,8 +148,7 @@ type CanDistributeMegapoolResponse struct {
 }
 
 type DistributeMegapoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
@@ -172,28 +160,24 @@ type ValidatorWithdrawableEpochProof struct {
 	Witnesses         [][32]byte
 }
 type GetNewValidatorBondRequirementResponse struct {
-	Status                      string   `json:"status"`
-	Error                       string   `json:"error"`
+	APIResponse
 	NewValidatorBondRequirement *big.Int `json:"newValidatorBondRequirement"`
 }
 
 type GetNodeMegapoolEthBondedResponse struct {
-	Status    string   `json:"status"`
-	Error     string   `json:"error"`
+	APIResponse
 	EthBonded *big.Int `json:"ethBonded"`
 }
 
 type LatestBlockWithdrawalsResponse struct {
-	Status      string                  `json:"status"`
-	Error       string                  `json:"error"`
+	APIResponse
 	Slot        uint64                  `json:"slot"`
 	BlockNumber uint64                  `json:"blockNumber"`
 	Withdrawals []beacon.WithdrawalInfo `json:"withdrawals"`
 }
 
 type BeaconWithdrawalQueueEstimateResponse struct {
-	Status                string `json:"status"`
-	Error                 string `json:"error"`
+	APIResponse
 	ExitQueueGwei         uint64 `json:"exitQueueGwei"`
 	ChurnPerEpochGwei     uint64 `json:"churnPerEpochGwei"`
 	SecondsPerEpoch       uint64 `json:"secondsPerEpoch"`

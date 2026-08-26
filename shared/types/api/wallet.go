@@ -21,10 +21,9 @@ type ValidatorKeystore struct {
 }
 
 type WalletStatusResponse struct {
-	Status            string `json:"status"`
-	Error             string `json:"error"`
-	PasswordSet       bool   `json:"passwordSet"`
-	WalletInitialized bool   `json:"walletInitialized"`
+	APIResponse
+	PasswordSet       bool `json:"passwordSet"`
+	WalletInitialized bool `json:"walletInitialized"`
 	// When masquerading, AccountAddress represents the masqueraded address.
 	// When using a normal wallet, AccountAddress represents the address derived from the wallet stored on disk
 	AccountAddress common.Address `json:"accountAddress"`
@@ -35,27 +34,23 @@ type WalletStatusResponse struct {
 }
 
 type SetPasswordResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type InitWalletResponse struct {
-	Status         string         `json:"status"`
-	Error          string         `json:"error"`
+	APIResponse
 	Mnemonic       string         `json:"mnemonic"`
 	AccountAddress common.Address `json:"accountAddress"`
 }
 
 type RecoverWalletResponse struct {
-	Status         string                  `json:"status"`
-	Error          string                  `json:"error"`
+	APIResponse
 	AccountAddress common.Address          `json:"accountAddress"`
 	ValidatorKeys  []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
 type SearchAndRecoverWalletResponse struct {
-	Status         string                  `json:"status"`
-	Error          string                  `json:"error"`
+	APIResponse
 	FoundWallet    bool                    `json:"foundWallet"`
 	AccountAddress common.Address          `json:"accountAddress"`
 	DerivationPath string                  `json:"derivationPath"`
@@ -64,8 +59,7 @@ type SearchAndRecoverWalletResponse struct {
 }
 
 type RebuildWalletResponse struct {
-	Status        string                  `json:"status"`
-	Error         string                  `json:"error"`
+	APIResponse
 	ValidatorKeys []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
@@ -81,22 +75,19 @@ type KeyRecoveryStatus struct {
 }
 
 type KeyRecoveryStatusResponse struct {
-	Status   string            `json:"status"`
-	Error    string            `json:"error"`
+	APIResponse
 	Recovery KeyRecoveryStatus `json:"recovery"`
 }
 
 type ExportWalletResponse struct {
-	Status            string `json:"status"`
-	Error             string `json:"error"`
+	APIResponse
 	Password          string `json:"password"`
 	Wallet            string `json:"wallet"`
 	AccountPrivateKey string `json:"accountPrivateKey"`
 }
 
 type SetEnsNameResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	Address   common.Address  `json:"address"`
 	EnsName   string          `json:"ensName"`
 	TxHash    common.Hash     `json:"txHash"`
@@ -104,23 +95,19 @@ type SetEnsNameResponse struct {
 }
 
 type TestMnemonicResponse struct {
-	Status           string         `json:"status"`
-	Error            string         `json:"error"`
+	APIResponse
 	CurrentAddress   common.Address `json:"currentAddress"`
 	RecoveredAddress common.Address `json:"recoveredAddress"`
 }
 
 type PurgeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type MasqueradeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type EndMasqueradeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }

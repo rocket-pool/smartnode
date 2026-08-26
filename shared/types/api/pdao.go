@@ -18,20 +18,17 @@ type PDAOProposalWithNodeVoteDirection struct {
 }
 
 type PDAOProposalsResponse struct {
-	Status    string                              `json:"status"`
-	Error     string                              `json:"error"`
+	APIResponse
 	Proposals []PDAOProposalWithNodeVoteDirection `json:"proposals"`
 }
 
 type PDAOProposalResponse struct {
-	Status   string                            `json:"status"`
-	Error    string                            `json:"error"`
+	APIResponse
 	Proposal PDAOProposalWithNodeVoteDirection `json:"proposal"`
 }
 
 type CanCancelPDAOProposalResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	CanCancel       bool            `json:"canCancel"`
 	DoesNotExist    bool            `json:"doesNotExist"`
 	InvalidState    bool            `json:"invalidState"`
@@ -39,14 +36,12 @@ type CanCancelPDAOProposalResponse struct {
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type CancelPDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanVoteOnPDAOProposalResponse struct {
-	Status            string          `json:"status"`
-	Error             string          `json:"error"`
+	APIResponse
 	CanVote           bool            `json:"canVote"`
 	DoesNotExist      bool            `json:"doesNotExist"`
 	InvalidState      bool            `json:"invalidState"`
@@ -56,28 +51,24 @@ type CanVoteOnPDAOProposalResponse struct {
 	GasLimits         gaslimit.Limits `json:"gasLimits"`
 }
 type VoteOnPDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanExecutePDAOProposalResponse struct {
-	Status       string          `json:"status"`
-	Error        string          `json:"error"`
+	APIResponse
 	CanExecute   bool            `json:"canExecute"`
 	DoesNotExist bool            `json:"doesNotExist"`
 	InvalidState bool            `json:"invalidState"`
 	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type ExecutePDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type GetPDAOSettingsResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
+	APIResponse
 	Auction struct {
 		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
 		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
@@ -191,8 +182,7 @@ type GetPDAOSettingsResponse struct {
 }
 
 type CanProposePDAOSettingResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	InsufficientRpl        bool            `json:"proposalCooldownActive"`
 	StakedRpl              *big.Int        `json:"stakedRpl"`
@@ -203,8 +193,7 @@ type CanProposePDAOSettingResponse struct {
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type ProposePDAOSettingResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
@@ -217,8 +206,7 @@ type PDAOBatchSetting struct {
 }
 
 type CanProposePDAOSettingMultiResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	InsufficientRpl        bool            `json:"proposalCooldownActive"`
 	StakedRpl              *big.Int        `json:"stakedRpl"`
@@ -230,23 +218,20 @@ type CanProposePDAOSettingMultiResponse struct {
 }
 
 type ProposePDAOSettingMultiResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOGetRewardsPercentagesResponse struct {
-	Status      string   `json:"status"`
-	Error       string   `json:"error"`
+	APIResponse
 	Node        *big.Int `json:"node"`
 	OracleDao   *big.Int `json:"odao"`
 	ProtocolDao *big.Int `json:"pdao"`
 }
 
 type PDAOCanProposeRewardsPercentagesResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
@@ -254,30 +239,26 @@ type PDAOCanProposeRewardsPercentagesResponse struct {
 }
 
 type PDAOProposeRewardsPercentagesResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeOneTimeSpendResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type PDAOProposeOneTimeSpendResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeRecurringSpendResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
@@ -285,15 +266,13 @@ type PDAOCanProposeRecurringSpendResponse struct {
 }
 
 type PDAOProposeRecurringSpendResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeRecurringSpendUpdateResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
@@ -301,15 +280,13 @@ type PDAOCanProposeRecurringSpendUpdateResponse struct {
 }
 
 type PDAOProposeRecurringSpendUpdateResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeInviteToSecurityCouncilResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanPropose             bool            `json:"canPropose"`
 	MemberAlreadyExists    bool            `json:"memberAlreadyExists"`
 	BlockNumber            uint32          `json:"blockNumber"`
@@ -317,43 +294,37 @@ type PDAOCanProposeInviteToSecurityCouncilResponse struct {
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type PDAOProposeInviteToSecurityCouncilResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeKickFromSecurityCouncilResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type PDAOProposeKickFromSecurityCouncilResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeKickMultiFromSecurityCouncilResponse struct {
-	Status      string          `json:"status"`
-	Error       string          `json:"error"`
+	APIResponse
 	BlockNumber uint32          `json:"blockNumber"`
 	GasLimits   gaslimit.Limits `json:"gasLimits"`
 }
 type PDAOProposeKickMultiFromSecurityCouncilResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
 
 type PDAOCanProposeReplaceMemberOfSecurityCouncilResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
@@ -361,8 +332,7 @@ type PDAOCanProposeReplaceMemberOfSecurityCouncilResponse struct {
 }
 
 type PDAOProposeReplaceMemberOfSecurityCouncilResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
@@ -377,14 +347,12 @@ type BondClaimResult struct {
 }
 
 type PDAOGetClaimableBondsResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
+	APIResponse
 	ClaimableBonds []BondClaimResult `json:"claimableBonds"`
 }
 
 type PDAOCanClaimBondsResponse struct {
-	Status       string          `json:"status"`
-	Error        string          `json:"error"`
+	APIResponse
 	IsProposer   bool            `json:"isProposer"`
 	CanClaim     bool            `json:"canClaim"`
 	DoesNotExist bool            `json:"doesNotExist"`
@@ -392,14 +360,12 @@ type PDAOCanClaimBondsResponse struct {
 	GasLimits    gaslimit.Limits `json:"gasLimits"`
 }
 type PDAOClaimBondsResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCanDefeatProposalResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanDefeat              bool            `json:"canDefeat"`
 	DoesNotExist           bool            `json:"doesNotExist"`
 	AlreadyDefeated        bool            `json:"alreadyDefeated"`
@@ -408,14 +374,12 @@ type PDAOCanDefeatProposalResponse struct {
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 type PDAODefeatProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCanFinalizeProposalResponse struct {
-	Status           string          `json:"status"`
-	Error            string          `json:"error"`
+	APIResponse
 	CanFinalize      bool            `json:"canFinalize"`
 	DoesNotExist     bool            `json:"doesNotExist"`
 	InvalidState     bool            `json:"invalidState"`
@@ -423,65 +387,55 @@ type PDAOCanFinalizeProposalResponse struct {
 	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type PDAOFinalizeProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCanSetVotingDelegateResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 
 type PDAOSetVotingDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCurrentVotingDelegateResponse struct {
-	Status         string         `json:"status"`
-	Error          string         `json:"error"`
+	APIResponse
 	AccountAddress common.Address `json:"accountAddress"`
 	VotingDelegate common.Address `json:"votingDelegate"`
 }
 
 type PDAOCanInitializeVotingWithDelegateResponse struct {
-	Status            string          `json:"status"`
-	Error             string          `json:"error"`
+	APIResponse
 	VotingInitialized bool            `json:"votingInitialized"`
 	GasLimits         gaslimit.Limits `json:"gasLimits"`
 }
 
 type PDAOInitializeVotingWithDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCanInitializeVotingResponse struct {
-	Status            string          `json:"status"`
-	Error             string          `json:"error"`
+	APIResponse
 	VotingInitialized bool            `json:"votingInitialized"`
 	GasLimits         gaslimit.Limits `json:"gasLimits"`
 }
 
 type PDAOInitializeVotingResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOIsVotingInitializedResponse struct {
-	Status            string `json:"status"`
-	Error             string `json:"error"`
-	VotingInitialized bool   `json:"votingInitialized"`
+	APIResponse
+	VotingInitialized bool `json:"votingInitialized"`
 }
 
 type PDAOStatusResponse struct {
-	Status                         string                 `json:"status"`
-	Error                          string                 `json:"error"`
+	APIResponse
 	VotingPower                    *big.Int               `json:"votingPower"`
 	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
@@ -500,43 +454,37 @@ type PDAOStatusResponse struct {
 }
 
 type PDAOCanSetSignallingAddressResponse struct {
-	Status       string          `json:"status"`
-	Error        string          `json:"error"`
+	APIResponse
 	GasLimits    gaslimit.Limits `json:"gasLimits"`
 	NodeToSigner common.Address  `json:"nodeToSigner"`
 }
 
 type PDAOSetSignallingAddressResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOCanClearSignallingAddressResponse struct {
-	Status            string          `json:"status"`
-	Error             string          `json:"error"`
+	APIResponse
 	GasLimits         gaslimit.Limits `json:"gasLimits"`
 	VotingInitialized bool            `json:"votingInitialized"`
 	NodeToSigner      common.Address  `json:"nodeToSigner"`
 }
 
 type PDAOClearSignallingAddressResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type PDAOACanProposeAllowListedControllersResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	BlockNumber            uint32          `json:"blockNumber"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 	CanPropose             bool            `json:"canPropose"`
 	IsRplLockingDisallowed bool            `json:"isRplLockingDisallowed"`
 }
 type PDAOProposeAllowListedControllersResponse struct {
-	Status     string      `json:"status"`
-	Error      string      `json:"error"`
+	APIResponse
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }

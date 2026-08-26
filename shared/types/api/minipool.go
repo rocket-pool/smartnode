@@ -14,8 +14,7 @@ import (
 )
 
 type MinipoolStatusResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
+	APIResponse
 	Minipools      []MinipoolDetails `json:"minipools"`
 	LatestDelegate common.Address    `json:"latestDelegate"`
 }
@@ -64,80 +63,67 @@ type MinipoolBalanceDistributionDetails struct {
 }
 
 type CanRefundMinipoolResponse struct {
-	Status                    string          `json:"status"`
-	Error                     string          `json:"error"`
+	APIResponse
 	CanRefund                 bool            `json:"canRefund"`
 	InsufficientRefundBalance bool            `json:"insufficientRefundBalance"`
 	GasLimits                 gaslimit.Limits `json:"gasLimits"`
 }
 type RefundMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanDissolveMinipoolResponse struct {
-	Status        string          `json:"status"`
-	Error         string          `json:"error"`
+	APIResponse
 	CanDissolve   bool            `json:"canDissolve"`
 	InvalidStatus bool            `json:"invalidStatus"`
 	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type DissolveMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanExitMinipoolResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	CanExit       bool   `json:"canExit"`
-	InvalidStatus bool   `json:"invalidStatus"`
+	APIResponse
+	CanExit       bool `json:"canExit"`
+	InvalidStatus bool `json:"invalidStatus"`
 }
 type ExitMinipoolResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type CanChangeWithdrawalCredentialsResponse struct {
-	Status    string `json:"status"`
-	Error     string `json:"error"`
-	CanChange bool   `json:"canChange"`
+	APIResponse
+	CanChange bool `json:"canChange"`
 }
 type ChangeWithdrawalCredentialsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type ImportKeyResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }
 
 type CanProcessWithdrawalResponse struct {
-	Status        string          `json:"status"`
-	Error         string          `json:"error"`
+	APIResponse
 	CanWithdraw   bool            `json:"canWithdraw"`
 	InvalidStatus bool            `json:"invalidStatus"`
 	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ProcessWithdrawalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanProcessWithdrawalAndFinaliseResponse struct {
-	Status        string          `json:"status"`
-	Error         string          `json:"error"`
+	APIResponse
 	CanWithdraw   bool            `json:"canWithdraw"`
 	InvalidStatus bool            `json:"invalidStatus"`
 	GasLimits     gaslimit.Limits `json:"gasLimits"`
 }
 type ProcessWithdrawalAndFinaliseResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
@@ -157,26 +143,22 @@ type MinipoolCloseDetails struct {
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {
-	Status                      string                 `json:"status"`
-	Error                       string                 `json:"error"`
+	APIResponse
 	ExpressTicketsProvisioned   bool                   `json:"expressTicketsProvisioned"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
 type CloseMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type GetDistributeBalanceDetailsResponse struct {
-	Status  string                               `json:"status"`
-	Error   string                               `json:"error"`
+	APIResponse
 	Details []MinipoolBalanceDistributionDetails `json:"details"`
 }
 type CanDistributeBalanceResponse struct {
-	Status          string               `json:"status"`
-	Error           string               `json:"error"`
+	APIResponse
 	MinipoolVersion uint8                `json:"minipoolVersion"`
 	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
 	Balance         *big.Int             `json:"balance"`
@@ -184,109 +166,91 @@ type CanDistributeBalanceResponse struct {
 	GasLimits       gaslimit.Limits      `json:"gasLimits"`
 }
 type EstimateDistributeBalanceGasResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type DistributeBalanceResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanFinaliseMinipoolResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type FinaliseMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanDelegateUpgradeResponse struct {
-	Status                string          `json:"status"`
-	Error                 string          `json:"error"`
+	APIResponse
 	LatestDelegateAddress common.Address  `json:"latestDelegateAddress"`
 	GasLimits             gaslimit.Limits `json:"gasLimits"`
 }
 type DelegateUpgradeResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanSetUseLatestDelegateResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type SetUseLatestDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanStakeMinipoolResponse struct {
-	Status    string          `json:"status"`
-	Error     string          `json:"error"`
+	APIResponse
 	CanStake  bool            `json:"canStake"`
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type StakeMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanPromoteMinipoolResponse struct {
-	Status     string          `json:"status"`
-	Error      string          `json:"error"`
+	APIResponse
 	CanPromote bool            `json:"canPromote"`
 	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
 type PromoteMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type GetUseLatestDelegateResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
-	Setting bool   `json:"setting"`
+	APIResponse
+	Setting bool `json:"setting"`
 }
 
 type GetDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }
 
 type GetPreviousDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }
 
 type GetEffectiveDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+	APIResponse
 	Address common.Address `json:"address"`
 }
 
 type GetVanityArtifactsResponse struct {
-	Status                 string         `json:"status"`
-	Error                  string         `json:"error"`
+	APIResponse
 	NodeAddress            common.Address `json:"nodeAddress"`
 	MinipoolFactoryAddress common.Address `json:"minipoolFactoryAddress"`
 	InitHash               common.Hash    `json:"initHash"`
 }
 
 type CanBeginReduceBondAmountResponse struct {
-	Status                string                `json:"status"`
-	Error                 string                `json:"error"`
+	APIResponse
 	BondReductionDisabled bool                  `json:"bondReductionDisabled"`
 	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
 	Balance               uint64                `json:"balance"`
@@ -298,21 +262,18 @@ type CanBeginReduceBondAmountResponse struct {
 	GasLimits             gaslimit.Limits       `json:"gasLimits"`
 }
 type BeginReduceBondAmountResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanReduceBondAmountResponse struct {
-	Status          string          `json:"status"`
-	Error           string          `json:"error"`
+	APIResponse
 	MinipoolVersion uint8           `json:"minipoolVersion"`
 	CanReduce       bool            `json:"canReduce"`
 	GasLimits       gaslimit.Limits `json:"gasLimits"`
 }
 type ReduceBondAmountResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
@@ -328,18 +289,15 @@ type MinipoolRescueDissolvedDetails struct {
 }
 
 type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {
-	Status  string                           `json:"status"`
-	Error   string                           `json:"error"`
+	APIResponse
 	Details []MinipoolRescueDissolvedDetails `json:"details"`
 }
 type RescueDissolvedMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type GetBondReductionEnabledResponse struct {
-	Status               string `json:"status"`
-	Error                string `json:"error"`
-	BondReductionEnabled bool   `json:"bondReductionEnabled"`
+	APIResponse
+	BondReductionEnabled bool `json:"bondReductionEnabled"`
 }
