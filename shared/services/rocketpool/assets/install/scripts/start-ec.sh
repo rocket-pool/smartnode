@@ -345,6 +345,16 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --p2p-host=$EXTERNAL_IP"
         fi
 
+        if [ "$ENABLE_IPV6" = "true" ]; then
+            CMD="$CMD --discovery-mode=V5 --p2p-ipv6-outbound-enabled --p2p-interface-ipv6=::"
+            if [ ! -z "$EC_P2P_PORT" ]; then
+                CMD="$CMD --p2p-port-ipv6=$EC_P2P_PORT"
+            fi
+            if [ ! -z "$EXTERNAL_IP6" ]; then
+                CMD="$CMD --p2p-host-ipv6=$EXTERNAL_IP6"
+            fi
+        fi
+
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --target-gas-limit=$EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi

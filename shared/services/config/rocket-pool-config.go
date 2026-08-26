@@ -149,11 +149,10 @@ type RocketPoolConfig struct {
 	RescueNode         addontypes.SmartnodeAddon `yaml:"addon-rescue-node,omitempty"`
 }
 
-// Get the external IP address. Try finding an IPv4 address first to:
-// * Improve peer discovery and node performance
-// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
+// Get the external IPv4 address. IPv6 is reported separately by GetExternalIpv6
+// so EXTERNAL_IP stays IPv4-or-blank and does not flip families (which would
+// recreate containers).
 func getExternalIP() (net.IP, error) {
-	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
 	err := ip4Consensus.UseIPProtocol(4)
@@ -161,18 +160,7 @@ func getExternalIP() (net.IP, error) {
 		// Only panics if the IP protocol isn't one of 0, 4, or 6
 		panic(err)
 	}
-	if ip, err := ip4Consensus.ExternalIP(); err == nil {
-		return ip, nil
-	}
-
-	// Try IPv6 as fallback
-	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	err = ip6Consensus.UseIPProtocol(6)
-	if err != nil {
-		// Only panics if the IP protocol isn't one of 0, 4, or 6
-		panic(err)
-	}
-	return ip6Consensus.ExternalIP()
+	return ip4Consensus.ExternalIP()
 }
 
 // Load configuration settings from a file
@@ -1478,21 +1466,24 @@ func (cfg *RocketPoolConfig) IsIPv6Enabled() bool {
 	return cfg.EnableIPv6.Value.(bool)
 }
 
-// Used by text/template to format eth1.yml
+// Used by text/template to format eth1.yml and eth2.yml.
+// Returns the external IPv4 address, or empty string if IPv4 is unavailable.
 func (cfg *RocketPoolConfig) GetExternalIp() string {
-	// Get the external IP address
 	ip, err := getExternalIP()
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
+		if !cfg.IsIPv6Enabled() && cfg.GetExternalIpv6() != "" {
+			fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
+		}
 		return ""
 	}
 
-	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
-		fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
+	v4 := ip.To4()
+	if v4 == nil {
+		return ""
 	}
-
-	return ip.String()
+	return v4.String()
 }
 
 // Used by text/template to format eth2.yml when IPv6 is enabled.
