@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
@@ -56,31 +55,11 @@ func newProvisionExpressTickets(c *cli.Command, logger log.ColorLogger) (*provis
 		return nil, err
 	}
 
-	// Check if automatic transactions are disabled
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	gas := loadAutoTxGas(cfg, &logger)
 	disabled := false
-	if gasThreshold == 0 {
+	if gas.thresholdGwei == 0 {
 		logger.Println("Automatic tx gas threshold is 0, disabling auto-provision.")
 		disabled = true
-	}
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = math.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested priority fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
-	} else {
-		priorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -91,10 +70,10 @@ func newProvisionExpressTickets(c *cli.Command, logger log.ColorLogger) (*provis
 		w:              w,
 		rp:             rp,
 		d:              d,
-		gasThreshold:   gasThreshold,
+		gasThreshold:   gas.thresholdGwei,
 		disabled:       disabled,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
+		maxFee:         gas.maxFee,
+		maxPriorityFee: gas.maxPriorityFee,
 		gasLimit:       0,
 	}, nil
 

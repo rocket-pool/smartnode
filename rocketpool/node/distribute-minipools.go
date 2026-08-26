@@ -69,41 +69,18 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 		return nil, err
 	}
 
-	// Check if auto-distributing is disabled
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	gas := loadAutoTxGas(cfg, &logger)
 	distributeThreshold := cfg.Smartnode.DistributeThreshold.Value.(float64)
 	disabled := false
-	if gasThreshold == 0 {
+	if gas.thresholdGwei == 0 {
 		logger.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
 		disabled = true
-	} else {
-		// Safety clamp
-		if distributeThreshold >= 8 {
-			logger.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
-			distributeThreshold = 7.5
-		} else if distributeThreshold == 0 {
-			logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
-			disabled = true
-		}
-	}
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = math.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
-	} else {
-		priorityFee = math.GweiToWei(priorityFeeGwei)
+	} else if distributeThreshold >= 8 {
+		logger.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
+		distributeThreshold = 7.5
+	} else if distributeThreshold == 0 {
+		logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+		disabled = true
 	}
 
 	// Return task
@@ -115,12 +92,12 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 		rp:                  rp,
 		bc:                  bc,
 		d:                   d,
-		gasThreshold:        gasThreshold,
+		gasThreshold:        gas.thresholdGwei,
 		distributeThreshold: math.EthToWei(distributeThreshold),
 		disabled:            disabled,
 		eight:               math.EthToWei(8),
-		maxFee:              maxFee,
-		maxPriorityFee:      priorityFee,
+		maxFee:              gas.maxFee,
+		maxPriorityFee:      gas.maxPriorityFee,
 		gasLimit:            0,
 	}, nil
 

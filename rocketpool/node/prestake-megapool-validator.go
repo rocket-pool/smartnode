@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
@@ -60,27 +59,7 @@ func newPrestakeMegapoolValidator(c *cli.Command, logger log.ColorLogger) (*pres
 		return nil, err
 	}
 
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = math.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		priorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
-	} else {
-		priorityFee = math.GweiToWei(priorityFeeGwei)
-	}
-
+	gas := loadAutoTxGas(cfg, &logger)
 	autoAssignmentDelay := cfg.Smartnode.AutoAssignmentDelay.Value.(uint16)
 
 	// Return task
@@ -91,9 +70,9 @@ func newPrestakeMegapoolValidator(c *cli.Command, logger log.ColorLogger) (*pres
 		w:                   w,
 		rp:                  rp,
 		d:                   d,
-		gasThreshold:        gasThreshold,
-		maxFee:              maxFee,
-		maxPriorityFee:      priorityFee,
+		gasThreshold:        gas.thresholdGwei,
+		maxFee:              gas.maxFee,
+		maxPriorityFee:      gas.maxPriorityFee,
 		gasLimit:            0,
 		autoAssignmentDelay: autoAssignmentDelay,
 	}, nil
