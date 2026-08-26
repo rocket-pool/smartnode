@@ -8,8 +8,8 @@ import (
 
 // Constants
 const (
-	erigonTagProd            string = "erigontech/erigon:v3.5.5"
-	erigonTagTest            string = "erigontech/erigon:v3.5.5"
+	erigonTagProd            string = "erigontech/erigon:v3.6.0"
+	erigonTagTest            string = "erigontech/erigon:v3.6.0"
 	erigonEventLogInterval   int    = 1000
 	erigonStopSignal         string = "SIGINT"
 	defaultErigonTorrentPort uint16 = 42069

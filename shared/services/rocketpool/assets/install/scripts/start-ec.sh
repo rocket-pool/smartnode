@@ -561,7 +561,7 @@ if [ "$CLIENT" = "erigon" ]; then
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
-        CMD="$CMD --prune.mode=blocks"
+        CMD="$CMD --prune.mode=blocks --prune.include-receipts --prune.receipts.distance=keep-all"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
