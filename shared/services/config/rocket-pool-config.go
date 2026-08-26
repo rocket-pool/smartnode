@@ -627,6 +627,7 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	newConfig.IsCLI = cfg.IsCLI
 
 	// Set the network
 	network := cfg.Smartnode.Network.Value.(config.Network)
