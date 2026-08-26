@@ -40,7 +40,7 @@ formatters:
     - goimports
 run:
   relative-path-mode: cfg
-  go: '1.26.5'
+  go: '1.27.0'
 output:
   formats:
     text:

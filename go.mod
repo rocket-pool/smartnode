@@ -1,6 +1,6 @@
 module github.com/rocket-pool/smartnode
 
-go 1.26.5
+go 1.27.0
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6
