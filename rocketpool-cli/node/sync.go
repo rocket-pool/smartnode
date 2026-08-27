@@ -55,7 +55,7 @@ func getSyncProgress() error {
 	}
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = cliutils.PrintNetwork(cfg.GetNetworkInfo(), isNew)
 	if err != nil {
 		return err
 	}

@@ -219,7 +219,10 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	cfg = config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != "")
+	cfg, err = config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != "")
+	if err != nil {
+		return nil, false, err
+	}
 	cfg.IsCLI = true
 	return cfg, true, nil
 }

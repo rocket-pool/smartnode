@@ -173,7 +173,7 @@ func serviceStatus(composeFiles []string) error {
 	}
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = cliutils.PrintNetwork(cfg.GetNetworkInfo(), isNew)
 	if err != nil {
 		return err
 	}
@@ -1023,7 +1023,7 @@ func pruneExecutionClient(yes bool) error {
 	}
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 	pruneFreeSpaceRequired := PruneFreeSpaceRequired
-	if cfg.GetNetwork() == cfgtypes.Network_Mainnet && selectedEc == cfgtypes.ExecutionClient_Nethermind {
+	if info := cfg.GetNetworkInfo(); info != nil && info.IsProduction && selectedEc == cfgtypes.ExecutionClient_Nethermind {
 		pruneFreeSpaceRequired = NethermindPruneFreeSpaceRequired
 	}
 	if diskUsage.Free < pruneFreeSpaceRequired {
@@ -1381,7 +1381,7 @@ func serviceVersion() error {
 	}
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = cliutils.PrintNetwork(cfg.GetNetworkInfo(), isNew)
 	if err != nil {
 		return err
 	}
@@ -1752,7 +1752,10 @@ func resyncEth2(yes bool, composeFiles []string) error {
 
 // Generate a YAML file that shows the current configuration schema, including all of the parameters and their descriptions
 func getConfigYaml() error {
-	cfg := config.NewRocketPoolConfig("", false)
+	cfg, err := config.NewRocketPoolConfig("", false)
+	if err != nil {
+		return fmt.Errorf("error creating configuration schema: %w", err)
+	}
 	bytes, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("error serializing configuration schema: %w", err)

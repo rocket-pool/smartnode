@@ -141,21 +141,16 @@ func GenerateTree(c *cli.Command) error {
 	if err != nil {
 		return fmt.Errorf("error getting deposit contract from the BN: %w", err)
 	}
-	var network cfgtypes.Network
-	switch depositContract.ChainID {
-	case 1:
-		network = cfgtypes.Network_Mainnet
-		logger.Printlnf("Beacon node is configured for Mainnet.")
-	case 560048:
-		network = cfgtypes.Network_Testnet
-		logger.Printlnf("Beacon node is configured for Testnet.")
-	default:
+	cfg, err := config.NewRocketPoolConfig("", true)
+	if err != nil {
+		return fmt.Errorf("error creating config: %w", err)
+	}
+	info := cfg.LoadedNetworks().ByChainID(depositContract.ChainID)
+	if info == nil {
 		return fmt.Errorf("your Beacon node is configured for an unknown network with Chain ID [%d]", depositContract.ChainID)
 	}
-
-	// Create a new config on the proper network
-	cfg := config.NewRocketPoolConfig("", true)
-	cfg.Smartnode.Network.Value = network
+	logger.Printlnf("Beacon node is configured for %s.", info.Label)
+	cfg.Smartnode.Network.Value = info.ID()
 
 	// Create the RP wrapper
 	storageContract := cfg.Smartnode.GetStorageAddress()

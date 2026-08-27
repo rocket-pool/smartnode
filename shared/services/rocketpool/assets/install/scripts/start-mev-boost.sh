@@ -10,15 +10,10 @@ if [ -n "$MEV_BOOST_ADDITIONAL_FLAGS" ]; then
 fi
 
 # Set up the network-based flag
-if [ "$NETWORK" = "mainnet" ]; then
-    MEV_NETWORK="mainnet"
-elif [ "$NETWORK" = "testnet" ]; then
-    MEV_NETWORK="hoodi"
-elif [ "$NETWORK" = "devnet" ]; then
-    MEV_NETWORK="hoodi"
-else
-    echo "Unknown network [$NETWORK]"
+if [ -z "$BEACON_NETWORK" ]; then
+    echo "BEACON_NETWORK is not set"
     exit 1
 fi
+MEV_NETWORK="$BEACON_NETWORK"
 
 exec /app/mev-boost -${MEV_NETWORK} -addr 0.0.0.0:${MEV_BOOST_PORT} -relay-check -relays ${MEV_BOOST_RELAYS} ${ADDITIONAL_ARGS}

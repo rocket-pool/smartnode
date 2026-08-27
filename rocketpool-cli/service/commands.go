@@ -92,7 +92,10 @@ func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Paramete
 // Register commands
 func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
-	cfgTemplate := config.NewRocketPoolConfig("", false)
+	cfgTemplate, err := config.NewRocketPoolConfig("", false)
+	if err != nil {
+		panic(err)
+	}
 	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Root params

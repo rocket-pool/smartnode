@@ -17,15 +17,6 @@ const (
 	ProjectNameID      string = "projectName"
 	SnapshotID         string = "rocketpool-dao.eth"
 
-	kurtosisDevnetChainIDDefault               uint   = 3151908
-	kurtosisDevnetStorageAddressDefault        string = "0xb4B46bdAA835F8E4b4d8e208B6559cD267851051"
-	kurtosisDevnetRplAddressDefault            string = "0x2b45cD38B213Bbd3A1A848bf2467927c976877Cb"
-	kurtosisDevnetRethAddressDefault           string = "0x80741a37E3644612F0465145C9709a90B6D77Ee3"
-	kurtosisDevnetMulticallAddressDefault      string = "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
-	kurtosisDevnetBalanceBatcherAddressDefault string = "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
-	kurtosisDevnetSignerRegistryAddressDefault string = "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
-	kurtosisDevnetRplTwapPoolAddressDefault    string = "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
-
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
 	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
@@ -125,112 +116,6 @@ type SmartnodeConfig struct {
 
 	// Delay for automatic queue assignment
 	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
-
-	///////////////////////////
-	// Non-editable settings //
-	///////////////////////////
-
-	// The URL to provide the user so they can follow pending transactions
-	txWatchUrl map[config.Network]string `yaml:"-"`
-
-	// The URL to use for the node management interface
-	nodeManagerUrl map[config.Network]string `yaml:"-"`
-
-	// The map of networks to execution chain IDs
-	chainID map[config.Network]uint `yaml:"-"`
-
-	// The contract address of RocketStorage
-	storageAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of RocketSignerRegistry
-	rocketSignerRegistryAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of the RPL token
-	rplTokenAddress map[config.Network]string `yaml:"-"`
-
-	// The Snapshot API domain
-	snapshotApiDomain map[config.Network]string `yaml:"-"`
-
-	// The contract address of rETH
-	rethAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketRewardsPool from v1.0.0
-	v1_0_0_RewardsPoolAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketClaimNode from v1.0.0
-	v1_0_0_ClaimNodeAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketClaimTrustedNode from v1.0.0
-	v1_0_0_ClaimTrustedNodeAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketMinipoolManager from v1.0.0
-	v1_0_0_MinipoolManagerAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNetworkPrices from v1.1.0
-	v1_1_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNodeStaking from v1.1.0
-	v1_1_0_NodeStakingAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNodeDeposit from v1.1.0
-	v1_1_0_NodeDepositAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketMinipoolQueue from v1.1.0
-	v1_1_0_MinipoolQueueAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketMinipoolFactory from v1.1.0
-	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNetworkPrices from v1.2.0
-	v1_2_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNetworkBalances from v1.2.0
-	v1_2_0_NetworkBalancesAddress map[config.Network]string `yaml:"-"`
-
-	// Addresses for RocketRewardsPool that have been upgraded during development
-	previousRewardsPoolAddresses map[config.Network][]common.Address `yaml:"-"`
-
-	// Addresses for RocketDAOProtocolVerifier that have been upgraded during development
-	previousRocketDAOProtocolVerifier map[config.Network][]common.Address `yaml:"-"`
-
-	// The RocketOvmPriceMessenger Optimism address for each network
-	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The RocketPolygonPriceMessenger Polygon address for each network
-	polygonPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The RocketArbitumPriceMessenger Arbitrum address for each network
-	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The RocketArbitumPriceMessengerV2 Arbitrum address for each network
-	arbitrumPriceMessengerAddressV2 map[config.Network]string `yaml:"-"`
-
-	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
-	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The RocketBasePriceMessenger Base address for each network
-	basePriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The RocketScrollPriceMessenger Scroll address for each network
-	scrollPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// The Scroll L2 message fee estimator address for each network
-	scrollFeeEstimatorAddress map[config.Network]string `yaml:"-"`
-
-	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
-	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
-
-	// The multicall contract address
-	multicallAddress map[config.Network]string `yaml:"-"`
-
-	// The BalanceChecker contract address
-	balancebatcherAddress map[config.Network]string `yaml:"-"`
-
-	// The FlashBots Protect RPC endpoint
-	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
-
-	// The Flashbots relay URL for eth_sendBundle / bundle operations (distinct from Protect RPC)
-	flashbotsRelayUrl map[config.Network]string `yaml:"-"`
 }
 
 // Generates a newSmart Node configuration
@@ -278,11 +163,11 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Name:               "Network",
 			Description:        "The Ethereum network you want to use - select Hoodi Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 			Type:               config.ParameterType_Choice,
-			Default:            map[config.Network]interface{}{config.Network_All: config.Network_Mainnet},
+			Default:            map[config.Network]interface{}{config.Network_All: defaultNetwork(cfg)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
-			Options:            getNetworkOptions(),
+			Options:            getNetworkOptions(cfg),
 		},
 
 		ManualMaxFee: config.Parameter{
@@ -427,217 +312,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 		},
-
-		txWatchUrl: map[config.Network]string{
-			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
-		},
-
-		nodeManagerUrl: map[config.Network]string{
-			config.Network_Mainnet: "https://node.rocketpool.net",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "https://testnet.node.rocketpool.net",
-		},
-
-		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,                            // Mainnet
-			config.Network_Devnet:  kurtosisDevnetChainIDDefault, // Kurtosis ethereum-package (was Hoodi)
-			config.Network_Testnet: 560048,                       // Hoodi
-		},
-
-		storageAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  kurtosisDevnetStorageAddressDefault,
-			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
-		},
-
-		rocketSignerRegistryAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  kurtosisDevnetSignerRegistryAddressDefault,
-			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
-		},
-
-		rplTokenAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  kurtosisDevnetRplAddressDefault,
-			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
-		},
-
-		rethAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  kurtosisDevnetRethAddressDefault,
-			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
-		},
-
-		v1_0_0_RewardsPoolAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_0_0_ClaimNodeAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_0_0_ClaimTrustedNodeAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_0_0_MinipoolManagerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_1_0_NetworkPricesAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xd3f500F550F46e504A4D2153127B47e007e11166",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_1_0_NodeStakingAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x0d8D8f8541B12A0e1194B7CC4b6D954b90AB82ec",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_1_0_NodeDepositAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_1_0_MinipoolQueueAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_1_0_MinipoolFactoryAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_2_0_NetworkPricesAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x751826b107672360b764327631cC5764515fFC37",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		v1_2_0_NetworkBalancesAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		snapshotApiDomain: map[config.Network]string{
-			config.Network_Mainnet: "hub.snapshot.org",
-			config.Network_Devnet:  "hub.snapshot.org",
-			config.Network_Testnet: "hub.snapshot.org",
-		},
-
-		previousRewardsPoolAddresses: map[config.Network][]common.Address{
-			config.Network_Mainnet: {
-				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
-				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
-				common.HexToAddress("0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"),
-			},
-			// Fresh private deploy — no legacy rewards pool history.
-			config.Network_Devnet: {},
-			config.Network_Testnet: {
-				common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
-			},
-		},
-
-		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
-			config.Network_Mainnet: {
-				common.HexToAddress("0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"),
-			},
-			config.Network_Devnet:  {},
-			config.Network_Testnet: {},
-		},
-
-		optimismPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		polygonPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		arbitrumPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		arbitrumPriceMessengerAddressV2: map[config.Network]string{
-			config.Network_Mainnet: "0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		zkSyncEraPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		basePriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x8aa4afc5a9793433eb37c9919ff49b54903c7cb1",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		scrollPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		scrollFeeEstimatorAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "",
-		},
-
-		rplTwapPoolAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  kurtosisDevnetRplTwapPoolAddressDefault,
-			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
-		},
-
-		multicallAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  kurtosisDevnetMulticallAddressDefault,
-			config.Network_Testnet: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
-		},
-
-		balancebatcherAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  kurtosisDevnetBalanceBatcherAddressDefault,
-			config.Network_Testnet: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
-		},
-
-		flashbotsProtectUrl: map[config.Network]string{
-			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "",
-			config.Network_Testnet: "https://rpc-hoodi.flashbots.net/",
-		},
-
-		flashbotsRelayUrl: map[config.Network]string{
-			config.Network_Mainnet: "https://relay.flashbots.net",
-		},
 	}
 
 }
@@ -665,16 +339,43 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 
 // Getters for the non-editable parameters
 
+func (cfg *SmartnodeConfig) networkInfo() *config.NetworkInfo {
+	if cfg.parent == nil || cfg.parent.networks == nil {
+		return &config.NetworkInfo{}
+	}
+	info := cfg.parent.networks.GetNetwork(cfg.Network.Value.(config.Network))
+	if info == nil {
+		return &config.NetworkInfo{}
+	}
+	return info
+}
+
 func (cfg *SmartnodeConfig) GetTxWatchUrl() string {
-	return cfg.txWatchUrl[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().TxWatchUrl
 }
 
 func (cfg *SmartnodeConfig) GetNodeManagerUrl() string {
-	return cfg.nodeManagerUrl[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().NodeManagerUrl
 }
 
 func (cfg *SmartnodeConfig) GetChainID() uint {
-	return cfg.chainID[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().ChainID
+}
+
+func (cfg *SmartnodeConfig) GetBeaconNetwork() string {
+	return cfg.networkInfo().BeaconNetwork
+}
+
+func (cfg *SmartnodeConfig) GetCustomChainConfigDir() string {
+	return cfg.networkInfo().CustomChainConfigDir
+}
+
+func (cfg *SmartnodeConfig) GetBeaconExplorerUrl() string {
+	return cfg.networkInfo().BeaconExplorerUrl
+}
+
+func (cfg *SmartnodeConfig) GetCommitBoostChainName() string {
+	return cfg.networkInfo().CommitBoostChainName
 }
 
 func (cfg *SmartnodeConfig) GetWalletPath() string {
@@ -762,15 +463,15 @@ func (cfg *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
 }
 
 func (cfg *SmartnodeConfig) GetStorageAddress() string {
-	return cfg.storageAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.Storage
 }
 
 func (cfg *SmartnodeConfig) GetRocketSignerRegistryAddress() string {
-	return cfg.rocketSignerRegistryAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.RocketSignerRegistry
 }
 
 func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
-	return cfg.rplTokenAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.RplToken
 }
 
 func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
@@ -778,7 +479,7 @@ func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {
-	return cfg.snapshotApiDomain[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().SnapshotApiDomain
 }
 
 func (cfg *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
@@ -799,7 +500,7 @@ func (cfg *SmartnodeConfig) GetConfigTitle() string {
 }
 
 func (cfg *SmartnodeConfig) GetRethAddress() common.Address {
-	return common.HexToAddress(cfg.rethAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.Reth)
 }
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
@@ -903,99 +604,99 @@ func (cfg *SmartnodeConfig) GetPerKeyFeeRecipientFilePath() string {
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {
-	return common.HexToAddress(cfg.v1_0_0_RewardsPoolAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_0_0_RewardsPool)
 }
 
 func (cfg *SmartnodeConfig) GetV100ClaimNodeAddress() common.Address {
-	return common.HexToAddress(cfg.v1_0_0_ClaimNodeAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_0_0_ClaimNode)
 }
 
 func (cfg *SmartnodeConfig) GetV100ClaimTrustedNodeAddress() common.Address {
-	return common.HexToAddress(cfg.v1_0_0_ClaimTrustedNodeAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_0_0_ClaimTrustedNode)
 }
 
 func (cfg *SmartnodeConfig) GetV100MinipoolManagerAddress() common.Address {
-	return common.HexToAddress(cfg.v1_0_0_MinipoolManagerAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_0_0_MinipoolManager)
 }
 
 func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
-	return common.HexToAddress(cfg.v1_1_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_1_0_NetworkPrices)
 }
 
 func (cfg *SmartnodeConfig) GetV120NetworkPricesAddress() common.Address {
-	return common.HexToAddress(cfg.v1_2_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_2_0_NetworkPrices)
 }
 
 func (cfg *SmartnodeConfig) GetV120NetworkBalancesAddress() common.Address {
-	return common.HexToAddress(cfg.v1_2_0_NetworkBalancesAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_2_0_NetworkBalances)
 }
 
 func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {
-	return common.HexToAddress(cfg.v1_1_0_NodeStakingAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_1_0_NodeStaking)
 }
 
 func (cfg *SmartnodeConfig) GetV110NodeDepositAddress() common.Address {
-	return common.HexToAddress(cfg.v1_1_0_NodeDepositAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_1_0_NodeDeposit)
 }
 
 func (cfg *SmartnodeConfig) GetV110MinipoolQueueAddress() common.Address {
-	return common.HexToAddress(cfg.v1_1_0_MinipoolQueueAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_1_0_MinipoolQueue)
 }
 
 func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
-	return common.HexToAddress(cfg.v1_1_0_MinipoolFactoryAddress[cfg.Network.Value.(config.Network)])
+	return common.HexToAddress(cfg.networkInfo().Addresses.V1_1_0_MinipoolFactory)
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
-	return cfg.previousRewardsPoolAddresses[cfg.Network.Value.(config.Network)]
+	return hexAddresses(cfg.networkInfo().Addresses.PreviousRewardsPools)
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRocketDAOProtocolVerifierAddresses() []common.Address {
-	return cfg.previousRocketDAOProtocolVerifier[cfg.Network.Value.(config.Network)]
+	return hexAddresses(cfg.networkInfo().Addresses.PreviousDAOVerifiers)
 }
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
-	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.OptimismPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
-	return cfg.polygonPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.PolygonPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
-	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.ArbitrumPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddressV2() string {
-	return cfg.arbitrumPriceMessengerAddressV2[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.ArbitrumPriceMessengerV2
 }
 
 func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
-	return cfg.zkSyncEraPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.ZkSyncEraPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetBaseMessengerAddress() string {
-	return cfg.basePriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.BasePriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetScrollMessengerAddress() string {
-	return cfg.scrollPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.ScrollPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetScrollFeeEstimatorAddress() string {
-	return cfg.scrollFeeEstimatorAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.ScrollFeeEstimator
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
-	return cfg.rplTwapPoolAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.RplTwapPool
 }
 
 func (cfg *SmartnodeConfig) GetMulticallAddress() string {
-	return cfg.multicallAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.Multicall
 }
 
 func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
-	return cfg.balancebatcherAddress[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().Addresses.BalanceBatcher
 }
 
 // Utility function to get the state manager contracts
@@ -1007,30 +708,31 @@ func (cfg *SmartnodeConfig) GetStateManagerContracts() StateManagerContracts {
 }
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
-	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().FlashbotsProtectUrl
 }
 
 func (cfg *SmartnodeConfig) GetFlashbotsRelayUrl() string {
-	return cfg.flashbotsRelayUrl[cfg.Network.Value.(config.Network)]
+	return cfg.networkInfo().FlashbotsRelayUrl
 }
 
-func getNetworkOptions() []config.ParameterOption {
-	options := []config.ParameterOption{
-		{
-			Name:        "Ethereum Mainnet",
-			Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
-			Value:       config.Network_Mainnet,
-		}, {
-			Name:        "Hoodi Testnet",
-			Description: "This is the Hoodi test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
-			Value:       config.Network_Testnet,
-		},
-		{
-			Name:        "Devnet",
-			Description: "Rocket Pool development network. This is a local network that is used for development and testing. It uses free fake ETH and free fake RPL to make fake validators.",
-			Value:       config.Network_Devnet,
-		},
+func defaultNetwork(cfg *RocketPoolConfig) config.Network {
+	if cfg == nil || cfg.networks == nil {
+		return config.Network_Unknown
 	}
+	return cfg.networks.DefaultNetwork()
+}
 
+func getNetworkOptions(cfg *RocketPoolConfig) []config.ParameterOption {
+	if cfg == nil || cfg.networks == nil {
+		return nil
+	}
+	options := make([]config.ParameterOption, 0, len(cfg.networks.AllNetworks()))
+	for _, n := range cfg.networks.AllNetworks() {
+		options = append(options, config.ParameterOption{
+			Name:        n.Label,
+			Description: n.Description,
+			Value:       n.ID(),
+		})
+	}
 	return options
 }

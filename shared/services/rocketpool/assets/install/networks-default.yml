@@ -1,0 +1,158 @@
+# Official Smart Node networks. `rocketpool service install` always overwrites
+# ~/.rocketpool/networks-default.yml with this file.
+#
+# To add or override a network without rebuilding, create
+# ~/.rocketpool/networks-extra.yml using the same schema (version + networks).
+# Same-name entries in the extra file replace the official ones; new names are
+# appended and appear in `rocketpool service config`.
+# Extra networks may omit addresses to run execution/consensus clients on a
+# chain that has no Rocket Pool contracts.
+version: 1
+networks:
+  - name: mainnet
+    label: Ethereum Mainnet
+    description: This is the real Ethereum main network, using real ETH and real RPL to make real validators.
+    default: true
+    chainID: 1
+    txWatchUrl: https://etherscan.io/tx
+    nodeManagerUrl: https://node.rocketpool.net
+    beaconExplorerUrl: https://beaconcha.in
+    snapshotApiDomain: hub.snapshot.org
+    flashbotsProtectUrl: https://rpc.flashbots.net/
+    flashbotsRelayUrl: https://relay.flashbots.net
+    beaconNetwork: mainnet
+    commitBoostChainName: Mainnet
+    clientTagSet: production
+    supportsMevBoost: true
+    allowNonBlsWithdrawalCredentials: false
+    isProduction: true
+    nethermindPruneThresholdMb: 375809
+    rewards:
+      rulesetStartIntervals:
+        - version: 11
+          startInterval: 46
+        - version: 10
+          startInterval: 30
+        - version: 9
+          startInterval: 29
+      consensusBonusCutoffInterval: 46
+    mevRelays:
+      flashbots: https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool
+      bloxrouteRegulated: https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool
+      ultrasound: https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool
+      ultrasoundFiltered: https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay-filtered.ultrasound.money?id=rocketpool
+      aestus: https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool
+      titanGlobal: https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz
+      titanRegional: https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz
+      btcsOfac: https://0xb66921e917a8f4cfc3c52e10c1e5c77b1255693d9e6ed6f5f444b71ca4bb610f2eff4fa98178efbf4dd43a30472c497e@relay.btcs.com
+    addresses:
+      storage: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46"
+      rocketSignerRegistry: "0xc1062617d10Ae99E09D941b60746182A87eAB38F"
+      rplToken: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
+      reth: "0xae78736Cd615f374D3085123A210448E74Fc6393"
+      v1_0_0_RewardsPool: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802"
+      v1_0_0_ClaimNode: "0x899336A2a86053705E65dB61f52C686dcFaeF548"
+      v1_0_0_ClaimTrustedNode: "0x6af730deB0463b432433318dC8002C0A4e9315e8"
+      v1_0_0_MinipoolManager: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a"
+      v1_1_0_NetworkPrices: "0xd3f500F550F46e504A4D2153127B47e007e11166"
+      v1_1_0_NodeStaking: "0x0d8D8f8541B12A0e1194B7CC4b6D954b90AB82ec"
+      v1_1_0_NodeDeposit: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"
+      v1_1_0_MinipoolQueue: "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E"
+      v1_1_0_MinipoolFactory: "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788"
+      v1_2_0_NetworkPrices: "0x751826b107672360b764327631cC5764515fFC37"
+      v1_2_0_NetworkBalances: "0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"
+      previousRewardsPools:
+        - "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"
+        - "0xA805d68b61956BC92d556F2bE6d18747adAeEe82"
+        - "0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"
+      previousRocketDAOProtocolVerifier:
+        - "0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"
+      optimismPriceMessenger: "0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F"
+      polygonPriceMessenger: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511"
+      arbitrumPriceMessenger: "0x05330300f829AD3fC8f33838BC88CFC4093baD53"
+      arbitrumPriceMessengerV2: "0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1"
+      zkSyncEraPriceMessenger: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8"
+      basePriceMessenger: "0x8aa4afc5a9793433eb37c9919ff49b54903c7cb1"
+      scrollPriceMessenger: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c"
+      scrollFeeEstimator: "0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B"
+      rplTwapPool: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45"
+      multicall: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+      balancebatcher: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39"
+
+  - name: testnet
+    label: Hoodi Testnet
+    description: |
+      This is the Hoodi test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.
+      Use this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.
+    chainID: 560048
+    txWatchUrl: https://hoodi.etherscan.io/tx
+    nodeManagerUrl: https://testnet.node.rocketpool.net
+    beaconExplorerUrl: https://hoodi.beaconcha.in
+    snapshotApiDomain: hub.snapshot.org
+    flashbotsProtectUrl: https://rpc-hoodi.flashbots.net/
+    beaconNetwork: hoodi
+    commitBoostChainName: Hoodi
+    clientTagSet: test
+    supportsMevBoost: false
+    allowNonBlsWithdrawalCredentials: false
+    isProduction: false
+    nethermindPruneThresholdMb: 51200
+    rewards:
+      rulesetStartIntervals:
+        - version: 11
+          startInterval: 140
+        - version: 10
+          startInterval: 0
+      consensusBonusCutoffInterval: 140
+    mevRelays:
+      flashbots: https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool
+      ultrasound: https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool
+      ultrasoundFiltered: https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool
+      aestus: https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool
+      titanGlobal: https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz
+      titanRegional: https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz
+    addresses:
+      storage: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"
+      rocketSignerRegistry: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E"
+      rplToken: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"
+      reth: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1"
+      previousRewardsPools:
+        - "0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"
+      rplTwapPool: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454"
+      multicall: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7"
+      balancebatcher: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce"
+
+  - name: devnet
+    label: Devnet
+    description: Rocket Pool development network. This is a local network that is used for development and testing. It uses free fake ETH and free fake RPL to make fake validators.
+    chainID: 3151908
+    snapshotApiDomain: hub.snapshot.org
+    beaconNetwork: hoodi
+    commitBoostChainName: Hoodi
+    clientTagSet: test
+    customChainConfigDir: devnet
+    supportsMevBoost: false
+    allowNonBlsWithdrawalCredentials: true
+    isProduction: false
+    nethermindPruneThresholdMb: 51200
+    rewards:
+      rulesetStartIntervals:
+        - version: 11
+          startInterval: 0
+        - version: 10
+          startInterval: 0
+    mevRelays:
+      flashbots: https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool
+      ultrasound: https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool
+      ultrasoundFiltered: https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool
+      aestus: https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool
+      titanGlobal: https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz
+      titanRegional: https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz
+    addresses:
+      storage: "0xb4B46bdAA835F8E4b4d8e208B6559cD267851051"
+      rocketSignerRegistry: "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
+      rplToken: "0x2b45cD38B213Bbd3A1A848bf2467927c976877Cb"
+      reth: "0x80741a37E3644612F0465145C9709a90B6D77Ee3"
+      rplTwapPool: "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
+      multicall: "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
+      balancebatcher: "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"

@@ -2,7 +2,7 @@
 set -e
 
 # Grab the Testnet genesis state if needed
-if [ "$NETWORK" = "testnet" ]; then
+if [ "$BEACON_NETWORK" = "hoodi" ] && [ -z "$CUSTOM_CHAIN_DIR" ]; then
     echo "Prysm is configured to use Hoodi, genesis state required."
     if [ ! -f "/ethclient/hoodi-genesis.ssz" ]; then
         echo "Downloading from Github..."

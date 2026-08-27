@@ -16,11 +16,17 @@ services:
       - {{.Smartnode.DataPath}}/validators:/validators
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
       - {{.RocketPoolDirectory}}/addons:/addons
-      - {{.RocketPoolDirectory}}/devnet:/devnet:ro
+      {{- if .Smartnode.GetCustomChainConfigDir}}
+      - {{.RocketPoolDirectory}}/{{.Smartnode.GetCustomChainConfigDir}}:/custom-chain:ro
+      {{- end}}
     networks:
       - net
     environment:
       - NETWORK={{.Smartnode.Network}}
+      - BEACON_NETWORK={{.Smartnode.GetBeaconNetwork}}
+      {{- if .Smartnode.GetCustomChainConfigDir}}
+      - CUSTOM_CHAIN_DIR=/custom-chain
+      {{- end}}
       - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}
       - CC_CLIENT={{if .ConsensusClientLocal}}{{.ConsensusClient}}{{else}}{{.ExternalConsensusClient}}{{end}}
       - CC_API_ENDPOINT={{.ConsensusClientApiUrl}}

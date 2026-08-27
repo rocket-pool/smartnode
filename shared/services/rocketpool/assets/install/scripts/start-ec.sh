@@ -31,28 +31,23 @@ define_perf_prefix() {
     echo "Performance tuning: $PERF_PREFIX"
 }
 
-# Set up the network-based flags
-if [ "$NETWORK" = "mainnet" ]; then
+# Set up the network-based flags from BEACON_NETWORK (the Ethereum client network name).
+if [ -z "$BEACON_NETWORK" ]; then
+    echo "BEACON_NETWORK is not set"
+    exit 1
+fi
+if [ "$BEACON_NETWORK" = "mainnet" ]; then
     GETH_NETWORK=""
     RP_NETHERMIND_NETWORK="mainnet"
     BESU_NETWORK="--network=mainnet"
     RETH_NETWORK="--chain mainnet"
     ERIGON_NETWORK="--chain mainnet"
-elif [ "$NETWORK" = "devnet" ]; then
-    GETH_NETWORK="--hoodi"
-    RP_NETHERMIND_NETWORK="hoodi"
-    BESU_NETWORK="--network=hoodi"
-    RETH_NETWORK="--chain hoodi"
-    ERIGON_NETWORK="--chain hoodi"
-elif [ "$NETWORK" = "testnet" ]; then
-    GETH_NETWORK="--hoodi"
-    RP_NETHERMIND_NETWORK="hoodi"
-    BESU_NETWORK="--network=hoodi"
-    RETH_NETWORK="--chain hoodi"
-    ERIGON_NETWORK="--chain hoodi"
 else
-    echo "Unknown network [$NETWORK]"
-    exit 1
+    GETH_NETWORK="--$BEACON_NETWORK"
+    RP_NETHERMIND_NETWORK="$BEACON_NETWORK"
+    BESU_NETWORK="--network=$BEACON_NETWORK"
+    RETH_NETWORK="--chain $BEACON_NETWORK"
+    ERIGON_NETWORK="--chain $BEACON_NETWORK"
 fi
 
 
@@ -112,7 +107,7 @@ if [ "$CLIENT" = "geth" ]; then
             --pprof \
             $EC_ADDITIONAL_FLAGS"
 
-        if [ "$NETWORK" = "devnet" ]; then\
+        if [ -n "$CUSTOM_CHAIN_DIR" ]; then\
             CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
         fi
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
@@ -413,7 +408,7 @@ if [ "$CLIENT" = "reth" ]; then
     RETH_DATADIR="/ethclient/reth"
 
     # Use official snapshots for mainnet when no db exists
-    if [ "$NETWORK" = "mainnet" ] && [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ] && [ ! -f "$RETH_DATADIR/db/mdbx.dat" ]; then
+    if [ "$BEACON_NETWORK" = "mainnet" ] && [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ] && [ ! -f "$RETH_DATADIR/db/mdbx.dat" ]; then
         echo "No Reth database found; downloading rolling-history snapshot"
         if ! $PERF_PREFIX /usr/local/bin/reth download $RETH_NETWORK \
             --datadir "$RETH_DATADIR" \
@@ -554,7 +549,7 @@ if [ "$CLIENT" = "erigon" ]; then
         --rpc.returndata.limit 1000000 \
         $EC_ADDITIONAL_FLAGS"
 
-    if [ "$NETWORK" = "devnet" ]; then
+    if [ -n "$CUSTOM_CHAIN_DIR" ]; then
         CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
     fi
 

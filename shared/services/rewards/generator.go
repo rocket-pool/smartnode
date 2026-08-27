@@ -14,7 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Settings
@@ -48,36 +47,26 @@ const (
 	// HoleskyV6Interval uint64 = 0
 	// HoleskyV7Interval uint64 = 0
 
-	// Mainnet intervals
-	MainnetV9Interval  uint64 = 29
-	MainnetV10Interval uint64 = 30
-	MainnetV11Interval uint64 = 46
-	// Devnet intervals
-	DevnetV11Interval uint64 = 0
-
-	// Testnet intervals
-	TestnetV10Interval uint64 = 0
-	TestnetV11Interval uint64 = 140
+	LatestRulesetVersion uint64 = 11
 )
 
-func GetMainnetRulesetVersion(interval uint64) uint64 {
-	if interval >= MainnetV10Interval {
-		return 10
+func GetRulesetVersion(cfg *config.RocketPoolConfig, interval uint64) uint64 {
+	info := cfg.GetNetworkInfo()
+	if info == nil || len(info.Rewards.RulesetStartIntervals) == 0 {
+		return LatestRulesetVersion
 	}
-	return 9
-}
-
-func GetRulesetVersion(network cfgtypes.Network, interval uint64) uint64 {
-	switch network {
-	case cfgtypes.Network_Mainnet:
-		return GetMainnetRulesetVersion(interval)
-	case cfgtypes.Network_Testnet:
-		return 10
-	case cfgtypes.Network_Devnet:
-		return 10
-	default:
-		return 10
+	var best uint64
+	found := false
+	for _, s := range info.Rewards.RulesetStartIntervals {
+		if s.StartInterval <= interval && (!found || s.Version > best) {
+			best = s.Version
+			found = true
+		}
 	}
+	if !found {
+		return 0
+	}
+	return best
 }
 
 type TreeGenerator struct {
@@ -129,18 +118,10 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 		intervalsPassed:  intervalsPassed,
 	}
 
-	// Get the current network
-	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-
-	// Determine if the interval is eligible for consensus bonuses
-	var isEligibleInterval bool
-	switch network {
-	case cfgtypes.Network_Mainnet:
-		isEligibleInterval = t.index-4 < MainnetV11Interval
-	case cfgtypes.Network_Testnet:
-		isEligibleInterval = t.index-4 < TestnetV11Interval
-	default:
-		isEligibleInterval = true
+	info := t.cfg.GetNetworkInfo()
+	isEligibleInterval := true
+	if info != nil && info.Rewards.ConsensusBonusCutoffInterval != 0 {
+		isEligibleInterval = t.index-4 < info.Rewards.ConsensusBonusCutoffInterval
 	}
 
 	// v11
@@ -156,22 +137,14 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
 			rewardsRulesetVersion: 11,
-			mainnetStartInterval:  MainnetV11Interval,
-			testnetStartInterval:  TestnetV11Interval,
-			devnetStartInterval:   DevnetV11Interval,
 			generator:             v11_generator,
 		},
 		{
 			rewardsRulesetVersion: 10,
-			mainnetStartInterval:  MainnetV10Interval,
-			testnetStartInterval:  TestnetV10Interval,
-			devnetStartInterval:   0,
 			generator:             v10_generator,
 		},
 		{
 			rewardsRulesetVersion: 9,
-			mainnetStartInterval:  MainnetV9Interval,
-			testnetStartInterval:  0,
 			generator:             v9_generator,
 		},
 	}
@@ -202,7 +175,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	// The first ruleset whose startInterval is at most t.index is the one to use, but if it requires Saturn and saturn is not yet deployed, use the next one that doesn't require Saturn
 	for _, info := range rewardsIntervalInfos {
 
-		startInterval, err := info.GetStartInterval(network)
+		startInterval, err := info.GetStartInterval(t.cfg)
 		if err != nil {
 			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", t.index, err)
 		}

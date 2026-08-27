@@ -67,6 +67,8 @@ type RocketPoolConfig struct {
 	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
 	IsCLI bool `yaml:"-"`
 
+	networks *NetworksConfig `yaml:"-"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -185,7 +187,10 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig(filepath.Dir(path), false)
+	cfg, err := NewRocketPoolConfig(filepath.Dir(path), false)
+	if err != nil {
+		return nil, fmt.Errorf("could not create config: %w", err)
+	}
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
@@ -262,7 +267,15 @@ func (cfg *RocketPoolConfig) Save(directory, filename string) error {
 }
 
 // Creates a new Rocket Pool configuration instance
-func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
+func NewRocketPoolConfig(rpDir string, isNativeMode bool) (*RocketPoolConfig, error) {
+	networks, err := LoadNetworks(rpDir)
+	if err != nil {
+		return nil, fmt.Errorf("could not load networks: %w", err)
+	}
+	return newRocketPoolConfig(rpDir, isNativeMode, networks)
+}
+
+func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig) (*RocketPoolConfig, error) {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
@@ -278,6 +291,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		Title:               "Top-level Settings",
 		RocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
+		networks:            networks,
 
 		ExecutionClientMode: config.Parameter{
 			ID:                 "executionClientMode",
@@ -591,17 +605,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter()
 	cfg.RescueNode = addons.NewRescueNode()
 
-	// Apply the default values for mainnet
-	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
+	// Apply the default values for the default network from YAML
+	cfg.Smartnode.Network.Value = cfg.networks.DefaultNetwork()
 	err := cfg.applyAllDefaults()
 	if err != nil {
-		// This function is called in a lot of pure contexts, and
-		// we shouldn't ever see a failure on applying the defaults anyway - at runtime.
-		// This panic should get caught during CI
-		panic(err)
+		return nil, fmt.Errorf("error applying default settings: %w", err)
 	}
 
-	return cfg
+	return cfg, nil
 }
 
 // Get a more verbose client description, including warnings
@@ -626,7 +637,10 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	newConfig, err := newRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks)
+	if err != nil {
+		panic(err)
+	}
 	newConfig.IsCLI = cfg.IsCLI
 
 	// Set the network
@@ -911,7 +925,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	}
 
 	// Get the network
-	network := config.Network_Mainnet
+	network := cfg.networks.DefaultNetwork()
 	smartnodeConfig, exists := masterMap["smartnode"]
 	if exists {
 		networkString, exists := smartnodeConfig[cfg.Smartnode.Network.ID]
@@ -923,6 +937,9 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 			}
 			network = reflect.ValueOf(networkString).Convert(paramType).Interface().(config.Network)
 		}
+	}
+	if cfg.networks.GetNetwork(network) == nil {
+		return fmt.Errorf("unknown network %q (not present in networks-default.yml / networks-extra.yml)", network)
 	}
 
 	// Deserialize root params
@@ -1753,6 +1770,10 @@ func (cfg *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string
 func (cfg *RocketPoolConfig) Validate() []string {
 	errors := []string{}
 
+	if cfg.GetNetworkInfo() == nil {
+		errors = append(errors, fmt.Sprintf("Unknown network %q. Add it to networks-extra.yml or pick an official network.", cfg.GetNetwork()))
+	}
+
 	// Check for illegal blank strings
 	/* TODO - this needs to be smarter and ignore irrelevant settings
 	for _, param := range config.GetParameters() {
@@ -1889,6 +1910,22 @@ func addAndCheckForDuplicate(portMap map[interface{}]bool, param config.Paramete
 
 func (cfg *RocketPoolConfig) GetNetwork() config.Network {
 	return cfg.Smartnode.Network.Value.(config.Network)
+}
+
+func (cfg *RocketPoolConfig) GetNetworkInfo() *config.NetworkInfo {
+	if cfg.networks == nil || cfg.Smartnode == nil {
+		return nil
+	}
+	return cfg.networks.GetNetwork(cfg.GetNetwork())
+}
+
+func (cfg *RocketPoolConfig) LoadedNetworks() *NetworksConfig {
+	return cfg.networks
+}
+
+func (cfg *RocketPoolConfig) SupportsMevBoost() bool {
+	info := cfg.GetNetworkInfo()
+	return info != nil && info.SupportsMevBoost
 }
 
 // Applies all of the defaults to all of the settings that have them defined

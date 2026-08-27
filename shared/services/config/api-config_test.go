@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetNodeOpenPorts(t *testing.T) {
-	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
+	cfg := mustNewRocketPoolConfig(t, "/tmp/rp-test", false)
 
 	cfg.Api.OpenApiPort.Value = cfgtypes.RPC_Closed
 	if got := cfg.GetNodeOpenPorts(); got != "" {
@@ -41,7 +41,7 @@ func TestTokenPathExpandsTilde(t *testing.T) {
 }
 
 func TestDefaultRateLimit(t *testing.T) {
-	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
+	cfg := mustNewRocketPoolConfig(t, "/tmp/rp-test", false)
 	got, ok := cfg.Api.RateLimit.Value.(uint16)
 	if !ok || got != 0 {
 		t.Fatalf("default rate limit %v (%T), want 0", cfg.Api.RateLimit.Value, cfg.Api.RateLimit.Value)
@@ -49,7 +49,7 @@ func TestDefaultRateLimit(t *testing.T) {
 }
 
 func TestSensitiveTokenNotSerialized(t *testing.T) {
-	cfg := NewRocketPoolConfig("/tmp/rp-test", false)
+	cfg := mustNewRocketPoolConfig(t, "/tmp/rp-test", false)
 	cfg.Api.APIToken.Value = "rpsn_secret"
 	cfg.Api.TokenComment.Value = "not in yaml"
 	serialized := cfg.Serialize()
@@ -62,7 +62,7 @@ func TestSensitiveTokenNotSerialized(t *testing.T) {
 }
 
 func TestTokenPathUsesCLIFlag(t *testing.T) {
-	cfg := NewRocketPoolConfig("/tmp/rp-cli", false)
+	cfg := mustNewRocketPoolConfig(t, "/tmp/rp-cli", false)
 	cfg.IsCLI = true
 	got := cfg.Api.GetAPITokenPath()
 	if filepath.Base(got) != "api-tokens.json" {
@@ -72,7 +72,7 @@ func TestTokenPathUsesCLIFlag(t *testing.T) {
 		t.Fatal("CLI should not use the in-container data path")
 	}
 
-	daemon := NewRocketPoolConfig("/tmp/rp-daemon", false)
+	daemon := mustNewRocketPoolConfig(t, "/tmp/rp-daemon", false)
 	if daemon.Api.GetAPITokenPath() != tokenPath(DaemonDataPath) {
 		t.Fatalf("docker daemon path %q", daemon.Api.GetAPITokenPath())
 	}

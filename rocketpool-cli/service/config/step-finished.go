@@ -33,8 +33,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == cfgtypes.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == cfgtypes.Network_Devnet {
-			// Skip MEV for testnet/devnet
+		if !wiz.md.Config.SupportsMevBoost() {
 			wiz.metricsModal.show()
 		} else {
 			wiz.mevModeModal.show()

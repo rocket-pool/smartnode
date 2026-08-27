@@ -18,6 +18,7 @@ services:
       - net
     environment:
       - NETWORK={{.Smartnode.Network}}
+      - BEACON_NETWORK={{.Smartnode.GetBeaconNetwork}}
       - COMMIT_BOOST_PORT={{.CommitBoost.Port}}
     entrypoint: sh
     command: "/setup/start-commit-boost.sh"

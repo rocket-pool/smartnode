@@ -63,15 +63,11 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Lighthouse container you want to use from Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: lighthouseTagPortableProd,
-				config.Network_Devnet:  lighthouseTagPortableTest,
-				config.Network_Testnet: lighthouseTagPortableTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Lighthouse container you want to use from Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, lighthouseTagPortableProd, lighthouseTagPortableTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

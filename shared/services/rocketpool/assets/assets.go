@@ -28,6 +28,16 @@ func InstallScript() ScriptWithContext {
 	return ScriptWithContext{Script: installScript, Context: installFS}
 }
 
+// NetworksDefaultYAML is the packaged official networks file, copied to
+// ~/.rocketpool/networks-default.yml on every `rocketpool service install`.
+func NetworksDefaultYAML() []byte {
+	bytes, err := installFS.ReadFile("install/networks-default.yml")
+	if err != nil {
+		panic("embedded install/networks-default.yml is missing: " + err.Error())
+	}
+	return bytes
+}
+
 func InstallUpdateTrackerScript() ScriptWithContext {
 	return ScriptWithContext{Script: installUpdateTrackerScript, Context: rpUpdateTrackerFS}
 }
