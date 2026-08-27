@@ -64,7 +64,7 @@ func TestDecodeSSZSizeFallback(t *testing.T) {
 
 func BenchmarkBeaconStateDecodeStreaming(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		state := &deneb.BeaconState{}
 		if err := generic.SSZ.UnmarshalSSZReader(state, bytes.NewReader(testState), len(testState)); err != nil {
 			b.Fatalf("Failed to stream-unmarshal test state: %v", err)
@@ -74,7 +74,7 @@ func BenchmarkBeaconStateDecodeStreaming(b *testing.B) {
 
 func BenchmarkBeaconStateDecodeBuffered(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		state := &deneb.BeaconState{}
 		if err := generic.SSZ.UnmarshalSSZ(state, testState); err != nil {
 			b.Fatalf("Failed to unmarshal test state: %v", err)
@@ -89,7 +89,7 @@ func BenchmarkValidatorProof(b *testing.B) {
 	}
 	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := state.ValidatorProof(555555); err != nil {
 			b.Fatalf("Failed to get validator proof: %v", err)
 		}
