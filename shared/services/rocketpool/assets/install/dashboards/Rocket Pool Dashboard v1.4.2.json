@@ -1682,7 +1682,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 13
+        "y": 22
       },
       "id": 234,
       "options": {
@@ -1744,7 +1744,7 @@
         "h": 5,
         "w": 2,
         "x": 13,
-        "y": 14
+        "y": 23
       },
       "id": 237,
       "links": [],
@@ -1822,7 +1822,7 @@
         "h": 5,
         "w": 2,
         "x": 15,
-        "y": 14
+        "y": 23
       },
       "id": 12,
       "links": [],
@@ -1912,7 +1912,7 @@
         "h": 5,
         "w": 5,
         "x": 17,
-        "y": 14
+        "y": 23
       },
       "id": 51,
       "options": {
@@ -2005,7 +2005,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 15
+        "y": 24
       },
       "id": 76,
       "options": {
@@ -2068,7 +2068,7 @@
         "h": 5,
         "w": 4,
         "x": 6,
-        "y": 15
+        "y": 24
       },
       "id": 88,
       "options": {
@@ -2142,7 +2142,7 @@
         "h": 5,
         "w": 2,
         "x": 10,
-        "y": 15
+        "y": 24
       },
       "id": 263,
       "options": {
@@ -2192,7 +2192,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 19
+        "y": 28
       },
       "id": 258,
       "options": {
@@ -2263,7 +2263,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 20
+        "y": 29
       },
       "id": 70,
       "options": {
@@ -2378,7 +2378,7 @@
         "h": 6,
         "w": 4,
         "x": 6,
-        "y": 20
+        "y": 29
       },
       "id": 80,
       "options": {
@@ -2443,7 +2443,7 @@
         "h": 6,
         "w": 2,
         "x": 10,
-        "y": 20
+        "y": 29
       },
       "id": 74,
       "options": {
@@ -2491,7 +2491,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 20
+        "y": 29
       },
       "id": 212,
       "options": {
@@ -2534,7 +2534,7 @@
         "h": 3,
         "w": 3,
         "x": 13,
-        "y": 21
+        "y": 30
       },
       "id": 72,
       "options": {
@@ -2591,7 +2591,7 @@
         "h": 3,
         "w": 3,
         "x": 16,
-        "y": 21
+        "y": 30
       },
       "id": 210,
       "options": {
@@ -2670,7 +2670,7 @@
         "h": 9,
         "w": 3,
         "x": 19,
-        "y": 21
+        "y": 30
       },
       "id": 256,
       "options": {
@@ -2744,7 +2744,7 @@
         "h": 6,
         "w": 3,
         "x": 13,
-        "y": 24
+        "y": 33
       },
       "id": 204,
       "options": {
@@ -2802,7 +2802,7 @@
         "h": 6,
         "w": 3,
         "x": 16,
-        "y": 24
+        "y": 33
       },
       "id": 152,
       "links": [],
@@ -2843,7 +2843,7 @@
         "h": 1,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 35
       },
       "id": 158,
       "options": {
@@ -2889,7 +2889,7 @@
         "h": 5,
         "w": 3,
         "x": 0,
-        "y": 27
+        "y": 36
       },
       "id": 156,
       "options": {
@@ -2955,7 +2955,7 @@
         "h": 5,
         "w": 3,
         "x": 3,
-        "y": 27
+        "y": 36
       },
       "id": 214,
       "options": {
@@ -3021,7 +3021,7 @@
         "h": 5,
         "w": 3,
         "x": 6,
-        "y": 27
+        "y": 36
       },
       "id": 182,
       "options": {
@@ -3087,7 +3087,7 @@
         "h": 5,
         "w": 3,
         "x": 9,
-        "y": 27
+        "y": 36
       },
       "id": 250,
       "options": {
@@ -3129,7 +3129,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 30
+        "y": 39
       },
       "id": 270,
       "options": {
@@ -3175,7 +3175,7 @@
         "h": 3,
         "w": 3,
         "x": 13,
-        "y": 31
+        "y": 40
       },
       "id": 272,
       "options": {
@@ -3241,7 +3241,7 @@
         "h": 3,
         "w": 3,
         "x": 16,
-        "y": 31
+        "y": 40
       },
       "id": 271,
       "options": {
@@ -3307,7 +3307,7 @@
         "h": 10,
         "w": 3,
         "x": 19,
-        "y": 31
+        "y": 40
       },
       "id": 274,
       "options": {
@@ -3367,7 +3367,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 32
+        "y": 41
       },
       "id": 178,
       "options": {
@@ -3422,7 +3422,7 @@
         "h": 4,
         "w": 3,
         "x": 3,
-        "y": 32
+        "y": 41
       },
       "id": 180,
       "options": {
@@ -3482,7 +3482,7 @@
         "h": 4,
         "w": 3,
         "x": 6,
-        "y": 32
+        "y": 41
       },
       "id": 160,
       "options": {
@@ -3538,7 +3538,7 @@
         "h": 4,
         "w": 3,
         "x": 9,
-        "y": 32
+        "y": 41
       },
       "id": 266,
       "options": {
@@ -3617,7 +3617,7 @@
         "h": 3,
         "w": 3,
         "x": 13,
-        "y": 34
+        "y": 43
       },
       "id": 273,
       "options": {
@@ -3687,7 +3687,7 @@
         "h": 3,
         "w": 3,
         "x": 16,
-        "y": 34
+        "y": 43
       },
       "id": 275,
       "options": {
@@ -3747,7 +3747,7 @@
         "h": 3,
         "w": 2,
         "x": 0,
-        "y": 36
+        "y": 45
       },
       "id": 172,
       "options": {
@@ -3779,7 +3779,7 @@
       "type": "stat"
     },
     {
-      "description": "A breakdown of the counts of each minipool on the Rocket Pool network by status:\n\n- **Initialized**: waiting for a deposit still\n- **Prelaunch:** deposits are done, waiting to be staked by the node operator's `rocketpool_node` container \n- **Staking:** deposited, validator created, and active (or pending) on the Beacon Chain\n- **Dissolved:** staking failed, funds returned to the node operator and staking pool\n- **Withdrawable:** exited from the Beacon Chain, waiting for rewards to be withdrawn to the minipool\n- **Finalized:** exited, withdrawn from, and essentially closed (inactive)",
+      "description": "A breakdown of the counts of this node's minipools by status:\n\n- **Initialized**: waiting for a deposit still\n- **Prelaunch:** deposits are done, waiting to be staked by the node operator's `rocketpool_node` container \n- **Staking:** deposited, validator created, and active (or pending) on the Beacon Chain\n- **Dissolved:** staking failed, funds returned to the node operator and staking pool\n- **Withdrawable:** exited from the Beacon Chain, waiting for rewards to be withdrawn to the minipool\n- **Finalized:** exited, withdrawn from, and essentially closed (inactive)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3845,8 +3845,8 @@
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 2,
-        "y": 36
+        "x": 13,
+        "y": 13
       },
       "id": 176,
       "options": {
@@ -3874,7 +3874,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "rocketpool_supply_minipool_count{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_minipool_count{job=\"rocketpool\"}",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -3882,7 +3882,7 @@
           "refId": "A"
         }
       ],
-      "title": "Minipools by Status",
+      "title": "Your Minipools by Status",
       "type": "piechart"
     },
     {
@@ -3914,7 +3914,7 @@
         "h": 4,
         "w": 3,
         "x": 13,
-        "y": 37
+        "y": 46
       },
       "id": 276,
       "options": {
@@ -3980,7 +3980,7 @@
         "h": 4,
         "w": 3,
         "x": 16,
-        "y": 37
+        "y": 46
       },
       "id": 277,
       "options": {
@@ -4018,7 +4018,7 @@
       "type": "stat"
     },
     {
-      "description": "The total number of Rocket Pool minipools (validators) that are active (not exited and withdrawn from the Beacon Chain).",
+      "description": "The number of this node's minipools (validators) that are active (not exited and withdrawn from the Beacon Chain).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4039,8 +4039,8 @@
       "gridPos": {
         "h": 3,
         "w": 2,
-        "x": 0,
-        "y": 39
+        "x": 13,
+        "y": 19
       },
       "id": 174,
       "options": {
@@ -4062,13 +4062,13 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "rocketpool_supply_active_minipools{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_active_minipool_count{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Active Minipools",
+      "title": "Your Active Minipools",
       "type": "stat"
     },
     {
@@ -4076,7 +4076,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 41
+        "y": 50
       },
       "id": 186,
       "options": {
@@ -4099,7 +4099,7 @@
         "h": 1,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 51
       },
       "id": 238,
       "options": {
@@ -4140,7 +4140,7 @@
         "h": 4,
         "w": 5,
         "x": 13,
-        "y": 42
+        "y": 51
       },
       "id": 218,
       "options": {
@@ -4195,7 +4195,7 @@
         "h": 4,
         "w": 4,
         "x": 18,
-        "y": 42
+        "y": 51
       },
       "id": 216,
       "options": {
@@ -4277,7 +4277,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 43
+        "y": 52
       },
       "id": 235,
       "options": {
@@ -4342,7 +4342,7 @@
         "h": 4,
         "w": 3,
         "x": 3,
-        "y": 43
+        "y": 52
       },
       "id": 236,
       "options": {
@@ -4407,7 +4407,7 @@
         "h": 4,
         "w": 3,
         "x": 6,
-        "y": 43
+        "y": 52
       },
       "id": 240,
       "options": {
@@ -4462,7 +4462,7 @@
         "h": 4,
         "w": 3,
         "x": 9,
-        "y": 43
+        "y": 52
       },
       "id": 242,
       "options": {
@@ -4523,7 +4523,7 @@
         "h": 13,
         "w": 3,
         "x": 13,
-        "y": 46
+        "y": 55
       },
       "id": 190,
       "options": {
@@ -4619,7 +4619,7 @@
         "h": 7,
         "w": 6,
         "x": 16,
-        "y": 46
+        "y": 55
       },
       "id": 196,
       "options": {
@@ -4705,7 +4705,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 47
+        "y": 56
       },
       "id": 264,
       "options": {
@@ -4815,7 +4815,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 60
       },
       "id": 200,
       "options": {
@@ -4889,7 +4889,7 @@
         "h": 3,
         "w": 4,
         "x": 16,
-        "y": 53
+        "y": 62
       },
       "id": 198,
       "options": {
@@ -4977,7 +4977,7 @@
         "h": 6,
         "w": 2,
         "x": 20,
-        "y": 53
+        "y": 62
       },
       "id": 192,
       "options": {
@@ -5043,7 +5043,7 @@
         "h": 3,
         "w": 4,
         "x": 16,
-        "y": 56
+        "y": 65
       },
       "id": 194,
       "options": {
@@ -5080,7 +5080,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 59
+        "y": 68
       },
       "id": 261,
       "options": {
@@ -5095,6 +5095,246 @@
       "pluginVersion": "9.5.18",
       "transparent": true,
       "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "A breakdown of the counts of this node's megapool validators by status:",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "staked"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prestake"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "in_queue"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exited"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dissolved"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exiting"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "locked"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 17,
+        "y": 13
+      },
+      "id": 268,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_megapool_count{job=\"rocketpool\"}",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Your Megapool Validators by Status",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "The number of this node's megapool validators that are active (not exited and withdrawn from the Beacon Chain).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 2,
+        "x": 15,
+        "y": 19
+      },
+      "id": 269,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_megapool_active_validator_count",
+          "interval": "",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Your Active Megapool Validators",
+      "type": "stat"
     }
   ],
   "refresh": "30s",
@@ -5124,8 +5364,8 @@
     ]
   },
   "timezone": "",
-  "title": "Rocket Pool Dashboard v1.4.1 - Provisioned",
-  "uid": "e6741a77-5548-4807-b3f4-416c603d8d28",
+  "title": "Rocket Pool Dashboard v1.4.2 - Provisioned",
+  "uid": "1072a92f-f2eb-4cd8-8c4f-be4883952ce2",
   "version": 5,
   "weekStart": ""
 }

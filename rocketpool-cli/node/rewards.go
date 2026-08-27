@@ -2,13 +2,11 @@ package node
 
 import (
 	"fmt"
-	"math/big"
 	"time"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/math"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
@@ -85,17 +83,6 @@ func getRewards(yes bool) error {
 	rewards, err := rp.NodeRewards()
 	if err != nil {
 		return err
-	}
-
-	beaconBalances, err := rp.GetValidatorMapAndBalances()
-	if err != nil {
-		return err
-	}
-	// Add the megapool unskimmed beacon rewards, if available.
-	// NodeBond and NodeShareOfCLBalance are nil for nodes without a megapool (legacy minipools only).
-	if beaconBalances.NodeBond != nil && beaconBalances.NodeShareOfCLBalance != nil {
-		megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
-		rewards.BeaconRewards = rewards.BeaconRewards + math.WeiToEth(megapoolUnskimmedRewards)
 	}
 
 	fmt.Println("=== ETH ===")

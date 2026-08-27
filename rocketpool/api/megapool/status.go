@@ -187,7 +187,7 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 
 	status, err := getStatus(c, false)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting the megapool status")
+		return nil, fmt.Errorf("Error getting the megapool status: %w", err)
 	}
 
 	// Response
