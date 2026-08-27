@@ -1,10 +1,6 @@
 package rocketpool
 
 import (
-	"fmt"
-
-	"github.com/goccy/go-json"
-
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -18,16 +14,5 @@ func (c *Client) PrintMultiTxWarning() {
 
 // Get the gas price from the latest block
 func (c *Client) GetGasPriceFromLatestBlock() (api.GasPriceFromLatestBlockResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/service/get-gas-price-from-latest-block", nil)
-	if err != nil {
-		return api.GasPriceFromLatestBlockResponse{}, fmt.Errorf("Could not get gas price from latest block: %w", err)
-	}
-	var response api.GasPriceFromLatestBlockResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GasPriceFromLatestBlockResponse{}, fmt.Errorf("Could not decode gas price from latest block response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GasPriceFromLatestBlockResponse{}, fmt.Errorf("Could not get gas price from latest block: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GasPriceFromLatestBlockResponse]("GET", "/api/service/get-gas-price-from-latest-block", nil, "Could not get gas price from latest block")
 }

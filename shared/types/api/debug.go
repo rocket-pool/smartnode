@@ -1,8 +1,7 @@
 package api
 
 type RewardsEventResponse struct {
-	Status            string   `json:"status"`
-	Error             string   `json:"error"`
+	APIResponse
 	Found             bool     `json:"found"`
 	Index             string   `json:"index"`
 	ExecutionBlock    string   `json:"executionBlock"`

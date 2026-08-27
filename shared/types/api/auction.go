@@ -10,8 +10,7 @@ import (
 )
 
 type AuctionStatusResponse struct {
-	Status              string   `json:"status"`
-	Error               string   `json:"error"`
+	APIResponse
 	TotalRPLBalance     *big.Int `json:"totalRPLBalance"`
 	AllottedRPLBalance  *big.Int `json:"allottedRPLBalance"`
 	RemainingRPLBalance *big.Int `json:"remainingRPLBalance"`
@@ -24,9 +23,8 @@ type AuctionStatusResponse struct {
 }
 
 type AuctionLotsResponse struct {
-	Status string       `json:"status"`
-	Error  string       `json:"error"`
-	Lots   []LotDetails `json:"lots"`
+	APIResponse
+	Lots []LotDetails `json:"lots"`
 }
 type LotDetails struct {
 	Details              auction.LotDetails `json:"details"`
@@ -36,23 +34,20 @@ type LotDetails struct {
 }
 
 type CanCreateLotResponse struct {
-	Status              string          `json:"status"`
-	Error               string          `json:"error"`
+	APIResponse
 	CanCreate           bool            `json:"canCreate"`
 	InsufficientBalance bool            `json:"insufficientBalance"`
 	CreateLotDisabled   bool            `json:"createLotDisabled"`
 	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type CreateLotResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	LotId  uint64      `json:"lotId"`
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanBidOnLotResponse struct {
-	Status           string          `json:"status"`
-	Error            string          `json:"error"`
+	APIResponse
 	CanBid           bool            `json:"canBid"`
 	DoesNotExist     bool            `json:"doesNotExist"`
 	BiddingEnded     bool            `json:"biddingEnded"`
@@ -61,14 +56,12 @@ type CanBidOnLotResponse struct {
 	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type BidOnLotResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanClaimFromLotResponse struct {
-	Status           string          `json:"status"`
-	Error            string          `json:"error"`
+	APIResponse
 	CanClaim         bool            `json:"canClaim"`
 	DoesNotExist     bool            `json:"doesNotExist"`
 	NoBidFromAddress bool            `json:"noBidFromAddress"`
@@ -76,14 +69,12 @@ type CanClaimFromLotResponse struct {
 	GasLimits        gaslimit.Limits `json:"gasLimits"`
 }
 type ClaimFromLotResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type CanRecoverRPLFromLotResponse struct {
-	Status              string          `json:"status"`
-	Error               string          `json:"error"`
+	APIResponse
 	CanRecover          bool            `json:"canRecover"`
 	DoesNotExist        bool            `json:"doesNotExist"`
 	BiddingNotEnded     bool            `json:"biddingNotEnded"`
@@ -92,7 +83,6 @@ type CanRecoverRPLFromLotResponse struct {
 	GasLimits           gaslimit.Limits `json:"gasLimits"`
 }
 type RecoverRPLFromLotResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }

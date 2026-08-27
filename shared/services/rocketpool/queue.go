@@ -5,23 +5,14 @@ import (
 	"math/big"
 	"net/url"
 
-	"github.com/goccy/go-json"
-
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // Get queue status
 func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/status", nil)
+	response, err := c.callAPI[api.QueueStatusResponse]("GET", "/api/queue/status", nil, "Could not get queue status")
 	if err != nil {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not get queue status: %w", err)
-	}
-	var response api.QueueStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not decode queue status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not get queue status: %s", response.Error)
+		return response, err
 	}
 	if response.DepositPoolBalance == nil {
 		response.DepositPoolBalance = big.NewInt(0)
@@ -34,79 +25,24 @@ func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
 
 // Check whether the queue can be processed
 func (c *Client) CanProcessQueue(m uint32) (api.CanProcessQueueResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-process", url.Values{"max": {fmt.Sprintf("%d", m)}})
-	if err != nil {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %w", err)
-	}
-	var response api.CanProcessQueueResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not decode can process queue response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanProcessQueueResponse]("GET", "/api/queue/can-process", url.Values{"max": {fmt.Sprintf("%d", m)}}, "Could not get can process queue status")
 }
 
 // Process the queue
 func (c *Client) ProcessQueue(m uint32) (api.ProcessQueueResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/process", url.Values{"max": {fmt.Sprintf("%d", m)}})
-	if err != nil {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %w", err)
-	}
-	var response api.ProcessQueueResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not decode process queue response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.ProcessQueueResponse]("POST", "/api/queue/process", url.Values{"max": {fmt.Sprintf("%d", m)}}, "Could not process queue")
 }
 
 // Check whether deposits can be assigned
 func (c *Client) CanAssignDeposits(m uint32) (api.CanAssignDepositsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}})
-	if err != nil {
-		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not get can assign deposits status: %w", err)
-	}
-	var response api.CanAssignDepositsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not decode can assign deposits response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not get can assign deposits status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanAssignDepositsResponse]("GET", "/api/queue/can-assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}}, "Could not get can assign deposits status")
 }
 
 // Assign deposits to queued validators
 func (c *Client) AssignDeposits(m uint32) (api.AssignDepositsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}})
-	if err != nil {
-		return api.AssignDepositsResponse{}, fmt.Errorf("Could not assign deposits: %w", err)
-	}
-	var response api.AssignDepositsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.AssignDepositsResponse{}, fmt.Errorf("Could not decode assign deposits response: %w", err)
-	}
-	if response.Error != "" {
-		return api.AssignDepositsResponse{}, fmt.Errorf("Could not assign deposits: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.AssignDepositsResponse]("POST", "/api/queue/assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}}, "Could not assign deposits")
 }
 
 func (c *Client) GetQueueDetails() (api.GetQueueDetailsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/get-queue-details", nil)
-	if err != nil {
-		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %w", err)
-	}
-	var response api.GetQueueDetailsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not decode get total queue length response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GetQueueDetailsResponse]("GET", "/api/queue/get-queue-details", nil, "Could not get total queue length")
 }

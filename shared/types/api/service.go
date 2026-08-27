@@ -7,19 +7,16 @@ import (
 )
 
 type GasPriceFromLatestBlockResponse struct {
-	Status   string   `json:"status"`
-	Error    string   `json:"error"`
+	APIResponse
 	GasPrice *big.Int `json:"gasPrice"`
 }
 type TerminateDataFolderResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	FolderExisted bool   `json:"folderExisted"`
+	APIResponse
+	FolderExisted bool `json:"folderExisted"`
 }
 
 type CreateFeeRecipientFileResponse struct {
-	Status      string         `json:"status"`
-	Error       string         `json:"error"`
+	APIResponse
 	Distributor common.Address `json:"distributor"`
 }
 
@@ -40,13 +37,11 @@ type ClientManagerStatus struct {
 }
 
 type ClientStatusResponse struct {
-	Status          string              `json:"status"`
-	Error           string              `json:"error"`
+	APIResponse
 	EcManagerStatus ClientManagerStatus `json:"ecManagerStatus"`
 	BcManagerStatus ClientManagerStatus `json:"bcManagerStatus"`
 }
 
 type RestartVcResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+	APIResponse
 }

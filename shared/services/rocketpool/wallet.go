@@ -7,57 +7,23 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // Get wallet status
 func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/status", nil)
-	if err != nil {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not get wallet status: %w", err)
-	}
-	var response api.WalletStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not decode wallet status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not get wallet status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.WalletStatusResponse]("GET", "/api/wallet/status", nil, "Could not get wallet status")
 }
 
 // Set wallet password
 func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/set-password", url.Values{"password": {password}})
-	if err != nil {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %w", err)
-	}
-	var response api.SetPasswordResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not decode set wallet password response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.SetPasswordResponse]("POST", "/api/wallet/set-password", url.Values{"password": {password}}, "Could not set wallet password")
 }
 
 // Initialize wallet
 func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/init", url.Values{"derivationPath": {derivationPath}})
-	if err != nil {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %w", err)
-	}
-	var response api.InitWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not decode initialize wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.InitWalletResponse]("POST", "/api/wallet/init", url.Values{"derivationPath": {derivationPath}}, "Could not initialize wallet")
 }
 
 // Recover wallet
@@ -66,23 +32,12 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/recover", url.Values{
+	return c.callAPI[api.RecoverWalletResponse]("POST", "/api/wallet/recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"skipValidatorKeyRecovery": {skipStr},
 		"derivationPath":           {derivationPath},
 		"walletIndex":              {fmt.Sprintf("%d", walletIndex)},
-	})
-	if err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
-	}
-	var response api.RecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not decode recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not recover wallet")
 }
 
 // Search and recover wallet
@@ -91,22 +46,11 @@ func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address,
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/search-and-recover", url.Values{
+	return c.callAPICtx[api.SearchAndRecoverWalletResponse](context.Background(), "POST", "/api/wallet/search-and-recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"address":                  {address.Hex()},
 		"skipValidatorKeyRecovery": {skipStr},
-	})
-	if err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %w", err)
-	}
-	var response api.SearchAndRecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not decode search-and-recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not search and recover wallet")
 }
 
 // Recover wallet (test, no save)
@@ -115,23 +59,12 @@ func (c *Client) TestRecoverWallet(mnemonic string, skipValidatorKeyRecovery boo
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/test-recover", url.Values{
+	return c.callAPI[api.RecoverWalletResponse]("POST", "/api/wallet/test-recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"skipValidatorKeyRecovery": {skipStr},
 		"derivationPath":           {derivationPath},
 		"walletIndex":              {fmt.Sprintf("%d", walletIndex)},
-	})
-	if err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not test recover wallet: %w", err)
-	}
-	var response api.RecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not decode test recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not test recover wallet: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not test recover wallet")
 }
 
 // Search and recover wallet (test, no save)
@@ -140,105 +73,39 @@ func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Addr
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/test-search-and-recover", url.Values{
+	return c.callAPI[api.SearchAndRecoverWalletResponse]("POST", "/api/wallet/test-search-and-recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"address":                  {address.Hex()},
 		"skipValidatorKeyRecovery": {skipStr},
-	})
-	if err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not test search and recover wallet: %w", err)
-	}
-	var response api.SearchAndRecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not decode test-search-and-recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not test search and recover wallet: %s", response.Error)
-	}
-	return response, nil
+	}, "Could not test search and recover wallet")
 }
 
 // Rebuild wallet
 func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	// removed timeout as large nodes were exceeding it
-	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/wallet/rebuild", nil)
-	if err != nil {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
-	}
-	var response api.RebuildWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not decode rebuild wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPICtx[api.RebuildWalletResponse](context.Background(), "POST", "/api/wallet/rebuild", nil, "Could not rebuild wallet")
 }
 
 // Get the status of any validator key recovery currently running
 func (c *Client) GetKeyRecoveryStatus() (api.KeyRecoveryStatusResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	responseBytes, err := c.callHTTPAPICtx(ctx, "GET", "/api/wallet/recovery-status", nil)
-	if err != nil {
-		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %w", err)
-	}
-	var response api.KeyRecoveryStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not decode key recovery status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.KeyRecoveryStatusResponse{}, fmt.Errorf("Could not get key recovery status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPICtx[api.KeyRecoveryStatusResponse](ctx, "GET", "/api/wallet/recovery-status", nil, "Could not get key recovery status")
 }
 
 // Estimate the gas required to set an ENS reverse record to a name
 func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/estimate-gas-set-ens-name", url.Values{"name": {name}})
-	if err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %w", err)
-	}
-	var response api.SetEnsNameResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode estimate-gas-set-ens-name response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.SetEnsNameResponse]("GET", "/api/wallet/estimate-gas-set-ens-name", url.Values{"name": {name}}, "Could not get estimate-gas-set-ens-name response")
 }
 
 // Set an ENS reverse record to a name
 func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/set-ens-name", url.Values{"name": {name}})
-	if err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
-	}
-	var response api.SetEnsNameResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode set-ens-name response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.SetEnsNameResponse]("POST", "/api/wallet/set-ens-name", url.Values{"name": {name}}, "Could not update ENS record")
 }
 
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/export", nil)
-	if err != nil {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not export wallet: %w", err)
-	}
-	var response api.ExportWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not decode export wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not export wallet: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.ExportWalletResponse]("GET", "/api/wallet/export", nil, "Could not export wallet")
 }
 
 // Set the node address to an arbitrary address
@@ -247,32 +114,10 @@ func (c *Client) Masquerade(address common.Address, observe bool) (api.Masquerad
 	if observe {
 		observeStr = "true"
 	}
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/masquerade", url.Values{"address": {address.Hex()}, "observe": {observeStr}})
-	if err != nil {
-		return api.MasqueradeResponse{}, fmt.Errorf("Could not masquerade wallet: %w", err)
-	}
-	var response api.MasqueradeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MasqueradeResponse{}, fmt.Errorf("Could not decode masquerade wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.MasqueradeResponse{}, fmt.Errorf("Could not masquerade wallet: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.MasqueradeResponse]("POST", "/api/wallet/masquerade", url.Values{"address": {address.Hex()}, "observe": {observeStr}}, "Could not masquerade wallet")
 }
 
 // Delete the address file, ending a masquerade
 func (c *Client) EndMasquerade() (api.EndMasqueradeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/end-masquerade", nil)
-	if err != nil {
-		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not end masquerade: %w", err)
-	}
-	var response api.EndMasqueradeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not decode end masquerade response: %w", err)
-	}
-	if response.Error != "" {
-		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not end masquerade: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.EndMasqueradeResponse]("POST", "/api/wallet/end-masquerade", nil, "Could not end masquerade")
 }

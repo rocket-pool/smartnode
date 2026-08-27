@@ -559,21 +559,13 @@ func (c *Client) PrintServiceCompose(composeFiles []string) error {
 // Get the Rocket Pool service version
 func (c *Client) GetServiceVersion() (string, error) {
 	type versionResponse struct {
-		Status  string `json:"status"`
-		Error   string `json:"error"`
+		api.APIResponse
 		Version string `json:"version"`
 	}
 
-	responseBytes, err := c.callHTTPAPI("GET", "/api/version", nil)
+	response, err := c.callAPI[versionResponse]("GET", "/api/version", nil, "Could not get Rocket Pool service version")
 	if err != nil {
-		return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
-	}
-	var response versionResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return "", fmt.Errorf("Could not decode Rocket Pool service version response: %w", err)
-	}
-	if response.Error != "" {
-		return "", fmt.Errorf("Could not get Rocket Pool service version: %s", response.Error)
+		return "", err
 	}
 
 	version, err := semver.Make(response.Version)

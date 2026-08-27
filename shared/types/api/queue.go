@@ -8,16 +8,14 @@ import (
 )
 
 type QueueStatusResponse struct {
-	Status                string   `json:"status"`
-	Error                 string   `json:"error"`
+	APIResponse
 	DepositPoolBalance    *big.Int `json:"depositPoolBalance"`
 	MinipoolQueueLength   uint64   `json:"minipoolQueueLength"`
 	MinipoolQueueCapacity *big.Int `json:"minipoolQueueCapacity"`
 }
 
 type CanProcessQueueResponse struct {
-	Status                     string          `json:"status"`
-	Error                      string          `json:"error"`
+	APIResponse
 	CanProcess                 bool            `json:"canProcess"`
 	AssignDepositsDisabled     bool            `json:"assignDepositsDisabled"`
 	NoMinipoolsAvailable       bool            `json:"noMinipoolsAvailable"`
@@ -25,14 +23,12 @@ type CanProcessQueueResponse struct {
 	GasLimits                  gaslimit.Limits `json:"gasLimits"`
 }
 type ProcessQueueResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 
 type GetQueueDetailsResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
+	APIResponse
 	TotalLength    uint32 `json:"totalLength"`
 	ExpressLength  uint32 `json:"expressLength"`
 	StandardLength uint32 `json:"standardLength"`
@@ -41,15 +37,13 @@ type GetQueueDetailsResponse struct {
 }
 
 type CanAssignDepositsResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
+	APIResponse
 	CanAssign              bool            `json:"canAssign"`
 	AssignDepositsDisabled bool            `json:"assignDepositsDisabled"`
 	GasLimits              gaslimit.Limits `json:"gasLimits"`
 }
 
 type AssignDepositsResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }

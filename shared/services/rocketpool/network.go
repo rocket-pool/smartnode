@@ -5,39 +5,19 @@ import (
 	"math/big"
 	"net/url"
 
-	"github.com/goccy/go-json"
-
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // Get network node fee
 func (c *Client) NodeFee() (api.NodeFeeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/node-fee", nil)
-	if err != nil {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not get network node fee: %w", err)
-	}
-	var response api.NodeFeeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not decode network node fee response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not get network node fee: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.NodeFeeResponse]("GET", "/api/network/node-fee", nil, "Could not get network node fee")
 }
 
 // Get network RPL price
 func (c *Client) RplPrice() (api.RplPriceResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/rpl-price", nil)
+	response, err := c.callAPI[api.RplPriceResponse]("GET", "/api/network/rpl-price", nil, "Could not get network RPL price")
 	if err != nil {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not get network RPL price: %w", err)
-	}
-	var response api.RplPriceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not decode network RPL price response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
+		return response, err
 	}
 	if response.RplPrice == nil {
 		response.RplPrice = big.NewInt(0)
@@ -47,112 +27,35 @@ func (c *Client) RplPrice() (api.RplPriceResponse, error) {
 
 // Get network stats
 func (c *Client) NetworkStats() (api.NetworkStatsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/stats", nil)
-	if err != nil {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not get network stats: %w", err)
-	}
-	var response api.NetworkStatsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not decode network stats response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not get network stats: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.NetworkStatsResponse]("GET", "/api/network/stats", nil, "Could not get network stats")
 }
 
 // Get the timezone map
 func (c *Client) TimezoneMap() (api.NetworkTimezonesResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/timezone-map", nil)
-	if err != nil {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %w", err)
-	}
-	var response api.NetworkTimezonesResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not decode network timezone map response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.NetworkTimezonesResponse]("GET", "/api/network/timezone-map", nil, "Could not get network timezone map")
 }
 
 // Check if the rewards tree for the provided interval can be generated
 func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/can-generate-rewards-tree", url.Values{"index": {fmt.Sprintf("%d", index)}})
-	if err != nil {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
-	}
-	var response api.CanNetworkGenerateRewardsTreeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.CanNetworkGenerateRewardsTreeResponse]("GET", "/api/network/can-generate-rewards-tree", url.Values{"index": {fmt.Sprintf("%d", index)}}, "Could not check rewards tree generation status")
 }
 
 // Set a request marker for the watchtower to generate the rewards tree for the given interval
 func (c *Client) GenerateRewardsTree(index uint64) (api.NetworkGenerateRewardsTreeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/network/generate-rewards-tree", url.Values{"index": {fmt.Sprintf("%d", index)}})
-	if err != nil {
-		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %w", err)
-	}
-	var response api.NetworkGenerateRewardsTreeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.NetworkGenerateRewardsTreeResponse]("POST", "/api/network/generate-rewards-tree", url.Values{"index": {fmt.Sprintf("%d", index)}}, "Could not initialize rewards tree generation")
 }
 
 // GetActiveDAOProposals fetches information about active DAO proposals
 func (c *Client) GetActiveDAOProposals() (api.NetworkDAOProposalsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/dao-proposals", nil)
-	if err != nil {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not request active DAO proposals: %w", err)
-	}
-	var response api.NetworkDAOProposalsResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not decode dao proposals response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("error after requesting dao proposals: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.NetworkDAOProposalsResponse]("GET", "/api/network/dao-proposals", nil, "could not request active DAO proposals")
 }
 
 // Download a rewards info file from IPFS for the given interval
 func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/network/download-rewards-file", url.Values{"interval": {fmt.Sprintf("%d", interval)}})
-	if err != nil {
-		return api.DownloadRewardsFileResponse{}, fmt.Errorf("could not download rewards file: %w", err)
-	}
-	var response api.DownloadRewardsFileResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DownloadRewardsFileResponse{}, fmt.Errorf("could not decode download-rewards-file response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DownloadRewardsFileResponse{}, fmt.Errorf("error after downloading rewards file: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.DownloadRewardsFileResponse]("POST", "/api/network/download-rewards-file", url.Values{"interval": {fmt.Sprintf("%d", interval)}}, "could not download rewards file")
 }
 
 // Get the address of the latest minipool delegate contract
 func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/network/latest-delegate", nil)
-	if err != nil {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %w", err)
-	}
-	var response api.GetLatestDelegateResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
-	}
-	return response, nil
+	return c.callAPI[api.GetLatestDelegateResponse]("GET", "/api/network/latest-delegate", nil, "could not get latest delegate")
 }

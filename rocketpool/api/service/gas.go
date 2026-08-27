@@ -26,9 +26,8 @@ func getGasPriceFromLatestBlock(c *cli.Command) (*api.GasPriceFromLatestBlockRes
 	}
 
 	return &api.GasPriceFromLatestBlockResponse{
-		Status:   "success",
-		GasPrice: gasPrice.BaseFee,
-		Error:    "",
+		APIResponse: api.APIResponse{Status: "success"},
+		GasPrice:    gasPrice.BaseFee,
 	}, nil
 
 }
