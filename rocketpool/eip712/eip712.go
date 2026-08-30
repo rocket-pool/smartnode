@@ -56,5 +56,5 @@ func (c *Components) UnmarshalText(text []byte) error {
 }
 
 func (c *Components) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("0x%x%x%x", c.R, c.S, c.V)), nil
+	return fmt.Appendf(nil, "0x%x%x%x", c.R, c.S, c.V), nil
 }
