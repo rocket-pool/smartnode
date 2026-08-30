@@ -20,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
@@ -136,7 +135,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
 		return nil, fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", pubkey.Hex(), string(validatorStatus.Status))
 	}
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+	if info := cfg.GetNetworkInfo(); (info == nil || !info.AllowNonBlsWithdrawalCredentials) && validatorStatus.WithdrawalCredentials[0] != 0x00 {
 		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
 	}
 
@@ -245,7 +244,7 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
 		return nil, fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", pubkey.Hex(), string(validatorStatus.Status))
 	}
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+	if info := cfg.GetNetworkInfo(); (info == nil || !info.AllowNonBlsWithdrawalCredentials) && validatorStatus.WithdrawalCredentials[0] != 0x00 {
 		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
 	}
 

@@ -80,15 +80,11 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Geth container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: gethTagProd,
-				config.Network_Devnet:  gethTagTest,
-				config.Network_Testnet: gethTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Geth container you want to use on Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, gethTagProd, gethTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

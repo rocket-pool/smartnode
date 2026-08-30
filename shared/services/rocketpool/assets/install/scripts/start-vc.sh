@@ -5,25 +5,14 @@ GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
 echo -n "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
 
 # Set up the network-based flags
-if [ "$NETWORK" = "mainnet" ]; then
-    LH_NETWORK="mainnet"
-    LODESTAR_NETWORK="mainnet"
-    PRYSM_NETWORK="--mainnet"
-    TEKU_NETWORK="mainnet"
-elif [ "$NETWORK" = "devnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
-    PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
-elif [ "$NETWORK" = "testnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
-    PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
-else
-    echo "Unknown network [$NETWORK]"
+if [ -z "$BEACON_NETWORK" ]; then
+    echo "BEACON_NETWORK is not set"
     exit 1
 fi
+LH_NETWORK="$BEACON_NETWORK"
+LODESTAR_NETWORK="$BEACON_NETWORK"
+PRYSM_NETWORK="--$BEACON_NETWORK"
+TEKU_NETWORK="$BEACON_NETWORK"
 
 # Report a missing fee recipient file
 if [ ! -f "/validators/$FEE_RECIPIENT_FILE" ]; then
@@ -41,10 +30,10 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
-    if [ "$NETWORK" != "devnet" ]; then
-        CMD_LH_NETWORK="--network $LH_NETWORK"
+    if [ -n "$CUSTOM_CHAIN_DIR" ]; then
+        CMD_LH_NETWORK="--testnet-dir $CUSTOM_CHAIN_DIR"
     else
-        CMD_LH_NETWORK="--testnet-dir /devnet"
+        CMD_LH_NETWORK="--network $LH_NETWORK"
     fi
 
     CMD="/usr/local/bin/lighthouse validator \
@@ -103,10 +92,10 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
-    if [ "$NETWORK" != "devnet" ]; then
-        CMD_NETWORK="--network $LODESTAR_NETWORK"
+    if [ -n "$CUSTOM_CHAIN_DIR" ]; then
+        CMD_NETWORK="--paramsFile $CUSTOM_CHAIN_DIR/config.yaml"
     else
-        CMD_NETWORK="--paramsFile /devnet/config.yaml"
+        CMD_NETWORK="--network $LODESTAR_NETWORK"
     fi
 
     CMD="/usr/app/node_modules/.bin/lodestar validator \
@@ -201,10 +190,10 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CC_URL_STRING="$CC_RPC_ENDPOINT,$FALLBACK_CC_RPC_ENDPOINT"
     fi
 
-    if [ "$NETWORK" != "devnet" ]; then
-        CMD_NETWORK="$PRYSM_NETWORK"
+    if [ -n "$CUSTOM_CHAIN_DIR" ]; then
+        CMD_NETWORK="--config-file=$CUSTOM_CHAIN_DIR/config.yaml"
     else
-        CMD_NETWORK="--config-file=/devnet/config.yaml"
+        CMD_NETWORK="$PRYSM_NETWORK"
     fi
 
     CMD="/app/cmd/validator/validator \

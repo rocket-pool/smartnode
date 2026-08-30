@@ -24,7 +24,10 @@ func makeTestConfig(serverURL string) (*config.RocketPoolConfig, error) {
 		return nil, fmt.Errorf("parsing test server port: %w", err)
 	}
 
-	cfg := config.NewRocketPoolConfig("", true /* isNativeMode */)
+	cfg, err := config.NewRocketPoolConfig("", true /* isNativeMode */)
+	if err != nil {
+		return nil, err
+	}
 	cfg.Alertmanager.EnableAlerting.Value = true
 	cfg.Alertmanager.NativeModeHost.Value = u.Hostname()
 	cfg.Alertmanager.NativeModePort.Value = uint16(port)

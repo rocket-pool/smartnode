@@ -96,15 +96,11 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Reth container you want to use.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: rethTagProd,
-				config.Network_Testnet: rethTagTest,
-				config.Network_Devnet:  rethTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Reth container you want to use.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, rethTagProd, rethTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

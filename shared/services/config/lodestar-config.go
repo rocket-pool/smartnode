@@ -64,15 +64,11 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Lodestar container you want to use from Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: lodestarTagProd,
-				config.Network_Devnet:  lodestarTagTest,
-				config.Network_Testnet: lodestarTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Lodestar container you want to use from Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, lodestarTagProd, lodestarTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

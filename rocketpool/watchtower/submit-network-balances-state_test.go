@@ -84,7 +84,10 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	}
 
 	logger := log.NewColorLogger(0)
-	cfg := config.NewRocketPoolConfig("", false)
+	cfg, err := config.NewRocketPoolConfig("", false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	rewardCalc := &stubRewardSplitCalculator{}
 	spCalc := &stubSmoothingPoolCalculator{}
 	wFinder := &stubWithdrawalFinder{}

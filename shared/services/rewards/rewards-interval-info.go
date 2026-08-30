@@ -3,26 +3,18 @@ package rewards
 import (
 	"fmt"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 type rewardsIntervalInfo struct {
 	rewardsRulesetVersion uint64
-	mainnetStartInterval  uint64
-	devnetStartInterval   uint64
-	testnetStartInterval  uint64
 	generator             treeGeneratorImpl
 }
 
-func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64, error) {
-	switch network {
-	case cfgtypes.Network_Mainnet:
-		return r.mainnetStartInterval, nil
-	case cfgtypes.Network_Devnet:
-		return r.devnetStartInterval, nil
-	case cfgtypes.Network_Testnet:
-		return r.testnetStartInterval, nil
-	default:
-		return 0, fmt.Errorf("unknown network: %s", string(network))
+func (r *rewardsIntervalInfo) GetStartInterval(cfg *config.RocketPoolConfig) (uint64, error) {
+	info := cfg.GetNetworkInfo()
+	if info == nil {
+		return 0, fmt.Errorf("unknown network: %s", cfg.GetNetwork())
 	}
+	return info.Rewards.StartInterval(r.rewardsRulesetVersion), nil
 }

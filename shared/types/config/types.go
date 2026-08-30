@@ -32,10 +32,7 @@ const (
 // Enum to describe which network the system is on
 const (
 	Network_Unknown Network = ""
-	Network_All     Network = "all"
-	Network_Mainnet Network = "mainnet"
-	Network_Devnet  Network = "devnet"
-	Network_Testnet Network = "testnet"
+	Network_All     Network = "all" // Parameter.Default fallback only; never a selectable network
 )
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)

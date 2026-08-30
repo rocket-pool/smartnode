@@ -79,7 +79,7 @@ type CommitBoostConfig struct {
 // Generates a new Commit-Boost PBS service configuration
 func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 	// Generate the relays
-	relays := createCommitBoostRelays()
+	relays := createCommitBoostRelays(cfg.networks)
 	relayMap := map[config.MevRelayID]config.MevRelay{}
 	for _, relay := range relays {
 		relayMap[relay.ID] = relay
@@ -180,11 +180,7 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 			Type:               config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: commitBoostProdTag,
-				config.Network_Devnet:  commitBoostTestTag,
-				config.Network_Testnet: commitBoostTestTag,
-			},
+			Default:            clientTagDefaults(cfg.networks, commitBoostProdTag, commitBoostTestTag),
 		},
 
 		ExternalUrl: config.Parameter{
@@ -237,16 +233,12 @@ func (cfg *CommitBoostConfig) GetCommitBoostOpenPorts() string {
 // Get the chain name for the Commit-Boost config file.
 // Commit-Boost expects actual Ethereum network names, not generic labels.
 func (cfg *CommitBoostConfig) GetChainName(network config.Network) (string, error) {
-	switch network {
-	case config.Network_Mainnet:
-		return "Mainnet", nil
-	case config.Network_Devnet:
-		return "Hoodi", nil
-	case config.Network_Testnet:
-		return "Hoodi", nil
-	default:
-		return "", fmt.Errorf("unsupported network %s for Commit-Boost PBS config", network)
+	if cfg.parentConfig != nil {
+		if info := cfg.parentConfig.networks.GetNetwork(network); info != nil && info.CommitBoostChainName != "" {
+			return info.CommitBoostChainName, nil
+		}
 	}
+	return "", fmt.Errorf("unsupported network %s for Commit-Boost PBS config", network)
 }
 
 // Get the chain name for the current network (for use in templates)
@@ -354,72 +346,45 @@ func (cfg *CommitBoostConfig) GetContainerTag() string {
 	return fmt.Sprint(cfg.ContainerTag.Value)
 }
 
-// Create the default Commit-Boost PBS relays.
-func createCommitBoostRelays() []config.MevRelay {
-	relays := []config.MevRelay{
-		// Flashbots
+// Create the default Commit-Boost PBS relays. URLs come from the loaded network YAML.
+func createCommitBoostRelays(networks *NetworksConfig) []config.MevRelay {
+	return []config.MevRelay{
 		{
 			ID:          config.MevRelayID_Flashbots,
 			Name:        "Flashbots",
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
-				config.Network_Testnet: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
-				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_Flashbots),
+			Regulated:   true,
 		},
-
-		// bloXroute Regulated
 		{
 			ID:          config.MevRelayID_BloxrouteRegulated,
 			Name:        "bloXroute Regulated",
 			Description: "Select this to enable the \"regulated\" relay from bloXroute.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_BloxrouteRegulated),
+			Regulated:   true,
 		},
-
-		// Titan Regional
 		{
 			ID:          config.MevRelayID_TitanRegional,
 			Name:        "Titan Regional",
 			Description: "Titan Relay is a neutral, Rust-based PBS Relay optimized for low latency throughput, geographical distribution, and robustness. This is the regulated (filtering) version.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
-				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
-				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_TitanRegional),
+			Regulated:   true,
 		},
-
-		// Ultra Sound (filtering)
 		{
 			ID:          config.MevRelayID_UltrasoundFiltered,
 			Name:        "Ultra Sound (filtering)",
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team. This is the OFAC-filtering version.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay-filtered.ultrasound.money?id=rocketpool",
-				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
-				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_UltrasoundFiltered),
+			Regulated:   true,
 		},
-
-		// BTCS OFAC+
 		{
 			ID:          config.MevRelayID_BTCSOfac,
 			Name:        "BTCS OFAC+",
 			Description: "Select this to enable the BTCS OFAC+ regulated relay.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xb66921e917a8f4cfc3c52e10c1e5c77b1255693d9e6ed6f5f444b71ca4bb610f2eff4fa98178efbf4dd43a30472c497e@relay.btcs.com",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_BTCSOfac),
+			Regulated:   true,
 		},
 	}
-
-	return relays
 }
 
 // Generate one of the relay parameters for Commit-Boost

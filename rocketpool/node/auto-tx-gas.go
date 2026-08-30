@@ -38,13 +38,6 @@ func loadAutoTxGas(cfg *config.RocketPoolConfig, logger *log.ColorLogger) autoTx
 		maxPriorityFee = math.GweiToWei(priorityFeeGwei)
 	}
 
-	maxFeeGweiLog := 0.0
-	if maxFee != nil {
-		maxFeeGweiLog = math.WeiToGwei(maxFee)
-	}
-	logger.Printlnf("Loaded auto-tx gas: threshold=%.4f gwei, maxFee=%.4f gwei (0=oracle), priorityFee=%.4f gwei",
-		thresholdGwei, maxFeeGweiLog, math.WeiToGwei(maxPriorityFee))
-
 	return autoTxGas{
 		thresholdGwei:  thresholdGwei,
 		maxFee:         maxFee,

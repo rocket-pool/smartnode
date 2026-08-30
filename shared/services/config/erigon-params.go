@@ -81,15 +81,11 @@ func NewErigonConfig(cfg *RocketPoolConfig) *ErigonConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Erigon container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: erigonTagProd,
-				config.Network_Devnet:  erigonTagTest,
-				config.Network_Testnet: erigonTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Erigon container you want to use on Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, erigonTagProd, erigonTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

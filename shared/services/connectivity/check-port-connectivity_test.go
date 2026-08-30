@@ -49,7 +49,10 @@ func TestCheckPortConnectivity_Run(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			config := cfg.NewRocketPoolConfig("", false)
+			config, err := cfg.NewRocketPoolConfig("", false)
+			if err != nil {
+				t.Fatal(err)
+			}
 			config.ExecutionClientMode.Value = tc.ecMode
 			config.ConsensusClientMode.Value = tc.ccMode
 			config.Alertmanager.EnableAlerting.Value = tc.enableAlerting
@@ -82,7 +85,7 @@ func TestCheckPortConnectivity_Run(t *testing.T) {
 				alertBeaconP2PPortNotOpen:      mockAlert,
 			}
 
-			err := task.Run()
+			err = task.Run()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

@@ -69,19 +69,23 @@ func truncateNetworkState(ns *state.NetworkState) {
 func main() {
 	flag.Parse()
 
-	sn := config.NewSmartnodeConfig(nil)
-	switch *networkFlag {
-	case "mainnet":
-		sn.Network.Value = cfgtypes.Network_Mainnet
-	case "testnet":
-		sn.Network.Value = cfgtypes.Network_Testnet
-	case "devnet":
-		sn.Network.Value = cfgtypes.Network_Devnet
-	default:
-		fmt.Fprintf(os.Stderr, "Invalid network: %s\n", *networkFlag)
-		fmt.Fprintf(os.Stderr, "Valid networks are: mainnet, testnet, devnet\n")
+	rpCfg, err := config.NewRocketPoolConfig("", true)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading networks: %v\n", err)
 		os.Exit(1)
 	}
+	sn := rpCfg.Smartnode
+	network := cfgtypes.Network(*networkFlag)
+	if rpCfg.LoadedNetworks().GetNetwork(network) == nil {
+		fmt.Fprintf(os.Stderr, "Invalid network: %s\n", *networkFlag)
+		fmt.Fprintf(os.Stderr, "Valid networks:")
+		for _, n := range rpCfg.LoadedNetworks().AllNetworks() {
+			fmt.Fprintf(os.Stderr, " %s", n.Name)
+		}
+		fmt.Fprintln(os.Stderr)
+		os.Exit(1)
+	}
+	sn.Network.Value = network
 
 	ec, err := services.NewEthClient(*elFlag)
 	if err != nil {

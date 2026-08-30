@@ -93,15 +93,11 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Besu container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: besuTagProd,
-				config.Network_Devnet:  besuTagTest,
-				config.Network_Testnet: besuTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the Besu container you want to use on Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, besuTagProd, besuTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

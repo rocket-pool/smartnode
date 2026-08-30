@@ -85,7 +85,7 @@ type MevBoostConfig struct {
 // Generates a new MEV-Boost configuration
 func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 	// Generate the relays
-	relays := createDefaultRelays()
+	relays := createDefaultRelays(cfg.networks)
 	relayMap := map[config.MevRelayID]config.MevRelay{}
 	for _, relay := range relays {
 		relayMap[relay.ID] = relay
@@ -138,8 +138,8 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			}},
 		},
 
-		EnableRegulatedAllMev:   generateProfileParameter("enableRegulatedAllMev", relays, true),
-		EnableUnregulatedAllMev: generateProfileParameter("enableUnregulatedAllMev", relays, false),
+		EnableRegulatedAllMev:   generateProfileParameter("enableRegulatedAllMev", relays, true, cfg.networks),
+		EnableUnregulatedAllMev: generateProfileParameter("enableUnregulatedAllMev", relays, false, cfg.networks),
 
 		// Explicit relay params
 		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
@@ -175,15 +175,11 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the MEV-Boost container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: mevBoostTagProd,
-				config.Network_Devnet:  mevBoostTagTest,
-				config.Network_Testnet: mevBoostTagTest,
-			},
+			ID:                 "containerTag",
+			Name:               "Container Tag",
+			Description:        "The tag name of the MEV-Boost container you want to use on Docker Hub.",
+			Type:               config.ParameterType_String,
+			Default:            clientTagDefaults(cfg.networks, mevBoostTagProd, mevBoostTagTest),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
@@ -324,117 +320,70 @@ func (cfg *MevBoostConfig) GetRelayString() string {
 	return relayString
 }
 
-// Create the default MEV relays
-func createDefaultRelays() []config.MevRelay {
-	relays := []config.MevRelay{
-		// Flashbots
+// Create the default MEV relays. URLs come from the loaded network YAML.
+func createDefaultRelays(networks *NetworksConfig) []config.MevRelay {
+	return []config.MevRelay{
 		{
 			ID:          config.MevRelayID_Flashbots,
 			Name:        "Flashbots",
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
-				config.Network_Testnet: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
-				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_Flashbots),
+			Regulated:   true,
 		},
-
-		// bloXroute Regulated
 		{
 			ID:          config.MevRelayID_BloxrouteRegulated,
 			Name:        "bloXroute Regulated",
 			Description: "Select this to enable the bloXroute relay.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_BloxrouteRegulated),
+			Regulated:   true,
 		},
-
-		// Ultrasound
 		{
 			ID:          config.MevRelayID_Ultrasound,
 			Name:        "Ultra Sound (non-filtering)",
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool",
-				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool",
-				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool",
-			},
-			Regulated: false,
+			Urls:        relayUrlMap(networks, config.MevRelayID_Ultrasound),
+			Regulated:   false,
 		},
-
-		// Ultrasound Filtered
 		{
 			ID:          config.MevRelayID_UltrasoundFiltered,
 			Name:        "Ultra Sound (filtering)",
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team. This is the filtering version.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay-filtered.ultrasound.money?id=rocketpool",
-				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
-				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_UltrasoundFiltered),
+			Regulated:   true,
 		},
-
-		// Aestus
 		{
 			ID:          config.MevRelayID_Aestus,
 			Name:        "Aestus",
 			Description: "The Aestus MEV-Boost Relay is an independent and non-censoring relay. It is committed to neutrality and the development of a healthy MEV-Boost ecosystem.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool",
-				config.Network_Testnet: "https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool",
-				config.Network_Devnet:  "https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool",
-			},
-			Regulated: false,
+			Urls:        relayUrlMap(networks, config.MevRelayID_Aestus),
+			Regulated:   false,
 		},
-
-		// Titan Global
 		{
 			ID:          config.MevRelayID_TitanGlobal,
 			Name:        "Titan Global (non-filtering)",
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"non-filtering\" relay from Titan.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz",
-				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
-				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
-			},
-			Regulated: false,
+			Urls:        relayUrlMap(networks, config.MevRelayID_TitanGlobal),
+			Regulated:   false,
 		},
-
-		// Titan Regional
 		{
 			ID:          config.MevRelayID_TitanRegional,
 			Name:        "Titan Regional (filtering)",
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"filtering\" relay from Titan.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
-				config.Network_Testnet: "",
-				config.Network_Devnet:  "",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_TitanRegional),
+			Regulated:   true,
 		},
-
-		// BTCS OFAC+
 		{
 			ID:          config.MevRelayID_BTCSOfac,
 			Name:        "BTCS OFAC+",
 			Description: "Select this to enable the BTCS OFAC+ regulated relay.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xb66921e917a8f4cfc3c52e10c1e5c77b1255693d9e6ed6f5f444b71ca4bb610f2eff4fa98178efbf4dd43a30472c497e@relay.btcs.com",
-				config.Network_Testnet: "",
-				config.Network_Devnet:  "",
-			},
-			Regulated: true,
+			Urls:        relayUrlMap(networks, config.MevRelayID_BTCSOfac),
+			Regulated:   true,
 		},
 	}
-
-	return relays
 }
 
 // Generate one of the profile parameters
-func generateProfileParameter(id string, relays []config.MevRelay, regulated bool) config.Parameter {
+func generateProfileParameter(id string, relays []config.MevRelay, regulated bool, networks *NetworksConfig) config.Parameter {
 	name := "Enable "
 	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\nTo learn more about MEV, please visit %s.\n\n[white]", mevDocsUrl)
 
@@ -446,45 +395,37 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		description += UnregulatedRelayDescription
 	}
 
-	// Generate the Mainnet description
-	mainnetRelays := []string{}
-	mainnetDescription := description + "\n\nRelays: "
-	for _, relay := range relays {
-		if !relay.Urls.UrlExists(config.Network_Mainnet) {
-			continue
-		}
-		if relay.Regulated == regulated {
-			mainnetRelays = append(mainnetRelays, relay.Name)
-		}
-	}
-	mainnetDescription += strings.Join(mainnetRelays, ", ")
-
-	// Generate the Testnet description
-	testnetRelays := []string{}
-	testnetDescription := description + "\n\nRelays: "
-	for _, relay := range relays {
-		if !relay.Urls.UrlExists(config.Network_Testnet) {
-			continue
-		}
-		if relay.Regulated == regulated {
-			testnetRelays = append(testnetRelays, relay.Name)
+	descriptions := map[config.Network]string{}
+	defaultDescription := description
+	if networks != nil {
+		for _, n := range networks.AllNetworks() {
+			names := []string{}
+			for _, relay := range relays {
+				if !relay.Urls.UrlExists(n.ID()) {
+					continue
+				}
+				if relay.Regulated == regulated {
+					names = append(names, relay.Name)
+				}
+			}
+			d := description + "\n\nRelays: " + strings.Join(names, ", ")
+			descriptions[n.ID()] = d
+			if n.Default {
+				defaultDescription = d
+			}
 		}
 	}
-	testnetDescription += strings.Join(testnetRelays, ", ")
 
 	return config.Parameter{
-		ID:                 id,
-		Name:               name,
-		Description:        mainnetDescription,
-		Type:               config.ParameterType_Bool,
-		Default:            map[config.Network]interface{}{config.Network_All: false},
-		AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
-		CanBeBlank:         false,
-		OverwriteOnUpgrade: false,
-		DescriptionsByNetwork: map[config.Network]string{
-			config.Network_Mainnet: mainnetDescription,
-			config.Network_Testnet: testnetDescription,
-		},
+		ID:                    id,
+		Name:                  name,
+		Description:           defaultDescription,
+		Type:                  config.ParameterType_Bool,
+		Default:               map[config.Network]interface{}{config.Network_All: false},
+		AffectsContainers:     []config.ContainerID{config.ContainerID_MevBoost},
+		CanBeBlank:            false,
+		OverwriteOnUpgrade:    false,
+		DescriptionsByNetwork: descriptions,
 	}
 }
 

@@ -14,7 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func getNotifiableValidator() (uint64, uint64, bool, error) {
@@ -242,17 +241,11 @@ func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) erro
 
 // returns the Beaconcha.in withdrawals URL for a validator index.
 func getBeaconChainURL(index uint64, cfg *config.RocketPoolConfig) string {
-	network := cfg.GetNetwork()
-
-	var baseURL string
-	switch network {
-	case cfgtypes.Network_Mainnet:
-		baseURL = "https://beaconcha.in"
-	case cfgtypes.Network_Devnet, cfgtypes.Network_Testnet:
-		baseURL = "https://hoodi.beaconcha.in"
-	default:
+	info := cfg.GetNetworkInfo()
+	if info == nil || info.BeaconExplorerUrl == "" {
 		return ""
 	}
+	baseURL := info.BeaconExplorerUrl
 
 	return fmt.Sprintf("%s/validator/%d#withdrawals", baseURL, index)
 }

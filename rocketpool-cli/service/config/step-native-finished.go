@@ -4,8 +4,6 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
-
-	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -33,8 +31,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
-			// Skip MEV for Testnet/Devnet
+		if !wiz.md.Config.SupportsMevBoost() {
 			wiz.nativeMetricsModal.show()
 		} else {
 			wiz.nativeMevModal.show()

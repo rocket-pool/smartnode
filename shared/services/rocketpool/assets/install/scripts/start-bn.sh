@@ -17,30 +17,17 @@ if [ "$UNAME_VAL" = "arm64" ] || [ "$UNAME_VAL" = "aarch64" ]; then
     fi
 fi
 
-# Set up the network-based flags
-if [ "$NETWORK" = "mainnet" ]; then
-    LH_NETWORK="mainnet"
-    LODESTAR_NETWORK="mainnet"
-    NIMBUS_NETWORK="mainnet"
-    PRYSM_NETWORK="--mainnet"
-    TEKU_NETWORK="mainnet"
-    PRYSM_GENESIS_STATE=""
-elif [ "$NETWORK" = "devnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
-    NIMBUS_NETWORK="hoodi"
-    PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
-elif [ "$NETWORK" = "testnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
-    NIMBUS_NETWORK="hoodi"
-    PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
-else
-    echo "Unknown network [$NETWORK]"
+# Set up the network-based flags from BEACON_NETWORK (the Ethereum client network name).
+if [ -z "$BEACON_NETWORK" ]; then
+    echo "BEACON_NETWORK is not set"
     exit 1
 fi
+LH_NETWORK="$BEACON_NETWORK"
+LODESTAR_NETWORK="$BEACON_NETWORK"
+NIMBUS_NETWORK="$BEACON_NETWORK"
+PRYSM_NETWORK="--$BEACON_NETWORK"
+TEKU_NETWORK="$BEACON_NETWORK"
+PRYSM_GENESIS_STATE=""
 
 # Check for the JWT auth file (must be non-empty; a zero-byte file is unusable)
 if [ ! -s "/secrets/jwtsecret" ]; then
@@ -258,10 +245,10 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CMD="$CMD --disable-monitoring"
     fi
 
-    if [ "$NETWORK" = "testnet" ]; then
+    if [ -n "$CUSTOM_CHAIN_DIR" ]; then
+        CMD="$CMD --genesis-state $CUSTOM_CHAIN_DIR/genesis.ssz"
+    elif [ "$BEACON_NETWORK" = "hoodi" ]; then
         CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
-    elif [ "$NETWORK" = "devnet" ]; then
-        CMD="$CMD --genesis-state /devnet/genesis.ssz"
     fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then

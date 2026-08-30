@@ -1,7 +1,5 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared/types/config"
-
 func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	helperText := "Would you like to enable the daemon's metrics feature? This will allow you to access the Rocket Pool network's metrics and the metrics for your own node wallet in the Grafana dashboard."
@@ -21,8 +19,7 @@ func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choi
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
 		}
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
-			// Skip MEV for Testnet/Devnet
+		if !wiz.md.Config.SupportsMevBoost() {
 			wiz.nativeFinishedModal.show()
 		} else {
 			wiz.nativeMevModal.show()

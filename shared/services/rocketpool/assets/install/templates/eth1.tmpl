@@ -19,13 +19,19 @@ services:
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
-      - {{.RocketPoolDirectory}}/devnet:/devnet:ro"
+      {{- if .Smartnode.GetCustomChainConfigDir}}
+      - {{.RocketPoolDirectory}}/{{.Smartnode.GetCustomChainConfigDir}}:/custom-chain:ro
+      {{- end}}
       - {{.Smartnode.DataPath}}/secrets:/secrets
       - {{.RocketPoolDirectory}}/config.toml:/genesis/config.toml:ro
     networks:
       - net
     environment:
       - NETWORK={{.Smartnode.Network}}
+      - BEACON_NETWORK={{.Smartnode.GetBeaconNetwork}}
+      {{- if .Smartnode.GetCustomChainConfigDir}}
+      - CUSTOM_CHAIN_DIR=/custom-chain
+      {{- end}}
       - CLIENT={{.ExecutionClient}}
       - ETHSTATS_LABEL={{.ExecutionCommon.EthstatsLabel}}
       - ETHSTATS_LOGIN={{.ExecutionCommon.EthstatsLogin}}

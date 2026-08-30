@@ -123,27 +123,25 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 }
 
 // Prints what network you're currently on
-func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
+func PrintNetwork(info *cfgtypes.NetworkInfo, isNew bool) error {
 	if isNew {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
-	var networkName string
-
-	switch currentNetwork {
-	case cfgtypes.Network_Mainnet:
-		networkName = color.Green("Ethereum Mainnet")
-	case cfgtypes.Network_Devnet:
-		networkName = color.Yellow("Development Network")
-	case cfgtypes.Network_Testnet:
-		networkName = color.Yellow("Hoodi Test Network")
-	default:
-		color.YellowPrintf("You are on an unexpected network [%v].\n", currentNetwork)
+	if info == nil {
+		color.YellowPrintf("You are on an unexpected network.\n")
 		fmt.Println()
 		return nil
 	}
 
-	fmt.Printf("Your Smart Node is currently using the %s.\n", networkName)
+	networkName := info.Label
+	if info.IsProduction {
+		networkName = color.Green(networkName)
+	} else {
+		networkName = color.Yellow(networkName)
+	}
+
+	fmt.Printf("Your Smart Node is currently using the %s network.\n", networkName)
 	fmt.Println()
 
 	return nil
