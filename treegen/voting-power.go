@@ -25,7 +25,7 @@ type VotingPowerFile struct {
 	NodePower      map[common.Address]*rewards.QuotedBigInt `json:"nodePower"`
 }
 
-func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
+func getNodeVotingPower(s *state.NetworkStateIndex, nodeIdx int) *big.Int {
 	node := s.NodeDetails[nodeIdx]
 
 	activeMinipoolCount := int64(0)
@@ -85,7 +85,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 
 }
 
-func (g *treeGenerator) GenerateVotingPower(s *state.NetworkState) *VotingPowerFile {
+func (g *treeGenerator) GenerateVotingPower(s *state.NetworkStateIndex) *VotingPowerFile {
 	out := new(VotingPowerFile)
 
 	out.Network = string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network))

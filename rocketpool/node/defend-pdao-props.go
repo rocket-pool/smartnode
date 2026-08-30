@@ -105,7 +105,7 @@ func newDefendPdaoProps(c *cli.Command, logger log.ColorLogger) (*defendPdaoProp
 }
 
 // Defend pDAO proposals
-func (t *defendPdaoProps) run(state *state.NetworkState) error {
+func (t *defendPdaoProps) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for Protocol DAO proposal challenges to defend...")
 
@@ -136,7 +136,7 @@ func (t *defendPdaoProps) run(state *state.NetworkState) error {
 }
 
 // Get a list of this node's proposals with open challenges against them
-func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts *bind.CallOpts) ([]defendableProposal, error) {
+func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkStateIndex, opts *bind.CallOpts) ([]defendableProposal, error) {
 	// Get proposals made by this node that are still in the challenge phase (Pending)
 	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
 	for _, prop := range state.ProtocolDaoProposalDetails {

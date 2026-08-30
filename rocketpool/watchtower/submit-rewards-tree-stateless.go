@@ -95,7 +95,7 @@ func newSubmitRewardsTree_Stateless(c *cli.Command, logger log.ColorLogger, erro
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64) error {
+func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.NetworkStateIndex, beaconSlot uint64) error {
 
 	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -117,10 +117,11 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return nil
 		}
 		// Create the state, since it's not done except for manual generators
-		state, err = t.m.GetStateForSlot(beaconSlot)
+		ns, err := t.m.GetStateForSlot(beaconSlot)
 		if err != nil {
 			return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
 		}
+		state = ns.ToIndexedNetworkState()
 	}
 
 	// Log
@@ -328,11 +329,11 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rprewards.NewRewardsExecutionClientFromConfig(rp, t.cfg), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed), state)
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rprewards.NewRewardsExecutionClientFromConfig(rp, t.cfg), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed))
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
-	treeResult, err := treegen.GenerateTree()
+	treeResult, err := treegen.GenerateTree(state)
 	if err != nil {
 		return fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
@@ -460,7 +461,7 @@ func zeroIfNil(v *big.Int) *big.Int {
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *state.NetworkState) (*rprewards.SnapshotEnd, error) {
+func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *state.NetworkStateIndex) (*rprewards.SnapshotEnd, error) {
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()

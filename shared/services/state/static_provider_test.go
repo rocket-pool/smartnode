@@ -20,44 +20,46 @@ func TestStaticProviderFromFile(t *testing.T) {
 		t.Fatalf("GetHeadState: %v", err)
 	}
 
-	if ns.ElBlockNumber != 24866136 {
-		t.Errorf("ElBlockNumber: got %d, want 24866136", ns.ElBlockNumber)
+	nsi := ns.ToIndexedNetworkState()
+
+	if nsi.ElBlockNumber != 24866136 {
+		t.Errorf("ElBlockNumber: got %d, want 24866136", nsi.ElBlockNumber)
 	}
-	if ns.BeaconSlotNumber != 14100211 {
-		t.Errorf("BeaconSlotNumber: got %d, want 14100211", ns.BeaconSlotNumber)
+	if nsi.BeaconSlotNumber != 14100211 {
+		t.Errorf("BeaconSlotNumber: got %d, want 14100211", nsi.BeaconSlotNumber)
 	}
 
 	// Verify index maps were rebuilt by UnmarshalJSON
-	if len(ns.NodeDetails) != 1 {
-		t.Fatalf("NodeDetails count: got %d, want 1", len(ns.NodeDetails))
+	if len(nsi.NodeDetails) != 1 {
+		t.Fatalf("NodeDetails count: got %d, want 1", len(nsi.NodeDetails))
 	}
-	nodeAddr := ns.NodeDetails[0].NodeAddress
-	if _, ok := ns.NodeDetailsByAddress[nodeAddr]; !ok {
+	nodeAddr := nsi.NodeDetails[0].NodeAddress
+	if _, ok := nsi.NodeDetailsByAddress[nodeAddr]; !ok {
 		t.Errorf("NodeDetailsByAddress missing %s", nodeAddr.Hex())
 	}
 
-	if len(ns.MinipoolDetails) != 1 {
-		t.Fatalf("MinipoolDetails count: got %d, want 1", len(ns.MinipoolDetails))
+	if len(nsi.MinipoolDetails) != 1 {
+		t.Fatalf("MinipoolDetails count: got %d, want 1", len(nsi.MinipoolDetails))
 	}
-	mpAddr := ns.MinipoolDetails[0].MinipoolAddress
-	if _, ok := ns.MinipoolDetailsByAddress[mpAddr]; !ok {
+	mpAddr := nsi.MinipoolDetails[0].MinipoolAddress
+	if _, ok := nsi.MinipoolDetailsByAddress[mpAddr]; !ok {
 		t.Errorf("MinipoolDetailsByAddress missing %s", mpAddr.Hex())
 	}
 
-	if len(ns.MinipoolValidatorDetails) != 1 {
-		t.Errorf("MinipoolValidatorDetails count: got %d, want 1", len(ns.MinipoolValidatorDetails))
+	if len(nsi.MinipoolValidatorDetails) != 1 {
+		t.Errorf("MinipoolValidatorDetails count: got %d, want 1", len(nsi.MinipoolValidatorDetails))
 	}
-	if len(ns.MegapoolValidatorDetails) != 1 {
-		t.Errorf("MegapoolValidatorDetails count: got %d, want 1", len(ns.MegapoolValidatorDetails))
+	if len(nsi.MegapoolValidatorDetails) != 1 {
+		t.Errorf("MegapoolValidatorDetails count: got %d, want 1", len(nsi.MegapoolValidatorDetails))
 	}
-	if len(ns.MegapoolValidatorGlobalIndex) != 1 {
-		t.Errorf("MegapoolValidatorGlobalIndex count: got %d, want 1", len(ns.MegapoolValidatorGlobalIndex))
+	if len(nsi.MegapoolValidatorGlobalIndex) != 1 {
+		t.Errorf("MegapoolValidatorGlobalIndex count: got %d, want 1", len(nsi.MegapoolValidatorGlobalIndex))
 	}
-	if len(ns.OracleDaoMemberDetails) != 1 {
-		t.Errorf("OracleDaoMemberDetails count: got %d, want 1", len(ns.OracleDaoMemberDetails))
+	if len(nsi.OracleDaoMemberDetails) != 1 {
+		t.Errorf("OracleDaoMemberDetails count: got %d, want 1", len(nsi.OracleDaoMemberDetails))
 	}
-	if len(ns.ProtocolDaoProposalDetails) != 1 {
-		t.Errorf("ProtocolDaoProposalDetails count: got %d, want 1", len(ns.ProtocolDaoProposalDetails))
+	if len(nsi.ProtocolDaoProposalDetails) != 1 {
+		t.Errorf("ProtocolDaoProposalDetails count: got %d, want 1", len(nsi.ProtocolDaoProposalDetails))
 	}
 }
 
@@ -175,15 +177,17 @@ func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
 		t.Fatalf("GetHeadState: %v", err)
 	}
 
+	nsi := ns.ToIndexedNetworkState()
+
 	// MegapoolToPubkeysMap must be rebuilt from MegapoolValidatorGlobalIndex
-	if ns.MegapoolToPubkeysMap == nil {
+	if nsi.MegapoolToPubkeysMap == nil {
 		t.Fatal("MegapoolToPubkeysMap is nil after loading from JSON")
 	}
 
 	// Every pubkey in the map must have a corresponding MegapoolValidatorInfo entry
-	for addr, pubkeys := range ns.MegapoolToPubkeysMap {
+	for addr, pubkeys := range nsi.MegapoolToPubkeysMap {
 		for _, pk := range pubkeys {
-			if _, ok := ns.GetMegapoolValidatorInfo(addr, pk); !ok {
+			if _, ok := nsi.GetMegapoolValidatorInfo(addr, pk); !ok {
 				t.Errorf("pubkey from MegapoolToPubkeysMap[%s] not found in MegapoolValidatorInfo", addr.Hex())
 			}
 		}
@@ -191,12 +195,12 @@ func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
 
 	// Total pubkeys across all megapools must equal the non-empty entries in MegapoolValidatorGlobalIndex
 	totalPubkeys := 0
-	for _, pks := range ns.MegapoolToPubkeysMap {
+	for _, pks := range nsi.MegapoolToPubkeysMap {
 		totalPubkeys += len(pks)
 	}
 
 	expectedCount := 0
-	for _, v := range ns.MegapoolValidatorGlobalIndex {
+	for _, v := range nsi.MegapoolValidatorGlobalIndex {
 		if len(v.Pubkey) > 0 {
 			expectedCount++
 		}
@@ -217,15 +221,17 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 		t.Fatalf("GetHeadState: %v", err)
 	}
 
-	if ns.MegapoolValidatorInfo == nil {
+	nsi := ns.ToIndexedNetworkState()
+
+	if nsi.MegapoolValidatorInfo == nil {
 		t.Fatal("MegapoolValidatorInfo is nil after loading from JSON")
 	}
 
 	// Every entry in MegapoolValidatorInfo must point back into MegapoolValidatorGlobalIndex
-	for key, info := range ns.MegapoolValidatorInfo {
+	for key, info := range nsi.MegapoolValidatorInfo {
 		found := false
-		for i := range ns.MegapoolValidatorGlobalIndex {
-			candidate := &ns.MegapoolValidatorGlobalIndex[i]
+		for i := range nsi.MegapoolValidatorGlobalIndex {
+			candidate := &nsi.MegapoolValidatorGlobalIndex[i]
 			if candidate == info {
 				found = true
 				break
@@ -288,13 +294,14 @@ func TestStaticProviderChallengeableProposal(t *testing.T) {
 
 func TestStaticProviderFromConstructor(t *testing.T) {
 	ns := buildTestState()
-	provider := NewStaticNetworkStateProvider(ns)
+	nsi := ns.ToIndexedNetworkState()
+	provider := NewStaticNetworkStateProvider(nsi)
 
 	got, err := provider.GetHeadState()
 	if err != nil {
 		t.Fatalf("GetHeadState: %v", err)
 	}
-	if got != ns {
+	if got != nsi {
 		t.Error("GetHeadState returned a different pointer than the one provided")
 	}
 }

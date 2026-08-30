@@ -676,17 +676,12 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		BeaconConfig:               h.BeaconConfig,
 		NetworkDetails:             h.NetworkDetails,
 		NodeDetails:                []rpstate.NativeNodeDetails{},
-		NodeDetailsByAddress:       make(map[common.Address]*rpstate.NativeNodeDetails),
 		MinipoolDetails:            []rpstate.NativeMinipoolDetails{},
-		MinipoolDetailsByAddress:   make(map[common.Address]*rpstate.NativeMinipoolDetails),
-		MinipoolDetailsByNode:      make(map[common.Address][]*rpstate.NativeMinipoolDetails),
 		MinipoolValidatorDetails:   make(state.ValidatorDetailsMap),
 		OracleDaoMemberDetails:     []rpstate.OracleDaoMemberDetails{},
 		ProtocolDaoProposalDetails: nil,
 
 		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{},
-		MegapoolToPubkeysMap:         make(map[common.Address][]types.ValidatorPubkey),
-		MegapoolValidatorInfo:        make(map[state.MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex),
 		MegapoolDetails:              make(map[common.Address]rpstate.NativeMegapoolDetails),
 		MegapoolValidatorDetails:     make(state.ValidatorDetailsMap),
 	}
@@ -735,15 +730,11 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			BalanceOldRPL:                    big.NewInt(0),
 			DepositCreditBalance:             big.NewInt(0),
 			DistributorBalance:               big.NewInt(0),
-			DistributorBalanceUserETH:        big.NewInt(0),
-			DistributorBalanceNodeETH:        big.NewInt(0),
 			WithdrawalAddress:                node.Address,
 			PendingWithdrawalAddress:         common.Address{},
 			SmoothingPoolRegistrationState:   node.SmoothingPoolRegistrationState,
 			SmoothingPoolRegistrationChanged: big.NewInt(node.SmoothingPoolRegistrationChanged.Unix()),
 			NodeAddress:                      node.Address,
-
-			AverageNodeFee: big.NewInt(0), // Populated by CalculateAverageFeeAndDistributorShares
 
 			// Ratio of bonded to bonded plus borrowed
 			CollateralisationRatio: collateralisationRatio,
@@ -767,8 +758,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		}
 
 		out.NodeDetails = append(out.NodeDetails, details)
-		ptr := &out.NodeDetails[len(out.NodeDetails)-1]
-		out.NodeDetailsByAddress[node.Address] = ptr
 
 		// Add minipools
 		for _, minipool := range node.Minipools {
@@ -803,9 +792,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				LastBondReductionPrevNodeFee: minipool.LastBondReductionPrevNodeFee,
 			}
 			out.MinipoolDetails = append(out.MinipoolDetails, minipoolDetails)
-			minipoolPtr := &out.MinipoolDetails[len(out.MinipoolDetails)-1]
-			out.MinipoolDetailsByAddress[minipool.Address] = minipoolPtr
-			out.MinipoolDetailsByNode[minipool.NodeAddress] = append(out.MinipoolDetailsByNode[minipool.NodeAddress], minipoolPtr)
 
 			// Finally, populate The ValidatorDetails map
 			pubkey := minipool.Pubkey
@@ -836,9 +822,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			}
 			out.MinipoolValidatorDetails[pubkey] = details
 		}
-
-		// Calculate the AverageNodeFee and DistributorShares
-		ptr.CalculateAverageFeeAndDistributorShares(out.MinipoolDetailsByNode[ptr.NodeAddress])
 
 		// Check if the node is an odao member
 		if node.IsOdao {
@@ -877,8 +860,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 					ValidatorId:     uint32(intIdx),
 				}
 				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
-				out.MegapoolToPubkeysMap[node.MegapoolAddress()] = append(out.MegapoolToPubkeysMap[node.MegapoolAddress()], pubkey)
-				out.MegapoolValidatorInfo[state.MegapoolValidatorKey{MegapoolAddress: node.MegapoolAddress(), Pubkey: pubkey}] = &vifgi
 				out.MegapoolValidatorDetails[pubkey] = beacon.ValidatorStatus{
 					Pubkey:                     pubkey,
 					Index:                      idx,

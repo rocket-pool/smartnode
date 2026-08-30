@@ -60,26 +60,38 @@ func (m *NetworkStateManager) getBeaconConfig() (*beacon.Eth2Config, error) {
 }
 
 // Get the state of the network using the latest Execution layer block
-func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
+func (m *NetworkStateManager) GetHeadState() (*NetworkStateIndex, error) {
 	targetSlot, err := m.getHeadSlot()
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.createNetworkState(targetSlot, nil)
+	state, err := m.createNetworkState(targetSlot, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network state: %w", err)
+	}
+	return state.ToIndexedNetworkState(), nil
 }
 
 // Get the state of the network for a single node using the latest Execution layer block, along with the total effective RPL stake for the network
-func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*NetworkState, error) {
+func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*NetworkStateIndex, error) {
 	targetSlot, err := m.getHeadSlot()
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.createNetworkState(targetSlot, []common.Address{nodeAddress})
+	state, err := m.createNetworkState(targetSlot, []common.Address{nodeAddress})
+	if err != nil {
+		return nil, fmt.Errorf("error creating network state: %w", err)
+	}
+	return state.ToIndexedNetworkState(), nil
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState, error) {
-	return m.createNetworkState(slotNumber, nil)
+func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkStateIndex, error) {
+	state, err := m.createNetworkState(slotNumber, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network state: %w", err)
+	}
+	return state.ToIndexedNetworkState(), nil
 }
 
 // Gets the latest valid block

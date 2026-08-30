@@ -50,7 +50,7 @@ type rewardSplitCalculator interface {
 }
 
 type smoothingPoolShareCalculator interface {
-	GetSmoothingPoolShare(ns *state.NetworkState, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error)
+	GetSmoothingPoolShare(ns *state.NetworkStateIndex, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error)
 }
 
 type withdrawalFinder interface {
@@ -97,7 +97,7 @@ type liveSmoothingPoolCalculator struct {
 	client *rocketpool.RocketPool
 }
 
-func (c *liveSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkState, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error) {
+func (c *liveSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkStateIndex, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error) {
 	currentIndex := ns.NetworkDetails.RewardIndex
 	startTime := ns.NetworkDetails.IntervalStart
 	intervalTime := ns.NetworkDetails.IntervalDuration
@@ -111,11 +111,11 @@ func (c *liveSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkSta
 		ExecutionBlock: ns.ElBlockNumber,
 	}
 
-	treegen, err := rprewards.NewTreeGenerator(c.log, "[Balances]", rprewards.NewRewardsExecutionClientFromConfig(c.client, c.cfg), c.cfg, c.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), ns)
+	treegen, err := rprewards.NewTreeGenerator(c.log, "[Balances]", rprewards.NewRewardsExecutionClientFromConfig(c.client, c.cfg), c.cfg, c.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed))
 	if err != nil {
 		return nil, fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 	}
-	share, err := treegen.ApproximateStakerShareOfSmoothingPool()
+	share, err := treegen.ApproximateStakerShareOfSmoothingPool(ns)
 	if err != nil {
 		return nil, fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
 	}
@@ -199,7 +199,7 @@ func newSubmitNetworkBalances(c *cli.Command, logger log.ColorLogger, errorLogge
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run(state *state.NetworkState) error {
+func (t *submitNetworkBalances) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -463,7 +463,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 // getNetworkBalancesFromState computes the network balances from an already-loaded NetworkState.
 func (t *submitNetworkBalances) getNetworkBalancesFromState(
-	state *state.NetworkState,
+	state *state.NetworkStateIndex,
 	elBlockHeader *types.Header,
 	slotTime time.Time,
 	rewardCalc rewardSplitCalculator,
@@ -512,7 +512,11 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 	wg.Go(func() error {
 		distributorShares = make([]*big.Int, len(state.NodeDetails))
 		for i, node := range state.NodeDetails {
-			distributorShares[i] = node.DistributorBalanceUserETH // Uses the go-lib based off-chain calculation method instead of the contract method
+			feeInfo := state.NodeFeeDetailsByAddress[node.NodeAddress]
+			if feeInfo == nil {
+				continue
+			}
+			distributorShares[i] = feeInfo.DistributorBalanceUserETH // Uses the go-lib based off-chain calculation method instead of the contract method
 		}
 
 		return nil
@@ -575,7 +579,7 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 
 }
 
-func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator, wFinder withdrawalFinder) (megapoolBalanceDetail, error) {
+func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkStateIndex, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator, wFinder withdrawalFinder) (megapoolBalanceDetail, error) {
 	megapoolBalanceDetails := megapoolBalanceDetail{}
 	megapoolValidators := state.MegapoolToPubkeysMap[megapoolAddress]
 	// iterate the megapoolValidators array
@@ -675,7 +679,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) validatorBalanceDetails {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkStateIndex, cfg *config.RocketPoolConfig) validatorBalanceDetails {
 
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance

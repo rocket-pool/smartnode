@@ -63,7 +63,7 @@ func newFinalizePdaoProposals(c *cli.Command, logger log.ColorLogger) (*finalize
 }
 
 // Dissolve timed out minipools
-func (t *finalizePdaoProposals) run(state *state.NetworkState) error {
+func (t *finalizePdaoProposals) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -93,7 +93,7 @@ func (t *finalizePdaoProposals) run(state *state.NetworkState) error {
 }
 
 // Get timed out minipools
-func (t *finalizePdaoProposals) getFinalizableProposals(state *state.NetworkState) []uint64 {
+func (t *finalizePdaoProposals) getFinalizableProposals(state *state.NetworkStateIndex) []uint64 {
 	finalizableProps := []uint64{}
 	for _, prop := range state.ProtocolDaoProposalDetails {
 		if prop.State == types.ProtocolDaoProposalState_Vetoed && !prop.IsFinalized {

@@ -84,7 +84,7 @@ type treegenArguments struct {
 	block *beacon.BeaconBlock
 
 	// Network State at end EL block
-	state *state.NetworkState
+	state *state.NetworkStateIndex
 }
 
 // Treegen holder for the requested execution metadata and necessary artifacts
@@ -412,12 +412,12 @@ func (g *treeGenerator) slotToTime(slot uint64) time.Time {
 }
 
 // Generates the rewards file for the given generator
-func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*rprewards.GenerateTreeResult, error) {
+func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator, state *state.NetworkStateIndex) (*rprewards.GenerateTreeResult, error) {
 	if g.ruleset == 0 {
-		return treegen.GenerateTree()
+		return treegen.GenerateTree(state)
 	}
 
-	return treegen.GenerateTreeWithRuleset(g.ruleset)
+	return treegen.GenerateTreeWithRuleset(state, g.ruleset)
 }
 
 func (g *treeGenerator) serializeVotingPower(votingPowerFile *VotingPowerFile) ([]byte, error) {
@@ -533,7 +533,7 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 			ConsensusBlock: args.block.Slot,
 			ExecutionBlock: args.elBlockHeader.Number.Uint64(),
 		}, args.elBlockHeader,
-		args.intervalsPassed, args.state)
+		args.intervalsPassed)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tree generator: %w", err)
 	}
@@ -576,9 +576,9 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 	// Approximate the balance
 	var rETHShare *big.Int
 	if g.ruleset == 0 {
-		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
+		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPool(args.state)
 	} else {
-		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPoolWithRuleset(g.ruleset)
+		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPoolWithRuleset(g.ruleset, args.state)
 	}
 	if err != nil {
 		return fmt.Errorf("error approximating rETH stakers' share of the Smoothing Pool: %w", err)
@@ -611,7 +611,7 @@ func (g *treeGenerator) generateTree() error {
 
 	// Generate the rewards file
 	start := time.Now()
-	result, err := g.generateRewardsFile(treegen)
+	result, err := g.generateRewardsFile(treegen, args.state)
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}

@@ -414,7 +414,8 @@ func isNodeRegisteredInStaticState(c *cli.Command, address common.Address) (bool
 	if err != nil {
 		return false, err
 	}
-	_, ok := ns.NodeDetailsByAddress[address]
+	nsi := ns.ToIndexedNetworkState()
+	_, ok := nsi.NodeDetailsByAddress[address]
 	return ok, nil
 }
 

@@ -82,7 +82,7 @@ func newNotifyFinalBalance(c *cli.Command, logger log.ColorLogger) (*notifyFinal
 }
 
 // Notify Final Balance
-func (t *notifyFinalBalance) run(state *state.NetworkState) error {
+func (t *notifyFinalBalance) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking if there are megapool validators with a final balance withdrawn...")
 
@@ -161,7 +161,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 
 }
 
-func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, state *state.NetworkState, validatorId uint32, validatorDetails beacon.ValidatorStatus, callopts *bind.CallOpts) error {
+func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, state *state.NetworkStateIndex, validatorId uint32, validatorDetails beacon.ValidatorStatus, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()

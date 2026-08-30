@@ -9,9 +9,9 @@ import (
 // NetworkStateManager satisfies this interface using live EC/CC connections
 // StaticNetworkStateProvider satisfies it using a pre-loaded NetworkState
 type NetworkStateProvider interface {
-	GetHeadState() (*NetworkState, error)
-	GetHeadStateForNode(nodeAddress common.Address) (*NetworkState, error)
-	GetStateForSlot(slotNumber uint64) (*NetworkState, error)
+	GetHeadState() (*NetworkStateIndex, error)
+	GetHeadStateForNode(nodeAddress common.Address) (*NetworkStateIndex, error)
+	GetStateForSlot(slotNumber uint64) (*NetworkStateIndex, error)
 	GetLatestBeaconBlock() (beacon.BeaconBlock, error)
 	GetLatestFinalizedBeaconBlock() (beacon.BeaconBlock, error)
 }

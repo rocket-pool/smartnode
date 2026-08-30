@@ -46,7 +46,7 @@ func (s *stubRewardSplitCalculator) CalculateRewards(megapoolAddress common.Addr
 // rETH share so the test value is deterministic and easy to verify.
 type stubSmoothingPoolCalculator struct{}
 
-func (s *stubSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkState, _ *types.Header, _ time.Time) (*big.Int, error) {
+func (s *stubSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkStateIndex, _ *types.Header, _ time.Time) (*big.Int, error) {
 	return ns.NetworkDetails.SmoothingPoolBalance, nil
 }
 
@@ -160,7 +160,11 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	// DistributorShareTotal must be the sum of all nodes' DistributorBalanceUserETH
 	expectedDistributor := big.NewInt(0)
 	for _, node := range ns.NodeDetails {
-		expectedDistributor.Add(expectedDistributor, node.DistributorBalanceUserETH)
+		feeInfo := ns.NodeFeeDetailsByAddress[node.NodeAddress]
+		if feeInfo == nil {
+			continue
+		}
+		expectedDistributor.Add(expectedDistributor, feeInfo.DistributorBalanceUserETH)
 	}
 	if balances.DistributorShareTotal.Cmp(expectedDistributor) != 0 {
 		t.Errorf("DistributorShareTotal: got %s, want %s", balances.DistributorShareTotal, expectedDistributor)
@@ -255,7 +259,7 @@ func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal failed: %v", err)
 	}
-	var restored state.NetworkState
+	var restored state.NetworkStateIndex
 	if err := json.Unmarshal(data, &restored); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}

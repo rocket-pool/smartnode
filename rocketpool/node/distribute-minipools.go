@@ -104,7 +104,7 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 }
 
 // Distribute minipools
-func (t *distributeMinipools) run(state *state.NetworkState) error {
+func (t *distributeMinipools) run(state *state.NetworkStateIndex) error {
 
 	// Check if auto-distribute is disabled
 	if t.disabled {
@@ -160,7 +160,7 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 }
 
 // Get distributable minipools
-func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Address, state *state.NetworkStateIndex, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools by status
 	distributableMinipools := []*rpstate.NativeMinipoolDetails{}

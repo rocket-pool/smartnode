@@ -63,7 +63,7 @@ func newDissolveTimedOutMegapoolValidators(c *cli.Command, logger log.ColorLogge
 }
 
 // Dissolve timed out megapool validators
-func (t *dissolveTimedOutMegapoolValidators) run(state *state.NetworkState) error {
+func (t *dissolveTimedOutMegapoolValidators) run(state *state.NetworkStateIndex) error {
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
@@ -81,7 +81,7 @@ func (t *dissolveTimedOutMegapoolValidators) run(state *state.NetworkState) erro
 }
 
 // Get megapool validators that can be dissolved
-func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *state.NetworkState) error {
+func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *state.NetworkStateIndex) error {
 	timeBeforeDissolve, err := protocol.GetMegapoolTimeBeforeDissolve(t.rp, nil)
 	if err != nil {
 		return err

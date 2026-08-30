@@ -560,7 +560,7 @@ func removeLegacyFeeRecipientFiles(c *cli.Command) error {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m state.NetworkStateProvider, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, error) {
+func updateNetworkState(m state.NetworkStateProvider, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkStateIndex, error) {
 	// Get the state of the network
 	state, err := m.GetHeadStateForNode(nodeAddress)
 	if err != nil {

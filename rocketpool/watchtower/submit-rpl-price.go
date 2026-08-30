@@ -337,7 +337,7 @@ func newSubmitRplPrice(c *cli.Command, logger log.ColorLogger, errorLogger log.C
 }
 
 // Submit RPL price
-func (t *submitRplPrice) run(state *state.NetworkState) error {
+func (t *submitRplPrice) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

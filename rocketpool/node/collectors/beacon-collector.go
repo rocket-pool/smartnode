@@ -201,7 +201,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 }
 
 // Get the Beacon indices of all of the node's validators, both minipool and megapool
-func getNodeValidatorIndices(networkState *state.NetworkState, nodeAddress common.Address) []string {
+func getNodeValidatorIndices(networkState *state.NetworkStateIndex, nodeAddress common.Address) []string {
 	var validatorIndices []string
 
 	for _, mpd := range networkState.MinipoolDetailsByNode[nodeAddress] {

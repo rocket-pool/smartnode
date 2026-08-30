@@ -86,7 +86,7 @@ func newNotifyValidatorExit(c *cli.Command, logger log.ColorLogger) (*notifyVali
 }
 
 // Prestake megapool validator
-func (t *notifyValidatorExit) run(state *state.NetworkState) error {
+func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking if there are megapool validators exiting...")
 
@@ -192,7 +192,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 
 }
 
-func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
