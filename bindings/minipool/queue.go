@@ -14,8 +14,8 @@ import (
 
 // Minipool queue capacity
 type QueueCapacity struct {
-	Total     *big.Int
-	Effective *big.Int
+	Total     *big.Int `json:"total"`
+	Effective *big.Int `json:"effective"`
 }
 
 // Minipools queue status details
