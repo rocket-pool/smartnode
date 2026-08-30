@@ -89,9 +89,9 @@ type NetworkState struct {
 	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
 
 	// Stores validator details from all megapools
-	MegapoolValidatorGlobalIndex []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_global_index"`
-
-	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"megapool_details"`
+	// The json tag "megapool_validator_global_index" is kept for backwards compatibility
+	MegapoolValidators []megapool.MegapoolValidatorInfo                 `json:"megapool_validator_global_index"`
+	MegapoolDetails    map[common.Address]rpstate.NativeMegapoolDetails `json:"megapool_details"`
 
 	// Validator details
 	// NetworkState was updated to support megapools, so the old json tag "validator_details" is needed to decode rp-network-state-mainnet-20.json.gz
@@ -129,7 +129,7 @@ type NetworkStateIndex struct {
 	MegapoolToPubkeysMap     map[common.Address][]types.ValidatorPubkey
 	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
 	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
-	MegapoolValidatorInfo    map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex
+	MegapoolValidatorInfo    map[MegapoolValidatorKey]*megapool.MegapoolValidatorInfo
 	NodeFeeDetailsByAddress  map[common.Address]*rpstate.NodeFeeDetails
 }
 
@@ -170,9 +170,9 @@ func (s *NetworkState) ToIndexedNetworkState() *NetworkStateIndex {
 	}
 
 	out.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
-	out.MegapoolValidatorInfo = make(map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex)
-	for i := range s.MegapoolValidatorGlobalIndex {
-		validator := &s.MegapoolValidatorGlobalIndex[i]
+	out.MegapoolValidatorInfo = make(map[MegapoolValidatorKey]*megapool.MegapoolValidatorInfo)
+	for i := range s.MegapoolValidators {
+		validator := &s.MegapoolValidators[i]
 		if len(validator.Pubkey) > 0 {
 			pubkey := types.ValidatorPubkey(validator.Pubkey)
 			out.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
@@ -213,9 +213,9 @@ func (s *NetworkStateIndex) UnmarshalJSON(data []byte) error {
 }
 
 func (s *NetworkState) GetUniqueMegapoolPubkeys() []types.ValidatorPubkey {
-	pubkeys := make([]types.ValidatorPubkey, 0, len(s.MegapoolValidatorGlobalIndex))
-	seen := make(map[types.ValidatorPubkey]bool, len(s.MegapoolValidatorGlobalIndex))
-	for _, validator := range s.MegapoolValidatorGlobalIndex {
+	pubkeys := make([]types.ValidatorPubkey, 0, len(s.MegapoolValidators))
+	seen := make(map[types.ValidatorPubkey]bool, len(s.MegapoolValidators))
+	for _, validator := range s.MegapoolValidators {
 		if len(validator.Pubkey) > 0 {
 			pubkey := types.ValidatorPubkey(validator.Pubkey)
 			if !seen[pubkey] {
@@ -240,8 +240,8 @@ func (s *NetworkState) GetMinipoolPubkeys() []types.ValidatorPubkey {
 
 func (s *NetworkState) getMegapoolAddresses() []common.Address {
 	seen := make(map[common.Address]bool)
-	addresses := make([]common.Address, 0, len(s.MegapoolValidatorGlobalIndex))
-	for _, megapool := range s.MegapoolValidatorGlobalIndex {
+	addresses := make([]common.Address, 0, len(s.MegapoolValidators))
+	for _, megapool := range s.MegapoolValidators {
 		if len(megapool.Pubkey) == 0 {
 			continue
 		}
@@ -278,7 +278,7 @@ func (s *NetworkState) Validate() error {
 }
 
 // Returns the validator info for the given megapool and pubkey.
-func (s *NetworkStateIndex) GetMegapoolValidatorInfo(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (*megapool.ValidatorInfoFromGlobalIndex, bool) {
+func (s *NetworkStateIndex) GetMegapoolValidatorInfo(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (*megapool.MegapoolValidatorInfo, bool) {
 	info, exists := s.MegapoolValidatorInfo[MegapoolValidatorKey{MegapoolAddress: megapoolAddress, Pubkey: pubkey}]
 	return info, exists
 }
@@ -377,12 +377,12 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	m.logLine("%d/%d - Retrieved minipool details (%s so far)", currentStep, steps, time.Since(start))
 
 	if allNodes {
-		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
+		state.MegapoolValidators, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
 		if err != nil {
 			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
 		}
 	} else {
-		state.MegapoolValidatorGlobalIndex = []megapool.ValidatorInfoFromGlobalIndex{}
+		state.MegapoolValidators = []megapool.MegapoolValidatorInfo{}
 		for _, nd := range state.NodeDetails {
 			if !nd.MegapoolDeployed {
 				continue
@@ -391,7 +391,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 			if err != nil {
 				return nil, fmt.Errorf("error getting megapool validator details for %s: %w", nd.MegapoolAddress.Hex(), err)
 			}
-			state.MegapoolValidatorGlobalIndex = append(state.MegapoolValidatorGlobalIndex, validators...)
+			state.MegapoolValidators = append(state.MegapoolValidators, validators...)
 		}
 	}
 	currentStep++

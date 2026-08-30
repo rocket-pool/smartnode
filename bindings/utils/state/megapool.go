@@ -52,7 +52,7 @@ func (m *NativeMegapoolDetails) GetMegapoolBondNormalized() *big.Int {
 }
 
 // Get all megapool validators using batched multicalls
-func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts) ([]megapool.ValidatorInfoFromGlobalIndex, error) {
+func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts) ([]megapool.MegapoolValidatorInfo, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -74,7 +74,7 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 	}
 
 	count := int(megapoolValidatorsCount)
-	validators := make([]megapool.ValidatorInfoFromGlobalIndex, count)
+	validators := make([]megapool.MegapoolValidatorInfo, count)
 
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
@@ -118,10 +118,10 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 }
 
 // Manually unpack a getValidatorInfo response (nested structs don't work with UnpackIntoInterface)
-func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []byte) (megapool.ValidatorInfoFromGlobalIndex, error) {
+func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []byte) (megapool.MegapoolValidatorInfo, error) {
 	iface, err := contract.ABI.Unpack("getValidatorInfo", data)
 	if err != nil {
-		return megapool.ValidatorInfoFromGlobalIndex{}, err
+		return megapool.MegapoolValidatorInfo{}, err
 	}
 
 	src := iface[1].(struct {
@@ -143,7 +143,7 @@ func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []by
 		LockedTime  uint64 `json:"lockedTime"`
 	})
 
-	var validator megapool.ValidatorInfoFromGlobalIndex
+	var validator megapool.MegapoolValidatorInfo
 	validator.Pubkey = iface[0].([]byte)
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
@@ -167,7 +167,7 @@ func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []by
 
 // Get all validators for a single megapool, via its own local index -- unlike
 // GetAllMegapoolValidators, which walks the network-wide global index on RocketMegapoolManager.
-func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts, megapoolAddress common.Address) ([]megapool.ValidatorInfoFromGlobalIndex, error) {
+func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts, megapoolAddress common.Address) ([]megapool.MegapoolValidatorInfo, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -187,7 +187,7 @@ func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 
 	count := int(validatorCount)
-	validators := make([]megapool.ValidatorInfoFromGlobalIndex, count)
+	validators := make([]megapool.MegapoolValidatorInfo, count)
 	if count == 0 {
 		return validators, nil
 	}
@@ -241,10 +241,10 @@ func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkCont
 }
 
 // Manually unpack a getValidatorInfoAndPubkey response (nested structs don't work with UnpackIntoInterface)
-func unpackValidatorInfoAndPubkey(contract *rocketpool.Contract, data []byte) (megapool.ValidatorInfoFromGlobalIndex, error) {
+func unpackValidatorInfoAndPubkey(contract *rocketpool.Contract, data []byte) (megapool.MegapoolValidatorInfo, error) {
 	iface, err := contract.ABI.Unpack("getValidatorInfoAndPubkey", data)
 	if err != nil {
-		return megapool.ValidatorInfoFromGlobalIndex{}, err
+		return megapool.MegapoolValidatorInfo{}, err
 	}
 
 	src := iface[0].(struct {
@@ -266,7 +266,7 @@ func unpackValidatorInfoAndPubkey(contract *rocketpool.Contract, data []byte) (m
 		LockedTime  uint64 `json:"lockedTime"`
 	})
 
-	var validator megapool.ValidatorInfoFromGlobalIndex
+	var validator megapool.MegapoolValidatorInfo
 	validator.Pubkey = iface[1].([]byte)
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue

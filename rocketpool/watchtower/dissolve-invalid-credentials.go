@@ -91,7 +91,7 @@ func (t *dissolveInvalidCredentials) run(state *state.NetworkStateIndex) error {
 // Get megapool validators that can be dissolved due to using invalid credentials
 func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *state.NetworkStateIndex) error {
 
-	for _, validator := range state.MegapoolValidatorGlobalIndex {
+	for _, validator := range state.MegapoolValidators {
 		if validator.ValidatorInfo.InPrestake {
 			expectedWithdrawalAddress := services.CalculateMegapoolWithdrawalCredentials(validator.MegapoolAddress)
 			// Fetch the validator from the beacon state to compare credentials
@@ -144,7 +144,7 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 	return nil
 }
 
-func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) {
+func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.MegapoolValidatorInfo) {
 	// Log
 	t.log.Printlnf("Dissolving megapool validator ID: %d from megapool %s...", validator.ValidatorId, validator.MegapoolAddress)
 

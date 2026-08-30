@@ -39,8 +39,8 @@ func truncateNetworkState(ns *state.NetworkStateIndex) {
 	if len(ns.MinipoolDetails) > 1 {
 		ns.MinipoolDetails = ns.MinipoolDetails[:1]
 	}
-	if len(ns.MegapoolValidatorGlobalIndex) > 1 {
-		ns.MegapoolValidatorGlobalIndex = ns.MegapoolValidatorGlobalIndex[:1]
+	if len(ns.MegapoolValidators) > 1 {
+		ns.MegapoolValidators = ns.MegapoolValidators[:1]
 	}
 	if len(ns.OracleDaoMemberDetails) > 1 {
 		ns.OracleDaoMemberDetails = ns.OracleDaoMemberDetails[:1]

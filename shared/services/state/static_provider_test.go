@@ -52,8 +52,8 @@ func TestStaticProviderFromFile(t *testing.T) {
 	if len(nsi.MegapoolValidatorDetails) != 1 {
 		t.Errorf("MegapoolValidatorDetails count: got %d, want 1", len(nsi.MegapoolValidatorDetails))
 	}
-	if len(nsi.MegapoolValidatorGlobalIndex) != 1 {
-		t.Errorf("MegapoolValidatorGlobalIndex count: got %d, want 1", len(nsi.MegapoolValidatorGlobalIndex))
+	if len(nsi.MegapoolValidators) != 1 {
+		t.Errorf("MegapoolValidatorGlobalIndex count: got %d, want 1", len(nsi.MegapoolValidators))
 	}
 	if len(nsi.OracleDaoMemberDetails) != 1 {
 		t.Errorf("OracleDaoMemberDetails count: got %d, want 1", len(nsi.OracleDaoMemberDetails))
@@ -200,7 +200,7 @@ func TestStaticProviderMegapoolToPubkeysMap(t *testing.T) {
 	}
 
 	expectedCount := 0
-	for _, v := range nsi.MegapoolValidatorGlobalIndex {
+	for _, v := range nsi.MegapoolValidators {
 		if len(v.Pubkey) > 0 {
 			expectedCount++
 		}
@@ -230,8 +230,8 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 	// Every entry in MegapoolValidatorInfo must point back into MegapoolValidatorGlobalIndex
 	for key, info := range nsi.MegapoolValidatorInfo {
 		found := false
-		for i := range nsi.MegapoolValidatorGlobalIndex {
-			candidate := &nsi.MegapoolValidatorGlobalIndex[i]
+		for i := range nsi.MegapoolValidators {
+			candidate := &nsi.MegapoolValidators[i]
 			if candidate == info {
 				found = true
 				break

@@ -634,7 +634,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// state.MegapoolValidatorGlobalIndex is scoped to this node's own megapool, since the
 	// daemon builds its state via GetHeadStateForNode
 	wg.Go(func() error {
-		for _, validator := range state.MegapoolValidatorGlobalIndex {
+		for _, validator := range state.MegapoolValidators {
 			if validator.ValidatorInfo.Staked {
 				megapoolStakedCount++
 			}

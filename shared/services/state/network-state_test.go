@@ -190,7 +190,7 @@ func buildTestState() *NetworkState {
 		},
 	}
 
-	megapoolValidatorGlobalIndex := []megapool.ValidatorInfoFromGlobalIndex{
+	megapoolValidatorGlobalIndex := []megapool.MegapoolValidatorInfo{
 		{
 			Pubkey:          megapoolPubkey[:],
 			MegapoolAddress: megapoolAddrA,
@@ -245,8 +245,8 @@ func buildTestState() *NetworkState {
 		MegapoolValidatorDetails: ValidatorDetailsMap{
 			megapoolPubkey: {Pubkey: megapoolPubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
 		},
-		MegapoolValidatorGlobalIndex: megapoolValidatorGlobalIndex,
-		MegapoolDetails:              megapoolDetails,
+		MegapoolValidators: megapoolValidatorGlobalIndex,
+		MegapoolDetails:    megapoolDetails,
 		OracleDaoMemberDetails: []rpstate.OracleDaoMemberDetails{
 			{
 				Address:          nodeAddrA,
@@ -365,9 +365,9 @@ func TestNetworkStateJSONRoundtrip(t *testing.T) {
 	}
 
 	// Megapool validator global index
-	if len(restored.MegapoolValidatorGlobalIndex) != len(original.MegapoolValidatorGlobalIndex) {
+	if len(restored.MegapoolValidators) != len(original.MegapoolValidators) {
 		t.Errorf("MegapoolValidatorGlobalIndex count: got %d, want %d",
-			len(restored.MegapoolValidatorGlobalIndex), len(original.MegapoolValidatorGlobalIndex))
+			len(restored.MegapoolValidators), len(original.MegapoolValidators))
 	}
 
 	// Oracle DAO member details
@@ -475,7 +475,7 @@ func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
 	state := &NetworkState{
 		MinipoolValidatorDetails: ValidatorDetailsMap{},
 		MegapoolValidatorDetails: ValidatorDetailsMap{},
-		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{
+		MegapoolValidators: []megapool.MegapoolValidatorInfo{
 			{
 				Pubkey:          pubkey[:],
 				MegapoolAddress: megapoolAddrA,

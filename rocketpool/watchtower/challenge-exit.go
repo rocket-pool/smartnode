@@ -99,7 +99,7 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 
 	challengeMegapoolAddressToIds := make(map[common.Address][]uint32)
 	batched := 0
-	for _, validator := range state.MegapoolValidatorGlobalIndex {
+	for _, validator := range state.MegapoolValidators {
 		if batched >= batchSize {
 			t.log.Printlnf("Batched %d validators, exiting...", batched)
 			break
