@@ -54,6 +54,12 @@ services:
       {{- else}}
       - "{{.Lodestar.P2pQuicPort}}:{{.Lodestar.P2pQuicPort}}/udp"
       {{- end}}
+      {{- else if eq .ConsensusClient.String "nimbus"}}
+      {{- if .IsIPv6Enabled}}
+      - "[::]:{{.Nimbus.P2pQuicPort}}:{{.Nimbus.P2pQuicPort}}/udp"
+      {{- else}}
+      - "{{.Nimbus.P2pQuicPort}}:{{.Nimbus.P2pQuicPort}}/udp"
+      {{- end}}
       {{- end}}
       {{- if eq .ConsensusClient.String "teku"}}
       - "{{.Teku.P2pQuicPort}}:{{.Teku.P2pQuicPort}}/udp"
@@ -125,6 +131,7 @@ services:
       - BN_P2P_QUIC_PORT={{.Prysm.P2pQuicPort}}
       {{- else if eq .ConsensusClient.String "nimbus"}}
       - NIMBUS_PRUNING_MODE={{.Nimbus.PruningMode}}
+      - BN_P2P_QUIC_PORT={{.Nimbus.P2pQuicPort}}
       {{- else if eq .ConsensusClient.String "lighthouse"}}
       - BN_P2P_QUIC_PORT={{.Lighthouse.P2pQuicPort}}
       {{- else if eq .ConsensusClient.String "lodestar"}}
