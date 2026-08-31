@@ -172,6 +172,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --data-dir=/ethclient/nimbus \
         --tcp-port=$BN_P2P_PORT \
         --udp-port=$BN_P2P_PORT \
+        --quic-port=${BN_P2P_QUIC_PORT:-8001} \
         --web3-url=$EC_ENGINE_ENDPOINT \
         --rest \
         --rest-address=0.0.0.0 \

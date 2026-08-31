@@ -8,12 +8,12 @@ import (
 
 const (
 	// Testnet
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v26.7.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v26.7.0"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v26.8.0"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v26.7.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v26.7.0"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v26.8.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
@@ -25,6 +25,9 @@ type NimbusConfig struct {
 
 	// The max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+
+	// The port to use for gossip traffic using the QUIC protocol
+	P2pQuicPort config.Parameter `yaml:"p2pQuicPort,omitempty"`
 
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
@@ -59,6 +62,17 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: getNimbusDefaultPeers()},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		P2pQuicPort: config.Parameter{
+			ID:                 P2pQuicPortID,
+			Name:               "P2P QUIC Port",
+			Description:        "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -134,6 +148,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 func (cfg *NimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
+		&cfg.P2pQuicPort,
 		&cfg.PruningMode,
 		&cfg.BnContainerTag,
 		&cfg.VcContainerTag,
