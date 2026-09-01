@@ -321,6 +321,7 @@ if [ "$CLIENT" = "besu" ]; then
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
             --data-path=/ethclient/besu \
+            --discovery-mode=BOTH \
             --rpc-http-enabled \
             --rpc-http-host=0.0.0.0 \
             --rpc-http-port=${EC_HTTP_PORT:-8545} \
@@ -341,7 +342,7 @@ if [ "$CLIENT" = "besu" ]; then
         fi
 
         if [ "$ENABLE_IPV6" = "true" ]; then
-            CMD="$CMD --discovery-mode=V5 --p2p-ipv6-outbound-enabled --p2p-interface-ipv6=::"
+            CMD="$CMD --p2p-ipv6-outbound-enabled --p2p-interface-ipv6=::"
             if [ ! -z "$EC_P2P_PORT" ]; then
                 CMD="$CMD --p2p-port-ipv6=$EC_P2P_PORT"
             fi
