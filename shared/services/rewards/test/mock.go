@@ -681,9 +681,9 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		OracleDaoMemberDetails:     []rpstate.OracleDaoMemberDetails{},
 		ProtocolDaoProposalDetails: nil,
 
-		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{},
-		MegapoolDetails:              make(map[common.Address]rpstate.NativeMegapoolDetails),
-		MegapoolValidatorDetails:     make(state.ValidatorDetailsMap),
+		MegapoolValidators:       []megapool.MegapoolValidatorInfo{},
+		MegapoolDetails:          make(map[common.Address]rpstate.NativeMegapoolDetails),
+		MegapoolValidatorDetails: make(state.ValidatorDetailsMap),
 	}
 
 	// Add nodes
@@ -851,7 +851,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				if err != nil {
 					panic(err)
 				}
-				vifgi := megapool.ValidatorInfoFromGlobalIndex{
+				vifgi := megapool.MegapoolValidatorInfo{
 					Pubkey: pubkey.Bytes(),
 					ValidatorInfo: megapool.ValidatorInfo{
 						Staked: true,
@@ -859,7 +859,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 					MegapoolAddress: node.MegapoolAddress(),
 					ValidatorId:     uint32(intIdx),
 				}
-				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
+				out.MegapoolValidators = append(out.MegapoolValidators, vifgi)
 				out.MegapoolValidatorDetails[pubkey] = beacon.ValidatorStatus{
 					Pubkey:                     pubkey,
 					Index:                      idx,

@@ -40,31 +40,31 @@ func GetValidatorCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, 
 	return uint32((*validatorCount).Uint64()), nil
 }
 
-func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOpts) (ValidatorInfoFromGlobalIndex, error) {
+func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOpts) (MegapoolValidatorInfo, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, opts)
 	if err != nil {
-		return ValidatorInfoFromGlobalIndex{}, err
+		return MegapoolValidatorInfo{}, err
 	}
 
-	validator := new(ValidatorInfoFromGlobalIndex)
+	validator := new(MegapoolValidatorInfo)
 
 	indexBig := new(big.Int).SetUint64(uint64(index))
 
 	callData, err := megapoolManager.ABI.Pack("getValidatorInfo", indexBig)
 	if err != nil {
-		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+		return MegapoolValidatorInfo{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
 
 	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{To: megapoolManager.Address, Data: callData}, opts.BlockNumber)
 	if err != nil {
-		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+		return MegapoolValidatorInfo{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	}
 
 	// Both Call and UnpackIntoStruct were not working with this response (which contains a struct inside a struct)
 	// For the moment this was the only way for it to work. We should investigate further.
 	iface, err := megapoolManager.ABI.Unpack("getValidatorInfo", response)
 	if err != nil {
-		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+		return MegapoolValidatorInfo{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}
 
 	src := iface[1].(struct {

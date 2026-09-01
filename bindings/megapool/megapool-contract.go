@@ -87,7 +87,7 @@ type ValidatorInfo struct {
 	LockedTime         uint64 `abi:"lockedTime"`
 }
 
-type ValidatorInfoFromGlobalIndex struct {
+type MegapoolValidatorInfo struct {
 	Pubkey          []byte         `abi:"pubkey"`
 	ValidatorInfo   ValidatorInfo  `abi:"validatorInfo"`
 	MegapoolAddress common.Address `abi:"megapoolAddress"`

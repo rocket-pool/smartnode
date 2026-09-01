@@ -238,7 +238,7 @@ type MegapoolValidatorInfo struct {
 	CompletedAttestations   map[uint64]bool       `json:"-"`
 	AttestationCount        int                   `json:"attestationCount"`
 
-	NativeValidatorInfo *megapool.ValidatorInfoFromGlobalIndex `json:"nativeValidatorInfo"`
+	NativeValidatorInfo *megapool.MegapoolValidatorInfo `json:"nativeValidatorInfo"`
 
 	// Amount of eth earned by this validator in the smoothing pool
 	MegapoolValidatorShare *big.Int `json:"megapoolValidatorShare"`

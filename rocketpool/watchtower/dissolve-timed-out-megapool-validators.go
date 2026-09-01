@@ -87,7 +87,7 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *s
 		return err
 	}
 
-	for _, validator := range state.MegapoolValidatorGlobalIndex {
+	for _, validator := range state.MegapoolValidators {
 		if validator.ValidatorInfo.InPrestake {
 			assignTime := time.Unix(int64(validator.ValidatorInfo.LastAssignmentTime), 0)
 			if time.Since(assignTime) >= time.Duration(timeBeforeDissolve)*time.Second {
@@ -104,7 +104,7 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *s
 	return nil
 }
 
-func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) error {
+func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidator(validator megapool.MegapoolValidatorInfo) error {
 	// Log
 	t.log.Printlnf("Dissolving megapool validator ID: %d from megapool %s...", validator.ValidatorId, validator.MegapoolAddress)
 

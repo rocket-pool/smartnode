@@ -233,7 +233,7 @@ func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
 		MegapoolValidatorDetails: state.ValidatorDetailsMap{
 			pubkey: {Pubkey: pubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
 		},
-		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{
+		MegapoolValidators: []megapool.MegapoolValidatorInfo{
 			{
 				Pubkey:          pubkey[:],
 				MegapoolAddress: megapoolAddrA,
