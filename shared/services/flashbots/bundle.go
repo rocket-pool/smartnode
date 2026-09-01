@@ -126,7 +126,7 @@ func (b *Bundle) SetRevertingTxHashes(revertingTxHashes []string) {
 // SetReplacementUuid sets the replacement UUID for this bundle that can be used to cancel/replace this bundle
 func (b *Bundle) SetReplacementUuid(replacementUuid string) error {
 	if b.uuidAlreadySend {
-		return errors.New("bundle already send to relay, cant change uuid")
+		return errors.New("bundle already sent to relay, can't change uuid")
 	}
 
 	b.replacementUuid = replacementUuid

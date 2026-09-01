@@ -847,7 +847,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	odaoNodes := history.GetDefaultMockODAONodes()
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
-	// Ovewrite the SP balance to a value under the bonus commission
+	// Overwrite the SP balance to a value under the bonus commission
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1100)
 	// Set the SP voter share to 0
 	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
