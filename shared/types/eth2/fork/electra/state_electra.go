@@ -2,6 +2,7 @@ package electra
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"reflect"
@@ -80,6 +81,10 @@ func GetGeneralizedIndexForSlot() uint64 {
 	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStateSlotIndex)
 }
 
+func GetGeneralizedIndexForNextWithdrawalIndex() uint64 {
+	return generic.ContainerFieldGindex(getStateChunkSize(), generic.BeaconStateNextWithdrawalIndexFieldIndex)
+}
+
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
 // for the state's current slot lowering the memory cost for building the proofs.
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
@@ -149,9 +154,8 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
-	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
-	if !isHistorical {
+func (state *BeaconState) HistoricalSummariesElementProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
+	if !generic.IsHistoricalProof(state.Slot, slot) {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 	tree, err := generic.SSZ.GetTree(state)
@@ -163,12 +167,20 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint
 	gid := uint64(1)
 	gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
 	// Navigate into the historical summaries vector.
-	arrayIndex := (slot / generic.SlotsPerHistoricalRoot)
+	arrayIndex := (slot / generic.SlotsPerHistoricalRoot) - capellaOffset
 	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for historical block root: %w", err)
+	}
+	return proof.Hashes, nil
+}
+
+func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
+	proof, err := state.HistoricalSummariesElementProof(slot, capellaOffset)
+	if err != nil {
+		return nil, err
 	}
 
 	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
@@ -176,7 +188,7 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header proof: %w", err)
 	}
-	return append(proof.Hashes, blockHeaderProof...), nil
+	return append(proof, blockHeaderProof...), nil
 }
 
 func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
@@ -210,8 +222,7 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 }
 
 func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
-	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
-	if isHistorical {
+	if generic.IsHistoricalProof(state.Slot, slot) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
@@ -241,6 +252,23 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	}
 
 	return append(proof.Hashes, blockHeaderProof...), nil
+}
+
+func (state *BeaconState) ProveNextWithdrawalIndex() ([][]byte, error) {
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+	proof, err := stateTree.Prove(int(GetGeneralizedIndexForNextWithdrawalIndex()))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for next_withdrawal_index: %w", err)
+	}
+	var expected [32]byte
+	binary.LittleEndian.PutUint64(expected[:8], state.NextWithdrawalIndex)
+	if !bytes.Equal(proof.Leaf, expected[:]) {
+		return nil, fmt.Errorf("proof leaf does not match next_withdrawal_index")
+	}
+	return proof.Hashes, nil
 }
 
 func (state *BeaconState) GetValidators() []*generic.Validator {

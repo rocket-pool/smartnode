@@ -205,11 +205,15 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 		t.log.Printlnf("There was an error during the proof creation process: %w", err)
 		return err
 	}
+	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
+	if err != nil {
+		return err
+	}
 
 	t.log.Printlnf("The beacon state proof has been successfully created.")
 
 	// Get the gas limit
-	gasLimits, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+	gasLimits, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 	if err != nil {
 		t.log.Printlnf("Could not estimate the gas required to stake megapool validator %d: %w", validatorId, err)
 		return err
@@ -234,7 +238,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 	if err != nil {
 		return err
 	}

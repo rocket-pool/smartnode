@@ -183,36 +183,15 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 
 	slot := validatorDetails.WithdrawableEpoch * 32
 
-	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(t.c, slot, validatorIndex)
+	proofVersion, proofData, slotTimestamp, err := services.GetFinalBalanceProofBundle(t.c, slot, validatorIndex, validatorDetails.Pubkey, mp.GetAddress(), t.w)
 	if err != nil {
 		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorDetails.Pubkey.String(), validatorIndex, err)
-	}
-	t.log.Printlnf("The Beacon WithdrawalSlot for validator index %d is: %d", validatorDetails.Index, withdrawalProof.WithdrawalSlot)
-
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorDetails.Pubkey, stateUsed)
-	if err != nil {
-		t.log.Printlnf("There was an error during the proof creation process: %w", err)
-		return err
-	}
-
-	withdrawal := megapool.Withdrawal{
-		Index:                 withdrawalProof.WithdrawalIndex,
-		ValidatorIndex:        validatorIndex,
-		WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
-		AmountInGwei:          withdrawalProof.Amount.Uint64(),
-	}
-
-	finalBalanceProof := megapool.WithdrawalProof{
-		WithdrawalSlot: withdrawalProof.WithdrawalSlot,
-		WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
-		Withdrawal:     withdrawal,
-		Witnesses:      withdrawalProof.Witnesses,
 	}
 
 	t.log.Printlnf("The validator final balance proof has been successfully created.")
 
 	// Get the gas limit
-	gasLimits, err := megapool.EstimateNotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
+	gasLimits, err := megapool.EstimateNotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, proofVersion, proofData, opts)
 	if err != nil {
 		t.log.Printlnf("Could not estimate the gas required to notify final balance on megapool validator %d: %w", validatorId, err)
 		return err
@@ -237,7 +216,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	opts.GasLimit = gas.Uint64()
 
 	// Call Notify Final Balance
-	tx, err := megapool.NotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, proofVersion, proofData, opts)
 	if err != nil {
 		return err
 	}

@@ -10,14 +10,12 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pk910/dynamic-ssz/treeproof"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -36,16 +34,13 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/gloas"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
-
-// gloasForkName is the Eth-Consensus-Version reported for the Gloas fork
-// (ePBS, EIP-7732).
-const gloasForkName = "gloas"
 
 // API URL for the withdrawal proofs (base URL + network + withdrawal slot + validator index)
 const apiURL = "https://api.rocketpool.net/%s/withdrawals/proofs/%d/%d/%d"
@@ -719,17 +714,11 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	// Gloas (ePBS) removed the execution payload from beacon blocks, so
-	// withdrawals can no longer be found in, or proven against, a beacon block.
-	// Resolve the fork at the finalized checkpoint and use the state-based proof
-	// flow when Gloas is active.
-	finalizedSlot, finalizedFork, err := GetFinalizedBlockSlotAndFork(bc)
+	eth2Config, err := bc.GetEth2Config()
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
-	if strings.EqualFold(finalizedFork, gloasForkName) {
-		return getGloasWithdrawalProofForSlot(c, bc, slot, validatorIndex, finalizedSlot)
-	}
+	capellaOffset := eth2Config.HistoricalSummaryOffset()
 
 	withdrawalSlot, block, indexInWithdrawalsArray, withdrawal, finalizedBlock, err := FindWithdrawalBlockAndArrayPosition(slot, validatorIndex, bc)
 	if err != nil {
@@ -760,90 +749,17 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	fuluState, ok := beaconState.(*fulu.BeaconState)
-	if !ok {
-		return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("expected fulu.BeaconState, got %T", beaconState)
+	pastRootProof, err := pastRootWitnesses(bc, beaconState, withdrawalSlot, false, capellaOffset)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, nil, err
+	}
+	blockHeaderProof, err := beaconState.BlockHeaderProof()
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	// Generate proofs separately
-	// 1. Withdrawal proof (withdrawal -> block_root)
-	// 2. Block roots proof (block_root -> state)
-	// 3. Block header proof (state_root in block header)
-	// Final order: [withdrawal, block_roots, block_header]
-
-	var blockRootsProof [][]byte
-	var blockHeaderProof [][]byte
-	var summaryProof [][]byte
-	var historicalSummaryProof [][]byte
-	var finalProof [][]byte
-
-	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > finalizedBlock.Slot {
-		// Recent slot: use block_roots
-		// Get the block_roots proof separately
-		blockRootsProof, err = beaconState.BlockRootProof(response.WithdrawalSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		blockHeaderProof, err = beaconState.BlockHeaderProof()
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		finalProof = append(finalProof, withdrawalProof...)
-		finalProof = append(finalProof, blockRootsProof...)
-		finalProof = append(finalProof, blockHeaderProof...)
-
-	} else {
-		// Historical slot: use historical_summaries
-		// Get historical summary block root proof
-		blockRootsStateSlot := generic.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / generic.SlotsPerHistoricalRoot) * generic.SlotsPerHistoricalRoot)
-		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Size, blockRootsStateResponse.Fork)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		summaryProof, err = blockRootsState.HistoricalSummaryBlockRootProof(int(response.WithdrawalSlot))
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		// Get historical summary proof
-		var tree *treeproof.Node
-		tree, err = generic.SSZ.GetTree(fuluState)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get state tree: %w", err)
-		}
-
-		// Navigate to the historical_summaries (matching HistoricalSummaryProof logic)
-		beaconStateChunkCeil := uint64(64)
-		gid := uint64(1)
-		gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
-		arrayIndex := (response.WithdrawalSlot / generic.SlotsPerHistoricalRoot)
-		gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
-
-		proof, err := tree.Prove(int(gid))
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get proof for historical summary: %w", err)
-		}
-		historicalSummaryProof = proof.Hashes
-
-		blockHeaderProof, err = fuluState.BlockHeaderProof()
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		// Concatenate in order: [withdrawal, summary_block_root, historical_summary, block_header]
-		finalProof = append(finalProof, withdrawalProof...)
-		finalProof = append(finalProof, summaryProof...)
-		finalProof = append(finalProof, historicalSummaryProof...)
-		finalProof = append(finalProof, blockHeaderProof...)
-	}
-
-	// Convert [][]byte to [][32]byte
-	proofWithFixedSize := ConvertToFixedSize(finalProof)
-	response.Witnesses = proofWithFixedSize
+	finalProof := concatProofs(withdrawalProof, pastRootProof, blockHeaderProof)
+	response.Witnesses = ConvertToFixedSize(finalProof)
 
 	return response, finalizedBlock.Slot, beaconState, nil
 }
@@ -882,166 +798,304 @@ func GetFinalizedBlockSlotAndFork(bc beacon.Client) (uint64, string, error) {
 	return 0, "", fmt.Errorf("failed to find a finalized beacon block within %d slots of finalized epoch %d", maxAttempts, head.FinalizedEpoch)
 }
 
-// getGloasWithdrawalProofForSlot builds a final-balance withdrawal proof for a
-// Gloas (post-ePBS) chain. Pre-Gloas, a withdrawal is proven against the
-// execution payload in the beacon block that carried it, and that block's root
-// is anchored in a finalized state. In Gloas the payload is no longer part of
-// the block; instead, the post-state of the withdrawal slot commits to the
-// payload's withdrawals in payload_expected_withdrawals (see
-// process_withdrawals / update_payload_expected_withdrawals in EIP-7732). The
-// proof therefore chains:
-//
-//  1. withdrawal -> payload_expected_withdrawals -> state root of the withdrawal slot
-//  2. state root of the withdrawal slot -> finalized state root, via
-//     state_roots (recent slots) or historical_summaries (historical slots)
-//  3. finalized state root -> finalized block root (block header proof), which
-//     is what the contract checks against the EIP-4788 beacon roots oracle
-//
-// The witness layout mirrors the pre-Gloas one:
-//
-//	recent:     [expected_withdrawal, state_roots, block_header]
-//	historical: [expected_withdrawal, summary_state_root, historical_summary, block_header]
-func getGloasWithdrawalProofForSlot(c *cli.Command, bc beacon.Client, slot uint64, validatorIndex uint64, finalizedSlot uint64) (megapool.FinalBalanceProof, uint64, eth2.BeaconState, error) {
-	// Create a new response
-	response := megapool.FinalBalanceProof{}
-	response.ValidatorIndex = validatorIndex
-
-	ec, err := GetEthClient(c)
+// GetFinalBalanceProofBundle builds the versioned proof payload for
+// RocketMegapoolManager.notifyFinalBalance. Version 1 is used for pre-Gloas
+// withdrawals; version 2 for post-Gloas withdrawals.
+func GetFinalBalanceProofBundle(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
+	bc, err := GetBeaconClient(c)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
 	eth2Config, err := bc.GetEth2Config()
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
 
-	// Find the payload that carried the withdrawal on the execution layer and
-	// map it back to the consensus slot whose state committed to it.
-	withdrawalSlot, indexInWithdrawalsArray, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(slot, validatorIndex, ec, eth2Config)
+	withdrawalProof, proofSlot, stateUsed, err := GetWithdrawalProofForSlot(c, slotHint, validatorIndex)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		if errors.Is(err, ErrGloasBoundaryReached) {
+			return getGloasFinalBalanceProofBundle(c, bc, eth2Config, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+		}
+		cfg, cfgErr := GetConfig(c)
+		if cfgErr != nil {
+			return nil, nil, 0, err
+		}
+		fmt.Printf("An error occurred while getting the withdrawal proof: %s\n", err)
+		head, headErr := bc.GetBeaconHead()
+		if headErr != nil {
+			return nil, nil, 0, err
+		}
+		finalizedSlot := head.FinalizedEpoch * eth2Config.SlotsPerEpoch
+		network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
+		var apiErr error
+		withdrawalProof, proofSlot, apiErr = GetWithdrawalProofForSlotFromAPI(c, finalizedSlot, slotHint, validatorIndex, network)
+		if apiErr != nil {
+			fmt.Printf("An error occurred while getting the withdrawal proof from the Rocket Pool API: %s\n", apiErr)
+			return nil, nil, 0, err
+		}
+		stateUsed = nil
 	}
 
-	response.WithdrawalSlot = withdrawalSlot
-	response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
-	response.IndexInWithdrawalsArray = uint(indexInWithdrawalsArray)
-	response.WithdrawalIndex = withdrawal.Index
-	response.WithdrawalAddress = withdrawal.Address
+	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, validatorPubkey, stateUsed)
+	if err != nil {
+		return nil, nil, 0, err
+	}
 
-	// The state at the withdrawal slot commits to the payload's withdrawals in
-	// payload_expected_withdrawals; prove the withdrawal against its root.
+	encoded, err := megapool.EncodeFinalBalanceProofBundleV1(
+		megapool.WithdrawalProof{
+			WithdrawalSlot: withdrawalProof.WithdrawalSlot,
+			WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
+			Withdrawal: megapool.Withdrawal{
+				Index:                 withdrawalProof.WithdrawalIndex,
+				ValidatorIndex:        validatorIndex,
+				WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
+				AmountInGwei:          withdrawalProof.Amount.Uint64(),
+			},
+			Witnesses: withdrawalProof.Witnesses,
+		},
+		validatorProof,
+		slotProof,
+	)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return megapool.FinalBalanceProofVersion1, encoded, slotTimestamp, nil
+}
+
+func getGloasFinalBalanceProofBundle(c *cli.Command, bc beacon.Client, eth2Config beacon.Eth2Config, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
+	ec, err := GetEthClient(c)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	finalizedSlot, _, err := GetFinalizedBlockSlotAndFork(bc)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	capellaOffset := eth2Config.HistoricalSummaryOffset()
+
+	withdrawalSlot, indexInWithdrawalsArray, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(slotHint, validatorIndex, ec, eth2Config)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if withdrawalSlot == 0 {
+		return nil, nil, 0, fmt.Errorf("withdrawal slot must be greater than zero")
+	}
+
 	withdrawalStateResponse, err := bc.GetBeaconStateSSZ(withdrawalSlot)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
 	withdrawalState, err := eth2.NewBeaconState(withdrawalStateResponse.Data, withdrawalStateResponse.Size, withdrawalStateResponse.Fork)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
 	gloasWithdrawalState, ok := withdrawalState.(*gloas.BeaconState)
 	if !ok {
-		// TODO: Check when the withdrawal predates the Gloas fork while finality is past it.
-		return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("withdrawal slot %d is in the %s fork but finality is in gloas; cross-fork withdrawal proofs are not supported yet", withdrawalSlot, withdrawalStateResponse.Fork)
+		return nil, nil, 0, fmt.Errorf("withdrawal slot %d is in the %s fork; version 2 final balance proofs require Gloas", withdrawalSlot, withdrawalStateResponse.Fork)
 	}
-
-	// Sanity check that the withdrawal found on the EL matches the entry the
-	// beacon state committed to at the same position.
 	if err := verifyExpectedWithdrawal(gloasWithdrawalState, indexInWithdrawalsArray, withdrawal); err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
+	}
+	if uint64(len(gloasWithdrawalState.Balances)) <= validatorIndex {
+		return nil, nil, 0, fmt.Errorf("validator index %d is outside balances length %d", validatorIndex, len(gloasWithdrawalState.Balances))
+	}
+	if gloasWithdrawalState.Balances[validatorIndex] != 0 {
+		return nil, nil, 0, fmt.Errorf("validator %d balance is %d gwei at withdrawal slot %d; expected zero", validatorIndex, gloasWithdrawalState.Balances[validatorIndex], withdrawalSlot)
 	}
 
-	withdrawalProof, err := gloasWithdrawalState.ProveExpectedWithdrawal(uint64(indexInWithdrawalsArray))
+	matching := 0
+	for _, expected := range gloasWithdrawalState.PayloadExpectedWithdrawals {
+		if expected.ValidatorIndex == validatorIndex {
+			matching++
+		}
+	}
+	if matching != 1 {
+		return nil, nil, 0, fmt.Errorf("expected exactly one payload_expected_withdrawals entry for validator %d at slot %d, found %d", validatorIndex, withdrawalSlot, matching)
+	}
+
+	withdrawalLeafProof, err := gloasWithdrawalState.ProveExpectedWithdrawal(uint64(indexInWithdrawalsArray))
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
-
-	// Get the finalized beacon state to anchor the withdrawal slot's state root.
-	stateResponse, err := bc.GetBeaconStateSSZ(finalizedSlot)
+	balanceLeafProof, balanceChunk, err := gloasWithdrawalState.ProveValidatorBalanceChunk(validatorIndex)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
-	beaconState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Size, stateResponse.Fork)
+	if !gloas.IsZeroValidatorBalance(balanceChunk, validatorIndex) {
+		return nil, nil, 0, fmt.Errorf("validator %d balance chunk is not zero at withdrawal slot %d", validatorIndex, withdrawalSlot)
+	}
+
+	previousSlot := withdrawalSlot - 1
+	previousStateResponse, err := bc.GetBeaconStateSSZ(previousSlot)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, 0, nil, err
+		return nil, nil, 0, err
 	}
-	gloasState, ok := beaconState.(*gloas.BeaconState)
-	if !ok {
-		return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("expected gloas.BeaconState, got %T", beaconState)
+	previousState, err := eth2.NewBeaconState(previousStateResponse.Data, previousStateResponse.Size, previousStateResponse.Fork)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	nextWithdrawalIndex, nextWithdrawalIndexLeafProof, err := proveNextWithdrawalIndex(previousState)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if withdrawal.Index != nextWithdrawalIndex+uint64(indexInWithdrawalsArray) {
+		return nil, nil, 0, fmt.Errorf("withdrawal index %d is stale relative to preceding next_withdrawal_index %d and withdrawal number %d", withdrawal.Index, nextWithdrawalIndex, indexInWithdrawalsArray)
 	}
 
-	var finalProof [][]byte
-	if withdrawalSlot+generic.SlotsPerHistoricalRoot > finalizedSlot {
-		// Recent slot: the finalized state's state_roots ring still holds the
-		// withdrawal slot's post-state root.
-		stateRootsProof, err := gloasState.StateRootProof(withdrawalSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		blockHeaderProof, err := gloasState.BlockHeaderProof()
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
+	proofStateResponse, err := bc.GetBeaconStateSSZ(finalizedSlot)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	proofState, err := eth2.NewBeaconState(proofStateResponse.Data, proofStateResponse.Size, proofStateResponse.Fork)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if _, ok := proofState.(*gloas.BeaconState); !ok {
+		return nil, nil, 0, fmt.Errorf("expected gloas.BeaconState for the proof slot, got %T", proofState)
+	}
 
-		finalProof = append(finalProof, withdrawalProof...)
-		finalProof = append(finalProof, stateRootsProof...)
-		finalProof = append(finalProof, blockHeaderProof...)
-	} else {
-		// Historical slot: use historical_summaries. The era-aligned state's
-		// state_roots ring holds the whole era containing the withdrawal slot.
-		blockRootsStateSlot := generic.SlotsPerHistoricalRoot + ((withdrawalSlot / generic.SlotsPerHistoricalRoot) * generic.SlotsPerHistoricalRoot)
-		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
+	withdrawalPastRoot, err := pastRootWitnesses(bc, proofState, withdrawalSlot, true, capellaOffset)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	previousPastRoot, err := pastRootWitnesses(bc, proofState, previousSlot, true, capellaOffset)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	blockHeaderProof, err := proofState.BlockHeaderProof()
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, finalizedSlot, w, eth2Config, megapoolAddress, validatorPubkey, proofState)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	withdrawalEpoch := withdrawalSlot / eth2Config.SlotsPerEpoch
+	validators := proofState.GetValidators()
+	if validatorIndex >= uint64(len(validators)) {
+		return nil, nil, 0, fmt.Errorf("validator index %d is outside validators length %d", validatorIndex, len(validators))
+	}
+	if withdrawalEpoch < validators[validatorIndex].WithdrawableEpoch {
+		return nil, nil, 0, fmt.Errorf("withdrawal epoch %d is earlier than validator withdrawable epoch %d", withdrawalEpoch, validators[validatorIndex].WithdrawableEpoch)
+	}
+
+	encoded, err := megapool.EncodeFinalBalanceProofBundleV2(
+		megapool.WithdrawalProof{
+			WithdrawalSlot: withdrawalSlot,
+			WithdrawalNum:  uint16(indexInWithdrawalsArray),
+			Withdrawal: megapool.Withdrawal{
+				Index:                 withdrawal.Index,
+				ValidatorIndex:        withdrawal.ValidatorIndex,
+				WithdrawalCredentials: withdrawal.Address,
+				AmountInGwei:          withdrawal.Amount,
+			},
+			Witnesses: ConvertToFixedSize(concatProofs(withdrawalLeafProof, withdrawalPastRoot, blockHeaderProof)),
+		},
+		validatorProof,
+		slotProof,
+		megapool.NextWithdrawalIndexProof{
+			NextWithdrawalIndex: nextWithdrawalIndex,
+			Witnesses:           ConvertToFixedSize(concatProofs(nextWithdrawalIndexLeafProof, previousPastRoot, blockHeaderProof)),
+		},
+		megapool.ValidatorBalanceProof{
+			BalanceChunk: balanceChunk,
+			Witnesses:    ConvertToFixedSize(concatProofs(balanceLeafProof, withdrawalPastRoot, blockHeaderProof)),
+		},
+	)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return megapool.FinalBalanceProofVersion2, encoded, slotTimestamp, nil
+}
+
+func concatProofs(parts ...[][]byte) [][]byte {
+	n := 0
+	for _, part := range parts {
+		n += len(part)
+	}
+	out := make([][]byte, 0, n)
+	for _, part := range parts {
+		out = append(out, part...)
+	}
+	return out
+}
+
+func pastRootWitnesses(bc beacon.Client, proofState eth2.BeaconState, targetSlot uint64, useStateRoot bool, capellaOffset uint64) ([][]byte, error) {
+	proofSlot := proofState.GetSlot()
+	if proofSlot <= targetSlot {
+		return nil, fmt.Errorf("proof slot %d must be later than target slot %d", proofSlot, targetSlot)
+	}
+	if !generic.IsHistoricalProof(proofSlot, targetSlot) {
+		if useStateRoot {
+			gloasState, ok := proofState.(*gloas.BeaconState)
+			if !ok {
+				return nil, fmt.Errorf("state_roots past-root path requires a Gloas proof state, got %T", proofState)
+			}
+			return gloasState.StateRootProof(targetSlot)
 		}
-		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Size, blockRootsStateResponse.Fork)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		gloasBlockRootsState, ok := blockRootsState.(*gloas.BeaconState)
+		return proofState.BlockRootProof(targetSlot)
+	}
+
+	eraEndSlot := generic.SlotsPerHistoricalRoot + (targetSlot/generic.SlotsPerHistoricalRoot)*generic.SlotsPerHistoricalRoot
+	eraStateResponse, err := bc.GetBeaconStateSSZ(eraEndSlot)
+	if err != nil {
+		return nil, err
+	}
+	eraState, err := eth2.NewBeaconState(eraStateResponse.Data, eraStateResponse.Size, eraStateResponse.Fork)
+	if err != nil {
+		return nil, err
+	}
+
+	var summaryRootProof [][]byte
+	if useStateRoot {
+		gloasEraState, ok := eraState.(*gloas.BeaconState)
 		if !ok {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("expected gloas.BeaconState for the era-aligned state, got %T", blockRootsState)
+			return nil, fmt.Errorf("expected gloas.BeaconState for the era-aligned state, got %T", eraState)
 		}
-		summaryStateRootProof, err := gloasBlockRootsState.HistoricalSummaryStateRootProof(int(withdrawalSlot))
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		// Prove the HistoricalSummary itself in the finalized state, navigating
-		// the EIP-7688 ProgressiveContainer with the Gloas g-indices. As in the
-		// pre-Gloas flow above, the block-header proof stays a separate final
-		// segment (the state's latest block header has a zeroed state root at
-		// the block's own slot, so it must be recomputed).
-		tree, err := generic.SSZ.GetTree(gloasState)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get state tree: %w", err)
-		}
-		arrayIndex := withdrawalSlot / generic.SlotsPerHistoricalRoot
-		gid := generic.GetGeneralizedIndexForListElement(
-			gloas.GetGeneralizedIndexForHistoricalSummaries(),
-			generic.BeaconStateHistoricalSummariesMaxLength,
-			arrayIndex,
-		)
-		proof, err := tree.Prove(int(gid))
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get proof for historical summary: %w", err)
-		}
-		historicalSummaryProof := proof.Hashes
-
-		blockHeaderProof, err := gloasState.BlockHeaderProof()
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		finalProof = append(finalProof, withdrawalProof...)
-		finalProof = append(finalProof, summaryStateRootProof...)
-		finalProof = append(finalProof, historicalSummaryProof...)
-		finalProof = append(finalProof, blockHeaderProof...)
+		summaryRootProof, err = gloasEraState.HistoricalSummaryStateRootProof(int(targetSlot))
+	} else {
+		summaryRootProof, err = eraState.HistoricalSummaryBlockRootProof(int(targetSlot))
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	// Convert [][]byte to [][32]byte
-	response.Witnesses = ConvertToFixedSize(finalProof)
+	summaryProof, err := historicalSummariesElementProof(proofState, targetSlot, capellaOffset)
+	if err != nil {
+		return nil, err
+	}
+	return concatProofs(summaryRootProof, summaryProof), nil
+}
 
-	return response, finalizedSlot, beaconState, nil
+func historicalSummariesElementProof(state eth2.BeaconState, slot uint64, capellaOffset uint64) ([][]byte, error) {
+	switch s := state.(type) {
+	case *gloas.BeaconState:
+		return s.HistoricalSummariesElementProof(slot, capellaOffset)
+	case *fulu.BeaconState:
+		return s.HistoricalSummariesElementProof(slot, capellaOffset)
+	case *electra.BeaconState:
+		return s.HistoricalSummariesElementProof(slot, capellaOffset)
+	default:
+		return nil, fmt.Errorf("unsupported beacon state type %T", state)
+	}
+}
+
+func proveNextWithdrawalIndex(state eth2.BeaconState) (uint64, [][]byte, error) {
+	switch s := state.(type) {
+	case *gloas.BeaconState:
+		proof, err := s.ProveNextWithdrawalIndex()
+		return s.NextWithdrawalIndex, proof, err
+	case *fulu.BeaconState:
+		proof, err := s.ProveNextWithdrawalIndex()
+		return s.NextWithdrawalIndex, proof, err
+	case *electra.BeaconState:
+		proof, err := s.ProveNextWithdrawalIndex()
+		return s.NextWithdrawalIndex, proof, err
+	default:
+		return 0, nil, fmt.Errorf("unsupported beacon state type %T for next_withdrawal_index", state)
+	}
 }
 
 // verifyExpectedWithdrawal checks that the withdrawal found on the execution

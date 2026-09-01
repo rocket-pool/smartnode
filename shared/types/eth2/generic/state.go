@@ -14,6 +14,8 @@ const BeaconStateSlotIndex uint64 = 2
 // used by pre-Gloas fixed-capacity List[Validator, N] merkleization.
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
 
+const BeaconStateBalancesFieldIndex uint64 = 12
+const BeaconStateNextWithdrawalIndexFieldIndex uint64 = 25
 const BeaconStateHistoricalSummariesFieldIndex uint64 = 27
 const BeaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
 const BeaconStateBlockRootsMaxLength uint64 = 1 << 13

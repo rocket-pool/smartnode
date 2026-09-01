@@ -166,9 +166,14 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 		t.log.Printlnf("error getting validator proof: %v", err)
 		return
 	}
+	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
+	if err != nil {
+		t.log.Printlnf("error encoding validator proof: %v", err)
+		return
+	}
 
 	// Get the gas limit
-	gasLimits, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
+	gasLimits, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 	if err != nil {
 		t.log.Printlnf("error estimating the gas required to dissolve the validator: %v", err)
 		return
@@ -186,7 +191,7 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 	opts.GasLimit = gasLimits.Safe
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
+	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 	if err != nil {
 		t.log.Printlnf("error dissolving the validator: %v", err)
 		return
