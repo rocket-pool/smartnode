@@ -13,7 +13,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
 
@@ -60,12 +59,6 @@ type NativeNodeDetails struct {
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
 	MegapoolAddress                  common.Address `json:"megapool_address"`
 	MegapoolDeployed                 bool           `json:"megapool_deployed"`
-}
-
-type NodeFeeDetails struct {
-	DistributorBalanceUserETH *big.Int `json:"distributor_balance_user_eth"`
-	DistributorBalanceNodeETH *big.Int `json:"distributor_balance_node_eth"`
-	AverageNodeFee            *big.Int `json:"average_node_fee"`
 }
 
 func timeMax(a, b time.Time) time.Time {
@@ -253,52 +246,6 @@ func (node *NativeNodeDetails) WasOptedInAt(t time.Time) bool {
 
 	// If a node is opted out, but was opted in, check if the check time is before the opt-out time
 	return t.Before(time.Unix(node.SmoothingPoolRegistrationChanged.Int64(), 0))
-}
-
-// Calculate the average node fee and user/node shares of the distributor's balance
-func (nfd *NodeFeeDetails) CalculateAverageFeeAndDistributorShares(nnd *NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) {
-
-	// Calculate the total of all fees for staking minipools that aren't finalized
-	totalFee := big.NewInt(0)
-	eligibleMinipools := int64(0)
-	for _, mpd := range minipoolDetails {
-		if mpd.Status == types.Staking && !mpd.Finalised {
-			totalFee.Add(totalFee, mpd.NodeFee)
-			eligibleMinipools++
-		}
-	}
-
-	// Get the average fee (0 if there aren't any minipools)
-	if eligibleMinipools > 0 {
-		nfd.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
-	}
-
-	// Get the user and node portions of the distributor balance
-	distributorBalance := big.NewInt(0).Set(nnd.DistributorBalance)
-	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
-		nodeBalance := big.NewInt(0)
-		nodeBalance.Mul(distributorBalance, big.NewInt(1e18))
-		nodeBalance.Div(nodeBalance, nnd.CollateralisationRatio)
-
-		userBalance := big.NewInt(0)
-		userBalance.Sub(distributorBalance, nodeBalance)
-
-		if eligibleMinipools == 0 {
-			// Split it based solely on the collateralisation ratio if there are no minipools (and hence no average fee)
-			nfd.DistributorBalanceNodeETH = big.NewInt(0).Set(nodeBalance)
-			nfd.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, nodeBalance)
-		} else {
-			// Amount of ETH given to the NO as a commission
-			commissionEth := big.NewInt(0)
-			commissionEth.Mul(userBalance, nfd.AverageNodeFee)
-			commissionEth.Div(commissionEth, big.NewInt(1e18))
-
-			nfd.DistributorBalanceNodeETH.Add(nodeBalance, commissionEth)                        // Node gets their portion + commission on user portion
-			nfd.DistributorBalanceUserETH.Sub(distributorBalance, nfd.DistributorBalanceNodeETH) // User gets balance - node share
-		}
-
-	}
-
 }
 
 // Get all node addresses using the multicaller

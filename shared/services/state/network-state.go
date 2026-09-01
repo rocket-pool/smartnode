@@ -123,6 +123,58 @@ func (s *NetworkState) UnmarshalJSON(data []byte) error {
 	return s.Validate()
 }
 
+type NodeFeeDetails struct {
+	DistributorBalanceUserETH *big.Int `json:"distributor_balance_user_eth"`
+	DistributorBalanceNodeETH *big.Int `json:"distributor_balance_node_eth"`
+	AverageNodeFee            *big.Int `json:"average_node_fee"`
+}
+
+// Calculate the average node fee and user/node shares of the distributor's balance
+func (nfd *NodeFeeDetails) calculateAverageFeeAndDistributorShares(nnd *rpstate.NativeNodeDetails, minipoolDetails []*rpstate.NativeMinipoolDetails) {
+
+	// Calculate the total of all fees for staking minipools that aren't finalized
+	totalFee := big.NewInt(0)
+	eligibleMinipools := int64(0)
+	for _, mpd := range minipoolDetails {
+		if mpd.Status == types.Staking && !mpd.Finalised {
+			totalFee.Add(totalFee, mpd.NodeFee)
+			eligibleMinipools++
+		}
+	}
+
+	// Get the average fee (0 if there aren't any minipools)
+	if eligibleMinipools > 0 {
+		nfd.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
+	}
+
+	// Get the user and node portions of the distributor balance
+	distributorBalance := big.NewInt(0).Set(nnd.DistributorBalance)
+	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
+		nodeBalance := big.NewInt(0)
+		nodeBalance.Mul(distributorBalance, big.NewInt(1e18))
+		nodeBalance.Div(nodeBalance, nnd.CollateralisationRatio)
+
+		userBalance := big.NewInt(0)
+		userBalance.Sub(distributorBalance, nodeBalance)
+
+		if eligibleMinipools == 0 {
+			// Split it based solely on the collateralisation ratio if there are no minipools (and hence no average fee)
+			nfd.DistributorBalanceNodeETH = big.NewInt(0).Set(nodeBalance)
+			nfd.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, nodeBalance)
+		} else {
+			// Amount of ETH given to the NO as a commission
+			commissionEth := big.NewInt(0)
+			commissionEth.Mul(userBalance, nfd.AverageNodeFee)
+			commissionEth.Div(commissionEth, big.NewInt(1e18))
+
+			nfd.DistributorBalanceNodeETH.Add(nodeBalance, commissionEth)                        // Node gets their portion + commission on user portion
+			nfd.DistributorBalanceUserETH.Sub(distributorBalance, nfd.DistributorBalanceNodeETH) // User gets balance - node share
+		}
+
+	}
+
+}
+
 type NetworkStateIndex struct {
 	*NetworkState
 	NodeDetailsByAddress     map[common.Address]*rpstate.NativeNodeDetails
@@ -130,7 +182,7 @@ type NetworkStateIndex struct {
 	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
 	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
 	MegapoolValidatorInfo    map[MegapoolValidatorKey]*megapool.MegapoolValidatorInfo
-	NodeFeeDetailsByAddress  map[common.Address]*rpstate.NodeFeeDetails
+	NodeFeeDetailsByAddress  map[common.Address]*NodeFeeDetails
 }
 
 func (s *NetworkState) ToIndexedNetworkState() *NetworkStateIndex {
@@ -183,14 +235,14 @@ func (s *NetworkState) ToIndexedNetworkState() *NetworkStateIndex {
 	}
 
 	// Calculate avg node fees and distributor shares
-	out.NodeFeeDetailsByAddress = make(map[common.Address]*rpstate.NodeFeeDetails)
+	out.NodeFeeDetailsByAddress = make(map[common.Address]*NodeFeeDetails)
 	for _, details := range s.NodeDetails {
-		out.NodeFeeDetailsByAddress[details.NodeAddress] = &rpstate.NodeFeeDetails{
+		out.NodeFeeDetailsByAddress[details.NodeAddress] = &NodeFeeDetails{
 			DistributorBalanceNodeETH: big.NewInt(0),
 			DistributorBalanceUserETH: big.NewInt(0),
 			AverageNodeFee:            big.NewInt(0),
 		}
-		out.NodeFeeDetailsByAddress[details.NodeAddress].CalculateAverageFeeAndDistributorShares(&details, out.MinipoolDetailsByNode[details.NodeAddress])
+		out.NodeFeeDetailsByAddress[details.NodeAddress].calculateAverageFeeAndDistributorShares(&details, out.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
 	return out
