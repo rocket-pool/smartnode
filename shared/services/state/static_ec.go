@@ -21,13 +21,13 @@ var _ rocketpool.ExecutionClient = (*StaticExecutionClient)(nil)
 // ErrStaticMode so that callers fail loudly instead of silently stalling on
 // a non-existent client.
 type StaticExecutionClient struct {
-	state   *NetworkState
+	state   *NetworkStateIndex
 	chainID *big.Int
 }
 
 // NewStaticExecutionClient wires the given NetworkState + chain ID into a
 // static ExecutionClient implementation.
-func NewStaticExecutionClient(ns *NetworkState, chainID *big.Int) *StaticExecutionClient {
+func NewStaticExecutionClient(ns *NetworkStateIndex, chainID *big.Int) *StaticExecutionClient {
 	if chainID == nil {
 		chainID = big.NewInt(0)
 	}

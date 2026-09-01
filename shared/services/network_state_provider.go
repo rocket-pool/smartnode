@@ -12,7 +12,7 @@ import (
 // Memoized static snapshot / provider so that every service accessor
 // consults the same in-memory NetworkState without re-reading the file.
 var (
-	staticState          *state.NetworkState
+	staticState          *state.NetworkStateIndex
 	staticStateErr       error
 	initStaticState      sync.Once
 	networkStateProv     state.NetworkStateProvider
@@ -37,7 +37,7 @@ func IsStaticStateMode(c *cli.Command) bool {
 
 // getStaticState loads the NetworkState snapshot pointed at by --network-state,
 // memoizing the result on success. It is safe to call concurrently.
-func getStaticState(c *cli.Command) (*state.NetworkState, error) {
+func getStaticState(c *cli.Command) (*state.NetworkStateIndex, error) {
 	path := GetStaticStatePath(c)
 	if path == "" {
 		return nil, fmt.Errorf("static state mode is not enabled (--network-state is unset)")
@@ -53,7 +53,7 @@ func getStaticState(c *cli.Command) (*state.NetworkState, error) {
 			staticStateErr = fmt.Errorf("reading head state from %q: %w", path, err)
 			return
 		}
-		staticState = ns
+		staticState = ns.ToIndexedNetworkState()
 	})
 	return staticState, staticStateErr
 }

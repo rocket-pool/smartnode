@@ -18,12 +18,12 @@ var _ beacon.Client = (*StaticBeaconClient)(nil)
 // (attestations, committees, sync duties, BLS domain data, arbitrary SSZ
 // state or block data) returns ErrStaticMode.
 type StaticBeaconClient struct {
-	state *NetworkState
+	state *NetworkStateIndex
 }
 
 // NewStaticBeaconClient wires the given NetworkState into a static
 // beacon.Client implementation.
-func NewStaticBeaconClient(ns *NetworkState) *StaticBeaconClient {
+func NewStaticBeaconClient(ns *NetworkStateIndex) *StaticBeaconClient {
 	return &StaticBeaconClient{state: ns}
 }
 

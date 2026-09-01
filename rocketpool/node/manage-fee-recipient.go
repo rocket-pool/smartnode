@@ -74,7 +74,7 @@ func newManageFeeRecipient(c *cli.Command, logger log.ColorLogger) (*manageFeeRe
 }
 
 // Manage fee recipient
-func (m *manageFeeRecipient) run(state *state.NetworkState) error {
+func (m *manageFeeRecipient) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(m.c, true); err != nil {

@@ -84,7 +84,7 @@ func newStakeMegapoolValidator(c *cli.Command, logger log.ColorLogger) (*stakeMe
 }
 
 // Prestake megapool validator
-func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
+func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for megapool validators to stake...")
 
@@ -194,7 +194,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	return nil
 }
 
-func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()

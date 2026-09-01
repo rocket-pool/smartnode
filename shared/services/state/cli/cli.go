@@ -32,7 +32,7 @@ var criticalDutiesEpochCountFlag = flag.Uint64("critical-duties-epoch-count", 63
 var minimalFlag = flag.Bool("minimal", false, "Truncate every list/map to at most one entry (useful for producing a small inspection file)")
 
 // truncateNetworkState reduces every slice and map field to at most one element.
-func truncateNetworkState(ns *state.NetworkState) {
+func truncateNetworkState(ns *state.NetworkStateIndex) {
 	if len(ns.NodeDetails) > 1 {
 		ns.NodeDetails = ns.NodeDetails[:1]
 	}
@@ -106,7 +106,7 @@ func main() {
 	bc := client.NewStandardHttpClient(*bnFlag)
 	sm := state.NewNetworkStateManager(rp, contracts, bc, nil)
 
-	var networkState *state.NetworkState
+	var networkState *state.NetworkStateIndex
 
 	if *inputFlag {
 		decoder := json.NewDecoder(os.Stdin)
@@ -131,7 +131,8 @@ func main() {
 	}
 
 	if *criticalDutiesSlotsFlag {
-		criticalDutiesEpochs := state.NewCriticalDutiesEpochs(*criticalDutiesEpochCountFlag, networkState)
+		nsi := networkState.ToIndexedNetworkState()
+		criticalDutiesEpochs := state.NewCriticalDutiesEpochs(*criticalDutiesEpochCountFlag, nsi)
 		fmt.Fprintf(os.Stderr, "Critical duties epochs to check: %d\n", len(criticalDutiesEpochs.CriticalDuties))
 
 		criticalDutiesSlots, err := state.NewCriticalDutiesSlots(criticalDutiesEpochs, bc)

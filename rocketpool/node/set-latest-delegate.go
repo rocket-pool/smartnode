@@ -89,7 +89,7 @@ func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLat
 }
 
 // Distribute minipools
-func (t *setUseLatestDelegate) run(state *state.NetworkState) error {
+func (t *setUseLatestDelegate) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for minipools to set use latest delegate...")
 
@@ -145,7 +145,7 @@ func (t *setUseLatestDelegate) run(state *state.NetworkState) error {
 }
 
 // Get minipools that can have use latest delegate set
-func (t *setUseLatestDelegate) getSettableMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *setUseLatestDelegate) getSettableMinipools(nodeAddress common.Address, state *state.NetworkStateIndex, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools by status
 	settableMinipools := []*rpstate.NativeMinipoolDetails{}

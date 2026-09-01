@@ -1,6 +1,7 @@
 package state
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -83,9 +84,6 @@ type NetworkState struct {
 
 	// Node details
 	NodeDetails []rpstate.NativeNodeDetails `json:"node_details"`
-	// NodeDetailsByAddress is an index over NodeDetails and is ignored when marshaling to JSON
-	// it is rebuilt when unmarshaling from JSON.
-	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails `json:"-"`
 
 	// Minipool details
 	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
@@ -93,22 +91,12 @@ type NetworkState struct {
 	// Stores validator details from all megapools
 	MegapoolValidatorGlobalIndex []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_global_index"`
 
-	// Map megapool addresses to the pubkeys of its validators
-	MegapoolToPubkeysMap map[common.Address][]types.ValidatorPubkey `json:"-"`
-
 	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"megapool_details"`
-
-	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
-	// they are rebuilt when unmarshaling from JSON.
-	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails   `json:"-"`
-	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails `json:"-"`
 
 	// Validator details
 	// NetworkState was updated to support megapools, so the old json tag "validator_details" is needed to decode rp-network-state-mainnet-20.json.gz
 	MinipoolValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
-
-	MegapoolValidatorInfo map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex `json:"-"`
 
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
@@ -132,65 +120,104 @@ func (s *NetworkState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*s = NetworkState(a)
+	return s.Validate()
+}
+
+type NetworkStateIndex struct {
+	*NetworkState
+	NodeDetailsByAddress     map[common.Address]*rpstate.NativeNodeDetails
+	MegapoolToPubkeysMap     map[common.Address][]types.ValidatorPubkey
+	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
+	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
+	MegapoolValidatorInfo    map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex
+	NodeFeeDetailsByAddress  map[common.Address]*rpstate.NodeFeeDetails
+}
+
+func (s *NetworkState) ToIndexedNetworkState() *NetworkStateIndex {
+	out := &NetworkStateIndex{
+		NetworkState: s,
+	}
 	// Rebuild the node details by address index
-	s.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
+	out.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
 	for i, details := range s.NodeDetails {
-		if _, ok := s.NodeDetailsByAddress[details.NodeAddress]; ok {
-			return fmt.Errorf("duplicate node details for address %s", details.NodeAddress.Hex())
-		}
 		// N.B. &details is not the same as &s.NodeDetails[i]
 		// &details is the address of the current element in the loop
 		// &s.NodeDetails[i] is the address of the struct in the slice
-		s.NodeDetailsByAddress[details.NodeAddress] = &s.NodeDetails[i]
+		out.NodeDetailsByAddress[details.NodeAddress] = &s.NodeDetails[i]
 	}
 
 	// Rebuild the minipool details by address index
-	s.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
+	out.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
 	for i, details := range s.MinipoolDetails {
-		if _, ok := s.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
-			return fmt.Errorf("duplicate minipool details for address %s", details.MinipoolAddress.Hex())
-		}
-
 		// N.B. &details is not the same as &s.MinipoolDetails[i]
 		// &details is the address of the current element in the loop
 		// &s.MinipoolDetails[i] is the address of the struct in the slice
-		s.MinipoolDetailsByAddress[details.MinipoolAddress] = &s.MinipoolDetails[i]
+		out.MinipoolDetailsByAddress[details.MinipoolAddress] = &s.MinipoolDetails[i]
 	}
 
 	// Rebuild the minipool details by node index
-	s.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
+	out.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
 	for i, details := range s.MinipoolDetails {
 		// See comments in above loops as to why we're using &s.MinipoolDetails[i]
 		currentDetails := &s.MinipoolDetails[i]
-		nodeList, exists := s.MinipoolDetailsByNode[details.NodeAddress]
+		nodeList, exists := out.MinipoolDetailsByNode[details.NodeAddress]
 		if !exists {
-			s.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
+			out.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
 			continue
 		}
 		// See comments in other loops
-		s.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+		out.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
 	}
 
-	// Rebuild MegapoolToPubkeysMap and MegapoolValidatorInfo from MegapoolValidatorGlobalIndex
-	s.rebuildMegapoolValidatorMaps()
-
-	return nil
-}
-
-// Rebuilds MegapoolToPubkeysMap and MegapoolValidatorInfo from MegapoolValidatorGlobalIndex
-func (s *NetworkState) rebuildMegapoolValidatorMaps() []types.ValidatorPubkey {
-	s.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
-	s.MegapoolValidatorInfo = make(map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex)
-	pubkeys := make([]types.ValidatorPubkey, 0, len(s.MegapoolValidatorGlobalIndex))
-	seen := make(map[types.ValidatorPubkey]bool, len(s.MegapoolValidatorGlobalIndex))
+	out.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
+	out.MegapoolValidatorInfo = make(map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex)
 	for i := range s.MegapoolValidatorGlobalIndex {
 		validator := &s.MegapoolValidatorGlobalIndex[i]
 		if len(validator.Pubkey) > 0 {
 			pubkey := types.ValidatorPubkey(validator.Pubkey)
-			s.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
-				s.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
+			out.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
+				out.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
 			)
-			s.MegapoolValidatorInfo[MegapoolValidatorKey{MegapoolAddress: validator.MegapoolAddress, Pubkey: pubkey}] = validator
+			out.MegapoolValidatorInfo[MegapoolValidatorKey{MegapoolAddress: validator.MegapoolAddress, Pubkey: pubkey}] = validator
+		}
+	}
+
+	// Calculate avg node fees and distributor shares
+	out.NodeFeeDetailsByAddress = make(map[common.Address]*rpstate.NodeFeeDetails)
+	for _, details := range s.NodeDetails {
+		out.NodeFeeDetailsByAddress[details.NodeAddress] = &rpstate.NodeFeeDetails{
+			DistributorBalanceNodeETH: big.NewInt(0),
+			DistributorBalanceUserETH: big.NewInt(0),
+			AverageNodeFee:            big.NewInt(0),
+		}
+		out.NodeFeeDetailsByAddress[details.NodeAddress].CalculateAverageFeeAndDistributorShares(&details, out.MinipoolDetailsByNode[details.NodeAddress])
+	}
+
+	return out
+}
+
+func (s NetworkStateIndex) MarshalJSON() ([]byte, error) {
+	return s.NetworkState.MarshalJSON()
+}
+
+func (s *NetworkStateIndex) UnmarshalJSON(data []byte) error {
+	var inner NetworkState
+	err := json.Unmarshal(data, &inner)
+	if err != nil {
+		return err
+	}
+
+	*s = *inner.ToIndexedNetworkState()
+
+	return nil
+}
+
+func (s *NetworkState) GetUniqueMegapoolPubkeys() []types.ValidatorPubkey {
+	pubkeys := make([]types.ValidatorPubkey, 0, len(s.MegapoolValidatorGlobalIndex))
+	seen := make(map[types.ValidatorPubkey]bool, len(s.MegapoolValidatorGlobalIndex))
+	for _, validator := range s.MegapoolValidatorGlobalIndex {
+		if len(validator.Pubkey) > 0 {
+			pubkey := types.ValidatorPubkey(validator.Pubkey)
 			if !seen[pubkey] {
 				seen[pubkey] = true
 				pubkeys = append(pubkeys, pubkey)
@@ -200,8 +227,58 @@ func (s *NetworkState) rebuildMegapoolValidatorMaps() []types.ValidatorPubkey {
 	return pubkeys
 }
 
+func (s *NetworkState) GetMinipoolPubkeys() []types.ValidatorPubkey {
+	pubkeys := make([]types.ValidatorPubkey, 0, len(s.MinipoolDetails))
+	emptyPubkey := types.ValidatorPubkey{}
+	for _, mpd := range s.MinipoolDetails {
+		if !bytes.Equal(mpd.Pubkey[:], emptyPubkey[:]) {
+			pubkeys = append(pubkeys, mpd.Pubkey)
+		}
+	}
+	return pubkeys
+}
+
+func (s *NetworkState) getMegapoolAddresses() []common.Address {
+	seen := make(map[common.Address]bool)
+	addresses := make([]common.Address, 0, len(s.MegapoolValidatorGlobalIndex))
+	for _, megapool := range s.MegapoolValidatorGlobalIndex {
+		if len(megapool.Pubkey) == 0 {
+			continue
+		}
+		if seen[megapool.MegapoolAddress] {
+			continue
+		}
+		seen[megapool.MegapoolAddress] = true
+		addresses = append(addresses, megapool.MegapoolAddress)
+	}
+	return addresses
+}
+
+func (s *NetworkState) Validate() error {
+
+	// Check for duplicate node details
+	seenNodes := make(map[common.Address]bool)
+	for _, node := range s.NodeDetails {
+		if seenNodes[node.NodeAddress] {
+			return fmt.Errorf("duplicate node details for address %s", node.NodeAddress.Hex())
+		}
+		seenNodes[node.NodeAddress] = true
+	}
+
+	// Check for duplicate minipool details
+	seenMinipools := make(map[common.Address]bool)
+	for _, mpd := range s.MinipoolDetails {
+		if seenMinipools[mpd.MinipoolAddress] {
+			return fmt.Errorf("duplicate minipool details for address %s", mpd.MinipoolAddress.Hex())
+		}
+		seenMinipools[mpd.MinipoolAddress] = true
+	}
+
+	return nil
+}
+
 // Returns the validator info for the given megapool and pubkey.
-func (s *NetworkState) GetMegapoolValidatorInfo(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (*megapool.ValidatorInfoFromGlobalIndex, bool) {
+func (s *NetworkStateIndex) GetMegapoolValidatorInfo(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (*megapool.ValidatorInfoFromGlobalIndex, bool) {
 	info, exists := s.MegapoolValidatorInfo[MegapoolValidatorKey{MegapoolAddress: megapoolAddress, Pubkey: pubkey}]
 	return info, exists
 }
@@ -241,12 +318,9 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 
 	// Create the state wrapper
 	state := &NetworkState{
-		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
-		MinipoolDetailsByAddress: map[common.Address]*rpstate.NativeMinipoolDetails{},
-		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
-		BeaconSlotNumber:         slotNumber,
-		ElBlockNumber:            elBlockNumber,
-		BeaconConfig:             *beaconConfig,
+		BeaconSlotNumber: slotNumber,
+		ElBlockNumber:    elBlockNumber,
+		BeaconConfig:     *beaconConfig,
 	}
 
 	m.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
@@ -302,29 +376,6 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	currentStep++
 	m.logLine("%d/%d - Retrieved minipool details (%s so far)", currentStep, steps, time.Since(start))
 
-	// Create the node lookup
-	for i, details := range state.NodeDetails {
-		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
-	}
-
-	// Create the minipool lookups
-	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
-	emptyPubkey := types.ValidatorPubkey{}
-	for i, details := range state.MinipoolDetails {
-		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
-		if details.Pubkey != emptyPubkey {
-			pubkeys = append(pubkeys, details.Pubkey)
-		}
-
-		// The map of nodes to minipools
-		nodeList, exists := state.MinipoolDetailsByNode[details.NodeAddress]
-		if !exists {
-			nodeList = []*rpstate.NativeMinipoolDetails{}
-		}
-		nodeList = append(nodeList, &state.MinipoolDetails[i])
-		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
-	}
-
 	if allNodes {
 		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
 		if err != nil {
@@ -346,12 +397,8 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	currentStep++
 	m.logLine("%d/%d - Retrieved megapool validator global index (%s so far)", currentStep, steps, time.Since(start))
 
-	megapoolValidatorPubkeys := state.rebuildMegapoolValidatorMaps()
-
-	megapoolAddresses := make([]common.Address, 0, len(state.MegapoolToPubkeysMap))
-	for addr := range state.MegapoolToPubkeysMap {
-		megapoolAddresses = append(megapoolAddresses, addr)
-	}
+	megapoolValidatorPubkeys := state.GetUniqueMegapoolPubkeys()
+	megapoolAddresses := state.getMegapoolAddresses()
 
 	// Fetch beacon validator statuses and EL megapool details in parallel
 	var megapoolWg errgroup.Group
@@ -376,11 +423,6 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	currentStep++
 	m.logLine("%d/%d - Retrieved megapool validator details (%s so far)", currentStep, steps, time.Since(start))
 
-	// Calculate avg node fees and distributor shares
-	for _, details := range state.NodeDetails {
-		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
-	}
-
 	// Oracle DAO member details
 	state.OracleDaoMemberDetails, err = rpstate.GetAllOracleDaoMemberDetails(m.rp, contracts)
 	if err != nil {
@@ -390,7 +432,8 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	m.logLine("%d/%d - Retrieved Oracle DAO details (%s so far)", currentStep, steps, time.Since(start))
 
 	// Get the validator stats from Beacon
-	statusMap, err := m.bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
+	minipoolPubkeys := state.GetMinipoolPubkeys()
+	statusMap, err := m.bc.GetValidatorStatuses(minipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
 	})
 	if err != nil {
@@ -428,7 +471,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	currentStep++
 	m.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
 
-	return state, nil
+	return state, state.Validate()
 }
 
 func (s *NetworkState) GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth *big.Int, nodeStake *big.Int) (*big.Int, *big.Int) {
@@ -480,7 +523,7 @@ func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *bi
 }
 
 // Get the node's total borrowed ETH that counts towards RPL rewards (minipool + megapool)
-func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+func (s *NetworkStateIndex) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := s.GetMinipoolEligibleBorrowedEth(node)
 	eligibleBorrowedEth.Add(eligibleBorrowedEth, s.GetMegapoolEligibleBorrowedEth(node))
 	return eligibleBorrowedEth
@@ -495,7 +538,7 @@ func (s *NetworkState) GetRewardsEligibleRplStake(node *rpstate.NativeNodeDetail
 }
 
 // Get the node's weight before scaling on participation
-func (s *NetworkState) GetUnscaledNodeWeight(node *rpstate.NativeNodeDetails) *big.Int {
+func (s *NetworkStateIndex) GetUnscaledNodeWeight(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := s.GetEligibleBorrowedEth(node)
 	if eligibleBorrowedEth.Sign() <= 0 {
 		return big.NewInt(0)
@@ -506,7 +549,7 @@ func (s *NetworkState) GetUnscaledNodeWeight(node *rpstate.NativeNodeDetails) *b
 // Starting in v8, RPL stake is phased out and replaced with weight.
 // scaleByParticipation and allowRplForUnstartedValidators are hard-coded true here, since
 // only v8 cares about weight.
-func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big.Int, error) {
+func (s *NetworkStateIndex) CalculateNodeWeights() (map[common.Address]*big.Int, *big.Int, error) {
 	weights := make(map[common.Address]*big.Int, len(s.NodeDetails))
 	totalWeight := big.NewInt(0)
 	intervalDurationBig := big.NewInt(int64(s.NetworkDetails.IntervalDuration.Seconds()))
@@ -561,7 +604,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	return weights, totalWeight, nil
 }
 
-func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+func (s *NetworkStateIndex) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
 	intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 
@@ -591,7 +634,7 @@ func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 	return eligibleBorrowedEth
 }
 
-func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+func (s *NetworkStateIndex) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	if !node.MegapoolDeployed {
 		return big.NewInt(0)
 	}

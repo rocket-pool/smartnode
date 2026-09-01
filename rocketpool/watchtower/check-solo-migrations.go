@@ -92,7 +92,7 @@ func newCheckSoloMigrations(c *cli.Command, logger log.ColorLogger, errorLogger 
 }
 
 // Start the solo migration checking thread
-func (t *checkSoloMigrations) run(state *state.NetworkState) error {
+func (t *checkSoloMigrations) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -138,7 +138,7 @@ func (t *checkSoloMigrations) run(state *state.NetworkState) error {
 }
 
 // Check for solo staker migration validity
-func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
+func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex) error {
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 	oneGwei := math.GweiToWei(1)

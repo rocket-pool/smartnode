@@ -72,7 +72,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	var trustedNodeOperatorRewardsPercent float64
 	var totalDepositBalance float64
 	var totalNodeShare float64
-	var networkState *state.NetworkState
+	var networkState *state.NetworkStateIndex
 
 	// Sync
 	var wg errgroup.Group

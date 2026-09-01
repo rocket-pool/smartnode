@@ -69,7 +69,7 @@ func newDownloadRewardsTrees(c *cli.Command, logger log.ColorLogger) (*downloadR
 }
 
 // Manage fee recipient
-func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
+func (d *downloadRewardsTrees) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {

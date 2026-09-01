@@ -60,10 +60,7 @@ func buildTestState() *NetworkState {
 			BalanceRPL:                       big.NewInt(0),
 			BalanceOldRPL:                    big.NewInt(0),
 			DepositCreditBalance:             big.NewInt(0),
-			DistributorBalanceUserETH:        big.NewInt(0),
-			DistributorBalanceNodeETH:        big.NewInt(0),
 			SmoothingPoolRegistrationChanged: big.NewInt(0),
-			AverageNodeFee:                   big.NewInt(0),
 			CollateralisationRatio:           big.NewInt(0),
 			DistributorBalance:               big.NewInt(0),
 			MegapoolAddress:                  megapoolAddrA,
@@ -94,10 +91,7 @@ func buildTestState() *NetworkState {
 			BalanceRPL:                       big.NewInt(0),
 			BalanceOldRPL:                    big.NewInt(0),
 			DepositCreditBalance:             big.NewInt(0),
-			DistributorBalanceUserETH:        big.NewInt(0),
-			DistributorBalanceNodeETH:        big.NewInt(0),
 			SmoothingPoolRegistrationChanged: big.NewInt(0),
-			AverageNodeFee:                   big.NewInt(0),
 			CollateralisationRatio:           big.NewInt(0),
 			DistributorBalance:               big.NewInt(0),
 		},
@@ -207,30 +201,6 @@ func buildTestState() *NetworkState {
 		},
 	}
 
-	nodeDetailsByAddress := map[common.Address]*rpstate.NativeNodeDetails{
-		nodeAddrA: &nodeDetails[0],
-		nodeAddrB: &nodeDetails[1],
-	}
-
-	minipoolDetailsByAddress := map[common.Address]*rpstate.NativeMinipoolDetails{
-		mpAddrA1: &minipoolDetails[0],
-		mpAddrA2: &minipoolDetails[1],
-		mpAddrB1: &minipoolDetails[2],
-	}
-
-	minipoolDetailsByNode := map[common.Address][]*rpstate.NativeMinipoolDetails{
-		nodeAddrA: {&minipoolDetails[0], &minipoolDetails[1]},
-		nodeAddrB: {&minipoolDetails[2]},
-	}
-
-	megapoolToPubkeys := map[common.Address][]types.ValidatorPubkey{
-		megapoolAddrA: {megapoolPubkey},
-	}
-
-	megapoolValidatorInfo := map[MegapoolValidatorKey]*megapool.ValidatorInfoFromGlobalIndex{
-		{MegapoolAddress: megapoolAddrA, Pubkey: megapoolPubkey}: &megapoolValidatorGlobalIndex[0],
-	}
-
 	megapoolDetails := map[common.Address]rpstate.NativeMegapoolDetails{
 		megapoolAddrA: {
 			Address:              megapoolAddrA,
@@ -265,11 +235,8 @@ func buildTestState() *NetworkState {
 			TrustedNodeOperatorRewardsPercent: big.NewInt(0),
 			ProtocolDaoRewardsPercent:         big.NewInt(0),
 		},
-		NodeDetails:              nodeDetails,
-		NodeDetailsByAddress:     nodeDetailsByAddress,
-		MinipoolDetails:          minipoolDetails,
-		MinipoolDetailsByAddress: minipoolDetailsByAddress,
-		MinipoolDetailsByNode:    minipoolDetailsByNode,
+		NodeDetails:     nodeDetails,
+		MinipoolDetails: minipoolDetails,
 		MinipoolValidatorDetails: ValidatorDetailsMap{
 			pubkeyA1: {Pubkey: pubkeyA1, Index: "1", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
 			pubkeyA2: {Pubkey: pubkeyA2, Index: "2", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
@@ -279,8 +246,6 @@ func buildTestState() *NetworkState {
 			megapoolPubkey: {Pubkey: megapoolPubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
 		},
 		MegapoolValidatorGlobalIndex: megapoolValidatorGlobalIndex,
-		MegapoolToPubkeysMap:         megapoolToPubkeys,
-		MegapoolValidatorInfo:        megapoolValidatorInfo,
 		MegapoolDetails:              megapoolDetails,
 		OracleDaoMemberDetails: []rpstate.OracleDaoMemberDetails{
 			{
@@ -310,14 +275,14 @@ func buildTestState() *NetworkState {
 // the index maps (NodeDetailsByAddress, MinipoolDetailsByAddress,
 // MinipoolDetailsByNode) that are excluded from JSON.
 func TestNetworkStateJSONRoundtrip(t *testing.T) {
-	original := buildTestState()
+	original := buildTestState().ToIndexedNetworkState()
 
 	data, err := json.Marshal(original)
 	if err != nil {
 		t.Fatalf("marshal failed: %v", err)
 	}
 
-	var restored NetworkState
+	var restored NetworkStateIndex
 	if err := json.Unmarshal(data, &restored); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
@@ -439,8 +404,8 @@ func TestUnmarshalDuplicateNodeErrors(t *testing.T) {
 			ProtocolDaoRewardsPercent:         big.NewInt(0),
 		},
 		NodeDetails: []rpstate.NativeNodeDetails{
-			{NodeAddress: addr, RegistrationTime: big.NewInt(0), RewardNetwork: big.NewInt(0), LegacyStakedRPL: big.NewInt(0), EffectiveRPLStake: big.NewInt(0), MinimumRPLStake: big.NewInt(0), MaximumRPLStake: big.NewInt(0), EthBorrowed: big.NewInt(0), EthBorrowedLimit: big.NewInt(0), MegapoolETHBorrowed: big.NewInt(0), MinipoolETHBorrowed: big.NewInt(0), EthBonded: big.NewInt(0), MegapoolEthBonded: big.NewInt(0), MinipoolETHBonded: big.NewInt(0), MegapoolStakedRPL: big.NewInt(0), UnstakingRPL: big.NewInt(0), LockedRPL: big.NewInt(0), MinipoolCount: big.NewInt(0), BalanceETH: big.NewInt(0), BalanceRETH: big.NewInt(0), BalanceRPL: big.NewInt(0), BalanceOldRPL: big.NewInt(0), DepositCreditBalance: big.NewInt(0), DistributorBalanceUserETH: big.NewInt(0), DistributorBalanceNodeETH: big.NewInt(0), SmoothingPoolRegistrationChanged: big.NewInt(0), AverageNodeFee: big.NewInt(0), CollateralisationRatio: big.NewInt(0), DistributorBalance: big.NewInt(0)},
-			{NodeAddress: addr, RegistrationTime: big.NewInt(0), RewardNetwork: big.NewInt(0), LegacyStakedRPL: big.NewInt(0), EffectiveRPLStake: big.NewInt(0), MinimumRPLStake: big.NewInt(0), MaximumRPLStake: big.NewInt(0), EthBorrowed: big.NewInt(0), EthBorrowedLimit: big.NewInt(0), MegapoolETHBorrowed: big.NewInt(0), MinipoolETHBorrowed: big.NewInt(0), EthBonded: big.NewInt(0), MegapoolEthBonded: big.NewInt(0), MinipoolETHBonded: big.NewInt(0), MegapoolStakedRPL: big.NewInt(0), UnstakingRPL: big.NewInt(0), LockedRPL: big.NewInt(0), MinipoolCount: big.NewInt(0), BalanceETH: big.NewInt(0), BalanceRETH: big.NewInt(0), BalanceRPL: big.NewInt(0), BalanceOldRPL: big.NewInt(0), DepositCreditBalance: big.NewInt(0), DistributorBalanceUserETH: big.NewInt(0), DistributorBalanceNodeETH: big.NewInt(0), SmoothingPoolRegistrationChanged: big.NewInt(0), AverageNodeFee: big.NewInt(0), CollateralisationRatio: big.NewInt(0), DistributorBalance: big.NewInt(0)},
+			{NodeAddress: addr, RegistrationTime: big.NewInt(0), RewardNetwork: big.NewInt(0), LegacyStakedRPL: big.NewInt(0), EffectiveRPLStake: big.NewInt(0), MinimumRPLStake: big.NewInt(0), MaximumRPLStake: big.NewInt(0), EthBorrowed: big.NewInt(0), EthBorrowedLimit: big.NewInt(0), MegapoolETHBorrowed: big.NewInt(0), MinipoolETHBorrowed: big.NewInt(0), EthBonded: big.NewInt(0), MegapoolEthBonded: big.NewInt(0), MinipoolETHBonded: big.NewInt(0), MegapoolStakedRPL: big.NewInt(0), UnstakingRPL: big.NewInt(0), LockedRPL: big.NewInt(0), MinipoolCount: big.NewInt(0), BalanceETH: big.NewInt(0), BalanceRETH: big.NewInt(0), BalanceRPL: big.NewInt(0), BalanceOldRPL: big.NewInt(0), DepositCreditBalance: big.NewInt(0), SmoothingPoolRegistrationChanged: big.NewInt(0), CollateralisationRatio: big.NewInt(0), DistributorBalance: big.NewInt(0)},
+			{NodeAddress: addr, RegistrationTime: big.NewInt(0), RewardNetwork: big.NewInt(0), LegacyStakedRPL: big.NewInt(0), EffectiveRPLStake: big.NewInt(0), MinimumRPLStake: big.NewInt(0), MaximumRPLStake: big.NewInt(0), EthBorrowed: big.NewInt(0), EthBorrowedLimit: big.NewInt(0), MegapoolETHBorrowed: big.NewInt(0), MinipoolETHBorrowed: big.NewInt(0), EthBonded: big.NewInt(0), MegapoolEthBonded: big.NewInt(0), MinipoolETHBonded: big.NewInt(0), MegapoolStakedRPL: big.NewInt(0), UnstakingRPL: big.NewInt(0), LockedRPL: big.NewInt(0), MinipoolCount: big.NewInt(0), BalanceETH: big.NewInt(0), BalanceRETH: big.NewInt(0), BalanceRPL: big.NewInt(0), BalanceOldRPL: big.NewInt(0), DepositCreditBalance: big.NewInt(0), SmoothingPoolRegistrationChanged: big.NewInt(0), CollateralisationRatio: big.NewInt(0), DistributorBalance: big.NewInt(0)},
 		},
 		MinipoolDetails:          []rpstate.NativeMinipoolDetails{},
 		MinipoolValidatorDetails: ValidatorDetailsMap{},
@@ -452,7 +417,7 @@ func TestUnmarshalDuplicateNodeErrors(t *testing.T) {
 		t.Fatalf("marshal failed: %v", err)
 	}
 
-	var restored NetworkState
+	var restored NetworkStateIndex
 	err = json.Unmarshal(data, &restored)
 	if err == nil {
 		t.Fatal("expected error for duplicate node address, got nil")
@@ -480,7 +445,7 @@ func TestUnmarshalDuplicateMinipoolErrors(t *testing.T) {
 			ProtocolDaoRewardsPercent:         zeroInt(),
 		},
 		NodeDetails: []rpstate.NativeNodeDetails{
-			{NodeAddress: nodeAddr, RegistrationTime: zeroInt(), RewardNetwork: zeroInt(), LegacyStakedRPL: zeroInt(), EffectiveRPLStake: zeroInt(), MinimumRPLStake: zeroInt(), MaximumRPLStake: zeroInt(), EthBorrowed: zeroInt(), EthBorrowedLimit: zeroInt(), MegapoolETHBorrowed: zeroInt(), MinipoolETHBorrowed: zeroInt(), EthBonded: zeroInt(), MegapoolEthBonded: zeroInt(), MinipoolETHBonded: zeroInt(), MegapoolStakedRPL: zeroInt(), UnstakingRPL: zeroInt(), LockedRPL: zeroInt(), MinipoolCount: zeroInt(), BalanceETH: zeroInt(), BalanceRETH: zeroInt(), BalanceRPL: zeroInt(), BalanceOldRPL: zeroInt(), DepositCreditBalance: zeroInt(), DistributorBalanceUserETH: zeroInt(), DistributorBalanceNodeETH: zeroInt(), SmoothingPoolRegistrationChanged: zeroInt(), AverageNodeFee: zeroInt(), CollateralisationRatio: zeroInt(), DistributorBalance: zeroInt()},
+			{NodeAddress: nodeAddr, RegistrationTime: zeroInt(), RewardNetwork: zeroInt(), LegacyStakedRPL: zeroInt(), EffectiveRPLStake: zeroInt(), MinimumRPLStake: zeroInt(), MaximumRPLStake: zeroInt(), EthBorrowed: zeroInt(), EthBorrowedLimit: zeroInt(), MegapoolETHBorrowed: zeroInt(), MinipoolETHBorrowed: zeroInt(), EthBonded: zeroInt(), MegapoolEthBonded: zeroInt(), MinipoolETHBonded: zeroInt(), MegapoolStakedRPL: zeroInt(), UnstakingRPL: zeroInt(), LockedRPL: zeroInt(), MinipoolCount: zeroInt(), BalanceETH: zeroInt(), BalanceRETH: zeroInt(), BalanceRPL: zeroInt(), BalanceOldRPL: zeroInt(), DepositCreditBalance: zeroInt(), SmoothingPoolRegistrationChanged: zeroInt(), CollateralisationRatio: zeroInt()},
 		},
 		MinipoolDetails: []rpstate.NativeMinipoolDetails{
 			{Exists: true, MinipoolAddress: mpAddr, Pubkey: pk1, NodeAddress: nodeAddr, NodeFee: zeroInt(), NodeDepositBalance: zeroInt(), UserDepositBalance: zeroInt(), StatusTime: zeroInt(), StatusBlock: zeroInt(), Balance: zeroInt(), DistributableBalance: zeroInt(), NodeShareOfBalance: zeroInt(), UserShareOfBalance: zeroInt(), NodeRefundBalance: zeroInt(), PenaltyCount: zeroInt(), PenaltyRate: zeroInt(), UserDepositAssignedTime: zeroInt(), NodeShareOfBalanceIncludingBeacon: zeroInt(), UserShareOfBalanceIncludingBeacon: zeroInt(), NodeShareOfBeaconBalance: zeroInt(), UserShareOfBeaconBalance: zeroInt(), LastBondReductionTime: zeroInt(), LastBondReductionPrevValue: zeroInt(), LastBondReductionPrevNodeFee: zeroInt(), ReduceBondTime: zeroInt(), ReduceBondValue: zeroInt(), PreMigrationBalance: zeroInt()},
@@ -530,7 +495,9 @@ func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
 		},
 	}
 
-	checkState := func(t *testing.T, s *NetworkState) {
+	stateIndex := state.ToIndexedNetworkState()
+
+	checkState := func(t *testing.T, s *NetworkStateIndex) {
 		t.Helper()
 
 		if len(s.MegapoolValidatorInfo) != 2 {
@@ -564,12 +531,11 @@ func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
 		}
 	}
 
-	// The rebuild helper is used by both createNetworkState and UnmarshalJSON
-	pubkeys := state.rebuildMegapoolValidatorMaps()
-	if len(pubkeys) != 1 {
-		t.Errorf("deduplicated pubkey list: got %d entries, want 1", len(pubkeys))
+	numMegapoolPubkeys := len(stateIndex.GetUniqueMegapoolPubkeys())
+	if numMegapoolPubkeys != 1 {
+		t.Errorf("numMegapoolPubkeys: got %d, want 1", numMegapoolPubkeys)
 	}
-	checkState(t, state)
+	checkState(t, stateIndex)
 
 	// Round-trip through JSON to exercise the UnmarshalJSON rebuild path
 	data, err := json.Marshal(state)
@@ -580,5 +546,5 @@ func TestDuplicatePubkeyAcrossMegapools(t *testing.T) {
 	if err := json.Unmarshal(data, &restored); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
-	checkState(t, &restored)
+	checkState(t, restored.ToIndexedNetworkState())
 }

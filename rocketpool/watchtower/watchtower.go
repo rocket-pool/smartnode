@@ -413,7 +413,7 @@ func configureHTTP() {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkState, error) {
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkStateIndex, error) {
 	log.Print("Getting latest network state... ")
 	// Get the state of the network
 	state, err := m.GetStateForSlot(block.Slot)

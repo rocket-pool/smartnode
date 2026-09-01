@@ -348,7 +348,7 @@ func getBeaconClient(c *cli.Command, cfg *config.RocketPoolConfig) (*BeaconClien
 	var err error
 	initBCManager.Do(func() {
 		if IsStaticStateMode(c) {
-			var ns *state.NetworkState
+			var ns *state.NetworkStateIndex
 			ns, err = getStaticState(c)
 			if err != nil {
 				return

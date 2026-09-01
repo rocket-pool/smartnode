@@ -128,7 +128,7 @@ func newSubmitScrubMinipools(c *cli.Command, logger log.ColorLogger, errorLogger
 }
 
 // Submit scrub minipools
-func (t *submitScrubMinipools) run(state *state.NetworkState) error {
+func (t *submitScrubMinipools) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -285,7 +285,7 @@ func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.Nat
 }
 
 // Step 1: Verify the Beacon Chain credentials for a minipool if they're present
-func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkState) {
+func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkStateIndex) {
 	minipoolsToScrub := []minipool.Minipool{}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
@@ -327,7 +327,7 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.Ne
 }
 
 // Get various elements needed to do eth1 prestake and deposit contract searches
-func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState) error {
+func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkStateIndex) error {
 
 	// Get the time of the state's EL block
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
@@ -501,7 +501,7 @@ func (t *submitScrubMinipools) verifyDeposits() error {
 
 // Step 4: Catch-all safety mechanism that scrubs minipools without valid deposits after a certain period of time
 // This should never be used, it's simply here as a redundant check
-func (t *submitScrubMinipools) checkSafetyScrub(state *state.NetworkState) error {
+func (t *submitScrubMinipools) checkSafetyScrub(state *state.NetworkStateIndex) error {
 
 	minipoolsToScrub := []minipool.Minipool{}
 

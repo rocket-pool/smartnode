@@ -80,7 +80,7 @@ func newPrestakeMegapoolValidator(c *cli.Command, logger log.ColorLogger) (*pres
 }
 
 // Prestake megapool validator
-func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
+func (t *prestakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for megapool validators to pre-stake...")
 

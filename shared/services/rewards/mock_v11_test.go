@@ -33,7 +33,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	})
 	node.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
 	history.Nodes = append(history.Nodes, node)
-	state := history.GetEndNetworkState()
+	state := history.GetEndNetworkState().ToIndexedNetworkState()
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -91,7 +91,6 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 			Time:   assets.Mainnet20ELHeaderTime,
 		},
 		/* intervalsPassed= */ 1,
-		state,
 		true,
 	)
 
@@ -100,6 +99,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		"mainnet",
 		make([]common.Address, 0),
 		t.bc,
+		state,
 	)
 	t.failIf(err)
 
@@ -852,7 +852,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	// Set the SP voter share to 0
 	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
 	// Set the pdao share to 0
-	state := history.GetEndNetworkState()
+	state := history.GetEndNetworkState().ToIndexedNetworkState()
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -889,7 +889,6 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 			Time:   assets.Mainnet20ELHeaderTime,
 		},
 		/* intervalsPassed= */ 1,
-		state,
 		true,
 	)
 
@@ -898,6 +897,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 		"mainnet",
 		make([]common.Address, 0),
 		t.bc,
+		state,
 	)
 	t.failIf(err)
 
@@ -958,7 +958,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 	odaoNodes := history.GetDefaultMockODAONodes()
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
-	state := history.GetEndNetworkState()
+	state := history.GetEndNetworkState().ToIndexedNetworkState()
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -999,7 +999,6 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 			Time:   assets.Mainnet20ELHeaderTime,
 		},
 		/* intervalsPassed= */ 1,
-		state,
 		true,
 	)
 
@@ -1008,6 +1007,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 		"mainnet",
 		make([]common.Address, 0),
 		t.bc,
+		state,
 	)
 	t.failIf(err)
 
@@ -1087,7 +1087,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	odaoNodes := history.GetDefaultMockODAONodes()
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
-	state := history.GetEndNetworkState()
+	state := history.GetEndNetworkState().ToIndexedNetworkState()
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -1127,7 +1127,6 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 			Time:   assets.Mainnet20ELHeaderTime,
 		},
 		/* intervalsPassed= */ 1,
-		state,
 		true,
 	)
 
@@ -1136,6 +1135,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 		"mainnet",
 		make([]common.Address, 0),
 		t.bc,
+		state,
 	)
 	t.failIf(err)
 
@@ -1204,7 +1204,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	odaoNodes := history.GetDefaultMockODAONodes()
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
-	state := history.GetEndNetworkState()
+	state := history.GetEndNetworkState().ToIndexedNetworkState()
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -1249,7 +1249,6 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 			Time:   assets.Mainnet20ELHeaderTime,
 		},
 		/* intervalsPassed= */ 1,
-		state,
 		true,
 	)
 
@@ -1258,6 +1257,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 		"mainnet",
 		make([]common.Address, 0),
 		t.bc,
+		state,
 	)
 	t.failIf(err)
 

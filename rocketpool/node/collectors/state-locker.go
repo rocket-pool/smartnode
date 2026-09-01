@@ -7,7 +7,7 @@ import (
 )
 
 type StateLocker struct {
-	state *state.NetworkState
+	state *state.NetworkStateIndex
 
 	// Internal fields
 	lock *sync.RWMutex
@@ -19,13 +19,13 @@ func NewStateLocker() *StateLocker {
 	}
 }
 
-func (l *StateLocker) UpdateState(state *state.NetworkState) {
+func (l *StateLocker) UpdateState(state *state.NetworkStateIndex) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.state = state
 }
 
-func (l *StateLocker) GetState() *state.NetworkState {
+func (l *StateLocker) GetState() *state.NetworkStateIndex {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 	return l.state

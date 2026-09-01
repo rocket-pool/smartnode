@@ -80,7 +80,7 @@ func (missedEpochs *missedEpochsMap) validatorMissedEpoch(v validatorIndex, e ep
 }
 
 type MockBeaconClient struct {
-	state *state.NetworkState
+	state *state.NetworkStateIndex
 
 	t      *testing.T
 	blocks map[string]beacon.BeaconBlock
@@ -108,7 +108,7 @@ type MockBeaconClient struct {
 	withdrawals map[slot]map[validatorIndex]*big.Int
 }
 
-func (bc *MockBeaconClient) SetState(state *state.NetworkState) {
+func (bc *MockBeaconClient) SetState(state *state.NetworkStateIndex) {
 	bc.state = state
 	if bc.validatorPubkeys == nil {
 		bc.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
@@ -446,7 +446,7 @@ func (bc *MockBeaconClient) GetBeaconHead() (beacon.BeaconHead, error) {
 	return out, nil
 }
 
-func (bc *MockBeaconClient) GetStateForSlot(slot uint64) (*state.NetworkState, error) {
+func (bc *MockBeaconClient) GetStateForSlot(slot uint64) (*state.NetworkStateIndex, error) {
 	if slot == bc.state.BeaconSlotNumber {
 		return bc.state, nil
 	}

@@ -69,7 +69,7 @@ func newDissolveTimedOutMinipools(c *cli.Command, logger log.ColorLogger) (*diss
 }
 
 // Dissolve timed out minipools
-func (t *dissolveTimedOutMinipools) run(state *state.NetworkState) error {
+func (t *dissolveTimedOutMinipools) run(state *state.NetworkStateIndex) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -103,7 +103,7 @@ func (t *dissolveTimedOutMinipools) run(state *state.NetworkState) error {
 }
 
 // Get timed out minipools
-func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkState) ([]minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkStateIndex) ([]minipool.Minipool, error) {
 
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),

@@ -71,7 +71,7 @@ func newDissolveInvalidCredentials(c *cli.Command, logger log.ColorLogger) (*dis
 }
 
 // Dissolve timed out megapool validators
-func (t *dissolveInvalidCredentials) run(state *state.NetworkState) error {
+func (t *dissolveInvalidCredentials) run(state *state.NetworkStateIndex) error {
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
@@ -89,7 +89,7 @@ func (t *dissolveInvalidCredentials) run(state *state.NetworkState) error {
 }
 
 // Get megapool validators that can be dissolved due to using invalid credentials
-func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *state.NetworkState) error {
+func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *state.NetworkStateIndex) error {
 
 	for _, validator := range state.MegapoolValidatorGlobalIndex {
 		if validator.ValidatorInfo.InPrestake {

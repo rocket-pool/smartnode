@@ -191,7 +191,7 @@ func (c *liveChallengeArtifactChecker) CheckForChallengeableArtifacts(event prot
 }
 
 // Verify pDAO proposals
-func (t *verifyPdaoProps) run(state *state.NetworkState) error {
+func (t *verifyPdaoProps) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for Protocol DAO proposals to challenge...")
 
@@ -226,7 +226,7 @@ func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 	return nil
 }
 
-func (t *verifyPdaoProps) getChallengesandDefeats(ns *state.NetworkState, opts *bind.CallOpts) ([]challenge, []defeat, error) {
+func (t *verifyPdaoProps) getChallengesandDefeats(ns *state.NetworkStateIndex, opts *bind.CallOpts) ([]challenge, []defeat, error) {
 	nodeGetter := &liveProposalNodeGetter{rp: t.rp, opts: opts}
 	treeProvider := &liveNetworkTreeProvider{propMgr: t.propMgr}
 	stateGetter := &liveChallengeStateGetter{rp: t.rp, opts: opts}
@@ -245,7 +245,7 @@ func (t *verifyPdaoProps) getChallengesandDefeats(ns *state.NetworkState, opts *
 // All chain dependencies are injected via interfaces so this can be tested with
 // static network state and stub implementations.
 func getChallengesFromState(
-	ns *state.NetworkState,
+	ns *state.NetworkStateIndex,
 	nodeAddress common.Address,
 	log *log.ColorLogger,
 	bc beacon.Client,

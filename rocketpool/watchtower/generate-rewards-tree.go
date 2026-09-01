@@ -230,7 +230,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
+func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkStateIndex) {
 
 	// Determine the end of the interval
 	snapshotEnd := &rprewards.SnapshotEnd{
@@ -241,12 +241,12 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rprewards.NewRewardsExecutionClientFromConfig(rp, t.cfg), t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, snapshotEnd, elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rprewards.NewRewardsExecutionClientFromConfig(rp, t.cfg), t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, snapshotEnd, elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return
 	}
-	treeResult, err := treegen.GenerateTree()
+	treeResult, err := treegen.GenerateTree(state)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return

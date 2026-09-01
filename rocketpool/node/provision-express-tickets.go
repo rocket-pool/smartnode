@@ -80,7 +80,7 @@ func newProvisionExpressTickets(c *cli.Command, logger log.ColorLogger) (*provis
 }
 
 // Provision Express tickets
-func (t *provisionExpress) run(state *state.NetworkState) error {
+func (t *provisionExpress) run(state *state.NetworkStateIndex) error {
 	// Check if automatic transactions are disabled
 	if t.disabled {
 		return nil

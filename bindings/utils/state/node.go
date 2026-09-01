@@ -51,18 +51,21 @@ type NativeNodeDetails struct {
 	BalanceRPL                       *big.Int       `json:"balance_rpl"`
 	BalanceOldRPL                    *big.Int       `json:"balance_old_rpl"`
 	DepositCreditBalance             *big.Int       `json:"deposit_credit_balance"`
-	DistributorBalanceUserETH        *big.Int       `json:"distributor_balance_user_eth"` // Must call CalculateAverageFeeAndDistributorShares to get this
-	DistributorBalanceNodeETH        *big.Int       `json:"distributor_balance_node_eth"` // Must call CalculateAverageFeeAndDistributorShares to get this
 	WithdrawalAddress                common.Address `json:"withdrawal_address"`
 	PendingWithdrawalAddress         common.Address `json:"pending_withdrawal_address"`
 	SmoothingPoolRegistrationState   bool           `json:"smoothing_pool_registration_state"`
 	SmoothingPoolRegistrationChanged *big.Int       `json:"smoothing_pool_registration_changed"`
 	NodeAddress                      common.Address `json:"node_address"`
-	AverageNodeFee                   *big.Int       `json:"average_node_fee"` // Must call CalculateAverageFeeAndDistributorShares to get this
 	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
 	MegapoolAddress                  common.Address `json:"megapool_address"`
 	MegapoolDeployed                 bool           `json:"megapool_deployed"`
+}
+
+type NodeFeeDetails struct {
+	DistributorBalanceUserETH *big.Int `json:"distributor_balance_user_eth"`
+	DistributorBalanceNodeETH *big.Int `json:"distributor_balance_node_eth"`
+	AverageNodeFee            *big.Int `json:"average_node_fee"`
 }
 
 func timeMax(a, b time.Time) time.Time {
@@ -102,11 +105,8 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 		BlockNumber: contracts.ElBlockNumber,
 	}
 	details := NativeNodeDetails{
-		NodeAddress:               nodeAddress,
-		AverageNodeFee:            big.NewInt(0),
-		CollateralisationRatio:    big.NewInt(0),
-		DistributorBalanceUserETH: big.NewInt(0),
-		DistributorBalanceNodeETH: big.NewInt(0),
+		NodeAddress:            nodeAddress,
+		CollateralisationRatio: big.NewInt(0),
 	}
 
 	err := addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress)
@@ -189,9 +189,6 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				address := addresses[j]
 				details := &nodeDetails[j]
 				details.NodeAddress = address
-				details.AverageNodeFee = big.NewInt(0)
-				details.DistributorBalanceUserETH = big.NewInt(0)
-				details.DistributorBalanceNodeETH = big.NewInt(0)
 				details.CollateralisationRatio = big.NewInt(0)
 
 				err = addNodeDetailsCalls(contracts, mc, details, address)
@@ -259,7 +256,7 @@ func (node *NativeNodeDetails) WasOptedInAt(t time.Time) bool {
 }
 
 // Calculate the average node fee and user/node shares of the distributor's balance
-func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolDetails []*NativeMinipoolDetails) {
+func (nfd *NodeFeeDetails) CalculateAverageFeeAndDistributorShares(nnd *NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) {
 
 	// Calculate the total of all fees for staking minipools that aren't finalized
 	totalFee := big.NewInt(0)
@@ -273,37 +270,33 @@ func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolD
 
 	// Get the average fee (0 if there aren't any minipools)
 	if eligibleMinipools > 0 {
-		node.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
+		nfd.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
 	}
 
 	// Get the user and node portions of the distributor balance
-	distributorBalance := big.NewInt(0).Set(node.DistributorBalance)
+	distributorBalance := big.NewInt(0).Set(nnd.DistributorBalance)
 	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
 		nodeBalance := big.NewInt(0)
 		nodeBalance.Mul(distributorBalance, big.NewInt(1e18))
-		nodeBalance.Div(nodeBalance, node.CollateralisationRatio)
+		nodeBalance.Div(nodeBalance, nnd.CollateralisationRatio)
 
 		userBalance := big.NewInt(0)
 		userBalance.Sub(distributorBalance, nodeBalance)
 
 		if eligibleMinipools == 0 {
 			// Split it based solely on the collateralisation ratio if there are no minipools (and hence no average fee)
-			node.DistributorBalanceNodeETH = big.NewInt(0).Set(nodeBalance)
-			node.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, nodeBalance)
+			nfd.DistributorBalanceNodeETH = big.NewInt(0).Set(nodeBalance)
+			nfd.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, nodeBalance)
 		} else {
 			// Amount of ETH given to the NO as a commission
 			commissionEth := big.NewInt(0)
-			commissionEth.Mul(userBalance, node.AverageNodeFee)
+			commissionEth.Mul(userBalance, nfd.AverageNodeFee)
 			commissionEth.Div(commissionEth, big.NewInt(1e18))
 
-			node.DistributorBalanceNodeETH.Add(nodeBalance, commissionEth)                         // Node gets their portion + commission on user portion
-			node.DistributorBalanceUserETH.Sub(distributorBalance, node.DistributorBalanceNodeETH) // User gets balance - node share
+			nfd.DistributorBalanceNodeETH.Add(nodeBalance, commissionEth)                        // Node gets their portion + commission on user portion
+			nfd.DistributorBalanceUserETH.Sub(distributorBalance, nfd.DistributorBalanceNodeETH) // User gets balance - node share
 		}
 
-	} else {
-		// No distributor balance
-		node.DistributorBalanceNodeETH = big.NewInt(0)
-		node.DistributorBalanceUserETH = big.NewInt(0)
 	}
 
 }

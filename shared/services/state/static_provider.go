@@ -19,15 +19,15 @@ var _ NetworkStateProvider = (*StaticNetworkStateProvider)(nil)
 // EC/CC connections. Useful for deterministic tests driven by previously
 // serialized state snapshots
 type StaticNetworkStateProvider struct {
-	state *NetworkState
+	state *NetworkStateIndex
 }
 
-func NewStaticNetworkStateProvider(ns *NetworkState) *StaticNetworkStateProvider {
+func NewStaticNetworkStateProvider(ns *NetworkStateIndex) *StaticNetworkStateProvider {
 	return &StaticNetworkStateProvider{state: ns}
 }
 
 func NewStaticNetworkStateProviderFromJSON(r io.Reader) (*StaticNetworkStateProvider, error) {
-	var ns NetworkState
+	var ns NetworkStateIndex
 	if err := json.NewDecoder(r).Decode(&ns); err != nil {
 		return nil, err
 	}
@@ -55,15 +55,15 @@ func NewStaticNetworkStateProviderFromFile(path string) (*StaticNetworkStateProv
 	return NewStaticNetworkStateProviderFromJSON(r)
 }
 
-func (p *StaticNetworkStateProvider) GetHeadState() (*NetworkState, error) {
+func (p *StaticNetworkStateProvider) GetHeadState() (*NetworkStateIndex, error) {
 	return p.state, nil
 }
 
-func (p *StaticNetworkStateProvider) GetHeadStateForNode(_ common.Address) (*NetworkState, error) {
+func (p *StaticNetworkStateProvider) GetHeadStateForNode(_ common.Address) (*NetworkStateIndex, error) {
 	return p.state, nil
 }
 
-func (p *StaticNetworkStateProvider) GetStateForSlot(_ uint64) (*NetworkState, error) {
+func (p *StaticNetworkStateProvider) GetStateForSlot(_ uint64) (*NetworkStateIndex, error) {
 	return p.state, nil
 }
 

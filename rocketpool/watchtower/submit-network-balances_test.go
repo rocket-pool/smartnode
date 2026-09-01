@@ -241,14 +241,15 @@ func TestCalculateTotalEthAndRethRate_RatioCalculation(t *testing.T) {
 // getMinipoolBalanceDetails
 // ============================================================
 
-func newMinipoolState(blockEpoch uint64) *state.NetworkState {
-	return &state.NetworkState{
+func newMinipoolState(blockEpoch uint64) *state.NetworkStateIndex {
+	out := &state.NetworkState{
 		BeaconSlotNumber: blockEpoch * 32,
 		BeaconConfig: beacon.Eth2Config{
 			SlotsPerEpoch: 32,
 		},
 		MinipoolValidatorDetails: map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
 	}
+	return out.ToIndexedNetworkState()
 }
 
 func newMpd(status rptypes.MinipoolStatus, depositType rptypes.MinipoolDeposit) *rpstate.NativeMinipoolDetails {

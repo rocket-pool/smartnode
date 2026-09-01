@@ -83,7 +83,7 @@ func newDefendChallengeExit(c *cli.Command, logger log.ColorLogger) (*defendChal
 }
 
 // Prestake megapool validator
-func (t *defendChallengeExit) run(state *state.NetworkState) error {
+func (t *defendChallengeExit) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking for validators with an incorrect exit challenge ...")
 
@@ -152,7 +152,7 @@ func (t *defendChallengeExit) run(state *state.NetworkState) error {
 
 }
 
-func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, exiting bool, callopts *bind.CallOpts) error {
+func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, exiting bool, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()

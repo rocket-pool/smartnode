@@ -25,7 +25,7 @@ type Details struct {
 	OptOutEpoch           uint64         `json:"optOutEpoch"`
 }
 
-func GetDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkState) (*Details, error) {
+func GetDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkStateIndex) (*Details, error) {
 
 	info := &Details{
 		IsInOptOutCooldown: false,

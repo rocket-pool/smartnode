@@ -29,7 +29,7 @@ import (
 
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v11 struct {
-	networkState                 *state.NetworkState
+	networkState                 *state.NetworkStateIndex
 	rewardsFile                  *ssz_types.SSZFile_v2
 	elSnapshotHeader             *types.Header
 	snapshotEnd                  *SnapshotEnd
@@ -70,7 +70,7 @@ type treeGeneratorImpl_v11 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, isEligibleInterval bool) *treeGeneratorImpl_v11 {
+func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, isEligibleInterval bool) *treeGeneratorImpl_v11 {
 	return &treeGeneratorImpl_v11{
 		rewardsFile: &ssz_types.SSZFile_v2{
 			RewardsFileVersion: 4,
@@ -101,7 +101,6 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 		totalAttestationScore:     big.NewInt(0),
 		totalVoterScore:           big.NewInt(0),
 		totalPdaoScore:            big.NewInt(0),
-		networkState:              state,
 		invalidNetworkNodes:       map[common.Address]uint64{},
 		performanceFile: &PerformanceFile_v1{
 			Index:               index,
@@ -120,9 +119,11 @@ func (r *treeGeneratorImpl_v11) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient, state *state.NetworkStateIndex) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+
+	r.networkState = state
 
 	// Provision some struct params
 	r.rp = rp
@@ -139,7 +140,7 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 	r.performanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
-	r.beaconConfig = r.networkState.BeaconConfig
+	r.beaconConfig = state.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 	r.genesisTime = time.Unix(int64(r.beaconConfig.GenesisTime), 0)
 
@@ -219,8 +220,10 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient, state *state.NetworkStateIndex) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+
+	r.networkState = state
 
 	r.rp = rp
 	r.previousRewardsPoolAddresses = previousRewardsPoolAddresses
