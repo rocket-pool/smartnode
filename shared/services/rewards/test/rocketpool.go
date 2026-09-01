@@ -26,7 +26,7 @@ import (
 // The latter is useful to probe specific behaviors such as opt-in/opt-out eligibility timing,
 // node weight, smoothing pool status, etc.
 //
-// Because recording responses ties the test to a specific version of the contracts and therefor
+// Because recording responses ties the test to a specific version of the contracts and therefore
 // the client-side code, the interface we need to mock should be as minimized as possible, and the
 // recorded data should tightly match that interface. That is, no recorded response should encode
 // something like the contract address data are being requested from, but instead the high-level
