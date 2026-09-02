@@ -124,7 +124,7 @@ func (t *defendChallengeExit) run(state *state.NetworkStateIndex) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts, false)
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, megapoolAddress, opts, false)
 	if err != nil {
 		return err
 	}
