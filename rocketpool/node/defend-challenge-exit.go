@@ -120,16 +120,12 @@ func (t *defendChallengeExit) run(state *state.NetworkStateIndex) error {
 	}
 
 	// Iterate over megapool validators checking whether they were incorrectly challenged
-	validatorCount, err := mp.GetValidatorCount(nil)
-	if err != nil {
-		return err
-	}
 	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, megapoolAddress, opts, false)
 	if err != nil {
 		return err
 	}
 
-	for i := uint32(0); i < uint32(validatorCount); i++ {
+	for i := uint32(0); i < uint32(len(validatorInfo)); i++ {
 		exiting := false
 		if validatorInfo[i].Locked {
 			if validatorInfo[i].BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
