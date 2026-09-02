@@ -15,22 +15,22 @@ var (
 )
 
 type ValidatorProofBundleV1 struct {
-	ValidatorProof ValidatorProof
-	SlotProof      SlotProof
+	ValidatorProof ValidatorProof `json:"validatorProof"`
+	SlotProof      SlotProof      `json:"slotProof"`
 }
 
 type FinalBalanceProofBundleV1 struct {
-	WithdrawalProof WithdrawalProof
-	ValidatorProof  ValidatorProof
-	SlotProof       SlotProof
+	WithdrawalProof WithdrawalProof `json:"withdrawalProof"`
+	ValidatorProof  ValidatorProof  `json:"validatorProof"`
+	SlotProof       SlotProof       `json:"slotProof"`
 }
 
 type FinalBalanceProofBundleV2 struct {
-	WithdrawalProof                  WithdrawalProof
-	ValidatorProof                   ValidatorProof
-	SlotProof                        SlotProof
-	PreviousNextWithdrawalIndexProof NextWithdrawalIndexProof
-	ValidatorBalanceProof            ValidatorBalanceProof
+	WithdrawalProof                  WithdrawalProof          `json:"withdrawalProof"`
+	ValidatorProof                   ValidatorProof           `json:"validatorProof"`
+	SlotProof                        SlotProof                `json:"slotProof"`
+	PreviousNextWithdrawalIndexProof NextWithdrawalIndexProof `json:"previousNextWithdrawalIndexProof"`
+	ValidatorBalanceProof            ValidatorBalanceProof    `json:"validatorBalanceProof"`
 }
 
 var (
