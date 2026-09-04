@@ -2,6 +2,10 @@ package generic
 
 const SlotsPerHistoricalRoot uint64 = 8192
 
+func IsHistoricalProof(proofSlot, targetSlot uint64) bool {
+	return targetSlot+SlotsPerHistoricalRoot < proofSlot
+}
+
 // Deposit data (with no signature field)
 type DepositDataNoSignature struct {
 	PublicKey             []byte `json:"pubkey" ssz-size:"48"`

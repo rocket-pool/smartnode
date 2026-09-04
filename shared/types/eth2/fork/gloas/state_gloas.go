@@ -2,8 +2,10 @@ package gloas
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
@@ -15,6 +17,8 @@ const (
 	beaconStateBlockRootsFieldIndex          = generic.BeaconStateBlockRootsFieldIndex          // 5
 	beaconStateStateRootsFieldIndex          = generic.BeaconStateStateRootsFieldIndex          // 6
 	beaconStateValidatorsFieldIndex          = generic.BeaconStateValidatorsIndex               // 11
+	beaconStateBalancesFieldIndex            = generic.BeaconStateBalancesFieldIndex            // 12
+	beaconStateNextWithdrawalIndexFieldIndex = generic.BeaconStateNextWithdrawalIndexFieldIndex // 25
 	beaconStateHistoricalSummariesFieldIndex = generic.BeaconStateHistoricalSummariesFieldIndex // 27
 	// New in Gloas (EIP-7732): payload_expected_withdrawals commits to the
 	// withdrawals of the execution payload bid on at this slot.
@@ -163,6 +167,27 @@ func GetGeneralizedIndexForValidator(validatorIndex uint64) uint64 {
 	)
 }
 
+// GetGeneralizedIndexForNextWithdrawalIndex returns the gindex of
+// next_withdrawal_index inside the Gloas ProgressiveContainer BeaconState.
+func GetGeneralizedIndexForNextWithdrawalIndex() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStateNextWithdrawalIndexFieldIndex)
+}
+
+// GetGeneralizedIndexForBalances returns the gindex of the balances field root
+// inside the Gloas ProgressiveContainer BeaconState.
+func GetGeneralizedIndexForBalances() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStateBalancesFieldIndex)
+}
+
+// GetGeneralizedIndexForBalanceChunk returns the gindex of the packed
+// balances leaf that contains validatorIndex (4 uint64s per 32-byte chunk).
+func GetGeneralizedIndexForBalanceChunk(validatorIndex uint64) uint64 {
+	return generic.GetGeneralizedIndexForProgressiveListElement(
+		GetGeneralizedIndexForBalances(),
+		validatorIndex/4,
+	)
+}
+
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
 // for the state's current slot, using EIP-7688 progressive g-indices.
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
@@ -232,9 +257,8 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
-	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
-	if !isHistorical {
+func (state *BeaconState) HistoricalSummariesElementProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
+	if !generic.IsHistoricalProof(state.Slot, slot) {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 	tree, err := generic.SSZ.GetTree(state)
@@ -254,13 +278,21 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for historical block root: %w", err)
 	}
+	return proof.Hashes, nil
+}
+
+func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
+	proof, err := state.HistoricalSummariesElementProof(slot, capellaOffset)
+	if err != nil {
+		return nil, err
+	}
 
 	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
 	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header proof: %w", err)
 	}
-	return append(proof.Hashes, blockHeaderProof...), nil
+	return append(proof, blockHeaderProof...), nil
 }
 
 func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
@@ -294,8 +326,7 @@ func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, e
 }
 
 func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
-	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
-	if isHistorical {
+	if generic.IsHistoricalProof(state.Slot, slot) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
@@ -324,8 +355,7 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 // used to anchor the post-state root of a recent slot inside a later
 // (finalized) state. Used for Gloas withdrawal proofs.
 func (state *BeaconState) StateRootProof(slot uint64) ([][]byte, error) {
-	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
-	if isHistorical {
+	if generic.IsHistoricalProof(state.Slot, slot) {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
 	}
 
@@ -419,6 +449,56 @@ func (state *BeaconState) ProveExpectedWithdrawal(index uint64) ([][]byte, error
 	}
 
 	return proof.Hashes, nil
+}
+
+// ProveNextWithdrawalIndex proves BeaconState.next_withdrawal_index against
+// this state's root (no block-header extension).
+func (state *BeaconState) ProveNextWithdrawalIndex() ([][]byte, error) {
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+	proof, err := stateTree.Prove(int(GetGeneralizedIndexForNextWithdrawalIndex()))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for next_withdrawal_index: %w", err)
+	}
+	var expected [32]byte
+	binary.LittleEndian.PutUint64(expected[:8], state.NextWithdrawalIndex)
+	if !bytes.Equal(proof.Leaf, expected[:]) {
+		return nil, fmt.Errorf("proof leaf does not match next_withdrawal_index")
+	}
+	return proof.Hashes, nil
+}
+
+// ProveValidatorBalanceChunk proves the packed balances leaf containing
+// validatorIndex against this state's root (no block-header extension).
+func (state *BeaconState) ProveValidatorBalanceChunk(validatorIndex uint64) ([][]byte, [32]byte, error) {
+	var chunk [32]byte
+	if validatorIndex >= uint64(len(state.Balances)) {
+		return nil, chunk, fmt.Errorf("validator index %d out of bounds: state at slot %d has %d balances", validatorIndex, state.Slot, len(state.Balances))
+	}
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, chunk, fmt.Errorf("could not get state tree: %w", err)
+	}
+	proof, err := stateTree.Prove(int(GetGeneralizedIndexForBalanceChunk(validatorIndex)))
+	if err != nil {
+		return nil, chunk, fmt.Errorf("could not get proof for validator balance chunk: %w", err)
+	}
+	if len(proof.Leaf) != 32 {
+		return nil, chunk, fmt.Errorf("balance chunk leaf is %d bytes, expected 32", len(proof.Leaf))
+	}
+	copy(chunk[:], proof.Leaf)
+	return proof.Hashes, chunk, nil
+}
+
+// IsZeroValidatorBalance reports whether the validator's uint64 lane in a
+// packed SSZ balances chunk is zero. Matches BeaconStateVerifier:
+// shift = (3 - validatorIndex%4) * 64.
+func IsZeroValidatorBalance(balanceChunk [32]byte, validatorIndex uint64) bool {
+	shift := (3 - validatorIndex%4) * 64
+	value := new(big.Int).SetBytes(balanceChunk[:])
+	return new(big.Int).Rsh(value, uint(shift)).Uint64() == 0
 }
 
 func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {

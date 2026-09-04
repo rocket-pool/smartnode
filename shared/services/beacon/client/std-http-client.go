@@ -144,6 +144,10 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 	if eth2Config.Data.GloasForkEpoch != nil {
 		gloasForkEpoch = uint64(*eth2Config.Data.GloasForkEpoch)
 	}
+	var capellaForkEpoch uint64
+	if eth2Config.Data.CapellaForkEpoch != nil {
+		capellaForkEpoch = uint64(*eth2Config.Data.CapellaForkEpoch)
+	}
 	out := beacon.Eth2Config{
 		GenesisForkVersion:           genesis.Data.GenesisForkVersion,
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
@@ -154,6 +158,7 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
 		ShardCommitteePeriod:         shardCommitteePeriod,
+		CapellaForkEpoch:             capellaForkEpoch,
 		GloasForkEpoch:               gloasForkEpoch,
 	}
 	eth2ConfigCache.Store(&out)

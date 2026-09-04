@@ -18,14 +18,14 @@ import (
 )
 
 type SlotProof struct {
-	Slot      uint64
-	Witnesses [][32]byte
+	Slot      uint64     `json:"slot"`
+	Witnesses [][32]byte `json:"witnesses"`
 }
 
 type ValidatorProof struct {
-	ValidatorIndex *big.Int
-	Validator      ProvedValidator
-	Witnesses      [][32]byte
+	ValidatorIndex *big.Int        `json:"validatorIndex"`
+	Validator      ProvedValidator `json:"validator"`
+	Witnesses      [][32]byte      `json:"witnesses"`
 }
 
 type ProvedValidator struct {

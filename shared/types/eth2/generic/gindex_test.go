@@ -2,6 +2,18 @@ package generic
 
 import "testing"
 
+func TestIsHistoricalProof(t *testing.T) {
+	if IsHistoricalProof(8192, 0) {
+		t.Fatal("distance 8192 must be direct")
+	}
+	if !IsHistoricalProof(8193, 0) {
+		t.Fatal("distance 8193 must be historical")
+	}
+	if IsHistoricalProof(100, 100) {
+		t.Fatal("equal slots are not historical")
+	}
+}
+
 func TestContainerFieldGindex(t *testing.T) {
 	// Pre-Gloas Deneb-style: 28 fields → width 32; validators at index 11 → 43
 	if got := ContainerFieldGindex(28, BeaconStateValidatorsIndex); got != 43 {

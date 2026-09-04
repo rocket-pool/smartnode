@@ -21,11 +21,20 @@ type ExitChallenge struct {
 }
 
 type WithdrawalProof struct {
-	Slot           uint64     `json:"slot"`
 	WithdrawalSlot uint64     `json:"withdrawalSlot"`
 	WithdrawalNum  uint16     `json:"withdrawalNum"`
 	Withdrawal     Withdrawal `json:"withdrawal"`
 	Witnesses      [][32]byte `json:"witnesses"`
+}
+
+type NextWithdrawalIndexProof struct {
+	NextWithdrawalIndex uint64     `json:"nextWithdrawalIndex"`
+	Witnesses           [][32]byte `json:"witnesses"`
+}
+
+type ValidatorBalanceProof struct {
+	BalanceChunk [32]byte   `json:"balanceChunk"`
+	Witnesses    [][32]byte `json:"witnesses"`
 }
 
 func GetValidatorCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
@@ -111,21 +120,21 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 }
 
 // Estimate the gas of Stake
-func EstimateStakeGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateStakeGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "stake", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "stake", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 }
 
 // Progress the prelaunch megapool to staking
-func Stake(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func Stake(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "stake", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "stake", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 	if err != nil {
 		return nil, fmt.Errorf("error staking megapool %s: %w", megapoolAddress, err)
 	}
@@ -133,21 +142,21 @@ func Stake(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorI
 }
 
 // Estimate the gas to call NotifyExit
-func EstimateNotifyExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateNotifyExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "notifyExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyExit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 }
 
 // Notify the megapool that one of its validators is exiting
-func NotifyExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func NotifyExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "notifyExit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify exit: %w", err)
 	}
@@ -155,21 +164,21 @@ func NotifyExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, valid
 }
 
 // Estimate the gas to call NotifyNotExit
-func EstimateNotifyNotExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateNotifyNotExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 }
 
 // Used to prove a validator is not exiting after a challenge-exit
-func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify not exit: %w", err)
 	}
@@ -199,21 +208,21 @@ func ChallengeExit(rp *rocketpool.RocketPool, exitChallenge []ExitChallenge, opt
 }
 
 // Estimate the gas to call NotifyFinalBalance
-func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, withdrawalProof WithdrawalProof, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "notifyFinalBalance", megapoolAddress, validatorId, slotTimestamp, withdrawalProof, validatorProof, slotProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyFinalBalance", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 }
 
 // Notify the megapool of the final balance of an exited validator
-func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, withdrawalProof WithdrawalProof, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyFinalBalance", megapoolAddress, validatorId, slotTimestamp, withdrawalProof, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "notifyFinalBalance", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify final balance: %w", err)
 	}
@@ -221,23 +230,23 @@ func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Addres
 }
 
 // Estimate the gas to call DissolveWithProof
-func EstimateDissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateDissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "dissolve", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "dissolve", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 }
 
 // Dissolve a validator using a proof that it used wrong credentials
-func DissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func DissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "dissolve", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "dissolve", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
 	if err != nil {
-		return nil, fmt.Errorf("error calling notify final balance: %w", err)
+		return nil, fmt.Errorf("error calling dissolve with proof: %w", err)
 	}
 	return tx, nil
 }

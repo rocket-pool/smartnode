@@ -163,18 +163,22 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
 	}
+	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
+	if err != nil {
+		return err
+	}
 
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 	var gasLimits gaslimit.Limits
 
 	if !exiting {
 		// Get the gas limit
-		gasLimits, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 		if err != nil {
 			return err
 		}
 	} else {
-		gasLimits, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 		if err != nil {
 			return err
 		}
@@ -202,13 +206,13 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	var tx *coretypes.Transaction
 	if !exiting {
 		t.log.Printlnf("Notifying that validator %d is not exiting.", validatorId)
-		tx, err = megapool.NotifyNotExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		tx, err = megapool.NotifyNotExit(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 		if err != nil {
 			return err
 		}
 	} else {
 		t.log.Printlnf("Notifying that validator %d is exiting.", validatorId)
-		tx, err = megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		tx, err = megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
 		if err != nil {
 			return err
 		}

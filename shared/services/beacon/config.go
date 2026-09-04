@@ -21,6 +21,7 @@ type Eth2Config struct {
 	SecondsPerEpoch              uint64 `json:"seconds_per_epoch"`
 	EpochsPerSyncCommitteePeriod uint64 `json:"epochs_per_sync_committee_period"`
 	ShardCommitteePeriod         uint64 `json:"shard_committee_period"`
+	CapellaForkEpoch             uint64 `json:"capella_fork_epoch"`
 	GloasForkEpoch               uint64 `json:"gloas_fork_epoch"`
 }
 
@@ -72,6 +73,16 @@ func (c *Eth2Config) GloasActivationSlot() uint64 {
 		return math.MaxUint64
 	}
 	return c.GloasForkEpoch * c.SlotsPerEpoch
+}
+
+// HistoricalSummaryOffset is the Capella-era index subtracted when proving
+// historical_summaries[n]. Matches BeaconStateVerifier:
+// slotCapella / SLOTS_PER_HISTORICAL_ROOT.
+func (c *Eth2Config) HistoricalSummaryOffset() uint64 {
+	if c.SlotsPerEpoch == 0 {
+		return 0
+	}
+	return (c.CapellaForkEpoch * c.SlotsPerEpoch) / 8192
 }
 
 // GetSlotTime returns the time of a given slot for the network described by Eth2Config.

@@ -195,6 +195,10 @@ func TestGloasWithdrawalProofGindices(t *testing.T) {
 		want uint64
 	}{
 		{"state_roots", GetGeneralizedIndexForStateRoots(), 353},
+		{"balances", GetGeneralizedIndexForBalances(), 359},
+		{"balances chunk 0", GetGeneralizedIndexForBalanceChunk(0), 1436},
+		{"balances chunk 1", GetGeneralizedIndexForBalanceChunk(4), 11496},
+		{"next_withdrawal_index", GetGeneralizedIndexForNextWithdrawalIndex(), 2948},
 		{"payload_expected_withdrawals", GetGeneralizedIndexForPayloadExpectedWithdrawals(), 2967},
 		{"payload_expected_withdrawals[0]", GetGeneralizedIndexForExpectedWithdrawal(0), 11868},
 		{"payload_expected_withdrawals[1]", GetGeneralizedIndexForExpectedWithdrawal(1), 94952},
@@ -308,6 +312,12 @@ func TestStateRootProofProgressive(t *testing.T) {
 	if _, err := state.StateRootProof(0); err == nil {
 		t.Fatalf("expected historical-slot error")
 	}
+
+	// Distance equal to SLOTS_PER_HISTORICAL_ROOT is still the direct ring.
+	state.Slot = generic.SlotsPerHistoricalRoot
+	if _, err := state.StateRootProof(0); err != nil {
+		t.Fatalf("distance 8192 should use the direct state_roots path: %v", err)
+	}
 }
 
 func TestHistoricalSummaryStateRootProof(t *testing.T) {
@@ -361,5 +371,74 @@ func TestHistoricalSummaryStateRootProof(t *testing.T) {
 	state.Slot = generic.SlotsPerHistoricalRoot + 1
 	if _, err := state.HistoricalSummaryStateRootProof(7); err == nil {
 		t.Fatalf("expected non-aligned state error")
+	}
+}
+
+func TestProveNextWithdrawalIndex(t *testing.T) {
+	state := minimalBeaconState()
+	state.NextWithdrawalIndex = 42
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		t.Fatalf("GetTree: %v", err)
+	}
+	stateRoot := stateTree.Hash()
+
+	proofHashes, err := state.ProveNextWithdrawalIndex()
+	if err != nil {
+		t.Fatalf("ProveNextWithdrawalIndex: %v", err)
+	}
+	direct, err := stateTree.Prove(int(GetGeneralizedIndexForNextWithdrawalIndex()))
+	if err != nil {
+		t.Fatalf("direct Prove: %v", err)
+	}
+	if ok, err := treeproof.VerifyProof(stateRoot, direct); err != nil || !ok {
+		t.Fatalf("verify next_withdrawal_index: ok=%v err=%v", ok, err)
+	}
+	if len(proofHashes) != len(direct.Hashes) {
+		t.Fatalf("helper proof length %d != direct %d", len(proofHashes), len(direct.Hashes))
+	}
+}
+
+func TestProveValidatorBalanceChunk(t *testing.T) {
+	state := minimalBeaconState()
+	state.Balances = []uint64{1, 0, 3, 4, 5}
+
+	_, chunk, err := state.ProveValidatorBalanceChunk(1)
+	if err != nil {
+		t.Fatalf("ProveValidatorBalanceChunk: %v", err)
+	}
+	if !IsZeroValidatorBalance(chunk, 1) {
+		t.Fatal("expected validator 1 lane to be zero")
+	}
+	if IsZeroValidatorBalance(chunk, 0) {
+		t.Fatal("expected validator 0 lane to be non-zero")
+	}
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		t.Fatalf("GetTree: %v", err)
+	}
+	direct, err := stateTree.Prove(int(GetGeneralizedIndexForBalanceChunk(1)))
+	if err != nil {
+		t.Fatalf("direct Prove: %v", err)
+	}
+	if ok, err := treeproof.VerifyProof(stateTree.Hash(), direct); err != nil || !ok {
+		t.Fatalf("verify balance chunk: ok=%v err=%v", ok, err)
+	}
+
+	if _, _, err := state.ProveValidatorBalanceChunk(uint64(len(state.Balances))); err == nil {
+		t.Fatal("expected out-of-bounds error")
+	}
+}
+
+func TestHistoricalBoundarySplit(t *testing.T) {
+	const w uint64 = 100
+	proofSlot := w + generic.SlotsPerHistoricalRoot
+	if generic.IsHistoricalProof(proofSlot, w) {
+		t.Fatalf("W at distance 8192 should use the direct path")
+	}
+	if !generic.IsHistoricalProof(proofSlot, w-1) {
+		t.Fatalf("W-1 at distance 8193 should use the historical path")
 	}
 }
