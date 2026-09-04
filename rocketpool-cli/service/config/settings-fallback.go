@@ -15,6 +15,7 @@ type FallbackConfigPage struct {
 	masterConfig        *config.RocketPoolConfig
 	useFallbackBox      *parameterizedFormItem
 	reconnectDelay      *parameterizedFormItem
+	preferFallback      *parameterizedFormItem
 	fallbackNormalItems []*parameterizedFormItem
 	fallbackPrysmItems  []*parameterizedFormItem
 }
@@ -56,11 +57,12 @@ func (configPage *FallbackConfigPage) createContent() {
 	// Set up the form items
 	configPage.useFallbackBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackClients)
 	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
+	configPage.preferFallback = createParameterizedCheckbox(&configPage.masterConfig.PreferFallback)
 	configPage.fallbackNormalItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout)
 	configPage.fallbackPrysmItems = createParameterizedFormItems(configPage.masterConfig.FallbackPrysm.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay)
+	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay, configPage.preferFallback)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackNormalItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackPrysmItems...)
 
@@ -95,6 +97,7 @@ func (configPage *FallbackConfigPage) handleUseFallbackChanged() {
 	default:
 		configPage.layout.addFormItems(configPage.fallbackNormalItems)
 	}
+	configPage.layout.form.AddFormItem(configPage.preferFallback.item)
 
 	configPage.layout.refresh()
 }
