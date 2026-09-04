@@ -121,11 +121,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	}
 
 	// Iterate over megapool validators checking whether they're ready to stake
-	validatorCount, err := mp.GetValidatorCount(nil)
-	if err != nil {
-		return err
-	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts, false)
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, megapoolAddress, opts, false)
 	if err != nil {
 		return err
 	}
@@ -133,7 +129,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	// store validators that need to be staked
 	validatorsToStake := make(map[uint32]types.ValidatorPubkey)
 
-	for i := uint32(0); i < uint32(validatorCount); i++ {
+	for i := uint32(0); i < uint32(len(validatorInfo)); i++ {
 		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
 			validatorsToStake[validatorInfo[i].ValidatorId] = types.ValidatorPubkey(validatorInfo[i].PubKey)
 		}

@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -30,6 +29,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -402,7 +403,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, err
 	}
 
-	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount), opts, useFinalizedBeaconState)
+	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, megapoolAddress, opts, useFinalizedBeaconState)
 	if err != nil {
 		return details, err
 	}
@@ -488,13 +489,9 @@ func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount co
 
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32, opts *bind.CallOpts, useFinalizedBeaconState bool) ([]api.MegapoolValidatorDetails, error) {
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, megapoolAddress common.Address, opts *bind.CallOpts, useFinalizedBeaconState bool) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
-
-	var wg errgroup.Group
-	var lock sync.Mutex
-	var currentEpoch uint64
 
 	queueDetails, err := GetMegapoolQueueDetails(rp)
 	if err != nil {
@@ -502,6 +499,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 	}
 
 	// Beacon view: head by default, or the finalized epoch when the caller requested the finalized state
+	var currentEpoch uint64
 	var statusOpts *beacon.ValidatorStatusOptions
 	head, err := bc.GetBeaconHead()
 	if useFinalizedBeaconState {
@@ -514,68 +512,77 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 		currentEpoch = head.Epoch
 	}
 
-	for i := uint32(0); i < validatorCount; i++ {
-		i := i
-		wg.Go(func() error {
-			validatorDetails, err := mp.GetValidatorInfoAndPubkey(i, opts)
-			if err != nil {
-				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
-			}
-			validator := api.MegapoolValidatorDetails{
-				ValidatorId:        i,
-				PubKey:             types.BytesToValidatorPubkey(validatorDetails.Pubkey),
-				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
-				LastRequestedValue: validatorDetails.LastRequestedValue,
-				LastRequestedBond:  validatorDetails.LastRequestedBond,
-				DepositValue:       validatorDetails.DepositValue,
-				Staked:             validatorDetails.Staked,
-				Exited:             validatorDetails.Exited,
-				InQueue:            validatorDetails.InQueue,
-				InPrestake:         validatorDetails.InPrestake,
-				ExpressUsed:        validatorDetails.ExpressUsed,
-				Dissolved:          validatorDetails.Dissolved,
-				Exiting:            validatorDetails.Exiting,
-				Locked:             validatorDetails.Locked,
-				ExitBalance:        validatorDetails.ExitBalance,
-			}
-
-			// Try to fetch the validator status. If it fails, we assume the first deposit was not processed yet
-			validator.BeaconStatus, _ = bc.GetValidatorStatus(validator.PubKey, statusOpts)
-			if validator.Staked {
-				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
-					validator.Activated = true
-					validatorIndex, err := strconv.ParseUint(validator.BeaconStatus.Index, 10, 64)
-					if err != nil {
-						return fmt.Errorf("Error parsing the validator index")
-					}
-					validator.ValidatorIndex = validatorIndex
-					validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch
-				}
-			}
-
-			// Compute the queue position
-			if validator.InQueue {
-				var queueKey string
-				if validator.ExpressUsed {
-					queueKey = "deposit.queue.express"
-				} else {
-					queueKey = "deposit.queue.standard"
-				}
-				validator.QueuePosition, err = calculatePositionInQueue(rp, queueDetails, megapoolAddress, validator.ValidatorId, queueKey, findInQueue)
-				if err != nil {
-					return fmt.Errorf("error getting queue position for validator ID %d: %w", validator.ValidatorId, err)
-				}
-			}
-			lock.Lock()
-			details = append(details, validator)
-			lock.Unlock()
-			return nil
-		})
+	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+	if err != nil {
+		return details, fmt.Errorf("Error creating multicaller: %w", err)
+	}
+	contracts := &rpstate.NetworkContracts{Multicaller: mc}
+	if opts != nil {
+		contracts.ElBlockNumber = opts.BlockNumber
+	}
+	validatorInfos, err := rpstate.GetNodeMegapoolValidators(rp, contracts, megapoolAddress)
+	if err != nil {
+		return details, fmt.Errorf("Error retrieving megapool validators: %w", err)
 	}
 
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return details, err
+	pubkeys := make([]types.ValidatorPubkey, len(validatorInfos))
+	for i, vi := range validatorInfos {
+		pubkeys[i] = types.BytesToValidatorPubkey(vi.Pubkey)
+	}
+	beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, statusOpts)
+	if err != nil {
+		return details, fmt.Errorf("Error retrieving validator beacon statuses: %w", err)
+	}
+
+	for i, vi := range validatorInfos {
+		pubkey := pubkeys[i]
+		validator := api.MegapoolValidatorDetails{
+			ValidatorId:        vi.ValidatorId,
+			PubKey:             pubkey,
+			LastAssignmentTime: time.Unix(int64(vi.ValidatorInfo.LastAssignmentTime), 0),
+			LastRequestedValue: vi.ValidatorInfo.LastRequestedValue,
+			LastRequestedBond:  vi.ValidatorInfo.LastRequestedBond,
+			DepositValue:       vi.ValidatorInfo.DepositValue,
+			Staked:             vi.ValidatorInfo.Staked,
+			Exited:             vi.ValidatorInfo.Exited,
+			InQueue:            vi.ValidatorInfo.InQueue,
+			InPrestake:         vi.ValidatorInfo.InPrestake,
+			ExpressUsed:        vi.ValidatorInfo.ExpressUsed,
+			Dissolved:          vi.ValidatorInfo.Dissolved,
+			Exiting:            vi.ValidatorInfo.Exiting,
+			Locked:             vi.ValidatorInfo.Locked,
+			ExitBalance:        vi.ValidatorInfo.ExitBalance,
+		}
+
+		validator.BeaconStatus = beaconStatuses[pubkey]
+		if validator.Staked {
+			if currentEpoch > validator.BeaconStatus.ActivationEpoch {
+				validator.Activated = true
+				validatorIndex, err := strconv.ParseUint(validator.BeaconStatus.Index, 10, 64)
+				if err != nil {
+					return details, fmt.Errorf("Error parsing the validator index")
+				}
+				validator.ValidatorIndex = validatorIndex
+				validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch
+			}
+		}
+
+		// Compute the queue position
+		if validator.InQueue {
+			var queueKey string
+			if validator.ExpressUsed {
+				queueKey = "deposit.queue.express"
+			} else {
+				queueKey = "deposit.queue.standard"
+			}
+			validator.QueuePosition, err = calculatePositionInQueue(rp, queueDetails, megapoolAddress, validator.ValidatorId, queueKey, findInQueue)
+			if err != nil {
+				return details, fmt.Errorf("error getting queue position for validator ID %d: %w", validator.ValidatorId, err)
+			}
+		}
+
+		details = append(details, validator)
 	}
 
 	return details, nil
