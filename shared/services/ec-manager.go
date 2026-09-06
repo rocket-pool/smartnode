@@ -32,6 +32,7 @@ type ExecutionClientManager struct {
 	primaryReady    bool
 	fallbackReady   bool
 	ignoreSyncCheck bool
+	preferFallback  bool
 
 	// static, when non-nil, satisfies every public method of this manager
 	// directly from the provided client instead of dialling a live EC.
@@ -59,6 +60,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 
 	var primaryEcUrl string
 	var fallbackEcUrl string
+	var preferFallback bool
 
 	// Get the primary EC url
 	if cfg.IsNativeMode {
@@ -82,6 +84,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 				fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
 			}
 		}
+		preferFallback = cfg.PreferFallback.Value == true
 	}
 
 	primaryEc, err := ethclient.Dial(primaryEcUrl)
@@ -97,13 +100,19 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		}
 	}
 
+	logger := log.NewColorLogger(color.FgYellow)
+	if preferFallback {
+		logger.Println("Prefer Fallback Clients is enabled; Execution client requests will use the fallback pair first.")
+	}
+
 	out := &ExecutionClientManager{
-		primaryEcUrl:  primaryEcUrl,
-		fallbackEcUrl: fallbackEcUrl,
-		primaryEc:     &EthClient{primaryEc},
-		logger:        log.NewColorLogger(color.FgYellow),
-		primaryReady:  true,
-		fallbackReady: fallbackEc != nil,
+		primaryEcUrl:   primaryEcUrl,
+		fallbackEcUrl:  fallbackEcUrl,
+		primaryEc:      &EthClient{primaryEc},
+		logger:         logger,
+		primaryReady:   true,
+		fallbackReady:  fallbackEc != nil,
+		preferFallback: preferFallback,
 	}
 	if fallbackEc != nil {
 		out.fallbackEc = &EthClient{fallbackEc}
@@ -595,49 +604,34 @@ func checkEcStatus(client *EthClient) api.ClientStatus {
 
 }
 
-// Attempts to run a function progressively through each client until one succeeds or they all fail.
+func (p *ExecutionClientManager) clientForRole(role clientRole) *EthClient {
+	if role == primaryClient {
+		return p.primaryEc
+	}
+	return p.fallbackEc
+}
+
+func (p *ExecutionClientManager) logDisconnect(failedName, nextName string, hasNext bool, err error) {
+	if hasNext {
+		p.logger.Printlnf("WARNING: %s Execution client disconnected (%s), using %s...", failedName, err.Error(), nextName)
+		return
+	}
+	p.logger.Printlnf("WARNING: %s Execution client disconnected (%s)", failedName, err.Error())
+}
+
+// Attempts to run a function progressively through each client in the preferred order until one succeeds or they all fail.
 func (p *ExecutionClientManager) runFunction(function ecFunction) (interface{}, error) {
 
-	// Check if we can use the primary
-	if p.primaryReady {
-		// Try to run the function on the primary
-		result, err := function(p.primaryEc)
-		if err != nil {
-			if p.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Primary Execution client disconnected (%s), using fallback...", err.Error())
-				p.primaryReady = false
-				return p.runFunction(function)
-			}
-
-			// If it's a different error, just return it
-			return nil, err
-		}
-
-		// If there's no error, return the result
-		return result, nil
+	var result interface{}
+	err := tryClients(p.preferFallback, &p.primaryReady, &p.fallbackReady, p.isDisconnected, p.logDisconnect, "Execution", func(role clientRole) error {
+		var callErr error
+		result, callErr = function(p.clientForRole(role))
+		return callErr
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	if p.fallbackReady {
-		// Try to run the function on the fallback
-		result, err := function(p.fallbackEc)
-		if err != nil {
-			if p.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Fallback Execution client disconnected (%s)", err.Error())
-				p.fallbackReady = false
-				return nil, fmt.Errorf("all Execution clients failed")
-			}
-
-			// If it's a different error, just return it
-			return nil, err
-		}
-
-		// If there's no error, return the result
-		return result, nil
-	}
-
-	return nil, fmt.Errorf("no Execution clients were ready")
+	return result, nil
 }
 
 // Returns true if the error was a connection failure and a backup client is available

@@ -14,6 +14,7 @@ type NativeFallbackConfigPage struct {
 	masterConfig   *config.RocketPoolConfig
 	useFallbackBox *parameterizedFormItem
 	reconnectDelay *parameterizedFormItem
+	preferFallback *parameterizedFormItem
 	fallbackItems  []*parameterizedFormItem
 }
 
@@ -54,10 +55,11 @@ func (configPage *NativeFallbackConfigPage) createContent() {
 	// Set up the form items
 	configPage.useFallbackBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackClients)
 	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
+	configPage.preferFallback = createParameterizedCheckbox(&configPage.masterConfig.PreferFallback)
 	configPage.fallbackItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay)
+	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay, configPage.preferFallback)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackItems...)
 
 	// Set up the setting callbacks
@@ -84,6 +86,7 @@ func (configPage *NativeFallbackConfigPage) handleUseFallbackChanged() {
 	}
 	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.addFormItems(configPage.fallbackItems)
+	configPage.layout.form.AddFormItem(configPage.preferFallback.item)
 
 	configPage.layout.refresh()
 }

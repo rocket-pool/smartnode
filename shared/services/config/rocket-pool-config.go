@@ -76,6 +76,7 @@ type RocketPoolConfig struct {
 	// Fallback settings
 	UseFallbackClients config.Parameter `yaml:"useFallbackClients,omitempty"`
 	ReconnectDelay     config.Parameter `yaml:"reconnectDelay,omitempty"`
+	PreferFallback     config.Parameter `yaml:"preferFallback,omitempty"`
 
 	// Consensus client settings
 	ConsensusClientMode     config.Parameter `yaml:"consensusClientMode,omitempty"`
@@ -354,6 +355,17 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 			Description:        "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: "60s"},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		PreferFallback: config.Parameter{
+			ID:                 "preferFallback",
+			Name:               "Prefer Fallback Clients",
+			Description:        "If enabled, the Smart Node will send API, node, and watchtower requests to your fallback Execution and Consensus clients first, and only use the primary pair if the fallback is unavailable. This keeps Smart Node load off the primary clients so they can focus on validator duties. Your Validator Client is not affected and still uses the primary pair first.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -672,6 +684,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ExecutionClient,
 		&cfg.UseFallbackClients,
 		&cfg.ReconnectDelay,
+		&cfg.PreferFallback,
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
