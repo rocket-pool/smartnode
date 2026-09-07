@@ -57,7 +57,7 @@ func TestEnrichPendingTxDetails(t *testing.T) {
 		"maxPriorityFeePerGas":  "0x77359400",        // 2 Gwei
 	}
 
-	enrichPendingTxDetails(&item, txMap)
+	populatePendingTxDetails(&item, txMap)
 
 	if item.Hash == nil || item.Hash.Hex() != common.HexToHash(expectedHash).Hex() {
 		t.Errorf("hash mismatch: expected %s, got %v", expectedHash, item.Hash)

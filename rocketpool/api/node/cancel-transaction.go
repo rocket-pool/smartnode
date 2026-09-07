@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v3"
@@ -15,47 +16,20 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 const cancelTxGasLimit uint64 = 21000
 
 func canCancelNodeTransaction(c *cli.Command, nonce uint64) (*api.CanCancelNodeTransactionResponse, error) {
-	// Require node wallet
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+	_, ec, nodeAddress, err := validateCancelPreflight(c, nonce)
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Verify not in observe/masquerade mode
-	if _, err := w.GetNodePrivateKeyBytes(); err != nil {
-		return nil, fmt.Errorf("node is in observe mode; cannot sign transactions: %w", err)
-	}
-
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-	nodeAddress := nodeAccount.Address
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-
-	// Verify nonce >= latestNonce
-	latestNonce, err := ec.NonceAt(ctx, nodeAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting latest on-chain nonce: %w", err)
-	}
-	if nonce < latestNonce {
-		return nil, fmt.Errorf("nonce %d has already been mined (latest on-chain nonce is %d)", nonce, latestNonce)
-	}
 
 	// Calculate suggested gas fees
 	minPriorityFee, suggestedMaxFee := calculateReplacementFees(ctx, ec, nodeAddress, nonce)
@@ -87,40 +61,13 @@ func canCancelNodeTransaction(c *cli.Command, nonce uint64) (*api.CanCancelNodeT
 }
 
 func cancelNodeTransaction(c *cli.Command, nonce uint64, t *snroute.TransactOpts) (*api.CancelNodeTransactionResponse, error) {
-	// Require node wallet
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+	w, ec, nodeAddress, err := validateCancelPreflight(c, nonce)
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := w.GetNodePrivateKeyBytes(); err != nil {
-		return nil, fmt.Errorf("node is in observe mode; cannot sign transactions: %w", err)
-	}
-
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-	nodeAddress := nodeAccount.Address
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	// Verify nonce is still valid
-	latestNonce, err := ec.NonceAt(ctx, nodeAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting latest on-chain nonce: %w", err)
-	}
-	if nonce < latestNonce {
-		return nil, fmt.Errorf("nonce %d has already been mined (latest on-chain nonce is %d)", nonce, latestNonce)
-	}
 
 	opts := t.Opts()
 	// Fall back to suggested replacement fees if none provided
@@ -134,46 +81,95 @@ func cancelNodeTransaction(c *cli.Command, nonce uint64, t *snroute.TransactOpts
 		}
 	}
 
-	// Prepare a 0-ETH dynamic fee self-transfer
-	chainID := w.GetChainID()
-	tx := types.NewTx(&types.DynamicFeeTx{
+	tx := buildCancelDynamicFeeTx(w.GetChainID(), nonce, nodeAddress, opts.GasTipCap, opts.GasFeeCap)
+
+	txHash, err := broadcastCancelTx(ctx, ec, opts, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.CancelNodeTransactionResponse{
+		TxHash: txHash,
+	}, nil
+}
+
+// validateCancelPreflight ensures the wallet is unlocked, not observing, and the target nonce is valid.
+func validateCancelPreflight(c *cli.Command, nonce uint64) (wallet.Wallet, *services.ExecutionClientManager, common.Address, error) {
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, nil, common.Address{}, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, nil, common.Address{}, err
+	}
+	ec, err := services.GetEthClient(c)
+	if err != nil {
+		return nil, nil, common.Address{}, err
+	}
+
+	if _, err := w.GetNodePrivateKeyBytes(); err != nil {
+		return nil, nil, common.Address{}, fmt.Errorf("node is in observe mode; cannot sign transactions: %w", err)
+	}
+
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, nil, common.Address{}, err
+	}
+	nodeAddress := nodeAccount.Address
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	latestNonce, err := ec.NonceAt(ctx, nodeAddress, nil)
+	if err != nil {
+		return nil, nil, common.Address{}, fmt.Errorf("error getting latest on-chain nonce: %w", err)
+	}
+	if nonce < latestNonce {
+		return nil, nil, common.Address{}, fmt.Errorf("nonce %d has already been mined (latest on-chain nonce is %d)", nonce, latestNonce)
+	}
+
+	return w, ec, nodeAddress, nil
+}
+
+// buildCancelDynamicFeeTx constructs a 0-ETH dynamic fee transaction to self.
+func buildCancelDynamicFeeTx(chainID *big.Int, nonce uint64, nodeAddress common.Address, gasTipCap, gasFeeCap *big.Int) *types.Transaction {
+	return types.NewTx(&types.DynamicFeeTx{
 		ChainID:    chainID,
 		Nonce:      nonce,
-		GasTipCap:  opts.GasTipCap,
-		GasFeeCap:  opts.GasFeeCap,
+		GasTipCap:  gasTipCap,
+		GasFeeCap:  gasFeeCap,
 		Gas:        cancelTxGasLimit,
 		To:         &nodeAddress,
 		Value:      big.NewInt(0),
 		Data:       []byte{},
 		AccessList: []types.AccessTuple{},
 	})
+}
 
+// broadcastCancelTx signs and transmits the cancellation transaction via the execution client.
+func broadcastCancelTx(ctx context.Context, ec *services.ExecutionClientManager, opts *bind.TransactOpts, tx *types.Transaction) (common.Hash, error) {
 	if opts.Signer == nil {
-		return nil, fmt.Errorf("transactor signer is not configured")
+		return common.Hash{}, fmt.Errorf("transactor signer is not configured")
 	}
 
 	signedTx, err := opts.Signer(opts.From, tx)
 	if err != nil {
-		return nil, fmt.Errorf("error signing cancellation transaction: %w", err)
+		return common.Hash{}, fmt.Errorf("error signing cancellation transaction: %w", err)
 	}
 
 	if err := ec.SendTransaction(ctx, signedTx); err != nil {
-		return nil, fmt.Errorf("error broadcasting cancellation transaction: %w", err)
+		return common.Hash{}, fmt.Errorf("error broadcasting cancellation transaction: %w", err)
 	}
 
-	return &api.CancelNodeTransactionResponse{
-		TxHash: signedTx.Hash(),
-	}, nil
+	return signedTx.Hash(), nil
 }
 
 // calculateReplacementFees calculates appropriate tip and max fee for a replacement tx
 func calculateReplacementFees(ctx context.Context, ec *services.ExecutionClientManager, nodeAddress common.Address, nonce uint64) (*big.Int, *big.Int) {
-	// Base values from current network
 	suggestedTip, err := ec.SuggestGasTipCap(ctx)
 	if err != nil || suggestedTip == nil {
 		suggestedTip = math.GweiToWei(2.0)
 	}
-	// Default minimum 2 gwei tip
 	minTip := math.GweiToWei(2.0)
 	if suggestedTip.Cmp(minTip) < 0 {
 		suggestedTip = minTip
@@ -189,46 +185,22 @@ func calculateReplacementFees(ctx context.Context, ec *services.ExecutionClientM
 	marketMaxFee.Add(marketMaxFee, suggestedTip)
 
 	// Attempt txpool enrichment
-	var poolContent txPoolContentFromResponse
-	_ = ec.RawCallContext(ctx, &poolContent, "txpool_contentFrom", nodeAddress.Hex())
+	poolContent := fetchNodeMempool(ctx, ec, nodeAddress)
+	oldTip, oldFee := poolContent.getTxGasFees(nonce)
 
-	nonceStr := strconv.FormatUint(nonce, 10)
-	var existingTx map[string]interface{}
-	if txMap, ok := poolContent.Pending[nonceStr]; ok {
-		existingTx = txMap
-	} else if txMap, ok := poolContent.Queued[nonceStr]; ok {
-		existingTx = txMap
+	if oldTip != nil {
+		bumpedTip := new(big.Int).Mul(oldTip, big.NewInt(115))
+		bumpedTip.Div(bumpedTip, big.NewInt(100))
+		if bumpedTip.Cmp(suggestedTip) > 0 {
+			suggestedTip = bumpedTip
+		}
 	}
 
-	if existingTx != nil {
-		var oldTip *big.Int
-		var oldFee *big.Int
-
-		if p := parseHexBigInt(existingTx["maxPriorityFeePerGas"]); p != nil {
-			oldTip = p
-		}
-		if f := parseHexBigInt(existingTx["maxFeePerGas"]); f != nil {
-			oldFee = f
-		} else if gp := parseHexBigInt(existingTx["gasPrice"]); gp != nil {
-			oldFee = gp
-		}
-
-		if oldTip != nil {
-			// Apply 15% bump over old tip
-			bumpedTip := new(big.Int).Mul(oldTip, big.NewInt(115))
-			bumpedTip.Div(bumpedTip, big.NewInt(100))
-			if bumpedTip.Cmp(suggestedTip) > 0 {
-				suggestedTip = bumpedTip
-			}
-		}
-
-		if oldFee != nil {
-			// Apply 15% bump over old fee
-			bumpedFee := new(big.Int).Mul(oldFee, big.NewInt(115))
-			bumpedFee.Div(bumpedFee, big.NewInt(100))
-			if bumpedFee.Cmp(marketMaxFee) > 0 {
-				marketMaxFee = bumpedFee
-			}
+	if oldFee != nil {
+		bumpedFee := new(big.Int).Mul(oldFee, big.NewInt(115))
+		bumpedFee.Div(bumpedFee, big.NewInt(100))
+		if bumpedFee.Cmp(marketMaxFee) > 0 {
+			marketMaxFee = bumpedFee
 		}
 	}
 
