@@ -38,6 +38,15 @@ func NetworksDefaultYAML() []byte {
 	return bytes
 }
 
+// ImagesEnv is the packaged official image catalog
+func ImagesEnv() []byte {
+	bytes, err := installFS.ReadFile("install/images.env")
+	if err != nil {
+		panic("embedded install/images.env is missing: " + err.Error())
+	}
+	return bytes
+}
+
 func InstallUpdateTrackerScript() ScriptWithContext {
 	return ScriptWithContext{Script: installUpdateTrackerScript, Context: rpUpdateTrackerFS}
 }

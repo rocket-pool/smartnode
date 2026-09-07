@@ -14,7 +14,7 @@ import (
 )
 
 // Constants
-const alertmanagerTag string = "prom/alertmanager:v0.26.0"
+
 const AlertmanagerConfigTemplate string = "alerting/alertmanager.tmpl"
 const AlertmanagerConfigFile string = "alerting/alertmanager.yml"
 
@@ -173,9 +173,9 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Alertmanager Container Tag",
-			Description:        "The tag name of the Alertmanager container you want to use on Docker Hub.",
+			Description:        "The tag name of the Alertmanager container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: alertmanagerTag},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageDefault(ImageAlertmanager)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

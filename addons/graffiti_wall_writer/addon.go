@@ -16,9 +16,9 @@ type GraffitiWallWriter struct {
 	cfg *GraffitiWallWriterConfig `yaml:"config,omitempty"`
 }
 
-func NewGraffitiWallWriter() addons.SmartnodeAddon {
+func NewGraffitiWallWriter(containerTag string) addons.SmartnodeAddon {
 	return &GraffitiWallWriter{
-		cfg: NewConfig(),
+		cfg: NewConfig(containerTag),
 	}
 }
 
@@ -43,5 +43,12 @@ func (gww *GraffitiWallWriter) GetEnabledParameter() *cfgtypes.Parameter {
 }
 
 func (gww *GraffitiWallWriter) GetContainerTag() string {
-	return containerTag
+	if gww.cfg.ContainerTag.Value != nil {
+		return gww.cfg.ContainerTag.Value.(string)
+	}
+	def, err := gww.cfg.ContainerTag.GetDefault(cfgtypes.Network_All)
+	if err != nil {
+		return ""
+	}
+	return def.(string)
 }
