@@ -793,6 +793,7 @@ type ClaimUnclaimedRewardsResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+// NodePendingTransactionsResponse contains the pending transaction state of the node account.
 type NodePendingTransactionsResponse struct {
 	APIResponse
 	NodeAddress         common.Address     `json:"nodeAddress"`
@@ -802,6 +803,7 @@ type NodePendingTransactionsResponse struct {
 	PendingTransactions []PendingTxDetails `json:"pendingTransactions"`
 }
 
+// PendingTxDetails describes a single pending or stuck transaction in the node account's queue.
 type PendingTxDetails struct {
 	Nonce          uint64          `json:"nonce"`
 	Hash           *common.Hash    `json:"hash,omitempty"`
@@ -813,6 +815,17 @@ type PendingTxDetails struct {
 	IsStuck        bool            `json:"isStuck"`
 }
 
+// HasHash returns true if the transaction hash was resolved from the mempool.
+func (p PendingTxDetails) HasHash() bool {
+	return p.Hash != nil
+}
+
+// IsEnriched returns true if detailed mempool metadata (hash or gas parameters) was resolved.
+func (p PendingTxDetails) IsEnriched() bool {
+	return p.Hash != nil || p.MaxFeePerGas != nil
+}
+
+// CanCancelNodeTransactionResponse contains preflight verification and suggested gas parameters for cancelling a transaction.
 type CanCancelNodeTransactionResponse struct {
 	APIResponse
 	CanCancel           bool    `json:"canCancel"`
@@ -822,6 +835,7 @@ type CanCancelNodeTransactionResponse struct {
 	SuggestedMaxFeeGwei float64 `json:"suggestedMaxFeeGwei"`
 }
 
+// CancelNodeTransactionResponse contains the transaction hash of a broadcasted cancellation transaction.
 type CancelNodeTransactionResponse struct {
 	APIResponse
 	TxHash common.Hash `json:"txHash"`
