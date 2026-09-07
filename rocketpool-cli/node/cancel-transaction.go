@@ -7,8 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+// cancelTransaction orchestrates transaction cancellation for single or all pending transactions.
 func cancelTransaction(nonce uint64, nonceSet bool, cancelAll bool, yes bool) error {
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -17,23 +19,34 @@ func cancelTransaction(nonce uint64, nonceSet bool, cancelAll bool, yes bool) er
 		return cancelAllTransactions(rp, yes)
 	}
 
-	// If nonce was not explicitly specified via flag, detect lowest pending nonce
-	if !nonceSet {
-		pendingResp, err := rp.NodePendingTransactions()
-		if err != nil {
-			return fmt.Errorf("error detecting pending transactions: %w", err)
-		}
-		if pendingResp.PendingCount == 0 {
-			nonce = pendingResp.LatestNonce
-			color.YellowPrintf("No pending transactions reported by local mempool; defaulting to current on-chain nonce %d.\n", nonce)
-		} else {
-			nonce = pendingResp.PendingTransactions[0].Nonce
-		}
+	targetNonce, err := resolveTargetNonce(rp, nonce, nonceSet)
+	if err != nil {
+		return err
 	}
 
-	return cancelSingleTransaction(rp, nonce, yes)
+	return cancelSingleTransaction(rp, targetNonce, yes)
 }
 
+// resolveTargetNonce determines the target nonce to cancel when not explicitly set by flag.
+func resolveTargetNonce(rp *rocketpool.Client, nonce uint64, nonceSet bool) (uint64, error) {
+	if nonceSet {
+		return nonce, nil
+	}
+
+	pendingResp, err := rp.NodePendingTransactions()
+	if err != nil {
+		return 0, fmt.Errorf("error detecting pending transactions: %w", err)
+	}
+
+	if pendingResp.PendingCount == 0 {
+		color.YellowPrintf("No pending transactions reported by local mempool; defaulting to current on-chain nonce %d.\n", pendingResp.LatestNonce)
+		return pendingResp.LatestNonce, nil
+	}
+
+	return pendingResp.PendingTransactions[0].Nonce, nil
+}
+
+// cancelSingleTransaction performs the preflight check, confirmation prompt, submission, and confirmation tracking.
 func cancelSingleTransaction(rp *rocketpool.Client, nonce uint64, yes bool) error {
 	canCancel, err := rp.CanCancelNodeTransaction(nonce)
 	if err != nil {
@@ -43,12 +56,7 @@ func cancelSingleTransaction(rp *rocketpool.Client, nonce uint64, yes bool) erro
 		return errors.New("cannot cancel transaction at this nonce")
 	}
 
-	color.YellowPrintf("Preparing to cancel transaction at nonce %d with a 0-ETH replacement.\n", nonce)
-	fmt.Printf("  Gas Limit:          %d\n", canCancel.GasLimit)
-	fmt.Printf("  Max Priority Fee:   %.2f gwei\n", canCancel.MinPriorityFeeGwei)
-	fmt.Printf("  Suggested Max Fee:  %.2f gwei\n", canCancel.SuggestedMaxFeeGwei)
-	maxCostEth := (canCancel.SuggestedMaxFeeGwei / 1e9) * float64(canCancel.GasLimit)
-	fmt.Printf("  Estimated Max Cost: %.6f ETH\n", maxCostEth)
+	printCancelPreflightSummary(&canCancel)
 
 	if !yes {
 		if !prompt.Confirm("Are you sure you want to cancel the pending transaction at nonce %d?", nonce) {
@@ -57,6 +65,21 @@ func cancelSingleTransaction(rp *rocketpool.Client, nonce uint64, yes bool) erro
 		}
 	}
 
+	return submitAndTrackCancellation(rp, nonce)
+}
+
+// printCancelPreflightSummary prints the fee and gas parameters of the proposed cancellation transaction.
+func printCancelPreflightSummary(canCancel *api.CanCancelNodeTransactionResponse) {
+	color.YellowPrintf("Preparing to cancel transaction at nonce %d with a 0-ETH replacement.\n", canCancel.Nonce)
+	fmt.Printf("  Gas Limit:          %d\n", canCancel.GasLimit)
+	fmt.Printf("  Max Priority Fee:   %.2f gwei\n", canCancel.MinPriorityFeeGwei)
+	fmt.Printf("  Suggested Max Fee:  %.2f gwei\n", canCancel.SuggestedMaxFeeGwei)
+	maxCostEth := (canCancel.SuggestedMaxFeeGwei / 1e9) * float64(canCancel.GasLimit)
+	fmt.Printf("  Estimated Max Cost: %.6f ETH\n", maxCostEth)
+}
+
+// submitAndTrackCancellation transmits the replacement tx and waits for block inclusion.
+func submitAndTrackCancellation(rp *rocketpool.Client, nonce uint64) error {
 	resp, err := rp.CancelNodeTransaction(nonce)
 	if err != nil {
 		return fmt.Errorf("error submitting cancel transaction: %w", err)
@@ -73,6 +96,7 @@ func cancelSingleTransaction(rp *rocketpool.Client, nonce uint64, yes bool) erro
 	return nil
 }
 
+// cancelAllTransactions loops through all pending transactions in order, cancelling each sequentially.
 func cancelAllTransactions(rp *rocketpool.Client, yes bool) error {
 	pendingResp, err := rp.NodePendingTransactions()
 	if err != nil {
