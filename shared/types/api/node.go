@@ -792,3 +792,37 @@ type ClaimUnclaimedRewardsResponse struct {
 	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
+
+type NodePendingTransactionsResponse struct {
+	APIResponse
+	NodeAddress         common.Address     `json:"nodeAddress"`
+	LatestNonce         uint64             `json:"latestNonce"`
+	PendingNonce        uint64             `json:"pendingNonce"`
+	PendingCount        uint64             `json:"pendingCount"`
+	PendingTransactions []PendingTxDetails `json:"pendingTransactions"`
+}
+
+type PendingTxDetails struct {
+	Nonce          uint64          `json:"nonce"`
+	Hash           *common.Hash    `json:"hash,omitempty"`
+	To             *common.Address `json:"to,omitempty"`
+	Value          *big.Int        `json:"value,omitempty"`
+	GasLimit       uint64          `json:"gasLimit"`
+	MaxFeePerGas   *big.Int        `json:"maxFeePerGas,omitempty"`
+	MaxPriorityFee *big.Int        `json:"maxPriorityFeePerGas,omitempty"`
+	IsStuck        bool            `json:"isStuck"`
+}
+
+type CanCancelNodeTransactionResponse struct {
+	APIResponse
+	CanCancel           bool    `json:"canCancel"`
+	Nonce               uint64  `json:"nonce"`
+	GasLimit            uint64  `json:"gasLimit"`
+	MinPriorityFeeGwei  float64 `json:"minPriorityFeeGwei"`
+	SuggestedMaxFeeGwei float64 `json:"suggestedMaxFeeGwei"`
+}
+
+type CancelNodeTransactionResponse struct {
+	APIResponse
+	TxHash common.Hash `json:"txHash"`
+}
