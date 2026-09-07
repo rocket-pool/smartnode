@@ -10,8 +10,6 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v2.5.2"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v2.5.2"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -98,9 +96,9 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Reth container you want to use.",
+			Description:        "The tag name of the Reth container you want to use. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, rethTagProd, rethTagTest),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageRethProd), cfg.imageDefault(ImageRethTest)),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

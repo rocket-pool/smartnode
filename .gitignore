@@ -2,6 +2,7 @@
 vendor
 node_modules
 /scripts/config.js
+/scripts/pin-images.sh
 /rocketpool/rocketpool
 /rocketpool-cli/rocketpool-cli-darwin-amd64
 /rocketpool-cli/rocketpool-cli-linux-amd64

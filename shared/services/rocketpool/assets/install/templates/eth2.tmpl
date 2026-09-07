@@ -7,7 +7,7 @@
 
 {{define "GENESIS_DL"}}
   eth2_genesis_downloader:
-    image: curlimages/curl:8.13.0
+    image: ${RP_IMAGE_CURL}
     user: root
     container_name: {{.Smartnode.ProjectName}}_genesis_downloader
     volumes:
@@ -26,7 +26,7 @@
 
 services:
   eth2:
-    image: {{.GetBeaconContainerTag}}
+    image: {{.GetBeaconImageEnvRef}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_eth2
     restart: unless-stopped

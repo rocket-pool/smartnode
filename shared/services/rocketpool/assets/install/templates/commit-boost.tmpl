@@ -7,7 +7,7 @@
 
 services:
   commit-boost:
-    image: {{.CommitBoost.ContainerTag}}
+    image: {{.GetCommitBoostImageEnvRef}}
     container_name: {{.Smartnode.ProjectName}}_commit-boost
     restart: unless-stopped
     ports: [{{.GetCommitBoostOpenPorts}}]

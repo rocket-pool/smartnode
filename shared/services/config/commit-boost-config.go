@@ -11,8 +11,6 @@ import (
 const (
 	CommitBoostConfigFile     string = "cb_config.toml"
 	CommitBoostConfigTemplate string = "commit-boost-config"
-	commitBoostProdTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.1"
-	commitBoostTestTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.1"
 )
 
 // Relay selection mode for Commit-Boost PBS
@@ -175,12 +173,12 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Commit-Boost container you want to use.",
+			Description:        "The tag name of the Commit-Boost container you want to use. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			AffectsContainers:  []config.ContainerID{config.ContainerID_CommitBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, commitBoostProdTag, commitBoostTestTag),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageCommitBoostProd), cfg.imageDefault(ImageCommitBoostTest)),
 		},
 
 		ExternalUrl: config.Parameter{
@@ -343,6 +341,9 @@ func (cfg *CommitBoostConfig) GetRelayString() string {
 
 // Get the container tag value as a string (for use in templates)
 func (cfg *CommitBoostConfig) GetContainerTag() string {
+	if cfg.parentConfig != nil {
+		return cfg.parentConfig.resolveParamImage(&cfg.ContainerTag, ImageCommitBoostProd, ImageCommitBoostTest)
+	}
 	return fmt.Sprint(cfg.ContainerTag.Value)
 }
 

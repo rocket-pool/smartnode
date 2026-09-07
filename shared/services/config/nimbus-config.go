@@ -7,14 +7,6 @@ import (
 )
 
 const (
-	// Testnet
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v26.8.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
-
-	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v26.8.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
-
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
 )
@@ -81,9 +73,9 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		BnContainerTag: config.Parameter{
 			ID:                 "bnContainerTag",
 			Name:               "Beacon Node Container Tag",
-			Description:        "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub.",
+			Description:        "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, nimbusBnTagProd, nimbusBnTagTest),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageNimbusBnProd), cfg.imageDefault(ImageNimbusBnTest)),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
@@ -92,9 +84,9 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		VcContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Validator Client Container Tag",
-			Description:        "The tag name of the Nimbus Validator Client container you want to use on Docker Hub.",
+			Description:        "The tag name of the Nimbus Validator Client container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, nimbusVcTagProd, nimbusVcTagTest),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageNimbusVcProd), cfg.imageDefault(ImageNimbusVcTest)),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

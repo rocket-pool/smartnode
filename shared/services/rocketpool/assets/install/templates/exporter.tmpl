@@ -7,7 +7,7 @@
 
 services:
   node-exporter:
-    image: {{.Exporter.ContainerTag}}
+    image: ${RP_IMAGE_EXPORTER}
     container_name: {{.Smartnode.ProjectName}}_exporter
     cap_drop:
       - ALL

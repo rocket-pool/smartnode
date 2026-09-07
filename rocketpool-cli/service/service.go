@@ -81,6 +81,10 @@ func installService(yes, verbose, noDeps bool, path string) error {
 		}
 	}
 
+	if path == "" {
+		path = rp.ConfigPath()
+	}
+
 	// Install service
 	err = rp.InstallService(verbose, noDeps, path, dataPath)
 	if err != nil {

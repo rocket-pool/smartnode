@@ -4,9 +4,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Constants
-const grafanaTag string = "grafana/grafana:9.5.18"
-
 // Defaults
 const defaultGrafanaPort uint16 = 3100
 const defaultGrafanaOpenPort string = string(config.RPC_OpenExternal)
@@ -57,9 +54,9 @@ func NewGrafanaConfig(cfg *RocketPoolConfig) *GrafanaConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Grafana Container Tag",
-			Description:        "The tag name of the Grafana container you want to use on Docker Hub.",
+			Description:        "The tag name of the Grafana container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: grafanaTag},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageDefault(ImageGrafana)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Grafana},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

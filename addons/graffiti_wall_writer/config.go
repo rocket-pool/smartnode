@@ -4,11 +4,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Constants
-const (
-	containerTag string = "rocketpool/graffiti-wall-addon:v1.0.1"
-)
-
 // Configuration for the Graffiti Wall Writer
 type GraffitiWallWriterConfig struct {
 	Title string `yaml:"-"`
@@ -31,7 +26,7 @@ type GraffitiWallWriterConfig struct {
 }
 
 // Creates a new configuration instance
-func NewConfig() *GraffitiWallWriterConfig {
+func NewConfig(containerTag string) *GraffitiWallWriterConfig {
 	return &GraffitiWallWriterConfig{
 		Title: "Graffiti Wall Writer Settings",
 
@@ -93,7 +88,7 @@ func NewConfig() *GraffitiWallWriterConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the container you want to use on Docker Hub.",
+			Description:        "The tag name of the container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]any{config.Network_All: containerTag},
 			AffectsContainers:  []config.ContainerID{ContainerID_GraffitiWallWriter},

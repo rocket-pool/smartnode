@@ -7,7 +7,7 @@
 
 services:
   node:
-    image: {{.Smartnode.GetSmartnodeContainerTag}}
+    image: ${RP_IMAGE_SMARTNODE}
     container_name: {{.Smartnode.ProjectName}}_node
     restart: unless-stopped
     tty: true
