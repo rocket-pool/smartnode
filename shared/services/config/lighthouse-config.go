@@ -5,9 +5,7 @@ import (
 )
 
 const (
-	lighthouseTagPortableTest string = "sigp/lighthouse:v8.2.2"
-	lighthouseTagPortableProd string = "sigp/lighthouse:v8.2.2"
-	defaultLhMaxPeers         uint16 = 100
+	defaultLhMaxPeers uint16 = 100
 )
 
 // Configuration for Lighthouse
@@ -65,9 +63,9 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Lighthouse container you want to use from Docker Hub.",
+			Description:        "The tag name of the Lighthouse container you want to use from Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, lighthouseTagPortableProd, lighthouseTagPortableTest),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageLighthouseProd), cfg.imageDefault(ImageLighthouseTest)),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

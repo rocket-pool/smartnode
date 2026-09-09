@@ -8,8 +8,6 @@ import (
 
 // Constants
 const (
-	gethTagProd          string = "ethereum/client-go:v1.17.5"
-	gethTagTest          string = "ethereum/client-go:v1.17.5"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
@@ -82,9 +80,9 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Geth container you want to use on Docker Hub.",
+			Description:        "The tag name of the Geth container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, gethTagProd, gethTagTest),
+			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageGethProd), cfg.imageDefault(ImageGethTest)),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

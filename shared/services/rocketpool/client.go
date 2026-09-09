@@ -925,9 +925,20 @@ func (c *Client) RunPruneProvisioner(container, volume string) error {
 	return c.TouchEthclientMarker(container, volume, "prune.lock")
 }
 
+func (c *Client) resolvedImage(key, fallback string) string {
+	cfg, _, err := c.LoadConfig()
+	if err != nil || cfg == nil {
+		return fallback
+	}
+	if v := cfg.ResolvedImage(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 // Creates a marker file on the execution client volume (used for prune and DB migrations).
 func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/%s'", container, volume, marker)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.21.3")), marker)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -948,7 +959,7 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 
 	for i := 0; i < retryCount; i++ {
 		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
-		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s curlimages/curl -Ss %s`, pruneStarterContainerSuffix, executionContainerName, command)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.13.0")), command)
 
 		if i != 0 {
 			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
@@ -1176,9 +1187,27 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 
-	// Return command
-	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	imagesEnv := filepath.Join(expandedConfigPath, config.ImagesEnvFile)
+	if err := ensureImagesEnv(imagesEnv); err != nil {
+		return "", err
+	}
+	envFileFlag := fmt.Sprintf("--env-file %s", shellescape.Quote(imagesEnv))
 
+	// Return command
+	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose %s --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), envFileFlag, shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+
+}
+
+func ensureImagesEnv(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("could not stat %s: %w", path, err)
+	}
+	if err := os.WriteFile(path, assets.ImagesEnv(), 0664); err != nil {
+		return fmt.Errorf("could not write %s: %w", path, err)
+	}
+	return nil
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration

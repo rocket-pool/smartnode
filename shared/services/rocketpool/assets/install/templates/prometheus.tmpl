@@ -7,7 +7,7 @@
 
 services:
   prometheus:
-    image: {{.Prometheus.ContainerTag}}
+    image: ${RP_IMAGE_PROMETHEUS}
     container_name: {{.Smartnode.ProjectName}}_prometheus
     restart: unless-stopped
     command:

@@ -7,7 +7,7 @@
 
 services:
   validator:
-    image: {{.GetVCContainerTag}}
+    image: {{.GetVCImageEnvRef}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_validator
     restart: unless-stopped

@@ -7,7 +7,7 @@
 
 services:
   alertmanager:
-    image: {{.Alertmanager.ContainerTag}}
+    image: ${RP_IMAGE_ALERTMANAGER}
     container_name: {{.Smartnode.ProjectName}}_alertmanager
     restart: unless-stopped
     command:
