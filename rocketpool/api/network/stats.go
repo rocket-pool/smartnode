@@ -17,9 +17,9 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
@@ -43,7 +43,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		balance, err := deposit.GetBalance(rp, nil)
 		if err == nil {
-			response.DepositPoolBalance = math.WeiToEth(balance)
+			response.DepositPoolBalance = units.WeiToEth(balance)
 		}
 		return err
 	})
@@ -52,7 +52,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		minipoolQueueCapacity, err := minipool.GetQueueCapacity(rp, nil)
 		if err == nil {
-			response.MinipoolCapacity = math.WeiToEth(minipoolQueueCapacity.Total)
+			response.MinipoolCapacity = units.WeiToEth(minipoolQueueCapacity.Total)
 		}
 		return err
 	})
@@ -109,7 +109,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		rplPrice, err := network.GetRPLPrice(rp, nil)
 		if err == nil {
-			response.RplPrice = math.WeiToEth(rplPrice)
+			response.RplPrice = units.WeiToEth(rplPrice)
 		}
 		return err
 	})
@@ -118,7 +118,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalRplStaked = math.WeiToEth(totalStaked)
+			response.TotalRplStaked = units.WeiToEth(totalStaked)
 		}
 		return err
 	})
@@ -127,7 +127,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalMegapoolRplStaked = math.WeiToEth(megapoolStaked)
+			response.TotalMegapoolRplStaked = units.WeiToEth(megapoolStaked)
 		}
 		return err
 	})
@@ -136,7 +136,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalLegacyRplStaked = math.WeiToEth(legacyStaked)
+			response.TotalLegacyRplStaked = units.WeiToEth(legacyStaked)
 		}
 		return err
 	})
@@ -173,7 +173,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 			return fmt.Errorf("error getting smoothing pool balance: %w", err)
 		}
 
-		response.SmoothingPoolBalance = math.WeiToEth(smoothingPoolBalance)
+		response.SmoothingPoolBalance = units.WeiToEth(smoothingPoolBalance)
 		return nil
 	})
 

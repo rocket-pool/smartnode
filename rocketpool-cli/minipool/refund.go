@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func refundMinipools(minipool string, yes bool) error {
@@ -53,7 +54,7 @@ func refundMinipools(minipool string, yes bool) error {
 		options := make([]string, len(refundableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range refundableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(math.WeiToEth(minipool.Node.RefundBalance), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(units.WeiToEth(minipool.Node.RefundBalance), 6))
 		}
 		selected, _ := prompt.Select("Please select a minipool to refund ETH from:", options)
 

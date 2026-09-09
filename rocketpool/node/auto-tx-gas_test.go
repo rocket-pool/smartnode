@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func TestLoadAutoTxGas(t *testing.T) {
@@ -23,10 +23,10 @@ func TestLoadAutoTxGas(t *testing.T) {
 	if gas.thresholdGwei != 12.5 {
 		t.Fatalf("threshold = %v, want 12.5", gas.thresholdGwei)
 	}
-	if gas.maxFee.Cmp(math.GweiToWei(30)) != 0 {
+	if gas.maxFee.Cmp(units.GweiToWei(30)) != 0 {
 		t.Fatalf("maxFee = %s, want 30 gwei", gas.maxFee)
 	}
-	if gas.maxPriorityFee.Cmp(math.GweiToWei(1.5)) != 0 {
+	if gas.maxPriorityFee.Cmp(units.GweiToWei(1.5)) != 0 {
 		t.Fatalf("maxPriorityFee = %s, want 1.5 gwei", gas.maxPriorityFee)
 	}
 }
@@ -45,7 +45,7 @@ func TestLoadAutoTxGasDefaults(t *testing.T) {
 	if gas.maxFee != nil {
 		t.Fatalf("maxFee = %s, want nil", gas.maxFee)
 	}
-	wantPrio := math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+	wantPrio := units.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	if gas.maxPriorityFee.Cmp(wantPrio) != 0 {
 		t.Fatalf("maxPriorityFee = %s, want default %s", gas.maxPriorityFee, wantPrio)
 	}

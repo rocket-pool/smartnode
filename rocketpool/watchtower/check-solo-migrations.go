@@ -17,12 +17,12 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -141,7 +141,7 @@ func (t *checkSoloMigrations) run(state *state.NetworkStateIndex) error {
 func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex) error {
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
-	oneGwei := math.GweiToWei(1)
+	oneGwei := units.GweiToWei(1)
 	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
 
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
@@ -158,7 +158,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex
 
 	// Go through each minipool
 	threshold := uint64(32000000000)
-	buffer := uint64(migrationBalanceBuffer * math.WeiPerGwei)
+	buffer := uint64(migrationBalanceBuffer * units.WeiPerGwei)
 	for _, mpd := range state.MinipoolDetails {
 		if mpd.Status == types.Dissolved {
 			// Ignore minipools that are already dissolved
@@ -287,14 +287,14 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print the gas info
-	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasLimits.Safe
 
 	// Cancel the reduction

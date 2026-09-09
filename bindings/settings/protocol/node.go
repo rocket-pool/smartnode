@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -115,7 +115,7 @@ func GetMinimumLegacyRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumLegacyRPLStake"); err != nil {
 		return 0, fmt.Errorf("error getting minimum legacy RPL stake per node: %w", err)
 	}
-	return math.WeiToEth(*value), nil
+	return units.WeiToEth(*value), nil
 }
 func ProposeMinimumLecacyRPLStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumLegacyRplStakePath), NodeSettingsContractName, MinimumLegacyRplStakePath, value, blockNumber, treeNodes, opts)
@@ -147,7 +147,7 @@ func GetReducedBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, er
 	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
 		return 0, fmt.Errorf("error getting reduced bond variable: %w", err)
 	}
-	return math.WeiToEth(*value), nil
+	return units.WeiToEth(*value), nil
 }
 func ProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)

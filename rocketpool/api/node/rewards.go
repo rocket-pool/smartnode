@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -150,10 +151,10 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		}
 
 		if err == nil {
-			response.CumulativeRplRewards = math.WeiToEth(rplRewards)
-			response.UnclaimedRplRewards = math.WeiToEth(unclaimedRplRewardsWei)
-			response.CumulativeEthRewards = math.WeiToEth(ethRewards)
-			response.UnclaimedEthRewards = math.WeiToEth(unclaimedEthRewardsWei)
+			response.CumulativeRplRewards = units.WeiToEth(rplRewards)
+			response.UnclaimedRplRewards = units.WeiToEth(unclaimedRplRewardsWei)
+			response.CumulativeEthRewards = units.WeiToEth(ethRewards)
+			response.UnclaimedEthRewards = units.WeiToEth(unclaimedEthRewardsWei)
 		}
 		return err
 	})
@@ -180,7 +181,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		stake, err := node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		if err == nil {
-			response.TotalRplStake = math.WeiToEth(stake)
+			response.TotalRplStake = units.WeiToEth(stake)
 		}
 		return err
 	})
@@ -223,7 +224,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 	// Get the node operator rewards percent
 	wg.Go(func() error {
 		nodeOperatorRewardsPercentRaw, err := rewards.GetNodeOperatorRewardsPercent(rp, nil)
-		nodeOperatorRewardsPercent = math.WeiToEth(nodeOperatorRewardsPercentRaw)
+		nodeOperatorRewardsPercent = units.WeiToEth(nodeOperatorRewardsPercentRaw)
 		if err != nil {
 			return err
 		}
@@ -272,8 +273,8 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 			}
 		}
 
-		totalDepositBalance += math.WeiToEth(nodeDeposit)
-		totalNodeShare += math.WeiToEth(nodeShare)
+		totalDepositBalance += units.WeiToEth(nodeDeposit)
+		totalNodeShare += units.WeiToEth(nodeShare)
 	}
 	response.BeaconRewards = totalNodeShare - totalDepositBalance
 
@@ -301,7 +302,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 
 			megapoolReward := big.NewInt(0)
 			if totalBeaconBalance > totalEffectiveBeaconBalance {
-				weiPerGwei := big.NewInt(int64(math.WeiPerGwei))
+				weiPerGwei := big.NewInt(int64(units.WeiPerGwei))
 				totalBeaconBalanceWei := new(big.Int).Mul(new(big.Int).SetUint64(totalBeaconBalance), weiPerGwei)
 				totalEffectiveBeaconBalanceWei := new(big.Int).Mul(new(big.Int).SetUint64(totalEffectiveBeaconBalance), weiPerGwei)
 				toBeSkimmed := new(big.Int).Sub(totalBeaconBalanceWei, totalEffectiveBeaconBalanceWei)
@@ -312,20 +313,20 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 				}
 				megapoolReward = rewardSplit.RewardSplit.NodeRewards
 			}
-			response.BeaconRewards += math.WeiToEth(megapoolReward)
+			response.BeaconRewards += units.WeiToEth(megapoolReward)
 		}
 	}
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := response.RewardsInterval.Seconds() / (60 * 60 * 24)
-	inflationPerDay := math.WeiToEth(inflationInterval)
-	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * math.WeiToEth(totalRplSupply)
+	inflationPerDay := units.WeiToEth(inflationInterval)
+	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * units.WeiToEth(totalRplSupply)
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
 
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		response.EstimatedRewards = response.EffectiveRplStake / math.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		response.EstimatedRewards = response.EffectiveRplStake / units.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	if response.Trusted {
@@ -371,8 +372,8 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 			}
 
 			if err == nil {
-				response.CumulativeTrustedRplRewards = math.WeiToEth(rplRewards)
-				response.UnclaimedTrustedRplRewards = math.WeiToEth(unclaimedRplRewardsWei)
+				response.CumulativeTrustedRplRewards = units.WeiToEth(rplRewards)
+				response.UnclaimedTrustedRplRewards = units.WeiToEth(unclaimedRplRewardsWei)
 			}
 			return err
 		})
@@ -390,7 +391,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		// Get the trusted node operator rewards percent
 		wg2.Go(func() error {
 			trustedNodeOperatorRewardsPercentRaw, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
-			trustedNodeOperatorRewardsPercent = math.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
+			trustedNodeOperatorRewardsPercent = units.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
 			if err != nil {
 				return err
 			}
@@ -401,7 +402,7 @@ func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
 			if err == nil {
-				response.TrustedRplBond = math.WeiToEth(bond)
+				response.TrustedRplBond = units.WeiToEth(bond)
 			}
 			return err
 		})

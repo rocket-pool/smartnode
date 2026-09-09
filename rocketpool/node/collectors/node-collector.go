@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Represents the collector for the user's node
@@ -434,19 +435,19 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	nodeLegacyStakedRpl := math.WeiToEth(nd.LegacyStakedRPL)
-	nodeMegapoolStakedRpl := math.WeiToEth(nd.MegapoolStakedRPL)
-	effectiveStakedRpl := math.WeiToEth(nd.EffectiveRPLStake)
-	megapoolQueueBond := math.WeiToEth(megapoolDetails.NodeQueuedBond)
+	nodeLegacyStakedRpl := units.WeiToEth(nd.LegacyStakedRPL)
+	nodeMegapoolStakedRpl := units.WeiToEth(nd.MegapoolStakedRPL)
+	effectiveStakedRpl := units.WeiToEth(nd.EffectiveRPLStake)
+	megapoolQueueBond := units.WeiToEth(megapoolDetails.NodeQueuedBond)
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
-	nodeOperatorRewardsPercent := math.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
+	nodeOperatorRewardsPercent := units.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
 	previousIntervalTotalNodeWeight := big.NewInt(0)
-	ethBalance := math.WeiToEth(nd.BalanceETH)
-	oldRplBalance := math.WeiToEth(nd.BalanceOldRPL)
-	newRplBalance := math.WeiToEth(nd.BalanceRPL)
-	rethBalance := math.WeiToEth(nd.BalanceRETH)
+	ethBalance := units.WeiToEth(nd.BalanceETH)
+	oldRplBalance := units.WeiToEth(nd.BalanceOldRPL)
+	newRplBalance := units.WeiToEth(nd.BalanceRPL)
+	rethBalance := units.WeiToEth(nd.BalanceRETH)
 	eligibleBorrowedEth := state.GetEligibleBorrowedEth(nd)
 	var activeMinipoolCount float64
 	initializedMinipoolCount := float64(0)
@@ -455,12 +456,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	dissolvedMinipoolCount := float64(0)
 	finalizedMinipoolCount := float64(0)
 	rplPriceRaw := state.NetworkDetails.RplPrice
-	rplPrice := math.WeiToEth(rplPriceRaw)
+	rplPrice := units.WeiToEth(rplPriceRaw)
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
 	lowETHBalanceThreshold := collector.cfg.Alertmanager.LowETHBalanceThreshold.Value.(float64)
-	megapoolEthBalance := math.WeiToEth(megapoolDetails.EthBalance)
-	nodeDebt := math.WeiToEth(megapoolDetails.NodeDebt)
+	megapoolEthBalance := units.WeiToEth(megapoolDetails.EthBalance)
+	nodeDebt := units.WeiToEth(megapoolDetails.NodeDebt)
 	megapoolValidatorCount := float64(megapoolDetails.ValidatorCount)
 	megapoolStakedCount := float64(0)
 	megapoolPrestakeCount := float64(0)
@@ -472,10 +473,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	megapoolActiveValidatorCount := float64(megapoolDetails.ActiveValidatorCount)
 	megapoolLockedValidatorCount := float64(megapoolDetails.LockedValidatorCount)
 	megapoolNodeExpressTicketCount := float64(megapoolDetails.NodeExpressTicketCount)
-	megapoolRefundValue := math.WeiToEth(megapoolDetails.RefundValue)
-	megapoolNodeBond := math.WeiToEth(megapoolDetails.NodeBond)
-	megapoolUserCapital := math.WeiToEth(megapoolDetails.UserCapital)
-	megapoolAssignedValue := math.WeiToEth(megapoolDetails.AssignedValue)
+	megapoolRefundValue := units.WeiToEth(megapoolDetails.RefundValue)
+	megapoolNodeBond := units.WeiToEth(megapoolDetails.NodeBond)
+	megapoolUserCapital := units.WeiToEth(megapoolDetails.UserCapital)
+	megapoolAssignedValue := units.WeiToEth(megapoolDetails.AssignedValue)
 	megapoolDelegateExpiry := float64(megapoolDetails.DelegateExpiry)
 	megapoolPubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
 	megapoolBeaconBalanceTotal := big.NewInt(0)
@@ -567,10 +568,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
 
-		collector.cumulativeRewards += math.WeiToEth(newRewards)
-		collector.cumulativeClaimedEthRewards += math.WeiToEth(newClaimedEthRewards)
-		unclaimedRplRewards = math.WeiToEth(unclaimedRplWei)
-		unclaimedEthRewards = math.WeiToEth(unclaimedEthWei)
+		collector.cumulativeRewards += units.WeiToEth(newRewards)
+		collector.cumulativeClaimedEthRewards += units.WeiToEth(newClaimedEthRewards)
+		unclaimedRplRewards = units.WeiToEth(unclaimedRplWei)
+		unclaimedEthRewards = units.WeiToEth(unclaimedEthWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil
@@ -701,10 +702,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if err != nil {
 			return fmt.Errorf("Error getting megapool pending rewards: %w", err)
 		}
-		megapoolPendingRewardsNode = math.WeiToEth(mpPendingRewards.NodeRewards)
-		megapoolPendingRewardsVoter = math.WeiToEth(mpPendingRewards.VoterRewards)
-		megapoolPendingRewardsPDAO = math.WeiToEth(mpPendingRewards.ProtocolDAORewards)
-		megapoolPendingRewardsReth = math.WeiToEth(mpPendingRewards.RethRewards)
+		megapoolPendingRewardsNode = units.WeiToEth(mpPendingRewards.NodeRewards)
+		megapoolPendingRewardsVoter = units.WeiToEth(mpPendingRewards.VoterRewards)
+		megapoolPendingRewardsPDAO = units.WeiToEth(mpPendingRewards.ProtocolDAORewards)
+		megapoolPendingRewardsReth = units.WeiToEth(mpPendingRewards.RethRewards)
 
 		currentEpoch := state.BeaconConfig.SlotToEpoch(state.BeaconSlotNumber)
 		totalEffectiveBeaconBalance := big.NewInt(0)
@@ -724,18 +725,18 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			if currentEpoch <= validator.ActivationEpoch {
 				continue
 			}
-			megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, math.GweiToWei(float64(validator.Balance)))
-			totalEffectiveBeaconBalance.Add(totalEffectiveBeaconBalance, math.GweiToWei(float64(validator.EffectiveBalance)))
+			megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, units.GweiToWei(float64(validator.Balance)))
+			totalEffectiveBeaconBalance.Add(totalEffectiveBeaconBalance, units.GweiToWei(float64(validator.EffectiveBalance)))
 		}
 
-		megapoolBeaconBalance = math.WeiToEth(megapoolBeaconBalanceTotal)
+		megapoolBeaconBalance = units.WeiToEth(megapoolBeaconBalanceTotal)
 		if megapoolBeaconBalanceTotal.Cmp(totalEffectiveBeaconBalance) > 0 {
 			toBeSkimmed := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, totalEffectiveBeaconBalance)
 			rewardsSplit, err := mp.CalculateRewards(toBeSkimmed, nil)
 			if err != nil {
 				return fmt.Errorf("Error calculating megapool rewards: %w", err)
 			}
-			nodeShareofBeaconBalance = math.WeiToEth(big.NewInt(0).Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
+			nodeShareofBeaconBalance = units.WeiToEth(big.NewInt(0).Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
 		}
 
 		return nil
@@ -786,15 +787,15 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			// Pending bond reducton
 			bonded.Set(mpd.ReduceBondValue)
 		}
-		borrowed := big.NewInt(0).Sub(math.EthToWei(32), bonded)
+		borrowed := big.NewInt(0).Sub(units.EthToWei(32), bonded)
 		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
 		pendingBondedEth.Add(pendingBondedEth, bonded)
 	}
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)
-	inflationPerDay := math.WeiToEth(inflationInterval)
-	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * math.WeiToEth(totalRplSupply)
+	inflationPerDay := units.WeiToEth(inflationInterval)
+	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * units.WeiToEth(totalRplSupply)
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
@@ -836,23 +837,23 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	for _, minipool := range minipools {
 		validator, exists := state.MinipoolValidatorDetails[minipool.Pubkey]
 		if exists {
-			totalBeaconBalance += math.GweiToEth(validator.Balance)
+			totalBeaconBalance += units.GweiToEth(validator.Balance)
 		}
-		totalDepositBalance += math.WeiToEth(minipool.NodeDepositBalance)
-		totalNodeShare += math.WeiToEth(minipool.NodeShareOfBeaconBalance)
+		totalDepositBalance += units.WeiToEth(minipool.NodeDepositBalance)
+		totalNodeShare += units.WeiToEth(minipool.NodeShareOfBeaconBalance)
 	}
 
 	totalMinipoolBalance := float64(0)
 	totalMinipoolShare := float64(0)
 	totalRefundBalance := float64(0)
 	for _, minipool := range minipools {
-		totalMinipoolBalance += math.WeiToEth(minipool.DistributableBalance)
-		totalMinipoolShare += math.WeiToEth(minipool.NodeShareOfBalance)
-		totalRefundBalance += math.WeiToEth(minipool.NodeRefundBalance)
+		totalMinipoolBalance += units.WeiToEth(minipool.DistributableBalance)
+		totalMinipoolShare += units.WeiToEth(minipool.NodeShareOfBalance)
+		totalRefundBalance += units.WeiToEth(minipool.NodeRefundBalance)
 	}
 
 	// RPL collateral
-	totalBondedEthFloat := math.WeiToEth(pendingBondedEth) + math.WeiToEth(nd.MegapoolEthBonded)
+	totalBondedEthFloat := units.WeiToEth(pendingBondedEth) + units.WeiToEth(nd.MegapoolEthBonded)
 	var bondedCollateralRatio float64
 	if totalBondedEthFloat == 0 {
 		bondedCollateralRatio = 0
@@ -860,7 +861,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		bondedCollateralRatio = rplPrice * totalStakedRpl / totalBondedEthFloat
 	}
 
-	totalBorrowedEthFloat := math.WeiToEth(pendingBorrowedEth) + math.WeiToEth(nd.MegapoolETHBorrowed)
+	totalBorrowedEthFloat := units.WeiToEth(pendingBorrowedEth) + units.WeiToEth(nd.MegapoolETHBorrowed)
 	var borrowedCollateralRatio float64
 	if totalBorrowedEthFloat == 0 {
 		borrowedCollateralRatio = 0

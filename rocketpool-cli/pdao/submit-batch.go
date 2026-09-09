@@ -7,9 +7,9 @@ import (
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func printSubmitBatchHelp() {
@@ -88,7 +88,7 @@ func submitBatch(file string, message string, yes bool) error {
 		fmt.Println("Cannot propose setting update:")
 		if canPropose.InsufficientRpl {
 			fmt.Printf("You do not have enough RPL staked but unlocked to make another proposal (unlocked: %.6f RPL, required: %.6f RPL).\n",
-				math.WeiToEth(big.NewInt(0).Sub(canPropose.StakedRpl, canPropose.LockedRpl)), math.WeiToEth(canPropose.ProposalBond),
+				units.WeiToEth(big.NewInt(0).Sub(canPropose.StakedRpl, canPropose.LockedRpl)), units.WeiToEth(canPropose.ProposalBond),
 			)
 		}
 		if canPropose.IsRplLockingDisallowed {

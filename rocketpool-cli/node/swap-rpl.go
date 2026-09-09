@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func nodeSwapRpl(amount string, yes bool) error {
@@ -39,7 +40,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid swap amount '%s': %w", amount, err)
 		}
-		amountWei = math.EthToWei(swapAmount)
+		amountWei = units.EthToWei(swapAmount)
 
 	} else {
 
@@ -51,7 +52,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		entireAmount := status.AccountBalances.FixedSupplyRPL
 
 		// Prompt for entire amount
-		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(math.WeiToEth(entireAmount), 6)) {
+		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(units.WeiToEth(entireAmount), 6)) {
 			amountWei = entireAmount
 		} else {
 
@@ -61,7 +62,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
 			}
-			amountWei = math.EthToWei(swapAmount)
+			amountWei = units.EthToWei(swapAmount)
 
 		}
 
@@ -143,7 +144,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(math.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -161,7 +162,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(math.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
 	return nil
 
 }

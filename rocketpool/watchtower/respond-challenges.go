@@ -11,11 +11,11 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Respond to challenges task
@@ -99,14 +99,14 @@ func (t *respondChallenges) run() error {
 	}
 
 	// Print the gas info
-	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasLimits.Safe
 
 	// Respond to challenge

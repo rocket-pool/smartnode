@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -104,7 +104,7 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPercTotal"); err != nil {
 		return 0, fmt.Errorf("error getting rewards claimers total percent: %w", err)
 	}
-	return math.WeiToEth(*value), nil
+	return units.WeiToEth(*value), nil
 }
 
 // Rewards claim interval time

@@ -17,9 +17,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Represents the collector for the user's trusted node
@@ -235,7 +235,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 					return fmt.Errorf("Error getting node balances: %w", err)
 				}
 				lock.Lock()
-				ethBalances[id] = math.WeiToEth(balances.ETH)
+				ethBalances[id] = units.WeiToEth(balances.ETH)
 				lock.Unlock()
 				return nil
 			}

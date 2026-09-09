@@ -32,6 +32,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Submit rewards Merkle Tree task
@@ -428,13 +429,13 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	// Print the gas info
-	maxFee := math.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
 		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasLimits.Safe
 
 	var hash common.Hash

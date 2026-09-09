@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getMemberSettings() error {
@@ -25,10 +25,10 @@ func getMemberSettings() error {
 
 	// Log & return
 	fmt.Printf("ODAO Voting Quorum Threshold: %f%%\n", response.Quorum*100)
-	fmt.Printf("Required Member RPL Bond: %f RPL\n", math.WeiToEth(response.RPLBond))
+	fmt.Printf("Required Member RPL Bond: %f RPL\n", units.WeiToEth(response.RPLBond))
 	fmt.Printf("Consecutive Challenge Cooldown: %d Blocks\n", response.ChallengeCooldown)
 	fmt.Printf("Challenge Meeting Window: %d Blocks\n", response.ChallengeWindow)
-	fmt.Printf("Cost for Non-members to Challenge Members: %f ETH\n", math.WeiToEth(response.ChallengeCost))
+	fmt.Printf("Cost for Non-members to Challenge Members: %f ETH\n", units.WeiToEth(response.ChallengeCost))
 	return nil
 
 }

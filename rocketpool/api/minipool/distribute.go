@@ -14,9 +14,9 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetailsResponse, error) {
@@ -144,7 +144,7 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 
 					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
 					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-					eight := math.EthToWei(8)
+					eight := units.EthToWei(8)
 					if distributableBalance.Cmp(eight) >= 0 {
 						minipoolDetails.CanDistribute = false
 						return nil

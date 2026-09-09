@@ -4,9 +4,9 @@ import (
 	"math/big"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // autoTxGas is the node-task view of the Smartnode auto-tx gas settings.
@@ -26,16 +26,16 @@ func loadAutoTxGas(cfg *config.RocketPoolConfig, logger *log.ColorLogger) autoTx
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
 	var maxFee *big.Int
 	if maxFeeGwei != 0 {
-		maxFee = math.GweiToWei(maxFeeGwei)
+		maxFee = units.GweiToWei(maxFeeGwei)
 	}
 
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var maxPriorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		maxPriorityFee = math.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		maxPriorityFee = units.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
-		maxPriorityFee = math.GweiToWei(priorityFeeGwei)
+		maxPriorityFee = units.GweiToWei(priorityFeeGwei)
 	}
 
 	return autoTxGas{

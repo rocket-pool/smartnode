@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -117,17 +118,17 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 		lastBondAdded = bondRequirementResponse.BondRequirement
 		// Find the bond requirement for the next validator
 		nextBondRequirement := bondRequirementResponse.BondRequirement.Sub(bondRequirementResponse.BondRequirement, bondedEth)
-		if nextBondRequirement.Cmp(math.EthToWei(1)) < 0 {
-			nextBondRequirement = math.EthToWei(1)
-		} else if nextBondRequirement.Cmp(math.EthToWei(32)) > 0 {
-			nextBondRequirement = math.EthToWei(32)
+		if nextBondRequirement.Cmp(units.EthToWei(1)) < 0 {
+			nextBondRequirement = units.EthToWei(1)
+		} else if nextBondRequirement.Cmp(units.EthToWei(32)) > 0 {
+			nextBondRequirement = units.EthToWei(32)
 		}
 		totalBondRequirement = totalBondRequirement.Add(totalBondRequirement, nextBondRequirement)
 	}
 
-	totalBondRequirementEth := math.WeiToEth(totalBondRequirement)
+	totalBondRequirementEth := units.WeiToEth(totalBondRequirement)
 	// Show the node bond and the total bond requirement
-	fmt.Printf("The node is currently bonded with %.2f ETH.\n", math.WeiToEth(megapoolBondedEth))
+	fmt.Printf("The node is currently bonded with %.2f ETH.\n", units.WeiToEth(megapoolBondedEth))
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
@@ -191,12 +192,12 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 			fmt.Println("The node has debt. You must repay the debt before creating a new validator. Use the `rocketpool megapool repay-debt` command to repay the debt.")
 		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
-			nodeBalance := math.WeiToEth(canDeposit.NodeBalance)
-			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", math.WeiToEth(canDeposit.DepositBalance), nodeBalance)
+			nodeBalance := units.WeiToEth(canDeposit.NodeBalance)
+			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", units.WeiToEth(canDeposit.DepositBalance), nodeBalance)
 		}
 		if canDeposit.InsufficientBalance {
-			nodeBalance := math.WeiToEth(canDeposit.NodeBalance)
-			creditBalance := math.WeiToEth(canDeposit.CreditBalance)
+			nodeBalance := units.WeiToEth(canDeposit.NodeBalance)
+			creditBalance := units.WeiToEth(canDeposit.CreditBalance)
 
 			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create %d megapool validator(s) with a total %.1f ETH bond.", nodeBalance, creditBalance, count, totalBondRequirementEth)
 
@@ -212,7 +213,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	useCreditBalance := false
 	totalAmountWei := totalBondRequirement
-	fmt.Printf("Your credit balance is %.2f ETH. (Credit in addition to ETH staked on your behalf).\n", math.WeiToEth(canDeposit.CreditBalance))
+	fmt.Printf("Your credit balance is %.2f ETH. (Credit in addition to ETH staked on your behalf).\n", units.WeiToEth(canDeposit.CreditBalance))
 	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true
@@ -220,9 +221,9 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 			usableCredit := canDeposit.UsableCreditBalance
 			remainingAmount := big.NewInt(0).Sub(totalAmountWei, usableCredit)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", math.WeiToEth(usableCredit), math.WeiToEth(remainingAmount))
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", units.WeiToEth(usableCredit), units.WeiToEth(remainingAmount))
 			} else {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", math.WeiToEth(usableCredit))
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", units.WeiToEth(usableCredit))
 			}
 		} else {
 			color.YellowPrintln("NOTE: Your credit balance cannot currently be used to create a new megapool validator.")
@@ -268,7 +269,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	// Prompt for confirmation
 
 	if prompt.Declined(yes, "You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
-		math.RoundDown(math.WeiToEth(totalBondRequirement), 6),
+		math.RoundDown(units.WeiToEth(totalBondRequirement), 6),
 		count,
 		color.Yellow("ARE YOU SURE YOU WANT TO DO THIS?"),
 	) {
@@ -292,7 +293,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Log & return
 	fmt.Printf("The node deposit of %.6f ETH total was made successfully!\n",
-		math.RoundDown(math.WeiToEth(totalBondRequirement), 6))
+		math.RoundDown(units.WeiToEth(totalBondRequirement), 6))
 	fmt.Printf("Validator pubkeys:\n")
 	for i, pubkey := range response.ValidatorPubkeys {
 		fmt.Printf("  %d. %s\n", i+1, pubkey.Hex())

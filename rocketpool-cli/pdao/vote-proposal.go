@@ -9,10 +9,10 @@ import (
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
@@ -91,11 +91,11 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 				message,
 				payload,
 				endTime,
-				math.WeiToEth(proposal.VotingPowerRequired),
-				math.WeiToEth(proposal.VotingPowerFor),
-				math.WeiToEth(proposal.VotingPowerAgainst),
-				math.WeiToEth(proposal.VotingPowerAbstained),
-				math.WeiToEth(proposal.VotingPowerToVeto),
+				units.WeiToEth(proposal.VotingPowerRequired),
+				units.WeiToEth(proposal.VotingPowerFor),
+				units.WeiToEth(proposal.VotingPowerAgainst),
+				units.WeiToEth(proposal.VotingPowerAbstained),
+				units.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
 		selected, _ := prompt.Select("Please select a proposal to vote on:", options)
@@ -165,7 +165,7 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", math.WeiToEth(canVote.VotingPower))
+	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", units.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasLimits, rp, yes)

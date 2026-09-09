@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func rescueDissolved(minipool string, amount string, noSend bool, yes bool) error {
@@ -49,7 +50,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 		if depositAmountEth < 1 {
 			return fmt.Errorf("The minimum amount you can deposit to the Beacon deposit contract is 1 ETH.")
 		}
-		depositAmount = math.EthToWei(depositAmountEth)
+		depositAmount = units.EthToWei(depositAmountEth)
 	}
 
 	rescuableMinipools := []api.MinipoolRescueDissolvedDetails{}
@@ -57,7 +58,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 	balanceCompletedMinipools := []api.MinipoolRescueDissolvedDetails{}
 	invalidBeaconStateMinipools := []api.MinipoolRescueDissolvedDetails{}
 
-	fullDepositAmount := math.EthToWei(32)
+	fullDepositAmount := units.EthToWei(32)
 	for _, mp := range details.Details {
 		if mp.IsFinalized {
 			// Ignore minipools that are already closed
@@ -138,7 +139,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 			localRescueAmount := big.NewInt(0)
 			localRescueAmount.Sub(fullDepositAmount, minipool.BeaconBalance)
 			rescueAmounts[mi] = localRescueAmount
-			rescueAmountFloats[mi] = math.RoundDown(math.WeiToEth(localRescueAmount), 6)
+			rescueAmountFloats[mi] = math.RoundDown(units.WeiToEth(localRescueAmount), 6)
 			options[mi] = fmt.Sprintf("%s (requires %.6f more ETH)", minipool.Address.Hex(), rescueAmountFloats[mi])
 		}
 		selected, _ := prompt.Select("Please select a minipool to refund ETH from:", options)
@@ -157,7 +158,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 				selectedMinipool = &rescuableMinipools[i]
 				rescueAmount = big.NewInt(0)
 				rescueAmount.Sub(fullDepositAmount, selectedMinipool.BeaconBalance)
-				rescueAmountFloat = math.RoundDown(math.WeiToEth(rescueAmount), 6)
+				rescueAmountFloat = math.RoundDown(units.WeiToEth(rescueAmount), 6)
 				break
 			}
 		}
@@ -186,7 +187,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 			depositAmount = rescueAmount
 			depositAmountFloat = rescueAmountFloat
 		case 1:
-			depositAmount = math.EthToWei(1)
+			depositAmount = units.EthToWei(1)
 			depositAmountFloat = 1
 		}
 
@@ -202,7 +203,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 		if depositAmountEth < 1 {
 			return fmt.Errorf("The minimum amount you can deposit to the Beacon deposit contract is 1 ETH.")
 		}
-		depositAmount = math.EthToWei(depositAmountEth)
+		depositAmount = units.EthToWei(depositAmountEth)
 		depositAmountFloat = depositAmountEth
 	}
 

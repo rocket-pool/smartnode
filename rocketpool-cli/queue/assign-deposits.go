@@ -7,9 +7,9 @@ import (
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func assignDeposits(yes bool) error {
@@ -31,7 +31,7 @@ func assignDeposits(yes bool) error {
 		return err
 	}
 
-	validatorDeposit := math.EthToWei(32)
+	validatorDeposit := units.EthToWei(32)
 	if queueDetails.TotalLength == 0 {
 		fmt.Println("There are no validators waiting in the queue.")
 		return nil

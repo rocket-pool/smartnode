@@ -6,9 +6,9 @@ import (
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func proposeSettingMembersQuorum(quorumPercent float64, yes bool) error {
@@ -73,7 +73,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	defer rp.Close()
 
 	// Check if proposal can be made
-	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
+	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(units.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Submit proposal
-	response, err := rp.ProposeTNDAOSettingMembersRplBond(math.EthToWei(bondAmountEth))
+	response, err := rp.ProposeTNDAOSettingMembersRplBond(units.EthToWei(bondAmountEth))
 	if err != nil {
 		return err
 	}

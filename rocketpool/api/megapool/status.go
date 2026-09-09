@@ -9,9 +9,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse, error) {
@@ -236,7 +236,7 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 	// Store map in the api response
 	response.MegapoolValidatorMap = statusValidators
 
-	weiPerGwei := big.NewInt(int64(math.WeiPerGwei))
+	weiPerGwei := big.NewInt(int64(units.WeiPerGwei))
 	totalBeaconBalanceWei := new(big.Int).SetUint64(totalBeaconBalance)
 	totalEffectiveBeaconBalanceWei := new(big.Int).SetUint64(totalEffectiveBeaconBalance)
 	totalBeaconBalanceWei = totalBeaconBalanceWei.Mul(totalBeaconBalanceWei, weiPerGwei)

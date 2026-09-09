@@ -10,8 +10,8 @@ import (
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getActiveDAOProposals() error {
@@ -146,15 +146,15 @@ func getActiveDAOProposals() error {
 	default:
 		fmt.Println("The node has a voting delegate of", color.LightBlue(snapshotProposalsResponse.OnchainVotingDelegateFormatted), "which can represent it when voting on Rocket Pool onchain governance proposals.")
 	}
-	fmt.Printf("The node's local voting power: %.10f\n", math.WeiToEth(snapshotProposalsResponse.VotingPower))
+	fmt.Printf("The node's local voting power: %.10f\n", units.WeiToEth(snapshotProposalsResponse.VotingPower))
 
 	if snapshotProposalsResponse.IsNodeRegistered {
-		fmt.Printf("Total voting power delegated to the node: %.10f\n", math.WeiToEth(snapshotProposalsResponse.TotalDelegatedVp))
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", units.WeiToEth(snapshotProposalsResponse.TotalDelegatedVp))
 	} else {
 		fmt.Println("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.")
 	}
 
-	fmt.Printf("Network total initialized voting power: %.4f\n", math.WeiToEth(snapshotProposalsResponse.SumVotingPower))
+	fmt.Printf("Network total initialized voting power: %.4f\n", units.WeiToEth(snapshotProposalsResponse.SumVotingPower))
 	fmt.Println()
 
 	return nil

@@ -10,9 +10,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/apitoken"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Route is an HTTP endpoint bound to a path with a compile-time auth class.
@@ -60,12 +60,12 @@ func (c WriteContext) Transactor() (*TransactOpts, error) {
 	r := c.Request
 	if maxFeeStr := r.FormValue("maxFee"); maxFeeStr != "" {
 		if maxFeeGwei, parseErr := strconv.ParseFloat(maxFeeStr, 64); parseErr == nil && maxFeeGwei > 0 {
-			opts.GasFeeCap = math.GweiToWei(maxFeeGwei)
+			opts.GasFeeCap = units.GweiToWei(maxFeeGwei)
 		}
 	}
 	if maxPrioFeeStr := r.FormValue("maxPrioFee"); maxPrioFeeStr != "" {
 		if maxPrioFeeGwei, parseErr := strconv.ParseFloat(maxPrioFeeStr, 64); parseErr == nil && maxPrioFeeGwei > 0 {
-			opts.GasTipCap = math.GweiToWei(maxPrioFeeGwei)
+			opts.GasTipCap = units.GweiToWei(maxPrioFeeGwei)
 		}
 	}
 	if gasLimitStr := r.FormValue("gasLimit"); gasLimitStr != "" {

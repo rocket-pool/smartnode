@@ -18,9 +18,9 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Settings
@@ -331,10 +331,10 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 	}
 
 	// Set validator balance
-	details.Balance = math.GweiToWei(float64(validator.Balance))
+	details.Balance = units.GweiToWei(float64(validator.Balance))
 
 	// Get expected node balance
-	blockBalance := math.GweiToWei(float64(validator.Balance))
+	blockBalance := units.GweiToWei(float64(validator.Balance))
 	nodeBalance, err := mp.CalculateNodeShare(blockBalance, nil)
 	if err != nil {
 		return api.ValidatorDetails{}, err

@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -105,7 +105,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 
-		amountWei := math.EthToWeiWithDecimals(amountRaw, contract.Decimals)
+		amountWei := units.EthToWeiWithDecimals(amountRaw, contract.Decimals)
 		response.TokenName = contract.Name
 		response.TokenSymbol = contract.Symbol
 
@@ -115,7 +115,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
 		}
 
-		response.Balance = math.WeiToEthWithDecimals(balance, contract.Decimals)
+		response.Balance = units.WeiToEthWithDecimals(balance, contract.Decimals)
 		response.InsufficientBalance = (amountWei.Cmp(balance) > 0)
 
 		// Get the gas info
@@ -126,7 +126,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 		response.GasLimits = gasLimits
 	} else {
 		// Handle well-known token types
-		amountWei := math.EthToWei(amountRaw)
+		amountWei := units.EthToWei(amountRaw)
 		var balanceWei *big.Int
 		switch token {
 		case "eth":
@@ -198,7 +198,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			response.GasLimits = gasLimits
 
 		}
-		response.Balance = math.WeiToEth(balanceWei)
+		response.Balance = units.WeiToEth(balanceWei)
 	}
 
 	// Update & return response
@@ -238,7 +238,7 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 
-		amountWei := math.EthToWeiWithDecimals(amountRaw, contract.Decimals)
+		amountWei := units.EthToWeiWithDecimals(amountRaw, contract.Decimals)
 
 		tx, err := contract.Transfer(to, amountWei, opts)
 		if err != nil {
@@ -246,7 +246,7 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 		}
 		response.TxHash = tx.Hash()
 	} else {
-		amountWei := math.EthToWei(amountRaw)
+		amountWei := units.EthToWei(amountRaw)
 		// Handle token type
 		switch token {
 		case "eth":

@@ -16,8 +16,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -402,7 +402,7 @@ func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, 
 		floatValue = val
 	}
 
-	trueVal := math.EthToWei(floatValue)
+	trueVal := units.EthToWei(floatValue)
 	fmt.Println("Your value will be multiplied by 10^18 to be used in the contracts, which results in:")
 	fmt.Println()
 	fmt.Printf("\t[%s]\n", trueVal.String())

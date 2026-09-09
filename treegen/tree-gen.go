@@ -21,7 +21,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
@@ -29,6 +28,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -583,8 +583,8 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 	if err != nil {
 		return fmt.Errorf("error approximating rETH stakers' share of the Smoothing Pool: %w", err)
 	}
-	g.log.Printlnf("Total ETH in the Smoothing Pool: %s wei (%.6f ETH)", smoothingPoolBalance.String(), math.WeiToEth(smoothingPoolBalance))
-	g.log.Printlnf("rETH stakers's share:            %s wei (%.6f ETH)", rETHShare.String(), math.WeiToEth(rETHShare))
+	g.log.Printlnf("Total ETH in the Smoothing Pool: %s wei (%.6f ETH)", smoothingPoolBalance.String(), units.WeiToEth(smoothingPoolBalance))
+	g.log.Printlnf("rETH stakers's share:            %s wei (%.6f ETH)", rETHShare.String(), units.WeiToEth(rETHShare))
 
 	return nil
 }

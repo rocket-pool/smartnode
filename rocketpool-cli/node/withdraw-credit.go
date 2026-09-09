@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func nodeWithdrawCredit(amount string, yes bool) error {
@@ -46,14 +47,14 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
-		amountWei = math.EthToWei(withdrawalAmount)
+		amountWei = units.EthToWei(withdrawalAmount)
 
 	} else {
 
 		// Get maximum withdrawable amount
 		maxAmount := status.CreditBalance
 		// Prompt for maximum amount
-		if prompt.Confirm("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH on the node withdrawal address (%s).\n\n Would you like to withdraw the maximum amount of credit?", math.RoundDown(math.WeiToEth(maxAmount), 6), status.PrimaryWithdrawalAddress) {
+		if prompt.Confirm("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH on the node withdrawal address (%s).\n\n Would you like to withdraw the maximum amount of credit?", math.RoundDown(units.WeiToEth(maxAmount), 6), status.PrimaryWithdrawalAddress) {
 			amountWei = maxAmount
 		} else {
 
@@ -63,7 +64,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
-			amountWei = math.EthToWei(withdrawalAmount)
+			amountWei = units.EthToWei(withdrawalAmount)
 
 		}
 
@@ -88,7 +89,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f of credit?", math.RoundDown(math.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f of credit?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -106,7 +107,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f credit. The equivalent amount of rETH has been transferred to the node withdrawal address (%s).\n", math.RoundDown(math.WeiToEth(amountWei), 6), status.PrimaryWithdrawalAddress)
+	fmt.Printf("Successfully withdrew %.6f credit. The equivalent amount of rETH has been transferred to the node withdrawal address (%s).\n", math.RoundDown(units.WeiToEth(amountWei), 6), status.PrimaryWithdrawalAddress)
 	return nil
 
 }

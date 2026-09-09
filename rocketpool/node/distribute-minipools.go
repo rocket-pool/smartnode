@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -93,9 +93,9 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 		bc:                  bc,
 		d:                   d,
 		gasThreshold:        gas.thresholdGwei,
-		distributeThreshold: math.EthToWei(distributeThreshold),
+		distributeThreshold: units.EthToWei(distributeThreshold),
 		disabled:            disabled,
-		eight:               math.EthToWei(8),
+		eight:               units.EthToWei(8),
 		maxFee:              gas.maxFee,
 		maxPriorityFee:      gas.maxPriorityFee,
 		gasLimit:            0,
@@ -191,7 +191,7 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), math.WeiToEth(mpd.Balance))
+	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), units.WeiToEth(mpd.Balance))
 
 	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {

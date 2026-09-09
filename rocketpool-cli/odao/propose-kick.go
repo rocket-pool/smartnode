@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func proposeKick(member, fine string, yes bool) error {
@@ -74,17 +75,17 @@ func proposeKick(member, fine string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", fine, err)
 		}
-		fineAmountWei = math.EthToWei(fineAmount)
+		fineAmountWei = units.EthToWei(fineAmount)
 
 	} else {
 
 		// Prompt for custom amount
-		inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(math.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(units.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
 		fineAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", inputAmount, err)
 		}
-		fineAmountWei = math.EthToWei(fineAmount)
+		fineAmountWei = units.EthToWei(fineAmount)
 
 	}
 
@@ -99,7 +100,7 @@ func proposeKick(member, fine string, yes bool) error {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
 		}
 		if canPropose.InsufficientRplBond {
-			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(math.WeiToEth(fineAmountWei), 6), math.RoundDown(math.WeiToEth(selectedMember.RPLBondAmount), 6))
+			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(units.WeiToEth(fineAmountWei), 6), math.RoundDown(units.WeiToEth(selectedMember.RPLBondAmount), 6))
 		}
 		return nil
 	}
@@ -129,7 +130,7 @@ func proposeKick(member, fine string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a kick proposal with ID %d for node %s, with a fine of %.6f RPL.\n", response.ProposalId, selectedMember.Address.Hex(), math.RoundDown(math.WeiToEth(fineAmountWei), 6))
+	fmt.Printf("Successfully submitted a kick proposal with ID %d for node %s, with a fine of %.6f RPL.\n", response.ProposalId, selectedMember.Address.Hex(), math.RoundDown(units.WeiToEth(fineAmountWei), 6))
 	return nil
 
 }

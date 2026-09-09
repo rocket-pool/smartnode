@@ -18,12 +18,12 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getMinipoolRescueDissolvedDetailsForNode(c *cli.Command) (*api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
@@ -176,7 +176,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	details.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
 
 	// Make sure it doesn't already have 32 ETH in it
-	requiredBalance := math.EthToWei(32)
+	requiredBalance := units.EthToWei(32)
 	if details.BeaconBalance.Cmp(requiredBalance) >= 0 {
 		details.CanRescue = false
 		return details, nil
@@ -186,7 +186,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	one := math.EthToWei(1)
+	one := units.EthToWei(1)
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err

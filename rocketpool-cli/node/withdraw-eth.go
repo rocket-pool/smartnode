@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func nodeWithdrawEth(amount string, yes bool) error {
@@ -41,7 +42,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
-		amountWei = math.EthToWei(withdrawalAmount)
+		amountWei = units.EthToWei(withdrawalAmount)
 
 	} else {
 
@@ -54,7 +55,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.EthOnBehalfBalance
 		// Prompt for maximum amount
-		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(math.WeiToEth(maxAmount), 6)) {
+		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(units.WeiToEth(maxAmount), 6)) {
 			amountWei = maxAmount
 		} else {
 
@@ -64,7 +65,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
-			amountWei = math.EthToWei(withdrawalAmount)
+			amountWei = units.EthToWei(withdrawalAmount)
 
 		}
 
@@ -92,7 +93,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(math.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -110,7 +111,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(math.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
 	return nil
 
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
-	"github.com/rocket-pool/smartnode/shared/math"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Get the block number which network balances are current for
@@ -88,7 +88,7 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts, legac
 	if err := rocketNetworkBalances.Call(opts, ethUtilizationRate, "getETHUtilizationRate"); err != nil {
 		return 0, fmt.Errorf("Could not get network ETH utilization rate: %w", err)
 	}
-	return math.WeiToEth(*ethUtilizationRate), nil
+	return units.WeiToEth(*ethUtilizationRate), nil
 }
 
 // Estimate the gas of SubmitBalances

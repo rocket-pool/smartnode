@@ -6,6 +6,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getMembers() error {
@@ -38,7 +39,7 @@ func getMembers() error {
 		fmt.Printf("Node address:         %s\n", member.Address.Hex())
 		fmt.Printf("Joined at:            %s\n", cliutils.GetDateTimeString(member.JoinedTime))
 		fmt.Printf("Last proposal:        %s\n", cliutils.GetDateTimeString(member.LastProposalTime))
-		fmt.Printf("RPL bond amount:      %.6f\n", math.RoundDown(math.WeiToEth(member.RPLBondAmount), 6))
+		fmt.Printf("RPL bond amount:      %.6f\n", math.RoundDown(units.WeiToEth(member.RPLBondAmount), 6))
 		fmt.Printf("\n")
 	}
 	return nil
