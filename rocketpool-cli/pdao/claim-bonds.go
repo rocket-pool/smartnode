@@ -71,7 +71,7 @@ func claimBonds(proposal string, yes bool) error {
 		options := make([]string, len(claimableBonds)+1)
 		options[0] = "All available proposals"
 		for pi, bond := range claimableBonds {
-			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, units.WeiToEth(bond.UnlockAmount), units.WeiToEth(bond.RewardAmount))
+			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, units.NewWei(bond.UnlockAmount).ToEth().InexactFloat64(), units.NewWei(bond.RewardAmount).ToEth().InexactFloat64())
 		}
 		selected, _ := prompt.Select("Please select a proposal to unlock bonds / claim rewards from:", options)
 

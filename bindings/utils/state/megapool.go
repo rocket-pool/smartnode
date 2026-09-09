@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -26,29 +27,29 @@ type NativeMegapoolDetails struct {
 	ValidatorCount           uint32         `json:"validatorCount"`
 	ActiveValidatorCount     uint32         `json:"activeValidatorCount"`
 	LockedValidatorCount     uint32         `json:"lockedValidatorCount"`
-	NodeDebt                 *big.Int       `json:"nodeDebt"`
-	RefundValue              *big.Int       `json:"refundValue"`
+	NodeDebt                 units.Wei      `json:"nodeDebt"`
+	RefundValue              units.Wei      `json:"refundValue"`
 	DelegateExpiry           uint64         `json:"delegateExpiry"`
 	DelegateExpired          bool           `json:"delegateExpired"`
 	NodeExpressTicketCount   uint64         `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool           `json:"useLatestDelegate"`
-	AssignedValue            *big.Int       `json:"assignedValue"`
-	NodeBond                 *big.Int       `json:"nodeBond"`
-	UserCapital              *big.Int       `json:"userCapital"`
-	BondRequirement          *big.Int       `json:"bondRequirement"`
-	EthBalance               *big.Int       `json:"ethBalance"`
+	AssignedValue            units.Wei      `json:"assignedValue"`
+	NodeBond                 units.Wei      `json:"nodeBond"`
+	UserCapital              units.Wei      `json:"userCapital"`
+	BondRequirement          units.Wei      `json:"bondRequirement"`
+	EthBalance               units.Wei      `json:"ethBalance"`
 	LastDistributionTime     uint64         `json:"lastDistributionTime"`
-	PendingRewards           *big.Int       `json:"pendingRewards"`
-	NodeQueuedBond           *big.Int       `json:"nodeQueuedBond"`
+	PendingRewards           units.Wei      `json:"pendingRewards"`
+	NodeQueuedBond           units.Wei      `json:"nodeQueuedBond"`
 }
 
 // Get the normalized bond per 32 eth validator
 // This is used in treegen to calculate attestation scores
-func (m *NativeMegapoolDetails) GetMegapoolBondNormalized() *big.Int {
+func (m *NativeMegapoolDetails) GetMegapoolBondNormalized() units.Wei {
 	if m.ActiveValidatorCount == 0 {
-		return big.NewInt(0)
+		return units.Wei{}
 	}
-	return big.NewInt(0).Div(m.NodeBond, big.NewInt(int64(m.ActiveValidatorCount)))
+	return m.NodeBond.Div(units.WeiFromUint64(uint64(m.ActiveValidatorCount)))
 }
 
 // Get all megapool validators using batched multicalls
@@ -344,15 +345,6 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				return err
 			}
 			for j := i; j < m; j++ {
-				megapoolDetails[j].UserCapital = big.NewInt(0)
-				megapoolDetails[j].NodeQueuedBond = big.NewInt(0)
-				megapoolDetails[j].NodeBond = big.NewInt(0)
-				megapoolDetails[j].AssignedValue = big.NewInt(0)
-				megapoolDetails[j].PendingRewards = big.NewInt(0)
-				megapoolDetails[j].RefundValue = big.NewInt(0)
-				megapoolDetails[j].NodeDebt = big.NewInt(0)
-				megapoolDetails[j].BondRequirement = big.NewInt(0)
-				megapoolDetails[j].EthBalance = big.NewInt(0)
 				err = addMegapoolDetailsCalls(mc, megaContracts[j], &megapoolDetails[j], &lastDistributionTimes[j])
 				if err != nil {
 					return fmt.Errorf("error adding megapool details calls: %w", err)

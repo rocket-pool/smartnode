@@ -12,6 +12,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 // Config
@@ -48,14 +50,14 @@ func EstimateProposeMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, value 
 }
 
 // The maximum amount a megapool can be penalised in 50,400 consecutive slots (~7 days)
-func GetMaximumEthPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMaximumEthPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := megapoolSettingsContract.Call(opts, value, "getMaximumEthPenalty"); err != nil {
-		return nil, fmt.Errorf("error getting megapool eth penalty value: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting megapool eth penalty value: %w", err)
 	}
 	return *value, nil
 }
@@ -88,14 +90,14 @@ func EstimateProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, b
 }
 
 // The amount a node operator is fined for notifying their exit late
-func GetLateNotifyFine(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetLateNotifyFine(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := megapoolSettingsContract.Call(opts, value, "getLateNotifyFine"); err != nil {
-		return nil, fmt.Errorf("error getting megapool late notify fine value: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting megapool late notify fine value: %w", err)
 	}
 	return *value, nil
 }
@@ -108,14 +110,14 @@ func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, bl
 }
 
 // The penalty applied to a NO for having a validator dissolved
-func GetMegapoolDissolvePenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMegapoolDissolvePenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := megapoolSettingsContract.Call(opts, value, "getDissolvePenalty"); err != nil {
-		return nil, fmt.Errorf("error getting megapool dissolve penalty value: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting megapool dissolve penalty value: %w", err)
 	}
 	return *value, nil
 }
@@ -168,14 +170,14 @@ func EstimateProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, 
 }
 
 // The percentage of trusted members that must vote in favour of a penalty
-func GetPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := megapoolSettingsContract.Call(opts, value, "getPenaltyThreshold"); err != nil {
-		return nil, fmt.Errorf("error getting megapool penalty threshold value: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting megapool penalty threshold value: %w", err)
 	}
 	return *value, nil
 }

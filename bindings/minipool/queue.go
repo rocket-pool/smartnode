@@ -10,12 +10,13 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Minipool queue capacity
 type QueueCapacity struct {
-	Total     *big.Int `json:"total"`
-	Effective *big.Int `json:"effective"`
+	Total     units.Wei `json:"total"`
+	Effective units.Wei `json:"effective"`
 }
 
 // Minipools queue status details
@@ -28,8 +29,8 @@ func GetQueueCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueCapa
 
 	// Data
 	var wg errgroup.Group
-	var total *big.Int
-	var effective *big.Int
+	var total units.Wei
+	var effective units.Wei
 
 	// Load data
 	wg.Go(func() error {
@@ -70,29 +71,29 @@ func GetQueueTotalLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 }
 
 // Get the total capacity of the minipool queue
-func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	capacity := new(*big.Int)
-	if err := rocketMinipoolQueue.Call(opts, capacity, "getTotalCapacity"); err != nil {
-		return nil, fmt.Errorf("error getting minipool queue total capacity: %w", err)
+	capacity := units.Wei{}
+	if err := rocketMinipoolQueue.Call(opts, &capacity, "getTotalCapacity"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting minipool queue total capacity: %w", err)
 	}
-	return *capacity, nil
+	return capacity, nil
 }
 
 // Get the total effective capacity of the minipool queue (used in node demand calculation)
-func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	capacity := new(*big.Int)
-	if err := rocketMinipoolQueue.Call(opts, capacity, "getEffectiveCapacity"); err != nil {
-		return nil, fmt.Errorf("error getting minipool queue effective capacity: %w", err)
+	capacity := units.Wei{}
+	if err := rocketMinipoolQueue.Call(opts, &capacity, "getEffectiveCapacity"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting minipool queue effective capacity: %w", err)
 	}
-	return *capacity, nil
+	return capacity, nil
 }
 
 // Get Queue position details of a minipool

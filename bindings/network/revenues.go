@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 type RevenueSplit struct {
@@ -18,14 +20,14 @@ type RevenueSplit struct {
 }
 
 // Get the current node share
-func GetCurrentNodeShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetCurrentNodeShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkRevenues, err := getRocketNetworkRevenues(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeShare := new(*big.Int)
+	nodeShare := new(units.Wei)
 	if err := rocketNetworkRevenues.Call(opts, nodeShare, "getCurrentNodeShare"); err != nil {
-		return nil, fmt.Errorf("error getting network node share: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting network node share: %w", err)
 	}
 	return *nodeShare, nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -29,34 +30,34 @@ type NativeNodeDetails struct {
 	FeeDistributorInitialised        bool           `json:"fee_distributor_initialised"`
 	FeeDistributorAddress            common.Address `json:"fee_distributor_address"`
 	RewardNetwork                    *big.Int       `json:"reward_network"`
-	EffectiveRPLStake                *big.Int       `json:"effective_rpl_stake"`
-	MinimumRPLStake                  *big.Int       `json:"minimum_rpl_stake"`
-	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
-	EthBorrowed                      *big.Int       `json:"eth_borrowed"`
-	EthBorrowedLimit                 *big.Int       `json:"eth_borrowed_limit"`
-	MegapoolETHBorrowed              *big.Int       `json:"megapool_eth_borrowed"`
-	MinipoolETHBorrowed              *big.Int       `json:"minipool_eth_borrowed"`
-	EthBonded                        *big.Int       `json:"eth_bonded"`
-	MegapoolEthBonded                *big.Int       `json:"megapool_eth_bonded"`
-	MinipoolETHBonded                *big.Int       `json:"minipool_eth_bonded"`
-	MegapoolStakedRPL                *big.Int       `json:"megapool_staked_rpl"`
-	LegacyStakedRPL                  *big.Int       `json:"legacy_staked_rpl"`
-	UnstakingRPL                     *big.Int       `json:"unstaking_rpl"`
-	LockedRPL                        *big.Int       `json:"locked_rpl"`
+	EffectiveRPLStake                units.Wei      `json:"effective_rpl_stake"`
+	MinimumRPLStake                  units.Wei      `json:"minimum_rpl_stake"`
+	MaximumRPLStake                  units.Wei      `json:"maximum_rpl_stake"`
+	EthBorrowed                      units.Wei      `json:"eth_borrowed"`
+	EthBorrowedLimit                 units.Wei      `json:"eth_borrowed_limit"`
+	MegapoolETHBorrowed              units.Wei      `json:"megapool_eth_borrowed"`
+	MinipoolETHBorrowed              units.Wei      `json:"minipool_eth_borrowed"`
+	EthBonded                        units.Wei      `json:"eth_bonded"`
+	MegapoolEthBonded                units.Wei      `json:"megapool_eth_bonded"`
+	MinipoolETHBonded                units.Wei      `json:"minipool_eth_bonded"`
+	MegapoolStakedRPL                units.Wei      `json:"megapool_staked_rpl"`
+	LegacyStakedRPL                  units.Wei      `json:"legacy_staked_rpl"`
+	UnstakingRPL                     units.Wei      `json:"unstaking_rpl"`
+	LockedRPL                        units.Wei      `json:"locked_rpl"`
 	MinipoolCount                    *big.Int       `json:"minipool_count"`
 	MegapoolValidatorCount           uint32         `json:"megapool_validator_count"`
-	BalanceETH                       *big.Int       `json:"balance_eth"`
-	BalanceRETH                      *big.Int       `json:"balance_reth"`
-	BalanceRPL                       *big.Int       `json:"balance_rpl"`
-	BalanceOldRPL                    *big.Int       `json:"balance_old_rpl"`
-	DepositCreditBalance             *big.Int       `json:"deposit_credit_balance"`
+	BalanceETH                       units.Wei      `json:"balance_eth"`
+	BalanceRETH                      units.Wei      `json:"balance_reth"`
+	BalanceRPL                       units.Wei      `json:"balance_rpl"`
+	BalanceOldRPL                    units.Wei      `json:"balance_old_rpl"`
+	DepositCreditBalance             units.Wei      `json:"deposit_credit_balance"`
 	WithdrawalAddress                common.Address `json:"withdrawal_address"`
 	PendingWithdrawalAddress         common.Address `json:"pending_withdrawal_address"`
 	SmoothingPoolRegistrationState   bool           `json:"smoothing_pool_registration_state"`
 	SmoothingPoolRegistrationChanged *big.Int       `json:"smoothing_pool_registration_changed"`
 	NodeAddress                      common.Address `json:"node_address"`
-	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
-	DistributorBalance               *big.Int       `json:"distributor_balance"`
+	CollateralisationRatio           units.Wei      `json:"collateralisation_ratio"`
+	DistributorBalance               units.Wei      `json:"distributor_balance"`
 	MegapoolAddress                  common.Address `json:"megapool_address"`
 	MegapoolDeployed                 bool           `json:"megapool_deployed"`
 }
@@ -99,7 +100,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	}
 	details := NativeNodeDetails{
 		NodeAddress:            nodeAddress,
-		CollateralisationRatio: big.NewInt(0),
+		CollateralisationRatio: units.Wei{},
 	}
 
 	err := addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress)
@@ -143,7 +144,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 	// Fix the effective stake
 	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
-		details.EffectiveRPLStake.SetUint64(0)
+		details.EffectiveRPLStake = units.Wei{}
 	}
 
 	return details, nil
@@ -182,7 +183,6 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				address := addresses[j]
 				details := &nodeDetails[j]
 				details.NodeAddress = address
-				details.CollateralisationRatio = big.NewInt(0)
 
 				err = addNodeDetailsCalls(contracts, mc, details, address)
 				if err != nil {
@@ -226,7 +226,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 		// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 		// Fix the effective stake
 		if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
-			details.EffectiveRPLStake.SetUint64(0)
+			details.EffectiveRPLStake = units.Wei{}
 		}
 	}
 

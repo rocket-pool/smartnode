@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/color"
 	"github.com/rocket-pool/smartnode/rocketpool/feerecipient"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type NodeStatusResponse struct {
@@ -30,34 +31,34 @@ type NodeStatusResponse struct {
 	PendingRPLWithdrawalAddress              common.Address  `json:"pendingRPLWithdrawalAddress"`
 	PendingRPLWithdrawalAddressFormatted     string          `json:"pendingRPLWithdrawalAddressFormatted"`
 	IsRPLLockingAllowed                      bool            `json:"isRPLLockingAllowed"`
-	NodeRPLLocked                            *big.Int        `json:"nodeRPLLocked"`
+	NodeRPLLocked                            units.Wei       `json:"nodeRPLLocked"`
 	Registered                               bool            `json:"registered"`
 	Trusted                                  bool            `json:"trusted"`
 	TimezoneLocation                         string          `json:"timezoneLocation"`
 	AccountBalances                          tokens.Balances `json:"accountBalances"`
 	PrimaryWithdrawalBalances                tokens.Balances `json:"primaryWithdrawalBalances"`
 	RPLWithdrawalBalances                    tokens.Balances `json:"rplWithdrawalBalances"`
-	TotalRplStake                            *big.Int        `json:"totalRplStake"`
-	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
-	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
-	RplStakeThreshold                        *big.Int        `json:"rplStakeThreshold"`
-	RplStakeThresholdFraction                float64         `json:"rplStakeThresholdFraction"`
-	BorrowedCollateralRatio                  float64         `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio                    float64         `json:"bondedCollateralRatio"`
-	PendingMinimumRplStake                   *big.Int        `json:"pendingMinimumRplStake"`
-	PendingMaximumRplStake                   *big.Int        `json:"pendingMaximumRplStake"`
-	PendingBorrowedCollateralRatio           float64         `json:"pendingBorrowedCollateralRatio"`
-	PendingBondedCollateralRatio             float64         `json:"pendingBondedCollateralRatio"`
+	TotalRplStake                            units.Wei       `json:"totalRplStake"`
+	RplStakeMegapool                         units.Wei       `json:"rplStakeMegapool"`
+	RplStakeLegacy                           units.Wei       `json:"rplStakeLegacy"`
+	RplStakeThreshold                        units.Wei       `json:"rplStakeThreshold"`
+	RplStakeThresholdFraction                units.Eth       `json:"rplStakeThresholdFraction"`
+	BorrowedCollateralRatio                  units.Eth       `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio                    units.Eth       `json:"bondedCollateralRatio"`
+	PendingMinimumRplStake                   units.Wei       `json:"pendingMinimumRplStake"`
+	PendingMaximumRplStake                   units.Wei       `json:"pendingMaximumRplStake"`
+	PendingBorrowedCollateralRatio           units.Eth       `json:"pendingBorrowedCollateralRatio"`
+	PendingBondedCollateralRatio             units.Eth       `json:"pendingBondedCollateralRatio"`
 	OnchainVotingDelegate                    common.Address  `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted           string          `json:"onchainVotingDelegateFormatted"`
 	MinipoolLimit                            uint64          `json:"minipoolLimit"`
-	EthBorrowed                              *big.Int        `json:"ethBorrowed"`
-	EthBorrowedLimit                         *big.Int        `json:"ethBorrowedLimit"`
-	PendingBorrowAmount                      *big.Int        `json:"pendingBorrowAmount"`
-	CreditBalance                            *big.Int        `json:"creditBalance"`
-	CreditAndEthOnBehalfBalance              *big.Int        `json:"creditAndEthOnBehalfBalance"`
-	EthOnBehalfBalance                       *big.Int        `json:"ethOnBehalfBalance"`
-	UsableCreditAndEthOnBehalfBalance        *big.Int        `json:"usableCreditAndEthOnBehalfBalance"`
+	EthBorrowed                              units.Wei       `json:"ethBorrowed"`
+	EthBorrowedLimit                         units.Wei       `json:"ethBorrowedLimit"`
+	PendingBorrowAmount                      units.Wei       `json:"pendingBorrowAmount"`
+	CreditBalance                            units.Wei       `json:"creditBalance"`
+	CreditAndEthOnBehalfBalance              units.Wei       `json:"creditAndEthOnBehalfBalance"`
+	EthOnBehalfBalance                       units.Wei       `json:"ethOnBehalfBalance"`
+	UsableCreditAndEthOnBehalfBalance        units.Wei       `json:"usableCreditAndEthOnBehalfBalance"`
 	MinipoolCounts                           struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`
@@ -72,7 +73,7 @@ type NodeStatusResponse struct {
 	} `json:"minipoolCounts"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            feerecipient.Details      `json:"feeRecipientInfo"`
-	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
+	FeeDistributorBalance       units.Wei                 `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 	SnapshotResponse            struct {
 		Error                   string                 `json:"error"`
@@ -86,16 +87,16 @@ type NodeStatusResponse struct {
 	MegapoolDeployed             bool              `json:"megapoolDeployed"`
 	MegapoolAddress              common.Address    `json:"megapoolAddress"`
 	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
-	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
-	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
+	MegapoolNodeDebt             units.Wei         `json:"megapoolNodeDebt"`
+	MegapoolRefundValue          units.Wei         `json:"megapoolRefundValue"`
 	ExpressTicketCount           uint64            `json:"expressTicketCount"`
 	ExpressTicketsProvisioned    bool              `json:"expressTicketsProvisioned"`
-	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
+	UnstakingRPL                 units.Wei         `json:"unstakingRPL"`
 	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
 	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
 	LatestBlockTime              time.Time         `json:"latestBlockTime"`
-	UnclaimedRewards             *big.Int          `json:"unclaimedRewards"`
-	ReducedBond                  *big.Int          `json:"reducedBond"`
+	UnclaimedRewards             units.Wei         `json:"unclaimedRewards"`
+	ReducedBond                  units.Wei         `json:"reducedBond"`
 }
 
 type NodeAlert struct {
@@ -207,7 +208,7 @@ type CanSetNodeRPLWithdrawalAddressResponse struct {
 	CanSet                bool            `json:"canSet"`
 	PrimaryAddressDiffers bool            `json:"primaryAddressDiffers"`
 	RPLAddressDiffers     bool            `json:"rplAddressDiffers"`
-	RPLStake              *big.Int        `json:"rplStake"`
+	RPLStake              units.Wei       `json:"rplStake"`
 	GasLimits             gaslimit.Limits `json:"gasLimits"`
 }
 type SetNodeRPLWithdrawalAddressResponse struct {
@@ -265,7 +266,7 @@ type NodeSwapRplSwapResponse struct {
 }
 type NodeSwapRplAllowanceResponse struct {
 	APIResponse
-	Allowance *big.Int `json:"allowance"`
+	Allowance units.Wei `json:"allowance"`
 }
 
 type CanNodeStakeRplResponse struct {
@@ -289,7 +290,7 @@ type NodeStakeRplStakeResponse struct {
 }
 type NodeStakeRplAllowanceResponse struct {
 	APIResponse
-	Allowance *big.Int `json:"allowance"`
+	Allowance units.Wei `json:"allowance"`
 }
 
 type CanSetRplLockingAllowedResponse struct {
@@ -383,11 +384,11 @@ type CanNodeWithdrawRplv1_3_1Response struct {
 type CanNodeDepositsResponse struct {
 	APIResponse
 	CanDeposit                       bool                      `json:"canDeposit"`
-	CreditBalance                    *big.Int                  `json:"creditBalance"`
-	UsableCreditBalance              *big.Int                  `json:"usableCreditBalance"`
-	DepositBalance                   *big.Int                  `json:"depositBalance"`
+	CreditBalance                    units.Wei                 `json:"creditBalance"`
+	UsableCreditBalance              units.Wei                 `json:"usableCreditBalance"`
+	DepositBalance                   units.Wei                 `json:"depositBalance"`
 	CanUseCredit                     bool                      `json:"canUseCredit"`
-	NodeBalance                      *big.Int                  `json:"nodeBalance"`
+	NodeBalance                      units.Wei                 `json:"nodeBalance"`
 	InsufficientBalance              bool                      `json:"insufficientBalance"`
 	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
 	InvalidAmount                    bool                      `json:"invalidAmount"`
@@ -426,7 +427,7 @@ type CreateVacantMinipoolResponse struct {
 
 type CanNodeSendResponse struct {
 	APIResponse
-	Balance             float64         `json:"balance"`
+	Balance             units.Eth       `json:"balance"`
 	TokenName           string          `json:"name"`
 	TokenSymbol         string          `json:"symbol"`
 	CanSend             bool            `json:"canSend"`
@@ -482,18 +483,18 @@ type NodeRewardsResponse struct {
 	LastCheckpoint              time.Time     `json:"lastCheckpoint"`
 	Trusted                     bool          `json:"trusted"`
 	Registered                  bool          `json:"registered"`
-	EffectiveRplStake           float64       `json:"effectiveRplStake"`
-	TotalRplStake               float64       `json:"totalRplStake"`
-	TrustedRplBond              float64       `json:"trustedRplBond"`
-	EstimatedRewards            float64       `json:"estimatedRewards"`
-	CumulativeRplRewards        float64       `json:"cumulativeRplRewards"`
-	CumulativeEthRewards        float64       `json:"cumulativeEthRewards"`
-	EstimatedTrustedRplRewards  float64       `json:"estimatedTrustedRplRewards"`
-	CumulativeTrustedRplRewards float64       `json:"cumulativeTrustedRplRewards"`
-	UnclaimedRplRewards         float64       `json:"unclaimedRplRewards"`
-	UnclaimedEthRewards         float64       `json:"unclaimedEthRewards"`
-	UnclaimedTrustedRplRewards  float64       `json:"unclaimedTrustedRplRewards"`
-	BeaconRewards               float64       `json:"beaconRewards"`
+	EffectiveRplStake           units.Eth     `json:"effectiveRplStake"`
+	TotalRplStake               units.Eth     `json:"totalRplStake"`
+	TrustedRplBond              units.Eth     `json:"trustedRplBond"`
+	EstimatedRewards            units.Eth     `json:"estimatedRewards"`
+	CumulativeRplRewards        units.Eth     `json:"cumulativeRplRewards"`
+	CumulativeEthRewards        units.Eth     `json:"cumulativeEthRewards"`
+	EstimatedTrustedRplRewards  units.Eth     `json:"estimatedTrustedRplRewards"`
+	CumulativeTrustedRplRewards units.Eth     `json:"cumulativeTrustedRplRewards"`
+	UnclaimedRplRewards         units.Eth     `json:"unclaimedRplRewards"`
+	UnclaimedEthRewards         units.Eth     `json:"unclaimedEthRewards"`
+	UnclaimedTrustedRplRewards  units.Eth     `json:"unclaimedTrustedRplRewards"`
+	BeaconRewards               units.Eth     `json:"beaconRewards"`
 	TxHash                      common.Hash   `json:"txHash"`
 }
 
@@ -526,8 +527,8 @@ type NodeInitializeFeeDistributorResponse struct {
 }
 type NodeCanDistributeResponse struct {
 	APIResponse
-	Balance   *big.Int        `json:"balance"`
-	NodeShare float64         `json:"nodeShare"`
+	Balance   units.Wei       `json:"balance"`
+	NodeShare units.Eth       `json:"nodeShare"`
 	GasLimits gaslimit.Limits `json:"gasLimits"`
 }
 type NodeDistributeResponse struct {
@@ -541,15 +542,15 @@ type NodeGetRewardsInfoResponse struct {
 	ClaimedIntervals         []uint64               `json:"claimedIntervals"`
 	UnclaimedIntervals       []rewards.IntervalInfo `json:"unclaimedIntervals"`
 	InvalidIntervals         []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake                 *big.Int               `json:"rplStake"`
-	RplPrice                 *big.Int               `json:"rplPrice"`
+	RplStake                 units.Wei              `json:"rplStake"`
+	RplPrice                 units.Wei              `json:"rplPrice"`
 	ActiveMinipools          int                    `json:"activeMinipools"`
 	ActiveMegapoolValidators int                    `json:"activeMegapoolValidators"`
-	EthBorrowed              *big.Int               `json:"ethBorrowed"`
-	EthBorrowLimit           *big.Int               `json:"ethBorrowLimit"`
-	PendingBorrowAmount      *big.Int               `json:"pendingBorrowAmount"`
-	BorrowedCollateralRatio  float64                `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio    float64                `json:"bondedCollateralRatio"`
+	EthBorrowed              units.Wei              `json:"ethBorrowed"`
+	EthBorrowLimit           units.Wei              `json:"ethBorrowLimit"`
+	PendingBorrowAmount      units.Wei              `json:"pendingBorrowAmount"`
+	BorrowedCollateralRatio  units.Eth              `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio    units.Eth              `json:"bondedCollateralRatio"`
 }
 
 type CanNodeClaimRewardsResponse struct {
@@ -632,20 +633,20 @@ type SnapshotVotedProposals struct {
 }
 type SmoothingRewardsResponse struct {
 	APIResponse
-	EthBalance *big.Int `json:"eth_balance"`
+	EthBalance units.Wei `json:"eth_balance"`
 }
 
 type CheckCollateralResponse struct {
 	APIResponse
-	EthBorrowed            *big.Int `json:"ethBorrowed"`
-	EthBorrowedLimit       *big.Int `json:"ethBorrowedLimit"`
-	PendingBorrowAmount    *big.Int `json:"pendingBorrowAmount"`
-	InsufficientCollateral bool     `json:"insufficientCollateral"`
+	EthBorrowed            units.Wei `json:"ethBorrowed"`
+	EthBorrowedLimit       units.Wei `json:"ethBorrowedLimit"`
+	PendingBorrowAmount    units.Wei `json:"pendingBorrowAmount"`
+	InsufficientCollateral bool      `json:"insufficientCollateral"`
 }
 
 type NodeEthBalanceResponse struct {
 	APIResponse
-	Balance *big.Int `json:"balance"`
+	Balance units.Wei `json:"balance"`
 }
 
 type NodeAlertsResponse struct {
@@ -660,7 +661,7 @@ type GetExpressTicketCountResponse struct {
 
 type GetBondRequirementResponse struct {
 	APIResponse
-	BondRequirement *big.Int `json:"bondRequirement"`
+	BondRequirement units.Wei `json:"bondRequirement"`
 }
 
 type GetExpressTicketsProvisionedResponse struct {

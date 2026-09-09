@@ -20,52 +20,52 @@ const (
 )
 
 type MegapoolRevenueSplitSettings struct {
-	NodeOperatorCommissionShare *big.Int `json:"node_operator_commission_share"`
-	NodeOperatorCommissionAdder *big.Int `json:"node_operator_commission_adder"`
-	VoterCommissionShare        *big.Int `json:"voter_commission_share"`
-	PdaoCommissionShare         *big.Int `json:"pdao_commission_share"`
+	NodeOperatorCommissionShare units.Wei `json:"node_operator_commission_share"`
+	NodeOperatorCommissionAdder units.Wei `json:"node_operator_commission_adder"`
+	VoterCommissionShare        units.Wei `json:"voter_commission_share"`
+	PdaoCommissionShare         units.Wei `json:"pdao_commission_share"`
 }
 type MegapoolRevenueSplitTimeWeightedAverages struct {
-	NodeShare  *big.Int `json:"node_share"`
-	VoterShare *big.Int `json:"voter_share"`
-	PdaoShare  *big.Int `json:"pdao_share"`
+	NodeShare  units.Wei `json:"node_share"`
+	VoterShare units.Wei `json:"voter_share"`
+	PdaoShare  units.Wei `json:"pdao_share"`
 }
 
 type NetworkDetails struct {
 	// Redstone
-	RplPrice                          *big.Int               `json:"rpl_price"`
-	MinCollateralFraction             *big.Int               `json:"min_collateral_fraction"`
-	MaxCollateralFraction             *big.Int               `json:"max_collateral_fraction"`
-	MinimumLegacyRplStakeFraction     *big.Int               `json:"minimum_legacy_rpl_stake_fraction"`
+	RplPrice                          units.Wei              `json:"rpl_price"`
+	MinCollateralFraction             units.Wei              `json:"min_collateral_fraction"`
+	MaxCollateralFraction             units.Wei              `json:"max_collateral_fraction"`
+	MinimumLegacyRplStakeFraction     units.Wei              `json:"minimum_legacy_rpl_stake_fraction"`
 	IntervalDuration                  time.Duration          `json:"interval_duration"`
 	IntervalStart                     time.Time              `json:"interval_start"`
-	NodeOperatorRewardsPercent        *big.Int               `json:"node_operator_rewards_percent"`
-	TrustedNodeOperatorRewardsPercent *big.Int               `json:"trusted_node_operator_rewards_percent"`
-	ProtocolDaoRewardsPercent         *big.Int               `json:"protocol_dao_rewards_percent"`
-	PendingRPLRewards                 *big.Int               `json:"pending_rpl_rewards"`
+	NodeOperatorRewardsPercent        units.Wei              `json:"node_operator_rewards_percent"`
+	TrustedNodeOperatorRewardsPercent units.Wei              `json:"trusted_node_operator_rewards_percent"`
+	ProtocolDaoRewardsPercent         units.Wei              `json:"protocol_dao_rewards_percent"`
+	PendingRPLRewards                 units.Wei              `json:"pending_rpl_rewards"`
 	RewardIndex                       uint64                 `json:"reward_index"`
 	ScrubPeriod                       time.Duration          `json:"scrub_period"`
 	SmoothingPoolAddress              common.Address         `json:"smoothing_pool_address"`
-	DepositPoolBalance                *big.Int               `json:"deposit_pool_balance"`
-	DepositPoolExcess                 *big.Int               `json:"deposit_pool_excess"`
+	DepositPoolBalance                units.Wei              `json:"deposit_pool_balance"`
+	DepositPoolExcess                 units.Wei              `json:"deposit_pool_excess"`
 	QueueCapacity                     minipool.QueueCapacity `json:"queue_capacity"`
 	QueueLength                       *big.Int               `json:"queue_length"`
-	RPLInflationIntervalRate          *big.Int               `json:"rpl_inflation_interval_rate"`
-	RPLTotalSupply                    *big.Int               `json:"rpl_total_supply"`
+	RPLInflationIntervalRate          units.Wei              `json:"rpl_inflation_interval_rate"`
+	RPLTotalSupply                    units.Wei              `json:"rpl_total_supply"`
 	PricesBlock                       uint64                 `json:"prices_block"`
 	LatestReportablePricesBlock       uint64                 `json:"latest_reportable_prices_block"`
-	ETHUtilizationRate                float64                `json:"eth_utilization_rate"`
-	StakingETHBalance                 *big.Int               `json:"staking_eth_balance"`
-	RETHExchangeRate                  float64                `json:"reth_exchange_rate"`
-	TotalETHBalance                   *big.Int               `json:"total_eth_balance"`
-	RETHBalance                       *big.Int               `json:"reth_balance"`
-	TotalRETHSupply                   *big.Int               `json:"total_reth_supply"`
-	TotalRPLStake                     *big.Int               `json:"total_rpl_stake"`
-	TotalNetworkMegapoolStakedRpl     *big.Int               `json:"total_network_megapool_staked_rpl"`
-	TotalLegacyStakedRpl              *big.Int               `json:"total_legacy_staked_rpl"`
-	SmoothingPoolBalance              *big.Int               `json:"smoothing_pool_balance"`
-	PendingVoterShare                 *big.Int               `json:"pending_voter_share"`
-	NodeFee                           float64                `json:"node_fee"`
+	ETHUtilizationRate                units.Eth              `json:"eth_utilization_rate"`
+	StakingETHBalance                 units.Wei              `json:"staking_eth_balance"`
+	RETHExchangeRate                  units.Eth              `json:"reth_exchange_rate"`
+	TotalETHBalance                   units.Wei              `json:"total_eth_balance"`
+	RETHBalance                       units.Wei              `json:"reth_balance"`
+	TotalRETHSupply                   units.Wei              `json:"total_reth_supply"`
+	TotalRPLStake                     units.Wei              `json:"total_rpl_stake"`
+	TotalNetworkMegapoolStakedRpl     units.Wei              `json:"total_network_megapool_staked_rpl"`
+	TotalLegacyStakedRpl              units.Wei              `json:"total_legacy_staked_rpl"`
+	SmoothingPoolBalance              units.Wei              `json:"smoothing_pool_balance"`
+	PendingVoterShare                 units.Wei              `json:"pending_voter_share"`
+	NodeFee                           units.Eth              `json:"node_fee"`
 	BalancesBlock                     uint64                 `json:"balances_block"`
 	LatestReportableBalancesBlock     uint64                 `json:"latest_reportable_balances_block"`
 	SubmitBalancesEnabled             bool                   `json:"submit_balances_enabled"`
@@ -76,7 +76,7 @@ type NetworkDetails struct {
 	PromotionScrubPeriod      time.Duration `json:"promotion_scrub_period"`
 	BondReductionWindowStart  time.Duration `json:"bond_reduction_window_start"`
 	BondReductionWindowLength time.Duration `json:"bond_reduction_window_length"`
-	DepositPoolUserBalance    *big.Int      `json:"deposit_pool_user_balance"`
+	DepositPoolUserBalance    units.Wei     `json:"deposit_pool_user_balance"`
 
 	// Houston
 	PricesSubmissionFrequency   uint64 `json:"prices_submission_frequency"`
@@ -85,8 +85,8 @@ type NetworkDetails struct {
 	// Saturn
 	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
 	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
-	PendingVoterShareEth                     *big.Int `json:"pending_voter_share_eth"`
-	ReducedBond                              *big.Int `json:"reduced_bond"`
+	PendingVoterShareEth                     units.Wei `json:"pending_voter_share_eth"`
+	ReducedBond                              units.Wei `json:"reduced_bond"`
 }
 
 // Create a snapshot of all of the network's details
@@ -102,14 +102,14 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	var intervalStart *big.Int
 	var intervalDuration *big.Int
 	var scrubPeriodSeconds *big.Int
-	var totalQueueCapacity *big.Int
-	var effectiveQueueCapacity *big.Int
+	var totalQueueCapacity units.Wei
+	var effectiveQueueCapacity units.Wei
 	var totalQueueLength *big.Int
 	var pricesBlock *big.Int
 	var pricesSubmissionFrequency *big.Int
-	var ethUtilizationRate *big.Int
-	var rETHExchangeRate *big.Int
-	var nodeFee *big.Int
+	var ethUtilizationRate units.Wei
+	var rETHExchangeRate units.Wei
+	var nodeFee units.Wei
 	var balancesBlock *big.Int
 	var balancesSubmissionFrequency *big.Int
 	var minipoolLaunchTimeout *big.Int
@@ -203,9 +203,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 
 	details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
 	details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
-	details.ETHUtilizationRate = units.WeiToEth(ethUtilizationRate)
-	details.RETHExchangeRate = units.WeiToEth(rETHExchangeRate)
-	details.NodeFee = units.WeiToEth(nodeFee)
+	details.ETHUtilizationRate = ethUtilizationRate.ToEth()
+	details.RETHExchangeRate = rETHExchangeRate.ToEth()
+	details.NodeFee = nodeFee.ToEth()
 	details.BalancesBlock = balancesBlock.Uint64()
 	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
 	details.PromotionScrubPeriod = convertToDuration(promotionScrubPeriodSeconds)
@@ -228,7 +228,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkContracts) (*big.Int, error) {
+func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkContracts) (units.Wei, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -236,21 +236,12 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	// Get the list of node addresses
 	addresses, err := getNodeAddressesFast(rp, contracts, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node addresses: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node addresses: %w", err)
 	}
 	count := len(addresses)
-	minimumStakes := make([]*big.Int, count)
-	for i := range minimumStakes {
-		minimumStakes[i] = big.NewInt(0)
-	}
-	legacyStakes := make([]*big.Int, count)
-	for i := range legacyStakes {
-		legacyStakes[i] = big.NewInt(0)
-	}
-	megapoolStakes := make([]*big.Int, count)
-	for i := range megapoolStakes {
-		megapoolStakes[i] = big.NewInt(0)
-	}
+	minimumStakes := make([]units.Wei, count)
+	legacyStakes := make([]units.Wei, count)
+	megapoolStakes := make([]units.Wei, count)
 	// Sync
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
@@ -290,16 +281,16 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting effective stakes for all nodes: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting effective stakes for all nodes: %w", err)
 	}
 
-	totalEffectiveStake := big.NewInt(0)
+	totalEffectiveStake := units.Wei{}
 	for i, legacyStake := range legacyStakes {
 		minimumStake := minimumStakes[i]
 		if legacyStake.Cmp(minimumStake) >= 0 {
-			totalEffectiveStake.Add(totalEffectiveStake, legacyStake)
+			totalEffectiveStake = totalEffectiveStake.Add(legacyStake)
 		}
-		totalEffectiveStake.Add(totalEffectiveStake, megapoolStakes[i])
+		totalEffectiveStake = totalEffectiveStake.Add(megapoolStakes[i])
 	}
 
 	return totalEffectiveStake, nil

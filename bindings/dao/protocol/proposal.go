@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Settings
@@ -41,22 +42,22 @@ type ProtocolDaoProposalDetails struct {
 	Phase1EndTime        time.Time                      `json:"phase1EndTime"`
 	Phase2EndTime        time.Time                      `json:"phase2EndTime"`
 	ExpiryTime           time.Time                      `json:"expiryTime"`
-	VotingPowerRequired  *big.Int                       `json:"votingPowerRequired"`
-	VotingPowerFor       *big.Int                       `json:"votingPowerFor"`
-	VotingPowerAgainst   *big.Int                       `json:"votingPowerAgainst"`
-	VotingPowerAbstained *big.Int                       `json:"votingPowerAbstained"`
-	VotingPowerToVeto    *big.Int                       `json:"votingPowerVeto"`
+	VotingPowerRequired  units.Wei                      `json:"votingPowerRequired"`
+	VotingPowerFor       units.Wei                      `json:"votingPowerFor"`
+	VotingPowerAgainst   units.Wei                      `json:"votingPowerAgainst"`
+	VotingPowerAbstained units.Wei                      `json:"votingPowerAbstained"`
+	VotingPowerToVeto    units.Wei                      `json:"votingPowerVeto"`
 	IsDestroyed          bool                           `json:"isDestroyed"`
 	IsFinalized          bool                           `json:"isFinalized"`
 	IsExecuted           bool                           `json:"isExecuted"`
 	IsVetoed             bool                           `json:"isVetoed"`
-	VetoQuorum           *big.Int                       `json:"vetoQuorum"`
+	VetoQuorum           units.Wei                      `json:"vetoQuorum"`
 	Payload              []byte                         `json:"payload"`
 	PayloadStr           string                         `json:"payloadStr"`
 	MultiSettings        []DecodedProposalSetting       `json:"multiSettings,omitempty"`
 	State                types.ProtocolDaoProposalState `json:"state"`
-	ProposalBond         *big.Int                       `json:"proposalBond"`
-	ChallengeBond        *big.Int                       `json:"challengeBond"`
+	ProposalBond         units.Wei                      `json:"proposalBond"`
+	ChallengeBond        units.Wei                      `json:"challengeBond"`
 	DefeatIndex          uint64                         `json:"defeatIndex"`
 }
 
@@ -258,14 +259,14 @@ func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 }
 
 // Get the veto quorum required to veto a proposal
-func GetProposalVetoQuorum(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVetoQuorum(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposalVetoQuorum", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting proposal veto quorum for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting proposal veto quorum for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
@@ -375,66 +376,66 @@ func GetProposalCreationTime(rp *rocketpool.RocketPool, proposalId uint64, opts 
 }
 
 // Get the cumulative amount of voting power voting in favor of this proposal
-func GetProposalVotingPowerFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVotingPowerFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerFor", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting total 'for' voting power for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting total 'for' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
 
 // Get the cumulative amount of voting power voting against this proposal
-func GetProposalVotingPowerAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVotingPowerAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerAgainst", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting total 'against' voting power for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting total 'against' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
 
 // Get the cumulative amount of voting power that vetoed this proposal
-func GetProposalVotingPowerVetoed(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVotingPowerVetoed(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerVeto", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting total 'veto' voting power for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting total 'veto' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
 
 // Get the cumulative amount of voting power that abstained from this proposal
-func GetProposalVotingPowerAbstained(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVotingPowerAbstained(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerAbstained", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting total 'abstained' voting power for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting total 'abstained' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
 
 // Get the cumulative amount of voting power that must vote on this proposal for it to be eligible for execution if it succeeds
-func GetProposalVotingPowerRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVotingPowerRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerRequired", big.NewInt(0).SetUint64(proposalId)); err != nil {
-		return nil, fmt.Errorf("error getting required voting power for proposal %d: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting required voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
 }
@@ -599,7 +600,7 @@ func submitProposal(rp *rocketpool.RocketPool, message string, payload []byte, b
 }
 
 // Estimate the gas of VoteOnProposal
-func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower units.Wei, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -608,7 +609,7 @@ func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, vot
 }
 
 // Vote on a submitted proposal
-func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
+func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower units.Wei, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
 		return common.Hash{}, err

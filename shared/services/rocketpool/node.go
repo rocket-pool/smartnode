@@ -14,43 +14,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func zeroIfNil(in **big.Int) {
-	if *in == nil {
-		*in = big.NewInt(0)
-	}
-}
-
 // Get node status
 func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
-	response, err := c.callAPI[api.NodeStatusResponse]("GET", "/api/node/status", nil, "Could not get node status")
-	if err != nil {
-		return response, err
-	}
-	zeroIfNil(&response.TotalRplStake)
-	zeroIfNil(&response.RplStakeMegapool)
-	zeroIfNil(&response.RplStakeLegacy)
-	zeroIfNil(&response.RplStakeThreshold)
-	zeroIfNil(&response.AccountBalances.ETH)
-	zeroIfNil(&response.AccountBalances.RPL)
-	zeroIfNil(&response.AccountBalances.RETH)
-	zeroIfNil(&response.AccountBalances.FixedSupplyRPL)
-	zeroIfNil(&response.PrimaryWithdrawalBalances.ETH)
-	zeroIfNil(&response.PrimaryWithdrawalBalances.RPL)
-	zeroIfNil(&response.PrimaryWithdrawalBalances.RETH)
-	zeroIfNil(&response.PrimaryWithdrawalBalances.FixedSupplyRPL)
-	zeroIfNil(&response.NodeRPLLocked)
-	zeroIfNil(&response.RPLWithdrawalBalances.ETH)
-	zeroIfNil(&response.RPLWithdrawalBalances.RPL)
-	zeroIfNil(&response.RPLWithdrawalBalances.RETH)
-	zeroIfNil(&response.RPLWithdrawalBalances.FixedSupplyRPL)
-	zeroIfNil(&response.PendingMinimumRplStake)
-	zeroIfNil(&response.PendingMaximumRplStake)
-	zeroIfNil(&response.EthBorrowed)
-	zeroIfNil(&response.EthBorrowedLimit)
-	zeroIfNil(&response.PendingBorrowAmount)
-	zeroIfNil(&response.CreditBalance)
-	zeroIfNil(&response.FeeDistributorBalance)
-	return response, nil
+	return c.callAPI[api.NodeStatusResponse]("GET", "/api/node/status", nil, "Could not get node status")
 }
 
 // Get active alerts from Alertmanager.

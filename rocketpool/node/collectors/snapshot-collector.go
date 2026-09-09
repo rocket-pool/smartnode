@@ -18,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Time to wait to make new Snapshot API calls
@@ -280,7 +279,7 @@ func getVotingPower(propMgr *proposals.ProposalManager, blockNumber uint32, addr
 		return 0, fmt.Errorf("error getting voting power: %w", err)
 	}
 
-	return units.WeiToEth(totalDelegatedVP), nil
+	return totalDelegatedVP.ToEth().InexactFloat64(), nil
 }
 
 func (collector *SnapshotCollector) collectVotes(votedProposals *api.SnapshotVotedProposals) {

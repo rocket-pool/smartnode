@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type SlotProof struct {
@@ -60,10 +61,10 @@ type Withdrawal struct {
 }
 
 type RewardSplit struct {
-	NodeRewards        *big.Int `abi:"nodeRewards"`
-	VoterRewards       *big.Int `abi:"voterRewards"`
-	ProtocolDAORewards *big.Int `abi:"protocolDAORewards"`
-	RethRewards        *big.Int `abi:"rethRewards"`
+	NodeRewards        units.Wei `abi:"nodeRewards"`
+	VoterRewards       units.Wei `abi:"voterRewards"`
+	ProtocolDAORewards units.Wei `abi:"protocolDAORewards"`
+	RethRewards        units.Wei `abi:"rethRewards"`
 }
 
 type MegapoolV1 interface {
@@ -312,50 +313,50 @@ func (mp *megapoolV1) GetLastDistributionTime(opts *bind.CallOpts) (uint64, erro
 	return (*lastDistributionTime).Uint64(), nil
 }
 
-func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (*big.Int, error) {
-	assignedValue := new(*big.Int)
+func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (units.Wei, error) {
+	assignedValue := new(units.Wei)
 	if err := mp.Contract.Call(opts, assignedValue, "getAssignedValue"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s assigned value: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s assigned value: %w", mp.Address.Hex(), err)
 	}
 	return *assignedValue, nil
 }
 
-func (mp *megapoolV1) GetDebt(opts *bind.CallOpts) (*big.Int, error) {
-	debt := new(*big.Int)
+func (mp *megapoolV1) GetDebt(opts *bind.CallOpts) (units.Wei, error) {
+	debt := new(units.Wei)
 	if err := mp.Contract.Call(opts, debt, "getDebt"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
 	}
 	return *debt, nil
 }
 
-func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (*big.Int, error) {
-	refundValue := new(*big.Int)
+func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (units.Wei, error) {
+	refundValue := new(units.Wei)
 	if err := mp.Contract.Call(opts, refundValue, "getRefundValue"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s refund value: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s refund value: %w", mp.Address.Hex(), err)
 	}
 	return *refundValue, nil
 }
 
-func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (*big.Int, error) {
-	nodeBond := new(*big.Int)
+func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (units.Wei, error) {
+	nodeBond := new(units.Wei)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeBond"); err != nil {
-		return nil, fmt.Errorf("error getting the node bond %s: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting the node bond %s: %w", mp.Address.Hex(), err)
 	}
 	return *nodeBond, nil
 }
 
-func (mp *megapoolV1) GetNodeQueuedBond(opts *bind.CallOpts) (*big.Int, error) {
-	nodeBond := new(*big.Int)
+func (mp *megapoolV1) GetNodeQueuedBond(opts *bind.CallOpts) (units.Wei, error) {
+	nodeBond := new(units.Wei)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeQueuedBond"); err != nil {
-		return nil, fmt.Errorf("error getting the node queued bond %s: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting the node queued bond %s: %w", mp.Address.Hex(), err)
 	}
 	return *nodeBond, nil
 }
 
-func (mp *megapoolV1) GetUserCapital(opts *bind.CallOpts) (*big.Int, error) {
-	userCapital := new(*big.Int)
+func (mp *megapoolV1) GetUserCapital(opts *bind.CallOpts) (units.Wei, error) {
+	userCapital := new(units.Wei)
 	if err := mp.Contract.Call(opts, userCapital, "getUserCapital"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s user capital: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s user capital: %w", mp.Address.Hex(), err)
 	}
 	return *userCapital, nil
 }
@@ -368,7 +369,7 @@ func (mp *megapoolV1) CalculatePendingRewards(opts *bind.CallOpts) (RewardSplit,
 	return *rewardSplits, nil
 }
 
-func (mp *megapoolV1) CalculateRewards(amount *big.Int, opts *bind.CallOpts) (RewardSplit, error) {
+func (mp *megapoolV1) CalculateRewards(amount units.Wei, opts *bind.CallOpts) (RewardSplit, error) {
 	rewardSplits := new(RewardSplit)
 	if err := mp.Contract.Call(opts, rewardSplits, "calculateRewards", amount); err != nil {
 		return RewardSplit{}, fmt.Errorf("error calculating the rewards for amount %s: %w", amount, err)
@@ -376,10 +377,10 @@ func (mp *megapoolV1) CalculateRewards(amount *big.Int, opts *bind.CallOpts) (Re
 	return *rewardSplits, nil
 }
 
-func (mp *megapoolV1) GetPendingRewards(opts *bind.CallOpts) (*big.Int, error) {
-	pendingRewards := new(*big.Int)
+func (mp *megapoolV1) GetPendingRewards(opts *bind.CallOpts) (units.Wei, error) {
+	pendingRewards := new(units.Wei)
 	if err := mp.Contract.Call(opts, pendingRewards, "getPendingRewards"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s pending rewards: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s pending rewards: %w", mp.Address.Hex(), err)
 	}
 	return *pendingRewards, nil
 }
@@ -463,12 +464,12 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas required to reduce a megapool bond
-func (mp *megapoolV1) EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func (mp *megapoolV1) EstimateReduceBondGas(amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "reduceBond", amount)
 }
 
 // If the megapool is overbonded, reduce the bond by the specified amount
-func (mp *megapoolV1) ReduceBond(amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *megapoolV1) ReduceBond(amount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "reduceBond", amount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error reducing the megapool bond %s: %w", mp.Address.Hex(), err)
@@ -500,10 +501,10 @@ func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash
 }
 
 // Get the bond amount required for the megapool's next validator
-func (mp *megapoolV1) GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.Int, error) {
-	bondRequirement := new(*big.Int)
+func (mp *megapoolV1) GetNewValidatorBondRequirement(opts *bind.CallOpts) (units.Wei, error) {
+	bondRequirement := new(units.Wei)
 	if err := mp.Contract.Call(opts, bondRequirement, "getNewValidatorBondRequirement"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s new validator bond requirement: %w", mp.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting megapool %s new validator bond requirement: %w", mp.Address.Hex(), err)
 	}
 	return *bondRequirement, nil
 }

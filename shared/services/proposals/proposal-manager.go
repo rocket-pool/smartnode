@@ -2,7 +2,6 @@ package proposals
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type ProposalManager struct {
@@ -188,35 +188,35 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snap
 
 // Get the artifacts required for voting on a proposal: the node's total delegated voting power, the node index, and a Merkle proof for the node's
 // corresponding leaf index in the network tree
-func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress common.Address) (*big.Int, uint64, []types.VotingTreeNode, error) {
+func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress common.Address) (units.Wei, uint64, []types.VotingTreeNode, error) {
 	// Get the voting info snapshot
 	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
 	if err != nil {
-		return nil, 0, nil, err
+		return units.Wei{}, 0, nil, err
 	}
 
 	// Get the node nodeIndex
 	nodeIndex, err := getRPNodeIndexFromSnapshot(snapshot, nodeAddress)
 	if err != nil {
-		return nil, 0, nil, err
+		return units.Wei{}, 0, nil, err
 	}
 
 	// Get the networkTree - used to build the merkle proof needed to vote
 	networkTree, err := m.GetNetworkTree(blockNumber, snapshot)
 	if err != nil {
-		return nil, 0, nil, err
+		return units.Wei{}, 0, nil, err
 	}
 
 	// Get the networkTree - used to fetch the totalDelegatedVp for the node
 	nodeTree, err := m.GetNodeTree(blockNumber, nodeIndex, snapshot)
 	if err != nil {
-		return nil, 0, nil, err
+		return units.Wei{}, 0, nil, err
 	}
 
 	// Get the artifacts
-	totalDelegatedVp := nodeTree.Nodes[0].Sum
-	if totalDelegatedVp == nil {
-		totalDelegatedVp = big.NewInt(0)
+	var totalDelegatedVp units.Wei
+	if nodeTree.Nodes[0].Sum != nil {
+		totalDelegatedVp = units.NewWei(nodeTree.Nodes[0].Sum)
 	}
 	treeIndex := getTreeNodeIndexFromRPNodeIndex(snapshot, nodeIndex)
 	proofPtrs := networkTree.generateMerkleProof(treeIndex)

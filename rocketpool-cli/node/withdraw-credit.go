@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
@@ -28,13 +27,13 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 		return err
 	}
 
-	if status.CreditBalance.Cmp(big.NewInt(0)) == 0 {
+	if status.CreditBalance.IsZero() {
 		fmt.Println("You have no credit to withdraw.")
 		return nil
 	}
 
 	// Get withdrawal amount
-	var amountWei *big.Int
+	var amountWei units.Wei
 	if amount == "max" {
 
 		// Set amount to maximum withdrawable amount
@@ -47,14 +46,14 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
-		amountWei = units.EthToWei(withdrawalAmount)
+		amountWei = units.EthFromFloat(withdrawalAmount).ToWei()
 
 	} else {
 
 		// Get maximum withdrawable amount
 		maxAmount := status.CreditBalance
 		// Prompt for maximum amount
-		if prompt.Confirm("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH on the node withdrawal address (%s).\n\n Would you like to withdraw the maximum amount of credit?", math.RoundDown(units.WeiToEth(maxAmount), 6), status.PrimaryWithdrawalAddress) {
+		if prompt.Confirm("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH on the node withdrawal address (%s).\n\n Would you like to withdraw the maximum amount of credit?", math.RoundDown(maxAmount.ToEth().InexactFloat64(), 6), status.PrimaryWithdrawalAddress) {
 			amountWei = maxAmount
 		} else {
 
@@ -64,14 +63,14 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
-			amountWei = units.EthToWei(withdrawalAmount)
+			amountWei = units.EthFromFloat(withdrawalAmount).ToWei()
 
 		}
 
 	}
 
 	// Check credit can be withdrawn
-	canWithdraw, err := rp.CanNodeWithdrawCredit(amountWei)
+	canWithdraw, err := rp.CanNodeWithdrawCredit(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -89,13 +88,13 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f of credit?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f of credit?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Withdraw ETH
-	response, err := rp.NodeWithdrawCredit(amountWei)
+	response, err := rp.NodeWithdrawCredit(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -107,7 +106,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f credit. The equivalent amount of rETH has been transferred to the node withdrawal address (%s).\n", math.RoundDown(units.WeiToEth(amountWei), 6), status.PrimaryWithdrawalAddress)
+	fmt.Printf("Successfully withdrew %.6f credit. The equivalent amount of rETH has been transferred to the node withdrawal address (%s).\n", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6), status.PrimaryWithdrawalAddress)
 	return nil
 
 }

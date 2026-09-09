@@ -2,7 +2,6 @@ package rocketpool
 
 import (
 	"fmt"
-	"math/big"
 	"net/url"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -10,17 +9,7 @@ import (
 
 // Get queue status
 func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
-	response, err := c.callAPI[api.QueueStatusResponse]("GET", "/api/queue/status", nil, "Could not get queue status")
-	if err != nil {
-		return response, err
-	}
-	if response.DepositPoolBalance == nil {
-		response.DepositPoolBalance = big.NewInt(0)
-	}
-	if response.MinipoolQueueCapacity == nil {
-		response.MinipoolQueueCapacity = big.NewInt(0)
-	}
-	return response, nil
+	return c.callAPI[api.QueueStatusResponse]("GET", "/api/queue/status", nil, "Could not get queue status")
 }
 
 // Check whether the queue can be processed

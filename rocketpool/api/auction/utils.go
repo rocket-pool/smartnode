@@ -2,7 +2,6 @@ package auction
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
@@ -67,9 +66,9 @@ func getSufficientRemainingRPLForLot(rp *rocketpool.RocketPool) (bool, error) {
 
 	// Data
 	var wg errgroup.Group
-	var remainingRplBalance *big.Int
-	var lotMinimumEthValue *big.Int
-	var rplPrice *big.Int
+	var remainingRplBalance units.Wei
+	var lotMinimumEthValue units.Wei
+	var rplPrice units.Wei
 
 	// Get data
 	wg.Go(func() error {
@@ -94,13 +93,11 @@ func getSufficientRemainingRPLForLot(rp *rocketpool.RocketPool) (bool, error) {
 	}
 
 	// Calculate lot minimum RPL amount
-	var tmp big.Int
-	var lotMinimumRplAmount big.Int
-	tmp.Mul(lotMinimumEthValue, units.EthToWei(1))
-	lotMinimumRplAmount.Quo(&tmp, rplPrice)
+	tmp := lotMinimumEthValue.Mul(units.OneEth)
+	lotMinimumRplAmount := tmp.Div(rplPrice)
 
 	// Return
-	return (remainingRplBalance.Cmp(&lotMinimumRplAmount) >= 0), nil
+	return (remainingRplBalance.Cmp(lotMinimumRplAmount) >= 0), nil
 
 }
 
@@ -152,9 +149,9 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
 
 	// Data
 	var wg errgroup.Group
-	var addressBidAmount *big.Int
+	var addressBidAmount units.Wei
 	var cleared bool
-	var remainingRpl *big.Int
+	var remainingRpl units.Wei
 	var rplRecovered bool
 
 	// Get address bid amount
@@ -192,9 +189,9 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
 
 	// Return
 	return lotCountDetails{
-		AddressHasBid:   (addressBidAmount.Cmp(big.NewInt(0)) > 0),
+		AddressHasBid:   !addressBidAmount.IsZero(),
 		Cleared:         cleared,
-		HasRemainingRpl: (remainingRpl.Cmp(big.NewInt(0)) > 0),
+		HasRemainingRpl: !remainingRpl.IsZero(),
 		RplRecovered:    rplRecovered,
 	}, nil
 
@@ -253,8 +250,8 @@ func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotI
 	}
 
 	// Check lot conditions
-	addressHasBid := (details.AddressBidAmount.Cmp(big.NewInt(0)) > 0)
-	hasRemainingRpl := (details.RemainingRPLAmount.Cmp(big.NewInt(0)) > 0)
+	addressHasBid := !details.AddressBidAmount.IsZero()
+	hasRemainingRpl := !details.RemainingRPLAmount.IsZero()
 
 	// Return
 	return api.LotDetails{

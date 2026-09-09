@@ -2,7 +2,6 @@ package minipool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -110,7 +109,6 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	var details api.MinipoolRescueDissolvedDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
-	details.BeaconBalance = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {
@@ -172,11 +170,10 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 		details.CanRescue = false
 		return details, nil
 	}
-	beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
-	details.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
+	details.BeaconBalance = units.NewGwei(beaconStatus.Balance).ToWei()
 
 	// Make sure it doesn't already have 32 ETH in it
-	requiredBalance := units.EthToWei(32)
+	requiredBalance := units.NewEth(32).ToWei()
 	if details.BeaconBalance.Cmp(requiredBalance) >= 0 {
 		details.CanRescue = false
 		return details, nil
@@ -186,12 +183,12 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	one := units.EthToWei(1)
+	one := units.NewEth(1).ToWei()
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err
 	}
-	opts.Value = one
+	opts.Value = one.BigInt()
 	opts.NoSend = true
 	opts.GasLimit = 0
 
@@ -219,7 +216,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w wallet.Walle
 }
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
-func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, minipoolAddress common.Address, amount units.Wei, opts *bind.TransactOpts) (*types.Transaction, error) {
 
 	blankAddress := common.Address{}
 	casperAddress, err := rp.GetAddress("casperDeposit", nil)
@@ -264,10 +261,10 @@ func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, 
 	}
 
 	// Get the deposit amount in gwei
-	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
+	amountGwei := amount.ToGwei()
 
 	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei)
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei.BigInt().Uint64())
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +281,7 @@ func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, 
 
 }
 
-func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool, t *snroute.TransactOpts) (*api.RescueDissolvedMinipoolResponse, error) {
+func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount units.Wei, submit bool, t *snroute.TransactOpts) (*api.RescueDissolvedMinipoolResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -307,7 +304,7 @@ func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amo
 	// Response
 	response := api.RescueDissolvedMinipoolResponse{}
 
-	opts.Value = amount
+	opts.Value = amount.BigInt()
 
 	opts.NoSend = !submit
 
@@ -345,9 +342,10 @@ func rescueDissolvedHandler(ctx snroute.WriteContext) {
 		return
 	}
 	amountStr := ctx.Request.FormValue("amount")
-	amount, ok := new(big.Int).SetString(amountStr, 10)
-	if !ok {
-		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid amount: %s", amountStr))
+	amount := units.Wei{}
+	err = amount.UnmarshalText([]byte(amountStr))
+	if err != nil {
+		response.WriteErrorResponse(ctx.Writer, fmt.Errorf("invalid amount: %s: %w", amountStr, err))
 		return
 	}
 	submit := ctx.Request.FormValue("submit") == "true"

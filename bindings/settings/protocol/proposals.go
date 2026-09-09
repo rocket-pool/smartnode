@@ -108,16 +108,16 @@ func EstimateProposeExecuteTimeGas(rp *rocketpool.RocketPool, value *big.Int, bl
 }
 
 // How much RPL is locked when creating a proposal
-func GetProposalBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getProposalBond"); err != nil {
-		return nil, fmt.Errorf("error getting proposal bond: %w", err)
+	value := units.Wei{}
+	if err := proposalsSettingsContract.Call(opts, &value, "getProposalBond"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting proposal bond: %w", err)
 	}
-	return *value, nil
+	return value, nil
 }
 func ProposeProposalBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalBondSettingPath), ProposalsSettingsContractName, ProposalBondSettingPath, value, blockNumber, treeNodes, opts)
@@ -127,16 +127,16 @@ func EstimateProposeProposalBondGas(rp *rocketpool.RocketPool, value *big.Int, b
 }
 
 // How much RPL is locked when challenging a proposal
-func GetChallengeBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetChallengeBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getChallengeBond"); err != nil {
-		return nil, fmt.Errorf("error getting challenge bond: %w", err)
+	value := units.Wei{}
+	if err := proposalsSettingsContract.Call(opts, &value, "getChallengeBond"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting challenge bond: %w", err)
 	}
-	return *value, nil
+	return value, nil
 }
 func ProposeChallengeBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeBondSettingPath), ProposalsSettingsContractName, ChallengeBondSettingPath, value, blockNumber, treeNodes, opts)
@@ -165,27 +165,27 @@ func EstimateProposeChallengePeriodGas(rp *rocketpool.RocketPool, value *big.Int
 }
 
 // The minimum amount of voting power a proposal needs to succeed
-func GetProposalQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetProposalQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getProposalQuorum"); err != nil {
-		return 0, fmt.Errorf("error getting proposal quorum: %w", err)
+	var value units.Wei
+	if err := proposalsSettingsContract.Call(opts, &value, "getProposalQuorum"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting proposal quorum: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return value.ToEth(), nil
 }
 
 // The minimum amount of voting power a proposal needs to succeed
-func GetProposalQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalQuorum"); err != nil {
-		return nil, fmt.Errorf("error getting proposal quorum: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting proposal quorum: %w", err)
 	}
 	return *value, nil
 }
@@ -197,27 +197,27 @@ func EstimateProposeProposalQuorumGas(rp *rocketpool.RocketPool, value *big.Int,
 }
 
 // The amount of voting power vetoing a proposal require to veto it
-func GetProposalVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetProposalVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getProposalVetoQuorum"); err != nil {
-		return 0, fmt.Errorf("error getting proposal veto quorum: %w", err)
+	var value units.Wei
+	if err := proposalsSettingsContract.Call(opts, &value, "getProposalVetoQuorum"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting proposal veto quorum: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return value.ToEth(), nil
 }
 
 // The amount of voting power vetoing a proposal require to veto it
-func GetProposalVetoQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalVetoQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := proposalsSettingsContract.Call(opts, value, "getProposalVetoQuorum"); err != nil {
-		return nil, fmt.Errorf("error getting proposal veto quorum: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting proposal veto quorum: %w", err)
 	}
 	return *value, nil
 }

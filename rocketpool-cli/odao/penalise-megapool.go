@@ -31,9 +31,9 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 		return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
 	}
 
-	amountWei := units.EthToWei(amount)
+	amountWei := units.EthFromFloat(amount).ToWei()
 	// Check megapool debt can be repaid
-	canPenalise, err := rp.CanPenaliseMegapool(megapoolAddress, block, amountWei)
+	canPenalise, err := rp.CanPenaliseMegapool(megapoolAddress, block, amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -49,13 +49,13 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(units.WeiToEth(amountWei), 6), megapoolAddress, block) {
+	if prompt.Declined(yes, "Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6), megapoolAddress, block) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Penalise the megapool
-	response, err := rp.PenaliseMegapool(megapoolAddress, block, amountWei)
+	response, err := rp.PenaliseMegapool(megapoolAddress, block, amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Log & return
-	fmt.Printf("Successfully penalised megapool %s with %.6f debt.\n", megapoolAddress, math.RoundDown(units.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully penalised megapool %s with %.6f debt.\n", megapoolAddress, math.RoundDown(amountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

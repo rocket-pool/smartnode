@@ -2,12 +2,12 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 	"net/http"
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // RegisterRoutes registers the megapool module's HTTP routes onto router.
@@ -82,17 +82,18 @@ func parseBool(r *http.Request, name string) (bool, error) {
 	return v, nil
 }
 
-func parseBigInt(r *http.Request, name string) (*big.Int, error) {
+func parseWei(r *http.Request, name string) (units.Wei, error) {
 	raw := r.URL.Query().Get(name)
 	if raw == "" {
 		raw = r.FormValue(name)
 	}
 	if raw == "" {
-		return nil, &response.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+		return units.Wei{}, &response.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
 	}
-	v, ok := new(big.Int).SetString(raw, 10)
-	if !ok {
-		return nil, &response.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
+	v := units.Wei{}
+	err := v.UnmarshalText([]byte(raw))
+	if err != nil {
+		return units.Wei{}, &response.BadRequestError{Err: fmt.Errorf("invalid %s: %s: %w", name, raw, err)}
 	}
 	return v, nil
 }

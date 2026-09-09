@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
@@ -91,11 +90,11 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 				message,
 				payload,
 				endTime,
-				units.WeiToEth(proposal.VotingPowerRequired),
-				units.WeiToEth(proposal.VotingPowerFor),
-				units.WeiToEth(proposal.VotingPowerAgainst),
-				units.WeiToEth(proposal.VotingPowerAbstained),
-				units.WeiToEth(proposal.VotingPowerToVeto),
+				proposal.VotingPowerRequired.ToEth().InexactFloat64(),
+				proposal.VotingPowerFor.ToEth().InexactFloat64(),
+				proposal.VotingPowerAgainst.ToEth().InexactFloat64(),
+				proposal.VotingPowerAbstained.ToEth().InexactFloat64(),
+				proposal.VotingPowerToVeto.ToEth().InexactFloat64(),
 				proposal.ProposerAddress)
 		}
 		selected, _ := prompt.Select("Please select a proposal to vote on:", options)
@@ -165,7 +164,7 @@ func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", units.WeiToEth(canVote.VotingPower))
+	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", canVote.VotingPower.ToEth().InexactFloat64())
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasLimits, rp, yes)

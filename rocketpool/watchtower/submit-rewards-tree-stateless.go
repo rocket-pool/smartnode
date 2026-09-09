@@ -429,13 +429,13 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	// Print the gas info
-	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gasLimits.PrintAndCheck(false, 0, t.log, maxFee, 0) {
+	maxFee := units.GweiFromFloat(utils.GetWatchtowerMaxFee(t.cfg)).ToWei()
+	if !gasLimits.PrintAndCheck(false, units.NewGwei(0), t.log, maxFee, 0) {
 		return false, nil
 	}
 
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasFeeCap = maxFee.BigInt()
+	opts.GasTipCap = units.GweiFromFloat(utils.GetWatchtowerPrioFee(t.cfg)).ToWei().BigInt()
 	opts.GasLimit = gasLimits.Safe
 
 	var hash common.Hash

@@ -61,7 +61,7 @@ func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanB
 	wg.Go(func() error {
 		remainingRpl, err := auction.GetLotRemainingRPLAmount(rp, lotIndex, nil)
 		if err == nil {
-			response.RPLExhausted = (remainingRpl.Cmp(big.NewInt(0)) == 0)
+			response.RPLExhausted = remainingRpl.IsZero()
 		}
 		return err
 	})

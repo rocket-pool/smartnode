@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -13,9 +11,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeLegacyRplResponse, error) {
+func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei units.Wei) (*api.CanNodeUnstakeLegacyRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -41,11 +40,11 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 
 	// Data
 	var wg errgroup.Group
-	var legacyRplStake *big.Int
-	nodeRplLocked := big.NewInt(0)
+	var legacyRplStake units.Wei
+	var nodeRplLocked units.Wei
 	var isRPLWithdrawalAddressSet bool
 	var rplWithdrawalAddress common.Address
-	rplStakeThreshold := big.NewInt(0)
+	var rplStakeThreshold units.Wei
 
 	// Get RPL stake
 	wg.Go(func() error {
@@ -101,9 +100,9 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 	}
 
 	// Check data
-	var remainingLegacyRplStake big.Int
-	remainingLegacyRplStake.Sub(legacyRplStake, amountWei)
-	remainingLegacyRplStake.Sub(&remainingLegacyRplStake, nodeRplLocked)
+	var remainingLegacyRplStake units.Wei
+	remainingLegacyRplStake = legacyRplStake.Sub(amountWei)
+	remainingLegacyRplStake = remainingLegacyRplStake.Sub(nodeRplLocked)
 	response.InsufficientBalance = (amountWei.Cmp(legacyRplStake) > 0)
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 	response.BelowMaxRPLStake = (remainingLegacyRplStake.Cmp(rplStakeThreshold) < 0)
@@ -114,7 +113,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 
 }
 
-func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeUnstakeLegacyRplResponse, error) {
+func nodeUnstakeLegacyRpl(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeUnstakeLegacyRplResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -143,7 +142,7 @@ func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int, t *snroute.Transac
 }
 
 func canUnstakeLegacyRplHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -153,7 +152,7 @@ func canUnstakeLegacyRplHandler(ctx snroute.Context) {
 }
 
 func unstakeLegacyRplHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

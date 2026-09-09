@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/units"
 )
 
@@ -25,24 +24,22 @@ func (l Limits) Add(other Limits) Limits {
 	}
 }
 
-func (l Limits) Check(checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
+func (l Limits) Check(checkThreshold bool, gasThreshold units.Gwei, logger *log.ColorLogger, maxFee units.Wei, gasLimit uint64) bool {
 	if !checkThreshold {
 		logger.Println("This transaction does not check the gas threshold limit, continuing...")
 		return true
 	}
 
-	gasThresholdWei := math.RoundUp(gasThresholdGwei*units.WeiPerGwei, 0)
-	gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
-	if maxFeeWei.Cmp(gasThreshold) != -1 {
+	if maxFee.Cmp(gasThreshold.ToWei()) != -1 {
 		logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. "+
-			"Aborting the transaction.", units.WeiToGwei(maxFeeWei), gasThresholdGwei)
+			"Aborting the transaction.", maxFee.ToGwei(), gasThreshold)
 		return false
 	}
 
 	return true
 }
 
-func (l Limits) Print(logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) {
+func (l Limits) Print(logger *log.ColorLogger, maxFee units.Wei, gasLimit uint64) {
 
 	// Print the total TX cost
 	var gas *big.Int
@@ -54,19 +51,20 @@ func (l Limits) Print(logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint
 		gas = new(big.Int).SetUint64(l.Estimated)
 		safeGas = new(big.Int).SetUint64(l.Safe)
 	}
-	totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
-	totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
+	totalGasWei := new(big.Int).Mul(maxFee.BigInt(), gas)
+	totalSafeGasWei := new(big.Int).Mul(maxFee.BigInt(), safeGas)
 	logger.Printlnf("This transaction will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
-		units.WeiToGwei(maxFeeWei),
-		math.RoundDown(units.WeiToEth(totalGasWei), 6),
-		math.RoundDown(units.WeiToEth(totalSafeGasWei), 6))
+		maxFee.ToGwei(),
+		units.NewWei(totalGasWei).ToEth(),
+		units.NewWei(totalSafeGasWei).ToEth(),
+	)
 }
 
-func (l Limits) PrintAndCheck(checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
-	if !l.Check(checkThreshold, gasThresholdGwei, logger, maxFeeWei, gasLimit) {
+func (l Limits) PrintAndCheck(checkThreshold bool, gasThreshold units.Gwei, logger *log.ColorLogger, maxFee units.Wei, gasLimit uint64) bool {
+	if !l.Check(checkThreshold, gasThreshold, logger, maxFee, gasLimit) {
 		return false
 	}
 
-	l.Print(logger, maxFeeWei, gasLimit)
+	l.Print(logger, maxFee, gasLimit)
 	return true
 }

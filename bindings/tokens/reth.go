@@ -18,34 +18,34 @@ import (
 //
 
 // Get rETH total supply
-func GetRETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 	return totalSupply(rocketTokenRETH, "rETH", opts)
 }
 
 // Get rETH balance
-func GetRETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 	return balanceOf(rocketTokenRETH, "rETH", address, opts)
 }
 
 // Get rETH allowance
-func GetRETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 	return allowance(rocketTokenRETH, "rETH", owner, spender, opts)
 }
 
 // Estimate the gas of TransferRETH
-func EstimateTransferRETHGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateTransferRETHGas(rp *rocketpool.RocketPool, to common.Address, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -54,7 +54,7 @@ func EstimateTransferRETHGas(rp *rocketpool.RocketPool, to common.Address, amoun
 }
 
 // Transfer rETH
-func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
@@ -63,7 +63,7 @@ func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int,
 }
 
 // Estimate the gas of ApproveRETH
-func EstimateApproveRETHGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateApproveRETHGas(rp *rocketpool.RocketPool, spender common.Address, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -72,7 +72,7 @@ func EstimateApproveRETHGas(rp *rocketpool.RocketPool, spender common.Address, a
 }
 
 // Approve a rETH spender
-func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
@@ -103,81 +103,81 @@ func TransferFromRETH(rp *rocketpool.RocketPool, from, to common.Address, amount
 //
 
 // Get the rETH contract ETH balance
-func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 	return contractETHBalance(rp, rocketTokenRETH, opts)
 }
 
 // Get the ETH value of an amount of rETH
-func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	ethValue := new(*big.Int)
+	ethValue := new(units.Wei)
 	if err := rocketTokenRETH.Call(opts, ethValue, "getEthValue", rethAmount); err != nil {
-		return nil, fmt.Errorf("error getting ETH value of rETH amount: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting ETH value of rETH amount: %w", err)
 	}
 	return *ethValue, nil
 }
 
 // Get the rETH value of an amount of ETH
-func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	rethValue := new(*big.Int)
+	rethValue := new(units.Wei)
 	if err := rocketTokenRETH.Call(opts, rethValue, "getRethValue", ethAmount); err != nil {
-		return nil, fmt.Errorf("error getting rETH value of ETH amount: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting rETH value of ETH amount: %w", err)
 	}
 	return *rethValue, nil
 }
 
 // Get the current ETH : rETH exchange rate
-func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	exchangeRate := new(*big.Int)
-	if err := rocketTokenRETH.Call(opts, exchangeRate, "getExchangeRate"); err != nil {
-		return 0, fmt.Errorf("error getting rETH exchange rate: %w", err)
+	var exchangeRate units.Wei
+	if err := rocketTokenRETH.Call(opts, &exchangeRate, "getExchangeRate"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting rETH exchange rate: %w", err)
 	}
-	return units.WeiToEth(*exchangeRate), nil
+	return exchangeRate.ToEth(), nil
 }
 
 // Get the total amount of ETH collateral available for rETH trades
-func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalCollateral := new(*big.Int)
-	if err := rocketTokenRETH.Call(opts, totalCollateral, "getTotalCollateral"); err != nil {
-		return nil, fmt.Errorf("error getting rETH total collateral: %w", err)
+	totalCollateral := units.Wei{}
+	if err := rocketTokenRETH.Call(opts, &totalCollateral, "getTotalCollateral"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting rETH total collateral: %w", err)
 	}
-	return *totalCollateral, nil
+	return totalCollateral, nil
 }
 
 // Get the rETH collateralization rate
-func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	collateralRate := new(*big.Int)
-	if err := rocketTokenRETH.Call(opts, collateralRate, "getCollateralRate"); err != nil {
-		return 0, fmt.Errorf("error getting rETH collateral rate: %w", err)
+	var collateralRate units.Wei
+	if err := rocketTokenRETH.Call(opts, &collateralRate, "getCollateralRate"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting rETH collateral rate: %w", err)
 	}
-	return units.WeiToEth(*collateralRate), nil
+	return collateralRate.ToEth(), nil
 }
 
 // Estimate the gas of BurnRETH
-func EstimateBurnRETHGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateBurnRETHGas(rp *rocketpool.RocketPool, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err

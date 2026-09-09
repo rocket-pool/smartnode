@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // RegisterRoutes registers the odao module's HTTP routes onto router.
@@ -91,6 +92,32 @@ func parseFloat64(r *http.Request, name string) (float64, error) {
 	return val, nil
 }
 
+func parseEth(r *http.Request, name string) (units.Eth, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	var val units.Eth
+	err := val.UnmarshalText([]byte(raw))
+	if err != nil {
+		return units.Eth{}, fmt.Errorf("invalid %s: %s", name, raw)
+	}
+	return val, nil
+}
+
+func parseWei(r *http.Request, name string) (units.Wei, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	var val units.Wei
+	err := val.UnmarshalText([]byte(raw))
+	if err != nil {
+		return units.Wei{}, fmt.Errorf("invalid %s: %s", name, raw)
+	}
+	return val, nil
+}
+
 func parseBigInt(r *http.Request, name string) (*big.Int, error) {
 	raw := r.URL.Query().Get(name)
 	if raw == "" {
@@ -122,26 +149,27 @@ func parseInviteParams(r *http.Request) (common.Address, string, string, error) 
 	return common.HexToAddress(addrStr), memberId, memberUrl, nil
 }
 
-func parseKickParams(r *http.Request) (common.Address, *big.Int, error) {
+func parseKickParams(r *http.Request) (common.Address, units.Wei, error) {
 	addrStr := r.URL.Query().Get("address")
 	if addrStr == "" {
 		addrStr = r.FormValue("address")
 	}
 	if addrStr == "" {
-		return common.Address{}, nil, fmt.Errorf("missing required parameter: address")
+		return common.Address{}, units.Wei{}, fmt.Errorf("missing required parameter: address")
 	}
 	fineStr := r.URL.Query().Get("fineAmountWei")
 	if fineStr == "" {
 		fineStr = r.FormValue("fineAmountWei")
 	}
-	fine, ok := new(big.Int).SetString(fineStr, 10)
-	if !ok {
-		return common.Address{}, nil, fmt.Errorf("invalid fineAmountWei: %s", fineStr)
+	var fine units.Wei
+	err := fine.UnmarshalText([]byte(fineStr))
+	if err != nil {
+		return common.Address{}, units.Wei{}, fmt.Errorf("invalid fineAmountWei: %s", fineStr)
 	}
 	return common.HexToAddress(addrStr), fine, nil
 }
 
-func parsePenaliseParams(r *http.Request) (common.Address, *big.Int, *big.Int, error) {
+func parsePenaliseParams(r *http.Request) (common.Address, *big.Int, units.Wei, error) {
 	addrStr := r.URL.Query().Get("megapoolAddress")
 	if addrStr == "" {
 		addrStr = r.FormValue("megapoolAddress")
@@ -156,11 +184,12 @@ func parsePenaliseParams(r *http.Request) (common.Address, *big.Int, *big.Int, e
 	}
 	block, ok := new(big.Int).SetString(blockStr, 10)
 	if !ok {
-		return common.Address{}, nil, nil, fmt.Errorf("invalid block: %s", blockStr)
+		return common.Address{}, nil, units.Wei{}, fmt.Errorf("invalid block: %s", blockStr)
 	}
-	amount, ok := new(big.Int).SetString(amountStr, 10)
-	if !ok {
-		return common.Address{}, nil, nil, fmt.Errorf("invalid amountWei: %s", amountStr)
+	var amount units.Wei
+	err := amount.UnmarshalText([]byte(amountStr))
+	if err != nil {
+		return common.Address{}, nil, units.Wei{}, fmt.Errorf("invalid amountWei: %s", amountStr)
 	}
 	return common.HexToAddress(addrStr), block, amount, nil
 }

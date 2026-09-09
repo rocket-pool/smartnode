@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Stake megapool validator task
@@ -229,7 +230,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 	}
 
 	// Print the gas info
-	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, units.GweiFromFloat(t.gasThreshold).ToWei().ToGwei(), &t.log, units.NewWei(maxFee), t.gasLimit) {
 		return nil
 	}
 

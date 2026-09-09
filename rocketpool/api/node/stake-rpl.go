@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/urfave/cli/v3"
@@ -15,9 +13,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
+func canNodeStakeRpl(c *cli.Command, amountWei units.Wei) (*api.CanNodeStakeRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -65,7 +64,7 @@ func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplRe
 
 }
 
-func getStakeApprovalGas(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveGasResponse, error) {
+func getStakeApprovalGas(c *cli.Command, amountWei units.Wei) (*api.NodeStakeRplApproveGasResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -145,7 +144,7 @@ func allowanceRpl(c *cli.Command) (*api.NodeStakeRplAllowanceResponse, error) {
 	return &response, nil
 }
 
-func approveRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeStakeRplApproveResponse, error) {
+func approveRpl(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeStakeRplApproveResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -179,7 +178,7 @@ func approveRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*a
 
 }
 
-func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
+func waitForApprovalAndStakeRpl(c *cli.Command, amountWei units.Wei, hash common.Hash, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -200,7 +199,7 @@ func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.
 
 }
 
-func stakeRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
+func stakeRpl(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -234,7 +233,7 @@ func stakeRplAllowanceHandler(ctx snroute.Context) {
 }
 
 func canStakeRplHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -244,7 +243,7 @@ func canStakeRplHandler(ctx snroute.Context) {
 }
 
 func getStakeRplApprovalGasHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -254,7 +253,7 @@ func getStakeRplApprovalGasHandler(ctx snroute.Context) {
 }
 
 func stakeRplApproveRplHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -269,7 +268,7 @@ func stakeRplApproveRplHandler(ctx snroute.WriteContext) {
 }
 
 func waitAndStakeRplHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -285,7 +284,7 @@ func waitAndStakeRplHandler(ctx snroute.WriteContext) {
 }
 
 func stakeRplHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

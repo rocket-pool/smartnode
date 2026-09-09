@@ -25,40 +25,40 @@ const (
 )
 
 // Member proposal quorum threshold
-func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	value := new(*big.Int)
-	if err := membersSettingsContract.Call(opts, value, "getQuorum"); err != nil {
-		return 0, fmt.Errorf("error getting member quorum threshold: %w", err)
+	var value units.Wei
+	if err := membersSettingsContract.Call(opts, &value, "getQuorum"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting member quorum threshold: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return value.ToEth(), nil
 }
-func ProposeQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, units.EthToWei(value), opts)
+func ProposeQuorum(rp *rocketpool.RocketPool, value units.Eth, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, value.ToWei(), opts)
 }
-func EstimateProposeQuorumGas(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, units.EthToWei(value), opts)
+func EstimateProposeQuorumGas(rp *rocketpool.RocketPool, value units.Eth, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, value.ToWei(), opts)
 }
 
 // RPL bond required for a member
-func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := membersSettingsContract.Call(opts, value, "getRPLBond"); err != nil {
-		return nil, fmt.Errorf("error getting member RPL bond amount: %w", err)
+	value := units.Wei{}
+	if err := membersSettingsContract.Call(opts, &value, "getRPLBond"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting member RPL bond amount: %w", err)
 	}
-	return *value, nil
+	return value, nil
 }
-func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeRPLBond(rp *rocketpool.RocketPool, value units.Wei, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
 }
-func EstimateProposeRPLBondGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateProposeRPLBondGas(rp *rocketpool.RocketPool, value units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
 }
 
@@ -75,10 +75,10 @@ func GetChallengeCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint6
 	return (*value).Uint64(), nil
 }
 func ProposeChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeChallengeCooldownGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The period during which a member can respond to a challenge, in blocks
@@ -94,28 +94,28 @@ func GetChallengeWindow(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64,
 	return (*value).Uint64(), nil
 }
 func ProposeChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeChallengeWindowGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The fee for a non-member to challenge a member, in wei
-func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := membersSettingsContract.Call(opts, value, "getChallengeCost"); err != nil {
-		return nil, fmt.Errorf("error getting member challenge cost: %w", err)
+	value := units.Wei{}
+	if err := membersSettingsContract.Call(opts, &value, "getChallengeCost"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting member challenge cost: %w", err)
 	}
-	return *value, nil
+	return value, nil
 }
-func ProposeChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeChallengeCost(rp *rocketpool.RocketPool, value units.Wei, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
 }
-func EstimateProposeChallengeCostGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateProposeChallengeCostGas(rp *rocketpool.RocketPool, value units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
 }
 

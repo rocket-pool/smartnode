@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Estimate the gas of ProposeInviteMember
@@ -97,12 +98,12 @@ func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddre
 }
 
 // Estimate the gas of ProposeKickMember
-func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount)
+	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount.BigInt())
 	if err != nil {
 		return gaslimit.Limits{}, fmt.Errorf("error encoding kick member proposal payload: %w", err)
 	}
@@ -110,12 +111,12 @@ func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, mem
 }
 
 // Submit a proposal to kick a member from the trusted node DAO
-func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount units.Wei, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount)
+	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount.BigInt())
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding kick member proposal payload: %w", err)
 	}
@@ -149,12 +150,12 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 // Estimate the gas of ProposeSetUint
-func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
+	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value.BigInt())
 	if err != nil {
 		return gaslimit.Limits{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
@@ -162,12 +163,12 @@ func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName,
 }
 
 // Submit a proposal to update a uint trusted node DAO setting
-func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value units.Wei, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
+	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value.BigInt())
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}

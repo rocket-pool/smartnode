@@ -94,20 +94,22 @@ func getRewards(yes bool) error {
 	nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
 	timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
 
+	totalRplStake := rewards.TotalRplStake.InexactFloat64()
+	estimatedRewards := rewards.EstimatedRewards.InexactFloat64()
 	// // Assume 365 days in a year, 24 hours per day
 	rplApr := 0.0
-	if rewards.TotalRplStake != 0 && rewards.RewardsInterval.Hours() != 0 {
-		rplApr = rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24 * 365) * 100
+	if totalRplStake != 0 && rewards.RewardsInterval.Hours() != 0 {
+		rplApr = estimatedRewards / totalRplStake / rewards.RewardsInterval.Hours() * (24 * 365) * 100
 	}
 
 	fmt.Println("\n=== RPL ===")
 	fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.LastCheckpoint.Unix())))
 	fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
 
-	if rewards.UnclaimedRplRewards > 0 {
+	if rewards.UnclaimedRplRewards.Sign() > 0 {
 		fmt.Printf("You currently have %f unclaimed RPL from staking rewards.\n", rewards.UnclaimedRplRewards)
 	}
-	if rewards.UnclaimedTrustedRplRewards > 0 {
+	if rewards.UnclaimedTrustedRplRewards.Sign() > 0 {
 		fmt.Printf("You currently have %f unclaimed RPL from Oracle DAO duties.\n", rewards.UnclaimedTrustedRplRewards)
 	}
 
@@ -117,7 +119,9 @@ func getRewards(yes bool) error {
 	fmt.Printf("Your node has received %f RPL staking rewards in total.\n", rewards.CumulativeRplRewards)
 
 	if rewards.Trusted {
-		rplTrustedApr := rewards.EstimatedTrustedRplRewards / rewards.TrustedRplBond / rewards.RewardsInterval.Hours() * (24 * 365) * 100
+		trustedRplBond := rewards.TrustedRplBond.InexactFloat64()
+		estimatedTrustedRplRewards := rewards.EstimatedTrustedRplRewards.InexactFloat64()
+		rplTrustedApr := estimatedTrustedRplRewards / trustedRplBond / rewards.RewardsInterval.Hours() * (24 * 365) * 100
 
 		fmt.Println()
 		fmt.Printf("You will receive an estimated %f RPL in rewards for Oracle DAO duties (this may change based on network activity).\n", rewards.EstimatedTrustedRplRewards)

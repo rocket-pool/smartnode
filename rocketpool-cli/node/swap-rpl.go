@@ -23,7 +23,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	defer rp.Close()
 
 	// Get swap amount
-	var amountWei *big.Int
+	var amountWei units.Wei
 	if amount == "all" {
 
 		// Set amount to node's entire fixed-supply RPL balance
@@ -40,7 +40,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid swap amount '%s': %w", amount, err)
 		}
-		amountWei = units.EthToWei(swapAmount)
+		amountWei = units.EthFromFloat(swapAmount).ToWei()
 
 	} else {
 
@@ -52,7 +52,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		entireAmount := status.AccountBalances.FixedSupplyRPL
 
 		// Prompt for entire amount
-		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(units.WeiToEth(entireAmount), 6)) {
+		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(entireAmount.ToEth().InexactFloat64(), 6)) {
 			amountWei = entireAmount
 		} else {
 
@@ -62,7 +62,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
 			}
-			amountWei = units.EthToWei(swapAmount)
+			amountWei = units.EthFromFloat(swapAmount).ToWei()
 
 		}
 
@@ -125,7 +125,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Check RPL can be swapped
-	canSwap, err := rp.CanNodeSwapRpl(amountWei)
+	canSwap, err := rp.CanNodeSwapRpl(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -144,13 +144,13 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Swap RPL
-	swapResponse, err := rp.NodeSwapRpl(amountWei)
+	swapResponse, err := rp.NodeSwapRpl(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

@@ -35,11 +35,11 @@ func getStats() error {
 	fmt.Printf("Total Value Locked:          %f ETH\n", response.TotalValueLocked)
 	fmt.Printf("Deposit Pool Balance:        %f ETH\n", response.DepositPoolBalance)
 	fmt.Printf("Minipool Queue Demand:       %f ETH\n", response.MinipoolCapacity)
-	fmt.Printf("Deposit Pool ETH Used:       %f%%\n", response.StakerUtilization*100)
+	fmt.Printf("Deposit Pool ETH Used:       %f%%\n", response.StakerUtilization.InexactFloat64() * 100)
 	fmt.Println()
 
 	color.GreenPrintln("============== Nodes ==============")
-	fmt.Printf("Current Commission Rate:     %f%%\n", response.NodeFee*100)
+	fmt.Printf("Current Commission Rate:     %f%%\n", response.NodeFee.InexactFloat64() * 100)
 	fmt.Printf("Node Count:                  %d\n", response.NodeCount)
 	fmt.Printf("Active Minipools:            %d\n", activeMinipools)
 	fmt.Printf("    Initialized:             %d\n", response.InitializedMinipoolCount)

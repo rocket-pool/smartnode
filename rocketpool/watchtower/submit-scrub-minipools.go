@@ -371,7 +371,6 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() {
 
 	minipoolsToScrub := []minipool.Minipool{}
 
-	weiPerGwei := big.NewInt(int64(units.WeiPerGwei))
 	for minipool := range t.it.minipools {
 		// Get the MinipoolPrestaked event
 		prestakeData, err := minipool.GetPrestakeEvent(t.it.eventLogInterval, nil)
@@ -380,12 +379,9 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() {
 			continue
 		}
 
-		// Convert the amount to gwei
-		prestakeData.Amount.Div(prestakeData.Amount, weiPerGwei)
-
 		// Convert it into Prysm's deposit data struct
 		depositData := new(ethpb.Deposit_Data)
-		depositData.Amount = prestakeData.Amount.Uint64()
+		depositData.Amount = prestakeData.Amount.ToGwei().BigInt().Uint64()
 		depositData.PublicKey = prestakeData.Pubkey.Bytes()
 		depositData.WithdrawalCredentials = prestakeData.WithdrawalCredentials.Bytes()
 		depositData.Signature = prestakeData.Signature.Bytes()
@@ -578,14 +574,14 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.Minipool) err
 	}
 
 	// Print the gas info
-	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
+	maxFee := units.GweiFromFloat(utils.GetWatchtowerMaxFee(t.cfg)).ToWei()
+	if !gasLimits.PrintAndCheck(false, units.NewGwei(0), &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasFeeCap = maxFee.BigInt()
+	opts.GasTipCap = units.GweiFromFloat(utils.GetWatchtowerPrioFee(t.cfg)).ToWei().BigInt()
 	opts.GasLimit = gasLimits.Safe
 
 	// Dissolve

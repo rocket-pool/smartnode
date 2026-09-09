@@ -7,7 +7,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func initializeFeeDistributor(yes bool) error {
@@ -98,16 +97,17 @@ func distribute(yes bool) error {
 		return err
 	}
 
-	balance := units.WeiToEth(canDistributeResponse.Balance)
+	balance := canDistributeResponse.Balance.ToEth().InexactFloat64()
 	if balance == 0 {
 		fmt.Printf("Your fee distributor does not have any ETH.")
 		return nil
 	}
 
 	// Print info
-	rEthShare := balance - canDistributeResponse.NodeShare
+	nodeShare := canDistributeResponse.NodeShare.InexactFloat64()
+	rEthShare := balance - nodeShare
 	fmt.Printf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance)
-	fmt.Printf("\tYour withdrawal address will receive %.6f ETH.\n", canDistributeResponse.NodeShare)
+	fmt.Printf("\tYour withdrawal address will receive %.6f ETH.\n", nodeShare)
 	fmt.Printf("\trETH pool stakers will receive %.6f ETH.\n\n", rEthShare)
 
 	// Assign max fees

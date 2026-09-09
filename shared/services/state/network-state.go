@@ -137,7 +137,7 @@ func (nfd *NodeFeeDetails) calculateAverageFeeAndDistributorShares(nnd *rpstate.
 	eligibleMinipools := int64(0)
 	for _, mpd := range minipoolDetails {
 		if mpd.Status == types.Staking && !mpd.Finalised {
-			totalFee.Add(totalFee, mpd.NodeFee)
+			totalFee.Add(totalFee, mpd.NodeFee.BigInt())
 			eligibleMinipools++
 		}
 	}
@@ -148,11 +148,11 @@ func (nfd *NodeFeeDetails) calculateAverageFeeAndDistributorShares(nnd *rpstate.
 	}
 
 	// Get the user and node portions of the distributor balance
-	distributorBalance := big.NewInt(0).Set(nnd.DistributorBalance)
+	distributorBalance := big.NewInt(0).Set(nnd.DistributorBalance.BigInt())
 	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
 		nodeBalance := big.NewInt(0)
 		nodeBalance.Mul(distributorBalance, big.NewInt(1e18))
-		nodeBalance.Div(nodeBalance, nnd.CollateralisationRatio)
+		nodeBalance.Div(nodeBalance, nnd.CollateralisationRatio.BigInt())
 
 		userBalance := big.NewInt(0)
 		userBalance.Sub(distributorBalance, nodeBalance)
@@ -497,14 +497,12 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
-	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
+	beaconBalances := make([]units.Wei, len(state.MinipoolDetails))
 	for i, mpd := range state.MinipoolDetails {
 		mpds[i] = &state.MinipoolDetails[i]
 		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
-		if !validator.Exists {
-			beaconBalances[i] = big.NewInt(0)
-		} else {
-			beaconBalances[i] = units.GweiToWei(float64(validator.Balance))
+		if validator.Exists {
+			beaconBalances[i] = units.NewGwei(validator.Balance).ToWei()
 		}
 	}
 	err = rpstate.CalculateCompleteMinipoolShares(m.rp, contracts, mpds, beaconBalances)
@@ -528,7 +526,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 
 func (s *NetworkState) GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth *big.Int, nodeStake *big.Int) (*big.Int, *big.Int) {
 
-	rplPrice := s.NetworkDetails.RplPrice
+	rplPrice := s.NetworkDetails.RplPrice.BigInt()
 
 	// stakedRplValueInEth := nodeStake * ratio / 1 Eth
 	stakedRplValueInEth := big.NewInt(0)
@@ -583,9 +581,9 @@ func (s *NetworkStateIndex) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetai
 
 // Get the node's total staked RPL that counts towards RPL rewards (legacy + megapool)
 func (s *NetworkState) GetRewardsEligibleRplStake(node *rpstate.NativeNodeDetails) *big.Int {
-	rplStake := big.NewInt(0).Set(node.LegacyStakedRPL)
+	rplStake := big.NewInt(0).Set(node.LegacyStakedRPL.BigInt())
 	// Megapool staked RPL counts towards RPL rewards
-	rplStake.Add(rplStake, node.MegapoolStakedRPL)
+	rplStake.Add(rplStake, node.MegapoolStakedRPL.BigInt())
 	return rplStake
 }
 
@@ -681,7 +679,7 @@ func (s *NetworkStateIndex) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeN
 		}
 
 		// It's eligible, so add up the borrowed and bonded amounts
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance.BigInt())
 	}
 	return eligibleBorrowedEth
 }
@@ -695,7 +693,7 @@ func (s *NetworkStateIndex) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeN
 	if !exists {
 		return big.NewInt(0)
 	}
-	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital)
+	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital.BigInt())
 
 	// Iterate over the validators
 	for _, validator := range s.MegapoolToPubkeysMap[node.MegapoolAddress] {
@@ -704,8 +702,8 @@ func (s *NetworkStateIndex) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeN
 			continue
 		}
 
-		validatorTotalEth := big.NewInt(0).Set(units.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-		validatorBondedEth := big.NewInt(0).Set(units.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+		validatorTotalEth := units.MilliEthFromFloat(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)).ToWei().BigInt()
+		validatorBondedEth := units.MilliEthFromFloat(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)).ToWei().BigInt()
 		validatorUserEth := big.NewInt(0).Sub(validatorTotalEth, validatorBondedEth)
 		eligibleBorrowedEth.Sub(eligibleBorrowedEth, validatorUserEth)
 	}

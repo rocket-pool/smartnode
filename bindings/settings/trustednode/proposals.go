@@ -11,6 +11,7 @@ import (
 	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -36,10 +37,10 @@ func GetProposalCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 	return (*value).Uint64(), nil
 }
 func ProposeProposalCooldownTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeProposalCooldownTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The period a proposal can be voted on for in seconds
@@ -55,10 +56,10 @@ func GetProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 	return (*value).Uint64(), nil
 }
 func ProposeProposalVoteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeProposalVoteTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The delay after creation before a proposal can be voted on in seconds
@@ -74,10 +75,10 @@ func GetProposalVoteDelayTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	return (*value).Uint64(), nil
 }
 func ProposeProposalVoteDelayTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeProposalVoteDelayTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The period during which a passed proposal can be executed in time
@@ -93,10 +94,10 @@ func GetProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 	return (*value).Uint64(), nil
 }
 func ProposeProposalExecuteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeProposalExecuteTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // The period during which an action can be performed on an executed proposal in seconds
@@ -112,10 +113,10 @@ func GetProposalActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	return (*value).Uint64(), nil
 }
 func ProposeProposalActionTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionTimeSettingPath), ProposalsSettingsContractName, ActionTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionTimeSettingPath), ProposalsSettingsContractName, ActionTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 func EstimateProposeProposalActionTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ActionTimeSettingPath), ProposalsSettingsContractName, ActionTimeSettingPath, big.NewInt(int64(value)), opts)
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ActionTimeSettingPath), ProposalsSettingsContractName, ActionTimeSettingPath, units.WeiFromUint64(value), opts)
 }
 
 // Get contracts

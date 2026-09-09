@@ -73,7 +73,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	defer rp.Close()
 
 	// Check if proposal can be made
-	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(units.EthToWei(bondAmountEth))
+	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(units.EthFromFloat(bondAmountEth).ToWei().BigInt())
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Submit proposal
-	response, err := rp.ProposeTNDAOSettingMembersRplBond(units.EthToWei(bondAmountEth))
+	response, err := rp.ProposeTNDAOSettingMembersRplBond(units.EthFromFloat(bondAmountEth).ToWei().BigInt())
 	if err != nil {
 		return err
 	}

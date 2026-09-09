@@ -20,6 +20,7 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Notify final balance task
@@ -207,7 +208,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	}
 
 	// Print the gas info
-	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, units.GweiFromFloat(t.gasThreshold).ToWei().ToGwei(), &t.log, units.NewWei(maxFee), t.gasLimit) {
 		return nil
 	}
 

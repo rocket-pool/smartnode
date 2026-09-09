@@ -5,7 +5,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getStatus() error {
@@ -26,9 +25,9 @@ func getStatus() error {
 	// Print & return
 	fmt.Printf(
 		"A total of %.6f RPL is up for auction, with %.6f RPL currently allotted and %.6f RPL remaining.\n",
-		math.RoundDown(units.WeiToEth(status.TotalRPLBalance), 6),
-		math.RoundDown(units.WeiToEth(status.AllottedRPLBalance), 6),
-		math.RoundDown(units.WeiToEth(status.RemainingRPLBalance), 6))
+		math.RoundDown(status.TotalRPLBalance.ToEth().InexactFloat64(), 6),
+		math.RoundDown(status.AllottedRPLBalance.ToEth().InexactFloat64(), 6),
+		math.RoundDown(status.RemainingRPLBalance.ToEth().InexactFloat64(), 6))
 	if status.LotCounts.ClaimAvailable > 0 {
 		fmt.Printf("%d lot(s) you have bid on have RPL available to claim!\n", status.LotCounts.ClaimAvailable)
 	}

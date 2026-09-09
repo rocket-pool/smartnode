@@ -22,10 +22,10 @@ func getNodeFee() error {
 	}
 
 	// Print & return
-	fmt.Printf("The current network node commission rate is %f%%.\n", response.NodeFee*100)
-	fmt.Printf("Minimum node commission rate: %f%%\n", response.MinNodeFee*100)
-	fmt.Printf("Target node commission rate:  %f%%\n", response.TargetNodeFee*100)
-	fmt.Printf("Maximum node commission rate: %f%%\n", response.MaxNodeFee*100)
+	fmt.Printf("The current network node commission rate is %f%%.\n", response.NodeFee.InexactFloat64() * 100)
+	fmt.Printf("Minimum node commission rate: %f%%\n", response.MinNodeFee.InexactFloat64() * 100)
+	fmt.Printf("Target node commission rate:  %f%%\n", response.TargetNodeFee.InexactFloat64() * 100)
+	fmt.Printf("Maximum node commission rate: %f%%\n", response.MaxNodeFee.InexactFloat64() * 100)
 	return nil
 
 }

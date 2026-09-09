@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Estimate the gas of ProposeSetMulti
@@ -154,12 +155,12 @@ func ProposeSetAddressList(rp *rocketpool.RocketPool, message, contractName, set
 }
 
 // Estimate the gas of ProposeSetRewardsPercentage
-func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message string, odaoPercentage units.Wei, pdaoPercentage units.Wei, nodePercentage units.Wei, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage.BigInt(), pdaoPercentage.BigInt(), nodePercentage.BigInt())
 	if err != nil {
 		return gaslimit.Limits{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
 	}
@@ -167,12 +168,12 @@ func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message s
 }
 
 // Submit a proposal to update the allocations of RPL rewards
-func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message string, odaoPercentage units.Wei, pdaoPercentage units.Wei, nodePercentage units.Wei, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage.BigInt(), pdaoPercentage.BigInt(), nodePercentage.BigInt())
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
 	}

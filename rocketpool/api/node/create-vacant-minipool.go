@@ -22,7 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
+func canCreateVacantMinipool(c *cli.Command, amountWei units.Wei, minNodeFee units.Eth, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -69,8 +69,8 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 
 	// Data
 	var wg1 errgroup.Group
-	var ethMatched *big.Int
-	var ethMatchedLimit *big.Int
+	var ethMatched units.Wei
+	var ethMatchedLimit units.Wei
 
 	// Check node deposits are enabled
 	wg1.Go(func() error {
@@ -105,9 +105,9 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	}
 
 	// Check data
-	validatorEthWei := units.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
-	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
+	validatorWei := units.NewEth(validatorEth).ToWei()
+	matchRequest := validatorWei.Sub(amountWei)
+	availableToMatch := ethMatchedLimit.Sub(ethMatched)
 
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 	response.MinipoolAddress = minipoolAddress
@@ -140,8 +140,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	}
 
 	// Convert the existing balance from gwei to wei
-	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
-	balanceWei.Mul(balanceWei, big.NewInt(1e9))
+	balanceWei := units.NewGwei(validatorStatus.Balance).ToWei()
 
 	// Run the deposit gas estimator
 	gasLimits, err := node.EstimateCreateVacantMinipoolGas(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)
@@ -154,7 +153,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 
 }
 
-func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, t *snroute.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
+func createVacantMinipool(c *cli.Command, amountWei units.Wei, minNodeFee units.Eth, salt *big.Int, pubkey rptypes.ValidatorPubkey, t *snroute.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -249,8 +248,7 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	}
 
 	// Convert the existing balance from gwei to wei
-	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
-	balanceWei.Mul(balanceWei, big.NewInt(1e9))
+	balanceWei := units.NewGwei(validatorStatus.Balance).ToWei()
 
 	// Create the minipool
 	tx, err := node.CreateVacantMinipool(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)

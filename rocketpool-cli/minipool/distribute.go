@@ -3,7 +3,6 @@ package minipool
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -45,7 +44,7 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolBalanceDistributionDetails{}
 	balanceTooBigMinipools := []api.MinipoolBalanceDistributionDetails{}
-	finalizationAmount := units.EthToWei(finalizationThreshold)
+	finalizationAmount := units.EthFromFloat(finalizationThreshold).ToWei()
 
 	for _, mp := range details.Details {
 		if mp.CanDistribute {
@@ -57,7 +56,7 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 			if mp.Balance.Cmp(mp.Refund) == -1 {
 				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
 			}
-			effectiveBalance := big.NewInt(0).Sub(mp.Balance, mp.Refund)
+			effectiveBalance := mp.Balance.Sub(mp.Refund)
 			if effectiveBalance.Cmp(finalizationAmount) >= 0 {
 				balanceTooBigMinipools = append(balanceTooBigMinipools, mp)
 			}
@@ -105,9 +104,9 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 		for _, mp := range eligibleMinipools {
 			var amount float64
 			if mp.Status == types.Dissolved {
-				amount = math.RoundDown(units.WeiToEth(mp.Balance), 6)
+				amount = math.RoundDown(mp.Balance.ToEth().InexactFloat64(), 6)
 			} else {
-				amount = math.RoundDown(units.WeiToEth(mp.NodeShareOfBalance), 6) + math.RoundDown(units.WeiToEth(mp.Refund), 6)
+				amount = math.RoundDown(mp.NodeShareOfBalance.ToEth().InexactFloat64(), 6) + math.RoundDown(mp.Refund.ToEth().InexactFloat64(), 6)
 			}
 
 			if amount > threshold {
@@ -129,16 +128,16 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 
 		var firstAmount float64
 		if firstDetails.Status == types.Dissolved {
-			firstAmount = math.RoundDown(units.WeiToEth(firstDetails.Balance), 6)
+			firstAmount = math.RoundDown(firstDetails.Balance.ToEth().InexactFloat64(), 6)
 		} else {
-			firstAmount = math.RoundDown(units.WeiToEth(firstDetails.NodeShareOfBalance), 6) + math.RoundDown(units.WeiToEth(firstDetails.Refund), 6)
+			firstAmount = math.RoundDown(firstDetails.NodeShareOfBalance.ToEth().InexactFloat64(), 6) + math.RoundDown(firstDetails.Refund.ToEth().InexactFloat64(), 6)
 		}
 
 		var secondAmount float64
 		if secondDetails.Status == types.Dissolved {
-			secondAmount = math.RoundDown(units.WeiToEth(secondDetails.Balance), 6)
+			secondAmount = math.RoundDown(secondDetails.Balance.ToEth().InexactFloat64(), 6)
 		} else {
-			secondAmount = math.RoundDown(units.WeiToEth(secondDetails.NodeShareOfBalance), 6) + math.RoundDown(units.WeiToEth(secondDetails.Refund), 6)
+			secondAmount = math.RoundDown(secondDetails.NodeShareOfBalance.ToEth().InexactFloat64(), 6) + math.RoundDown(secondDetails.Refund.ToEth().InexactFloat64(), 6)
 		}
 
 		// Sort highest-to-lowest
@@ -150,29 +149,29 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	if minipool == "" {
 
 		// Get total rewards
-		totalEthAvailable := big.NewInt(0)
-		totalEthShare := big.NewInt(0)
-		totalRefund := big.NewInt(0)
+		totalEthAvailable := units.Wei{}
+		totalEthShare := units.Wei{}
+		totalRefund := units.Wei{}
 		for _, minipool := range eligibleMinipools {
 			if minipool.Status == types.Dissolved {
 				// Dissolved minipools are a special case
-				totalEthShare.Add(totalEthShare, minipool.Balance)
+				totalEthShare = totalEthShare.Add(minipool.Balance)
 			} else {
-				totalEthAvailable.Add(totalEthAvailable, minipool.Balance)
-				totalEthShare.Add(totalEthShare, minipool.NodeShareOfBalance)
-				totalRefund.Add(totalRefund, minipool.Refund)
+				totalEthAvailable = totalEthAvailable.Add(minipool.Balance)
+				totalEthShare = totalEthShare.Add(minipool.NodeShareOfBalance)
+				totalRefund = totalRefund.Add(minipool.Refund)
 			}
 		}
 
 		// Prompt for minipool selection
 		options := make([]string, len(eligibleMinipools)+1)
-		options[0] = fmt.Sprintf("All available minipools (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", math.RoundDown(units.WeiToEth(totalEthAvailable), 6), math.RoundDown(units.WeiToEth(totalEthShare), 6), math.RoundDown(units.WeiToEth(totalRefund), 6))
+		options[0] = fmt.Sprintf("All available minipools (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", math.RoundDown(totalEthAvailable.ToEth().InexactFloat64(), 6), math.RoundDown(totalEthShare.ToEth().InexactFloat64(), 6), math.RoundDown(totalRefund.ToEth().InexactFloat64(), 6))
 		for mi, minipool := range eligibleMinipools {
 			if minipool.Status == types.Dissolved {
 				// Dissolved minipools are a special case
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, all of which goes to you)", minipool.Address.Hex(), math.RoundDown(units.WeiToEth(minipool.Balance), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, all of which goes to you)", minipool.Address.Hex(), math.RoundDown(minipool.Balance.ToEth().InexactFloat64(), 6))
 			} else {
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(units.WeiToEth(minipool.Balance), 6), math.RoundDown(units.WeiToEth(minipool.NodeShareOfBalance), 6), math.RoundDown(units.WeiToEth(minipool.Refund), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(minipool.Balance.ToEth().InexactFloat64(), 6), math.RoundDown(minipool.NodeShareOfBalance.ToEth().InexactFloat64(), 6), math.RoundDown(minipool.Refund.ToEth().InexactFloat64(), 6))
 			}
 		}
 		selected, _ := prompt.Select("Please select a minipool to distribute the balance of:", options)

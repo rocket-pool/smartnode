@@ -3,7 +3,6 @@ package odao
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -62,7 +61,7 @@ func proposeKick(member, fine string, yes bool) error {
 	}
 
 	// Get fine amount
-	var fineAmountWei *big.Int
+	var fineAmountWei units.Wei
 	if fine == "max" {
 
 		// Set fine amount to member's entire RPL bond
@@ -75,22 +74,22 @@ func proposeKick(member, fine string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", fine, err)
 		}
-		fineAmountWei = units.EthToWei(fineAmount)
+		fineAmountWei = units.EthFromFloat(fineAmount).ToWei()
 
 	} else {
 
 		// Prompt for custom amount
-		inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(units.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(selectedMember.RPLBondAmount.ToEth().InexactFloat64(), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
 		fineAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", inputAmount, err)
 		}
-		fineAmountWei = units.EthToWei(fineAmount)
+		fineAmountWei = units.EthFromFloat(fineAmount).ToWei()
 
 	}
 
 	// Check if proposal can be made
-	canPropose, err := rp.CanProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
+	canPropose, err := rp.CanProposeKickFromTNDAO(selectedMember.Address, fineAmountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -100,7 +99,7 @@ func proposeKick(member, fine string, yes bool) error {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
 		}
 		if canPropose.InsufficientRplBond {
-			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(units.WeiToEth(fineAmountWei), 6), math.RoundDown(units.WeiToEth(selectedMember.RPLBondAmount), 6))
+			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(fineAmountWei.ToEth().InexactFloat64(), 6), math.RoundDown(selectedMember.RPLBondAmount.ToEth().InexactFloat64(), 6))
 		}
 		return nil
 	}
@@ -118,7 +117,7 @@ func proposeKick(member, fine string, yes bool) error {
 	}
 
 	// Submit proposal
-	response, err := rp.ProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
+	response, err := rp.ProposeKickFromTNDAO(selectedMember.Address, fineAmountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -130,7 +129,7 @@ func proposeKick(member, fine string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a kick proposal with ID %d for node %s, with a fine of %.6f RPL.\n", response.ProposalId, selectedMember.Address.Hex(), math.RoundDown(units.WeiToEth(fineAmountWei), 6))
+	fmt.Printf("Successfully submitted a kick proposal with ID %d for node %s, with a fine of %.6f RPL.\n", response.ProposalId, selectedMember.Address.Hex(), math.RoundDown(fineAmountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

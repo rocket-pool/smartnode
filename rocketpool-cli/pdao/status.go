@@ -3,7 +3,6 @@ package pdao
 import (
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -103,24 +102,24 @@ func getStatus() error {
 	default:
 		fmt.Printf("The node has a voting delegate of %s which can represent it when voting on Rocket Pool onchain governance proposals.\n", color.LightBlue(response.OnchainVotingDelegateFormatted))
 	}
-	fmt.Printf("The node's local voting power: %.10f\n", units.WeiToEth(response.VotingPower))
+	fmt.Printf("The node's local voting power: %.10f\n", response.VotingPower.ToEth().InexactFloat64())
 
 	if response.IsNodeRegistered {
-		fmt.Printf("Total voting power delegated to the node: %.10f\n", units.WeiToEth(response.TotalDelegatedVp))
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", response.TotalDelegatedVp.ToEth().InexactFloat64())
 	} else {
 		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
 	}
 
-	fmt.Printf("Network total initialized voting power: %.10f\n", units.WeiToEth(response.SumVotingPower))
+	fmt.Printf("Network total initialized voting power: %.10f\n", response.SumVotingPower.ToEth().InexactFloat64())
 	fmt.Println("")
 
 	// Claimable Bonds Status:
 	color.GreenPrintln("=== Claimable RPL Bonds ===")
 	if response.IsRPLLockingAllowed {
 		fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
-		if response.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
+		if response.NodeRPLLocked.Cmp(units.Wei{}) != 0 {
 			fmt.Printf("The node currently has %.6f RPL locked.\n",
-				math.RoundDown(units.WeiToEth(response.NodeRPLLocked), 6))
+				math.RoundDown(response.NodeRPLLocked.ToEth().InexactFloat64(), 6))
 		}
 
 	} else {

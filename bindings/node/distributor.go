@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Distributor contract
@@ -79,19 +79,19 @@ func (d *Distributor) PrepareDistribute(opts *bind.TransactOpts) (*types.Transac
 }
 
 // Gets the node share of the distributor's current balance
-func (d *Distributor) GetNodeShare(opts *bind.CallOpts) (*big.Int, error) {
-	nodeShare := new(*big.Int)
-	if err := d.Contract.Call(opts, nodeShare, "getNodeShare"); err != nil {
-		return nil, fmt.Errorf("error getting distributor %s node share: %w", d.Address.Hex(), err)
+func (d *Distributor) GetNodeShare(opts *bind.CallOpts) (units.Wei, error) {
+	nodeShare := units.Wei{}
+	if err := d.Contract.Call(opts, &nodeShare, "getNodeShare"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting distributor %s node share: %w", d.Address.Hex(), err)
 	}
-	return *nodeShare, nil
+	return nodeShare, nil
 }
 
 // Gets the user share of the distributor's current balance
-func (d *Distributor) GetUserShare(opts *bind.CallOpts) (*big.Int, error) {
-	userShare := new(*big.Int)
+func (d *Distributor) GetUserShare(opts *bind.CallOpts) (units.Wei, error) {
+	userShare := new(units.Wei)
 	if err := d.Contract.Call(opts, userShare, "getUserShare"); err != nil {
-		return nil, fmt.Errorf("error getting distributor %s user share: %w", d.Address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting distributor %s user share: %w", d.Address.Hex(), err)
 	}
 	return *userShare, nil
 }

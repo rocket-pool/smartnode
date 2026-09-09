@@ -17,17 +17,7 @@ func (c *Client) TNDAOStatus() (api.TNDAOStatusResponse, error) {
 
 // Get oracle DAO members
 func (c *Client) TNDAOMembers() (api.TNDAOMembersResponse, error) {
-	response, err := c.callAPI[api.TNDAOMembersResponse]("GET", "/api/odao/members", nil, "Could not get oracle DAO members")
-	if err != nil {
-		return response, err
-	}
-	for i := 0; i < len(response.Members); i++ {
-		member := &response.Members[i]
-		if member.RPLBondAmount == nil {
-			member.RPLBondAmount = big.NewInt(0)
-		}
-	}
-	return response, nil
+	return c.callAPI[api.TNDAOMembersResponse]("GET", "/api/odao/members", nil, "Could not get oracle DAO members")
 }
 
 // Get oracle DAO proposals
@@ -253,17 +243,7 @@ func (c *Client) ProposeTNDAOSettingBondReductionWindowLength(windowLength uint6
 
 // Get the member settings
 func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, error) {
-	response, err := c.callAPI[api.GetTNDAOMemberSettingsResponse]("GET", "/api/odao/get-member-settings", nil, "Could not get oracle DAO member settings")
-	if err != nil {
-		return response, err
-	}
-	if response.RPLBond == nil {
-		response.RPLBond = big.NewInt(0)
-	}
-	if response.ChallengeCost == nil {
-		response.ChallengeCost = big.NewInt(0)
-	}
-	return response, nil
+	return c.callAPI[api.GetTNDAOMemberSettingsResponse]("GET", "/api/odao/get-member-settings", nil, "Could not get oracle DAO member settings")
 }
 
 // Get the proposal settings

@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getActiveDAOProposals(c *cli.Command) (*api.NetworkDAOProposalsResponse, error) {
@@ -148,7 +149,7 @@ func getActiveDAOProposals(c *cli.Command) (*api.NetworkDAOProposalsResponse, er
 	if err != nil {
 		return nil, err
 	}
-	response.SumVotingPower = votingTree.Nodes[0].Sum
+	response.SumVotingPower = units.NewWei(votingTree.Nodes[0].Sum)
 
 	// Get voting power
 	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)

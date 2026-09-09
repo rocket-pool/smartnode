@@ -1,8 +1,6 @@
 package megapool
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -11,9 +9,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse, error) {
+func canReduceBond(c *cli.Command, amount units.Wei) (*api.CanReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -91,7 +90,7 @@ func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse,
 
 }
 
-func reduceBond(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.ReduceBondResponse, error) {
+func reduceBond(c *cli.Command, amount units.Wei, t *snroute.TransactOpts) (*api.ReduceBondResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -141,17 +140,17 @@ func reduceBond(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.
 }
 
 func canReduceBondHandler(ctx snroute.Context) {
-	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	amount, err := parseWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
-	resp, err := canReduceBond(ctx.Command(), amountWei)
+	resp, err := canReduceBond(ctx.Command(), amount)
 	response.WriteResponse(ctx.Writer, resp, err)
 }
 
 func reduceBondHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	amount, err := parseWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -161,6 +160,6 @@ func reduceBondHandler(ctx snroute.WriteContext) {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
-	resp, err := reduceBond(ctx.Command(), amountWei, opts)
+	resp, err := reduceBond(ctx.Command(), amount, opts)
 	response.WriteResponse(ctx.Writer, resp, err)
 }

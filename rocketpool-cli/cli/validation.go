@@ -402,7 +402,7 @@ func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, 
 		floatValue = val
 	}
 
-	trueVal := units.EthToWei(floatValue)
+	trueVal := units.EthFromFloat(floatValue).ToWei()
 	fmt.Println("Your value will be multiplied by 10^18 to be used in the contracts, which results in:")
 	fmt.Println()
 	fmt.Printf("\t[%s]\n", trueVal.String())
@@ -415,5 +415,5 @@ func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, 
 		}
 		return val, nil
 	}
-	return trueVal, nil
+	return trueVal.BigInt(), nil
 }

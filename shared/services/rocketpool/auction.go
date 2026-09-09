@@ -10,62 +10,12 @@ import (
 
 // Get RPL auction status
 func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
-	response, err := c.callAPI[api.AuctionStatusResponse]("GET", "/api/auction/status", nil, "Could not get auction status")
-	if err != nil {
-		return response, err
-	}
-	if response.TotalRPLBalance == nil {
-		response.TotalRPLBalance = big.NewInt(0)
-	}
-	if response.AllottedRPLBalance == nil {
-		response.AllottedRPLBalance = big.NewInt(0)
-	}
-	if response.RemainingRPLBalance == nil {
-		response.RemainingRPLBalance = big.NewInt(0)
-	}
-	return response, nil
+	return c.callAPI[api.AuctionStatusResponse]("GET", "/api/auction/status", nil, "Could not get auction status")
 }
 
 // Get RPL lots for auction
 func (c *Client) AuctionLots() (api.AuctionLotsResponse, error) {
-	response, err := c.callAPI[api.AuctionLotsResponse]("GET", "/api/auction/lots", nil, "Could not get auction lots")
-	if err != nil {
-		return response, err
-	}
-	for i := 0; i < len(response.Lots); i++ {
-		details := &response.Lots[i].Details
-		if details.StartPrice == nil {
-			details.StartPrice = big.NewInt(0)
-		}
-		if details.ReservePrice == nil {
-			details.ReservePrice = big.NewInt(0)
-		}
-		if details.PriceAtCurrentBlock == nil {
-			details.PriceAtCurrentBlock = big.NewInt(0)
-		}
-		if details.PriceByTotalBids == nil {
-			details.PriceByTotalBids = big.NewInt(0)
-		}
-		if details.CurrentPrice == nil {
-			details.CurrentPrice = big.NewInt(0)
-		}
-		if details.TotalRPLAmount == nil {
-			details.TotalRPLAmount = big.NewInt(0)
-		}
-		if details.ClaimedRPLAmount == nil {
-			details.ClaimedRPLAmount = big.NewInt(0)
-		}
-		if details.RemainingRPLAmount == nil {
-			details.RemainingRPLAmount = big.NewInt(0)
-		}
-		if details.TotalBidAmount == nil {
-			details.TotalBidAmount = big.NewInt(0)
-		}
-		if details.AddressBidAmount == nil {
-			details.AddressBidAmount = big.NewInt(0)
-		}
-	}
-	return response, nil
+	return c.callAPI[api.AuctionLotsResponse]("GET", "/api/auction/lots", nil, "Could not get auction lots")
 }
 
 // Check whether the node can create a new lot

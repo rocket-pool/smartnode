@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Settings
@@ -27,7 +28,7 @@ type MemberDetails struct {
 	Url              string         `json:"url"`
 	JoinedTime       uint64         `json:"joinedTime"`
 	LastProposalTime uint64         `json:"lastProposalTime"`
-	RPLBondAmount    *big.Int       `json:"rplBondAmount"`
+	RPLBondAmount    units.Wei      `json:"rplBondAmount"`
 }
 
 // Get all member details
@@ -127,7 +128,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 	var url string
 	var joinedTime uint64
 	var lastProposalTime uint64
-	var rplBondAmount *big.Int
+	var rplBondAmount units.Wei
 
 	// Load data
 	wg.Go(func() error {
@@ -274,16 +275,16 @@ func GetMemberLastProposalTime(rp *rocketpool.RocketPool, memberAddress common.A
 	}
 	return (*lastProposalTime).Uint64(), nil
 }
-func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	rplBondAmount := new(*big.Int)
-	if err := rocketDAONodeTrusted.Call(opts, rplBondAmount, "getMemberRPLBondAmount", memberAddress); err != nil {
-		return nil, fmt.Errorf("error getting trusted node DAO member %s RPL bond amount: %w", memberAddress.Hex(), err)
+	rplBondAmount := units.Wei{}
+	if err := rocketDAONodeTrusted.Call(opts, &rplBondAmount, "getMemberRPLBondAmount", memberAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting trusted node DAO member %s RPL bond amount: %w", memberAddress.Hex(), err)
 	}
-	return *rplBondAmount, nil
+	return rplBondAmount, nil
 }
 
 // Get the time that a proposal for a member was executed at

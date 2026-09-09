@@ -33,10 +33,10 @@ func join(yes bool, swap bool) error {
 	}
 
 	// Check for fixed-supply RPL balance
-	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
+	if status.AccountBalances.FixedSupplyRPL.Cmp(units.Wei{}) > 0 {
 
 		// Confirm swapping RPL
-		if swap || prompt.Confirm("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(units.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
+		if swap || prompt.Confirm("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(status.AccountBalances.FixedSupplyRPL.ToEth().InexactFloat64(), 6)) {
 
 			// Check allowance
 			allowance, err := rp.GetNodeSwapRplAllowance()
@@ -95,7 +95,7 @@ func join(yes bool, swap bool) error {
 			}
 
 			// Check RPL can be swapped
-			canSwap, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+			canSwap, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL.BigInt())
 			if err != nil {
 				return err
 			}
@@ -114,13 +114,13 @@ func join(yes bool, swap bool) error {
 			}
 
 			// Prompt for confirmation
-			if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(units.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
+			if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(status.AccountBalances.FixedSupplyRPL.ToEth().InexactFloat64(), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
 
 			// Swap RPL
-			swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+			swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL.BigInt())
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func join(yes bool, swap bool) error {
 			}
 
 			// Log
-			fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(units.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+			fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(status.AccountBalances.FixedSupplyRPL.ToEth().InexactFloat64(), 6))
 			fmt.Println("")
 
 			// If a custom nonce is set, increment it for the next transaction

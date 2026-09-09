@@ -10,43 +10,44 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Get the deposit pool balance
-func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	balance := new(*big.Int)
-	if err := rocketDepositPool.Call(opts, balance, "getBalance"); err != nil {
-		return nil, fmt.Errorf("error getting deposit pool balance: %w", err)
+	balance := units.Wei{}
+	if err := rocketDepositPool.Call(opts, &balance, "getBalance"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting deposit pool balance: %w", err)
 	}
-	return *balance, nil
+	return balance, nil
 }
 
 // Get the deposit pool balance
-func GetUserBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetUserBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	balance := new(*big.Int)
+	balance := new(units.Wei)
 	if err := rocketDepositPool.Call(opts, balance, "getUserBalance"); err != nil {
-		return nil, fmt.Errorf("error getting deposit pool user balance: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting deposit pool user balance: %w", err)
 	}
 	return *balance, nil
 }
 
 // Get the excess deposit pool balance
-func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	excessBalance := new(*big.Int)
+	excessBalance := new(units.Wei)
 	if err := rocketDepositPool.Call(opts, excessBalance, "getExcessBalance"); err != nil {
-		return nil, fmt.Errorf("error getting deposit pool excess balance: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting deposit pool excess balance: %w", err)
 	}
 	return *excessBalance, nil
 }

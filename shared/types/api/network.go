@@ -1,32 +1,31 @@
 package api
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type NodeFeeResponse struct {
 	APIResponse
-	NodeFee       float64 `json:"nodeFee"`
-	MinNodeFee    float64 `json:"minNodeFee"`
-	TargetNodeFee float64 `json:"targetNodeFee"`
-	MaxNodeFee    float64 `json:"maxNodeFee"`
+	NodeFee       units.Eth `json:"nodeFee"`
+	MinNodeFee    units.Eth `json:"minNodeFee"`
+	TargetNodeFee units.Eth `json:"targetNodeFee"`
+	MaxNodeFee    units.Eth `json:"maxNodeFee"`
 }
 
 type RplPriceResponse struct {
 	APIResponse
-	RplPrice      *big.Int `json:"rplPrice"`
-	RplPriceBlock uint64   `json:"rplPriceBlock"`
+	RplPrice      units.Wei `json:"rplPrice"`
+	RplPriceBlock uint64    `json:"rplPriceBlock"`
 }
 
 type NetworkStatsResponse struct {
 	APIResponse
-	TotalValueLocked                 float64        `json:"totalValueLocked"`
-	DepositPoolBalance               float64        `json:"depositPoolBalance"`
-	MinipoolCapacity                 float64        `json:"minipoolCapacity"`
-	StakerUtilization                float64        `json:"stakerUtilization"`
-	NodeFee                          float64        `json:"nodeFee"`
+	TotalValueLocked                 units.Eth      `json:"totalValueLocked"`
+	DepositPoolBalance               units.Eth      `json:"depositPoolBalance"`
+	MinipoolCapacity                 units.Eth      `json:"minipoolCapacity"`
+	StakerUtilization                units.Eth      `json:"stakerUtilization"`
+	NodeFee                          units.Eth      `json:"nodeFee"`
 	NodeCount                        uint64         `json:"nodeCount"`
 	InitializedMinipoolCount         uint64         `json:"initializedMinipoolCount"`
 	PrelaunchMinipoolCount           uint64         `json:"prelaunchMinipoolCount"`
@@ -34,15 +33,15 @@ type NetworkStatsResponse struct {
 	WithdrawableMinipoolCount        uint64         `json:"withdrawableMinipoolCount"`
 	DissolvedMinipoolCount           uint64         `json:"dissolvedMinipoolCount"`
 	FinalizedMinipoolCount           uint64         `json:"finalizedMinipoolCount"`
-	RplPrice                         float64        `json:"rplPrice"`
-	TotalRplStaked                   float64        `json:"totalRplStaked"`
-	TotalMegapoolRplStaked           float64        `json:"totalMegapoolRplStaked"`
-	TotalLegacyRplStaked             float64        `json:"totalLegacyRplStaked"`
+	RplPrice                         units.Eth      `json:"rplPrice"`
+	TotalRplStaked                   units.Eth      `json:"totalRplStaked"`
+	TotalMegapoolRplStaked           units.Eth      `json:"totalMegapoolRplStaked"`
+	TotalLegacyRplStaked             units.Eth      `json:"totalLegacyRplStaked"`
 	EffectiveRplStaked               float64        `json:"effectiveRplStaked"`
-	RethPrice                        float64        `json:"rethPrice"`
+	RethPrice                        units.Eth      `json:"rethPrice"`
 	SmoothingPoolNodes               uint64         `json:"smoothingPoolNodes"`
 	SmoothingPoolAddress             common.Address `json:"SmoothingPoolAddress"`
-	SmoothingPoolBalance             float64        `json:"smoothingPoolBalance"`
+	SmoothingPoolBalance             units.Eth      `json:"smoothingPoolBalance"`
 	MegapoolContractCount            uint64         `json:"megapoolContractCount"`
 	MegapoolValidatorCount           uint64         `json:"megapoolValidatorCount"`
 	MegapoolValidatorStakingCount    uint64         `json:"megapoolValidatorStakingCount"`
@@ -81,10 +80,10 @@ type NetworkDAOProposalsResponse struct {
 	APIResponse
 	AccountAddress                 common.Address         `json:"accountAddress"`
 	AccountAddressFormatted        string                 `json:"accountAddressFormatted"`
-	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
-	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
+	TotalDelegatedVp               units.Wei              `json:"totalDelegateVp"`
+	SumVotingPower                 units.Wei              `json:"sumVotingPower"`
 	VotingDelegate                 common.Address         `json:"votingDelegate"`
-	VotingPower                    *big.Int               `json:"votingPower"`
+	VotingPower                    units.Wei              `json:"votingPower"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
 	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`

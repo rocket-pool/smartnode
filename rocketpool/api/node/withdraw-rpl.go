@@ -17,6 +17,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error) {
@@ -49,7 +50,7 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 
 	// Data
 	var wg errgroup.Group
-	var rplUnstaking *big.Int
+	var rplUnstaking units.Wei
 	var currentTime uint64
 	var rplLastUnstakedTime uint64
 	var unstakingPeriod time.Duration
@@ -120,7 +121,7 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 
 	// Check data
 
-	response.InsufficientBalance = (rplUnstaking.Cmp(big.NewInt(0)) > 0)
+	response.InsufficientBalance = rplUnstaking.IsPositive()
 	response.UnstakingPeriodActive = ((currentTime - rplLastUnstakedTime) < uint64(unstakingPeriod.Seconds()))
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 

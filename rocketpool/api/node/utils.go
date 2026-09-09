@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
@@ -10,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Settings
@@ -102,7 +102,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	// Data
 	var wg errgroup.Group
 	var status types.MinipoolStatus
-	var refundBalance *big.Int
+	var refundBalance units.Wei
 	var finalised bool
 	var penaltyCount uint64
 
@@ -137,7 +137,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	return minipoolCountDetails{
 		Address:             minipoolAddress,
 		Status:              status,
-		RefundAvailable:     (refundBalance.Cmp(big.NewInt(0)) > 0),
+		RefundAvailable:     refundBalance.IsPositive(),
 		WithdrawalAvailable: (status == types.Withdrawable),
 		CloseAvailable:      (status == types.Dissolved),
 		Finalised:           finalised,

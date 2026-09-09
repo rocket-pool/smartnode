@@ -9,6 +9,7 @@ import (
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // RegisterRoutes registers the node module's HTTP routes onto router.
@@ -172,7 +173,7 @@ func RegisterRoutes(router *snroute.Router) {
 
 type depositParams struct {
 	count            uint64
-	amountWei        *big.Int
+	amountWei        units.Wei
 	minFee           float64
 	salt             *big.Int
 	expressTickets   int64
@@ -184,7 +185,7 @@ func parseDepositParams(r *http.Request, includeExecuteParams bool) (depositPara
 	var p depositParams
 	var err error
 
-	p.amountWei, err = parseNodeBigInt(r, "amountWei")
+	p.amountWei, err = parseNodeWei(r, "amountWei")
 	if err != nil {
 		return p, fmt.Errorf("invalid amountWei: %w", err)
 	}
@@ -230,8 +231,8 @@ func parseDepositParams(r *http.Request, includeExecuteParams bool) (depositPara
 }
 
 type vacantMinipoolParams struct {
-	amountWei *big.Int
-	minFee    float64
+	amountWei units.Wei
+	minFee    units.Eth
 	salt      *big.Int
 	pubkey    rptypes.ValidatorPubkey
 }
@@ -244,18 +245,18 @@ func parseVacantMinipoolParams(r *http.Request) (vacantMinipoolParams, error) {
 	if raw == "" {
 		raw = r.FormValue("amountWei")
 	}
-	p.amountWei, _ = new(big.Int).SetString(raw, 10)
-	if p.amountWei == nil {
-		return p, fmt.Errorf("invalid amountWei: %s", raw)
+	err = p.amountWei.UnmarshalText([]byte(raw))
+	if err != nil {
+		return p, fmt.Errorf("invalid amountWei: %s: %w", raw, err)
 	}
 
 	minFeeStr := r.URL.Query().Get("minFee")
 	if minFeeStr == "" {
 		minFeeStr = r.FormValue("minFee")
 	}
-	p.minFee, err = strconv.ParseFloat(minFeeStr, 64)
+	err = p.minFee.UnmarshalText([]byte(minFeeStr))
 	if err != nil {
-		return p, fmt.Errorf("invalid minFee: %w", err)
+		return p, fmt.Errorf("invalid minFee: %s: %w", minFeeStr, err)
 	}
 
 	saltStr := r.URL.Query().Get("salt")
@@ -293,6 +294,30 @@ func parseNodeBigInt(r *http.Request, name string) (*big.Int, error) {
 		return nil, fmt.Errorf("invalid %s: %s", name, raw)
 	}
 	return v, nil
+}
+
+func parseNodeWei(r *http.Request, name string) (units.Wei, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	out := units.Wei{}
+	if err := out.UnmarshalText([]byte(raw)); err != nil {
+		return units.Wei{}, fmt.Errorf("invalid %s: %w", name, err)
+	}
+	return out, nil
+}
+
+func parseNodeEth(r *http.Request, name string) (units.Eth, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	out := units.Eth{}
+	if err := out.UnmarshalText([]byte(raw)); err != nil {
+		return units.Eth{}, fmt.Errorf("invalid %s: %w", name, err)
+	}
+	return out, nil
 }
 
 func parseNodeFloat64(r *http.Request, name string) (float64, error) {

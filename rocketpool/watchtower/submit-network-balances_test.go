@@ -26,11 +26,8 @@ import (
 // Helpers
 // ============================================================
 
-func ethToWei(eth float64) *big.Int {
-	return new(big.Int).Mul(
-		big.NewInt(int64(eth*1e9)),
-		big.NewInt(1e9),
-	)
+func ethToWei(eth float64) units.Wei {
+	return units.EthFromFloat(eth).ToWei()
 }
 
 func newNetworkBalances() networkBalances {
@@ -70,13 +67,13 @@ func makeParentBeaconRoot(slot uint64) common.Hash {
 
 func TestApplyMaxRethDelta_NoClampNeeded(t *testing.T) {
 	b := newNetworkBalances()
-	b.OriginalTotalBalanceWei = ethToWei(1000)
-	b.OriginalRatioWei = units.EthToWei(1.05)
+	b.OriginalTotalBalanceWei = ethToWei(1000).BigInt()
+	b.OriginalRatioWei = units.EthFromFloat(1.05).ToWei().BigInt()
 
 	// Last rate is 1.04, new is 1.05: delta = 0.01
 	lastRate := 1.04
 	// Max delta is 0.02 ETH in wei — larger than actual change, so no clamp
-	maxDelta := units.EthToWei(0.02)
+	maxDelta := units.EthFromFloat(0.02).ToWei().BigInt()
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -92,15 +89,15 @@ func TestApplyMaxRethDelta_ClampUpwardIncrease(t *testing.T) {
 	b := newNetworkBalances()
 	// Ratio jumped from 1.00 to 1.10 — a 0.10 increase
 	lastRate := 1.00
-	b.OriginalRatioWei = units.EthToWei(1.10)
-	b.OriginalTotalBalanceWei = ethToWei(1100) // arbitrary consistent total
+	b.OriginalRatioWei = units.EthFromFloat(1.10).ToWei().BigInt()
+	b.OriginalTotalBalanceWei = ethToWei(1100).BigInt() // arbitrary consistent total
 
 	// Max allowed delta is 0.05
-	maxDelta := units.EthToWei(0.05)
+	maxDelta := units.EthFromFloat(0.05).ToWei().BigInt()
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
-	expectedClampedRatio := new(big.Int).Add(units.EthToWei(lastRate), maxDelta) // 1.05
+	expectedClampedRatio := new(big.Int).Add(units.EthFromFloat(lastRate).ToWei().BigInt(), maxDelta) // 1.05
 	if b.ClampedRatioWei.Cmp(expectedClampedRatio) != 0 {
 		t.Errorf("clamped ratio: got %s, want %s", b.ClampedRatioWei, expectedClampedRatio)
 	}
@@ -114,15 +111,15 @@ func TestApplyMaxRethDelta_ClampDownwardDecrease(t *testing.T) {
 	b := newNetworkBalances()
 	// Ratio dropped from 1.10 to 1.00 — a 0.10 decrease
 	lastRate := 1.10
-	b.OriginalRatioWei = units.EthToWei(1.00)
-	b.OriginalTotalBalanceWei = ethToWei(1000)
+	b.OriginalRatioWei = units.EthFromFloat(1.00).ToWei().BigInt()
+	b.OriginalTotalBalanceWei = ethToWei(1000).BigInt()
 
 	// Max allowed delta is 0.05
-	maxDelta := units.EthToWei(0.05)
+	maxDelta := units.EthFromFloat(0.05).ToWei().BigInt()
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
-	expectedClampedRatio := new(big.Int).Sub(units.EthToWei(lastRate), maxDelta) // 1.05
+	expectedClampedRatio := new(big.Int).Sub(units.EthFromFloat(lastRate).ToWei().BigInt(), maxDelta) // 1.05
 	if b.ClampedRatioWei.Cmp(expectedClampedRatio) != 0 {
 		t.Errorf("clamped ratio: got %s, want %s", b.ClampedRatioWei, expectedClampedRatio)
 	}
@@ -136,9 +133,9 @@ func TestApplyMaxRethDelta_ExactlyAtBoundary(t *testing.T) {
 	// Delta == maxDelta exactly: should NOT clamp (boundary is exclusive via >)
 	b := newNetworkBalances()
 	lastRate := 1.00
-	b.OriginalRatioWei = units.EthToWei(1.05)
-	b.OriginalTotalBalanceWei = ethToWei(1050)
-	maxDelta := units.EthToWei(0.05) // exactly matches the change
+	b.OriginalRatioWei = units.EthFromFloat(1.05).ToWei().BigInt()
+	b.OriginalTotalBalanceWei = ethToWei(1050).BigInt()
+	maxDelta := units.EthFromFloat(0.05).ToWei().BigInt() // exactly matches the change
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -150,9 +147,9 @@ func TestApplyMaxRethDelta_ExactlyAtBoundary(t *testing.T) {
 func TestApplyMaxRethDelta_ZeroRatioChange(t *testing.T) {
 	b := newNetworkBalances()
 	lastRate := 1.05
-	b.OriginalRatioWei = units.EthToWei(1.05)
-	b.OriginalTotalBalanceWei = ethToWei(1050)
-	maxDelta := units.EthToWei(0.01)
+	b.OriginalRatioWei = units.EthFromFloat(1.05).ToWei().BigInt()
+	b.OriginalTotalBalanceWei = ethToWei(1050).BigInt()
+	maxDelta := units.EthFromFloat(0.01).ToWei().BigInt()
 
 	b.applyMaxRethDelta(maxDelta, lastRate)
 
@@ -167,22 +164,22 @@ func TestApplyMaxRethDelta_ZeroRatioChange(t *testing.T) {
 
 func TestCalculateTotalEthAndRethRate_BasicSummation(t *testing.T) {
 	b := newNetworkBalances()
-	b.DepositPool = ethToWei(100)
-	b.MinipoolsTotal = ethToWei(200)
-	b.MegapoolsUserShareTotal = ethToWei(150)
-	b.RETHContract = ethToWei(50)
-	b.DistributorShareTotal = ethToWei(30)
-	b.SmoothingPoolShare = ethToWei(20)
-	b.NodeCreditBalance = ethToWei(10) // should be SUBTRACTED
-	b.RETHSupply = ethToWei(500)
-	b.MinipoolsStaking = ethToWei(180)
-	b.MegapoolStaking = ethToWei(120)
+	b.DepositPool = ethToWei(100).BigInt()
+	b.MinipoolsTotal = ethToWei(200).BigInt()
+	b.MegapoolsUserShareTotal = ethToWei(150).BigInt()
+	b.RETHContract = ethToWei(50).BigInt()
+	b.DistributorShareTotal = ethToWei(30).BigInt()
+	b.SmoothingPoolShare = ethToWei(20).BigInt()
+	b.NodeCreditBalance = ethToWei(10).BigInt() // should be SUBTRACTED
+	b.RETHSupply = ethToWei(500).BigInt()
+	b.MinipoolsStaking = ethToWei(180).BigInt()
+	b.MegapoolStaking = ethToWei(120).BigInt()
 
 	// Expected total = 100+200+150+50+30+20 - 10 = 540
-	expectedTotal := ethToWei(540)
+	expectedTotal := ethToWei(540).BigInt()
 
-	maxDelta := units.EthToWei(999) // large enough to never clamp
-	b.calculateTotalEthAndRethRate(maxDelta, 0)
+	maxDelta := units.EthFromFloat(999).ToWei().BigInt() // large enough to never clamp
+	b.calculateTotalEthAndRethRate(units.NewWei(maxDelta), 0)
 
 	if b.OriginalTotalBalanceWei.Cmp(expectedTotal) != 0 {
 		t.Errorf("total ETH: got %s, want %s", b.OriginalTotalBalanceWei, expectedTotal)
@@ -191,15 +188,15 @@ func TestCalculateTotalEthAndRethRate_BasicSummation(t *testing.T) {
 
 func TestCalculateTotalEthAndRethRate_NodeCreditIsSubtracted(t *testing.T) {
 	b := newNetworkBalances()
-	b.DepositPool = ethToWei(500)
-	b.RETHSupply = ethToWei(400)
-	b.NodeCreditBalance = ethToWei(100)
+	b.DepositPool = ethToWei(500).BigInt()
+	b.RETHSupply = ethToWei(400).BigInt()
+	b.NodeCreditBalance = ethToWei(100).BigInt()
 
-	maxDelta := units.EthToWei(999)
-	b.calculateTotalEthAndRethRate(maxDelta, 0)
+	maxDelta := units.EthFromFloat(999).ToWei().BigInt()
+	b.calculateTotalEthAndRethRate(units.NewWei(maxDelta), 0)
 
 	// 500 - 100 = 400
-	expected := ethToWei(400)
+	expected := ethToWei(400).BigInt()
 	if b.OriginalTotalBalanceWei.Cmp(expected) != 0 {
 		t.Errorf("node credit not subtracted correctly: got %s, want %s", b.OriginalTotalBalanceWei, expected)
 	}
@@ -207,14 +204,14 @@ func TestCalculateTotalEthAndRethRate_NodeCreditIsSubtracted(t *testing.T) {
 
 func TestCalculateTotalEthAndRethRate_TotalStakingAggregated(t *testing.T) {
 	b := newNetworkBalances()
-	b.MinipoolsStaking = ethToWei(300)
-	b.MegapoolStaking = ethToWei(200)
-	b.RETHSupply = ethToWei(1)
+	b.MinipoolsStaking = ethToWei(300).BigInt()
+	b.MegapoolStaking = ethToWei(200).BigInt()
+	b.RETHSupply = ethToWei(1).BigInt()
 
-	maxDelta := units.EthToWei(999)
-	b.calculateTotalEthAndRethRate(maxDelta, 0)
+	maxDelta := units.EthFromFloat(999).ToWei().BigInt()
+	b.calculateTotalEthAndRethRate(units.NewWei(maxDelta), 0)
 
-	expected := ethToWei(500)
+	expected := ethToWei(500).BigInt()
 	if b.TotalStaking.Cmp(expected) != 0 {
 		t.Errorf("TotalStaking: got %s, want %s", b.TotalStaking, expected)
 	}
@@ -223,13 +220,13 @@ func TestCalculateTotalEthAndRethRate_TotalStakingAggregated(t *testing.T) {
 func TestCalculateTotalEthAndRethRate_RatioCalculation(t *testing.T) {
 	b := newNetworkBalances()
 	// Total ETH = 1100 (after credits), supply = 1000 → ratio = 1.1
-	b.DepositPool = ethToWei(1100)
-	b.RETHSupply = ethToWei(1000)
+	b.DepositPool = ethToWei(1100).BigInt()
+	b.RETHSupply = ethToWei(1000).BigInt()
 
-	maxDelta := units.EthToWei(999) // no clamp
-	b.calculateTotalEthAndRethRate(maxDelta, 1.0)
+	maxDelta := units.EthFromFloat(999).ToWei().BigInt() // no clamp
+	b.calculateTotalEthAndRethRate(units.NewWei(maxDelta), 1.0)
 
-	expectedRatio := units.EthToWei(1.1)
+	expectedRatio := units.EthFromFloat(1.1).ToWei().BigInt()
 	// Allow 1 wei of rounding tolerance
 	diff := new(big.Int).Abs(new(big.Int).Sub(b.OriginalRatioWei, expectedRatio))
 	if diff.Cmp(big.NewInt(2)) > 0 {
@@ -258,8 +255,8 @@ func newMpd(status rptypes.MinipoolStatus, depositType rptypes.MinipoolDeposit) 
 		DepositType:                       depositType,
 		UserDepositBalance:                ethToWei(16),
 		NodeDepositBalance:                ethToWei(16),
-		NodeRefundBalance:                 big.NewInt(0),
-		Balance:                           big.NewInt(0),
+		NodeRefundBalance:                 units.Wei{},
+		Balance:                           units.Wei{},
 		UserShareOfBalanceIncludingBeacon: ethToWei(16),
 		Version:                           3,
 	}
@@ -298,7 +295,7 @@ func TestGetMinipoolBalanceDetails_InitializedMinipool(t *testing.T) {
 
 	result := task.getMinipoolBalanceDetails(mpd, s, nil)
 
-	if result.UserBalance.Cmp(ethToWei(8)) != 0 {
+	if result.UserBalance.Cmp(ethToWei(8).BigInt()) != 0 {
 		t.Errorf("initialized minipool: got %s, want 8 ETH", result.UserBalance)
 	}
 	if result.IsStaking {
@@ -314,7 +311,7 @@ func TestGetMinipoolBalanceDetails_PrelaunchMinipool(t *testing.T) {
 
 	result := task.getMinipoolBalanceDetails(mpd, s, nil)
 
-	if result.UserBalance.Cmp(ethToWei(8)) != 0 {
+	if result.UserBalance.Cmp(ethToWei(8).BigInt()) != 0 {
 		t.Errorf("prelaunch minipool: got %s, want 8 ETH", result.UserBalance)
 	}
 }
@@ -338,7 +335,7 @@ func TestGetMinipoolBalanceDetails_ValidatorNotYetActive(t *testing.T) {
 
 	result := task.getMinipoolBalanceDetails(mpd, s, nil)
 
-	if result.UserBalance.Cmp(ethToWei(8)) != 0 {
+	if result.UserBalance.Cmp(ethToWei(8).BigInt()) != 0 {
 		t.Errorf("pending validator should use userDepositBalance: got %s", result.UserBalance)
 	}
 }
@@ -354,7 +351,7 @@ func TestGetMinipoolBalanceDetails_ValidatorDoesNotExist(t *testing.T) {
 
 	result := task.getMinipoolBalanceDetails(mpd, s, nil)
 
-	if result.UserBalance.Cmp(ethToWei(8)) != 0 {
+	if result.UserBalance.Cmp(ethToWei(8).BigInt()) != 0 {
 		t.Errorf("non-existent validator should use userDepositBalance: got %s", result.UserBalance)
 	}
 }
@@ -363,7 +360,7 @@ func TestGetMinipoolBalanceDetails_FullMinipoolInRefundQueue(t *testing.T) {
 	// Full minipool with zero userDepositBalance → subtract 16 ETH from user share
 	task := &submitNetworkBalances{}
 	mpd := newMpd(rptypes.Staking, rptypes.Full)
-	mpd.UserDepositBalance = big.NewInt(0)
+	mpd.UserDepositBalance = units.Wei{}
 	mpd.UserShareOfBalanceIncludingBeacon = ethToWei(32)
 
 	pubkey := rptypes.ValidatorPubkey{0x04}
@@ -381,7 +378,7 @@ func TestGetMinipoolBalanceDetails_FullMinipoolInRefundQueue(t *testing.T) {
 	result := task.getMinipoolBalanceDetails(mpd, s, nil)
 
 	// 32 ETH user share - 16 ETH = 16 ETH
-	expected := ethToWei(16)
+	expected := ethToWei(16).BigInt()
 	if result.UserBalance.Cmp(expected) != 0 {
 		t.Errorf("full minipool refund queue: got %s, want %s", result.UserBalance, expected)
 	}
@@ -593,8 +590,8 @@ func (s *stubExecutionClient) TransactionReceipt(_ context.Context, _ common.Has
 	return nil, nil
 }
 func (s *stubExecutionClient) BlockNumber(_ context.Context) (uint64, error) { return 0, nil }
-func (s *stubExecutionClient) BalanceAt(_ context.Context, _ common.Address, _ *big.Int) (*big.Int, error) {
-	return big.NewInt(0), nil
+func (s *stubExecutionClient) BalanceAt(_ context.Context, _ common.Address, _ *big.Int) (units.Wei, error) {
+	return units.Wei{}, nil
 }
 func (s *stubExecutionClient) TransactionByHash(_ context.Context, _ common.Hash) (*types.Transaction, bool, error) {
 	return nil, false, nil
@@ -855,8 +852,8 @@ func TestHasSubmittedSpecificBlockBalances_NotSubmitted(t *testing.T) {
 	task := &submitNetworkBalances{storage: storage}
 
 	b := newNetworkBalances()
-	b.ClampedTotalBalanceWei = ethToWei(500)
-	b.TotalStaking = ethToWei(300)
+	b.ClampedTotalBalanceWei = ethToWei(500).BigInt()
+	b.TotalStaking = ethToWei(300).BigInt()
 	b.SlotTimestamp = 1_234_567_890
 
 	got, err := task.hasSubmittedSpecificBlockBalances(common.HexToAddress("0xabcd"), 99, b)
@@ -873,8 +870,8 @@ func TestHasSubmittedSpecificBlockBalances_Submitted(t *testing.T) {
 	blockNumber := uint64(99)
 
 	b := newNetworkBalances()
-	b.ClampedTotalBalanceWei = ethToWei(500)
-	b.TotalStaking = ethToWei(300)
+	b.ClampedTotalBalanceWei = ethToWei(500).BigInt()
+	b.TotalStaking = ethToWei(300).BigInt()
 	b.SlotTimestamp = 1_234_567_890
 
 	key := specificBlockBalancesKey(nodeAddr, blockNumber, b)
@@ -895,9 +892,9 @@ func TestHasSubmittedSpecificBlockBalances_DifferentValues(t *testing.T) {
 	blockNumber := uint64(99)
 
 	submitted := newNetworkBalances()
-	submitted.ClampedTotalBalanceWei = ethToWei(500)
-	submitted.TotalStaking = ethToWei(300)
-	submitted.RETHSupply = ethToWei(400)
+	submitted.ClampedTotalBalanceWei = ethToWei(500).BigInt()
+	submitted.TotalStaking = ethToWei(300).BigInt()
+	submitted.RETHSupply = ethToWei(400).BigInt()
 	submitted.SlotTimestamp = 1_000
 
 	// Store the specific key for the original submitted values.
@@ -916,7 +913,7 @@ func TestHasSubmittedSpecificBlockBalances_DifferentValues(t *testing.T) {
 
 	// Change TotalStaking → key no longer matches.
 	altered := submitted
-	altered.TotalStaking = new(big.Int).Set(ethToWei(301))
+	altered.TotalStaking = ethToWei(301).BigInt()
 
 	got, err := task.hasSubmittedSpecificBlockBalances(nodeAddr, blockNumber, altered)
 	if err != nil {
@@ -934,8 +931,8 @@ func TestHasSubmittedSpecificVsBlock(t *testing.T) {
 	blockNumber := uint64(42)
 
 	b := newNetworkBalances()
-	b.ClampedTotalBalanceWei = ethToWei(100)
-	b.TotalStaking = ethToWei(50)
+	b.ClampedTotalBalanceWei = ethToWei(100).BigInt()
+	b.TotalStaking = ethToWei(50).BigInt()
 	b.SlotTimestamp = 9999
 
 	// Only set the block-level key.

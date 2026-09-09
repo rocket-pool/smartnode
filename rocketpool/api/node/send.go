@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Address) (*api.CanNodeSendResponse, error) {
+func canNodeSend(c *cli.Command, amountRaw units.Eth, token string, to common.Address) (*api.CanNodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -105,7 +104,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 
-		amountWei := units.EthToWeiWithDecimals(amountRaw, contract.Decimals)
+		amountWei := amountRaw.Round(int32(contract.Decimals)).ToWei()
 		response.TokenName = contract.Name
 		response.TokenSymbol = contract.Symbol
 
@@ -115,7 +114,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
 		}
 
-		response.Balance = units.WeiToEthWithDecimals(balance, contract.Decimals)
+		response.Balance = balance.ToEth().Round(int32(contract.Decimals))
 		response.InsufficientBalance = (amountWei.Cmp(balance) > 0)
 
 		// Get the gas info
@@ -126,8 +125,8 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 		response.GasLimits = gasLimits
 	} else {
 		// Handle well-known token types
-		amountWei := units.EthToWei(amountRaw)
-		var balanceWei *big.Int
+		amountWei := amountRaw.ToWei()
+		var balanceWei units.Wei
 		switch token {
 		case "eth":
 
@@ -198,7 +197,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 			response.GasLimits = gasLimits
 
 		}
-		response.Balance = units.WeiToEth(balanceWei)
+		response.Balance = balanceWei.ToEth()
 	}
 
 	// Update & return response
@@ -207,7 +206,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 
 }
 
-func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Command, amountRaw units.Eth, token string, to common.Address, t *snroute.TransactOpts) (*api.NodeSendResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -238,7 +237,7 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 
-		amountWei := units.EthToWeiWithDecimals(amountRaw, contract.Decimals)
+		amountWei := amountRaw.Round(int32(contract.Decimals)).ToWei()
 
 		tx, err := contract.Transfer(to, amountWei, opts)
 		if err != nil {
@@ -246,13 +245,13 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 		}
 		response.TxHash = tx.Hash()
 	} else {
-		amountWei := units.EthToWei(amountRaw)
+		amountWei := amountRaw.ToWei()
 		// Handle token type
 		switch token {
 		case "eth":
 
 			// Transfer ETH
-			opts.Value = amountWei
+			opts.Value = amountWei.BigInt()
 			hash, err := transactions.SendTransaction(ec, to, w.GetChainID(), nil, false, opts)
 			if err != nil {
 				return nil, err
@@ -418,7 +417,7 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address, t *snrou
 }
 
 func canSendHandler(ctx snroute.Context) {
-	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	amountRaw, err := parseNodeEth(ctx.Request, "amountRaw")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -430,7 +429,7 @@ func canSendHandler(ctx snroute.Context) {
 }
 
 func sendHandler(ctx snroute.WriteContext) {
-	amountRaw, err := parseNodeFloat64(ctx.Request, "amountRaw")
+	amountRaw, err := parseNodeEth(ctx.Request, "amountRaw")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

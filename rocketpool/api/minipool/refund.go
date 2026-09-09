@@ -1,8 +1,6 @@
 package minipool
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -52,7 +50,7 @@ func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Can
 	if err != nil {
 		return nil, err
 	}
-	response.InsufficientRefundBalance = (refundBalance.Cmp(big.NewInt(0)) == 0)
+	response.InsufficientRefundBalance = refundBalance.IsZero()
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()

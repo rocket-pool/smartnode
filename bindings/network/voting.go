@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -110,16 +111,16 @@ func GetVotingNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bin
 }
 
 // Get the voting power of the given node on the provided block
-func GetVotingPower(rp *rocketpool.RocketPool, address common.Address, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
+func GetVotingPower(rp *rocketpool.RocketPool, address common.Address, blockNumber uint32, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := rocketNetworkVoting.Call(opts, value, "getVotingPower", address, blockNumber); err != nil {
-		return nil, fmt.Errorf("error getting voting power for node %s on block %d: %w", address.Hex(), blockNumber, err)
+	value := units.Wei{}
+	if err := rocketNetworkVoting.Call(opts, &value, "getVotingPower", address, blockNumber); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting voting power for node %s on block %d: %w", address.Hex(), blockNumber, err)
 	}
-	return *value, nil
+	return value, nil
 }
 
 // Get the address that the provided node has delegated voting power to on the given block

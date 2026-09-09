@@ -2,7 +2,6 @@ package odao
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
@@ -45,8 +45,8 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 
 	// Data
 	var wg errgroup.Group
-	var nodeRplBalance *big.Int
-	var rplBondAmount *big.Int
+	var nodeRplBalance units.Wei
+	var rplBondAmount units.Wei
 
 	// Check proposal actionable status
 	wg.Go(func() error {
@@ -138,7 +138,7 @@ func approveRpl(c *cli.Command, t *snroute.TransactOpts) (*api.JoinTNDAOApproveR
 	// Data
 	var wg errgroup.Group
 	var rocketDAONodeTrustedActionsAddress *common.Address
-	var rplBondAmount *big.Int
+	var rplBondAmount units.Wei
 
 	// Get oracle node actions contract address
 	wg.Go(func() error {

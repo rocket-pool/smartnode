@@ -27,14 +27,14 @@ func reduceBond(yes bool) error {
 	}
 
 	fmt.Printf("Current active validators:                       %d\n", megapoolDetails.Megapool.ActiveValidatorCount)
-	fmt.Printf("Current megapool bond:                           %.6f ETH\n", math.RoundDown(units.WeiToEth(megapoolDetails.Megapool.NodeBond), 6))
-	fmt.Printf("Current bond requirements for active validators: %.6f ETH\n", math.RoundDown(units.WeiToEth(megapoolDetails.Megapool.BondRequirement), 6))
+	fmt.Printf("Current megapool bond:                           %.6f ETH\n", math.RoundDown(megapoolDetails.Megapool.NodeBond.ToEth().InexactFloat64(), 6))
+	fmt.Printf("Current bond requirements for active validators: %.6f ETH\n", math.RoundDown(megapoolDetails.Megapool.BondRequirement.ToEth().InexactFloat64(), 6))
 	fmt.Println()
 
 	var amount float64
 	// If current node bond is higher than the bond requirement, ask if the user wants to reduce the bond
 	if megapoolDetails.Megapool.NodeBond.Cmp(megapoolDetails.Megapool.BondRequirement) > 0 {
-		maxAmountInEth := units.WeiToEth(megapoolDetails.Megapool.NodeBond.Sub(megapoolDetails.Megapool.NodeBond, megapoolDetails.Megapool.BondRequirement))
+		maxAmountInEth := megapoolDetails.Megapool.NodeBond.Sub(megapoolDetails.Megapool.BondRequirement).ToEth().InexactFloat64()
 		fmt.Printf("You have %.6f of excess bond.\n", maxAmountInEth)
 		if prompt.Confirm("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth) {
 			// Convert maxAmountInEth to string
@@ -52,9 +52,9 @@ func reduceBond(yes bool) error {
 		return nil
 	}
 
-	amountWei := units.EthToWei(amount)
+	amountWei := units.EthFromFloat(amount).ToWei()
 	// Check megapool debt can be repaid
-	canReduceBond, err := rp.CanReduceBond(amountWei)
+	canReduceBond, err := rp.CanReduceBond(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -73,13 +73,13 @@ func reduceBond(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Reduce megapool bond
-	response, err := rp.ReduceBond(amountWei)
+	response, err := rp.ReduceBond(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func reduceBond(yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully reduced %.6f of megapool bond.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully reduced %.6f of megapool bond.\n", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

@@ -186,11 +186,11 @@ func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, erro
 					if challengedIndex == 1 {
 						// The proposal bond can be unlocked
 						claimResult.UnlockableIndices = append(claimResult.UnlockableIndices, 1)
-						claimResult.UnlockAmount.Add(claimResult.UnlockAmount, propInfo.ProposalBond)
+						claimResult.UnlockAmount.Add(claimResult.UnlockAmount, propInfo.ProposalBond.BigInt())
 					} else {
 						// This is a challenged index that can be claimed
 						claimResult.RewardableIndices = append(claimResult.RewardableIndices, challengedIndex)
-						claimResult.RewardAmount.Add(claimResult.RewardAmount, propInfo.ChallengeBond)
+						claimResult.RewardAmount.Add(claimResult.RewardAmount, propInfo.ChallengeBond.BigInt())
 					}
 				}
 			}
@@ -240,14 +240,14 @@ func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, erro
 			// Mark how much RPL can be unlocked
 			if unlockableChallengeCount > 0 {
 				totalUnlock := big.NewInt(unlockableChallengeCount)
-				totalUnlock.Mul(totalUnlock, propInfo.ChallengeBond)
+				totalUnlock.Mul(totalUnlock, propInfo.ChallengeBond.BigInt())
 				claimResult.UnlockAmount.Add(claimResult.UnlockAmount, totalUnlock)
 			}
 
 			// How much RPL will be rewarded
 			if rewardCount > 0 {
 				totalReward := big.NewInt(rewardCount)
-				totalReward.Mul(totalReward, propInfo.ProposalBond)
+				totalReward.Mul(totalReward, propInfo.ProposalBond.BigInt())
 				totalReward.Div(totalReward, big.NewInt(totalContributingChallenges))
 				claimResult.RewardAmount.Add(claimResult.RewardAmount, totalReward)
 			}

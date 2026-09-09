@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const smallStateFixture = "../../shared/services/state/testdata/network_state.json.gz"
@@ -35,10 +36,10 @@ func (s *stubRewardSplitCalculator) CalculateRewards(megapoolAddress common.Addr
 	half := new(big.Int).Div(rewards, big.NewInt(2))
 	remainder := new(big.Int).Sub(rewards, half)
 	return megapool.RewardSplit{
-		NodeRewards:        half,
-		VoterRewards:       big.NewInt(0),
-		RethRewards:        remainder,
-		ProtocolDAORewards: big.NewInt(0),
+		NodeRewards:        units.NewWei(half),
+		VoterRewards:       units.Wei{},
+		RethRewards:        units.NewWei(remainder),
+		ProtocolDAORewards: units.Wei{},
 	}, nil
 }
 
@@ -47,7 +48,7 @@ func (s *stubRewardSplitCalculator) CalculateRewards(megapoolAddress common.Addr
 type stubSmoothingPoolCalculator struct{}
 
 func (s *stubSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkStateIndex, _ *types.Header, _ time.Time) (*big.Int, error) {
-	return ns.NetworkDetails.SmoothingPoolBalance, nil
+	return ns.NetworkDetails.SmoothingPoolBalance.BigInt(), nil
 }
 
 // stubWithdrawalFinder satisfies withdrawalFinder for balance-calculation tests
@@ -112,22 +113,22 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	}
 
 	// DepositPool must equal DepositPoolUserBalance from the state
-	if balances.DepositPool.Cmp(ns.NetworkDetails.DepositPoolUserBalance) != 0 {
+	if balances.DepositPool.Cmp(ns.NetworkDetails.DepositPoolUserBalance.BigInt()) != 0 {
 		t.Errorf("DepositPool: got %s, want %s", balances.DepositPool, ns.NetworkDetails.DepositPoolUserBalance)
 	}
 
 	// RETHContract must equal RETHBalance from the state
-	if balances.RETHContract.Cmp(ns.NetworkDetails.RETHBalance) != 0 {
+	if balances.RETHContract.Cmp(ns.NetworkDetails.RETHBalance.BigInt()) != 0 {
 		t.Errorf("RETHContract: got %s, want %s", balances.RETHContract, ns.NetworkDetails.RETHBalance)
 	}
 
 	// RETHSupply must equal TotalRETHSupply from the state
-	if balances.RETHSupply.Cmp(ns.NetworkDetails.TotalRETHSupply) != 0 {
+	if balances.RETHSupply.Cmp(ns.NetworkDetails.TotalRETHSupply.BigInt()) != 0 {
 		t.Errorf("RETHSupply: got %s, want %s", balances.RETHSupply, ns.NetworkDetails.TotalRETHSupply)
 	}
 
 	// SmoothingPoolShare must equal SmoothingPoolBalance (per our stub)
-	if balances.SmoothingPoolShare.Cmp(ns.NetworkDetails.SmoothingPoolBalance) != 0 {
+	if balances.SmoothingPoolShare.Cmp(ns.NetworkDetails.SmoothingPoolBalance.BigInt()) != 0 {
 		t.Errorf("SmoothingPoolShare: got %s, want %s", balances.SmoothingPoolShare, ns.NetworkDetails.SmoothingPoolBalance)
 	}
 
@@ -151,7 +152,7 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	// NodeCreditBalance must be the sum of all nodes' DepositCreditBalance
 	expectedCredit := big.NewInt(0)
 	for _, node := range ns.NodeDetails {
-		expectedCredit.Add(expectedCredit, node.DepositCreditBalance)
+		expectedCredit.Add(expectedCredit, node.DepositCreditBalance.BigInt())
 	}
 	if balances.NodeCreditBalance.Cmp(expectedCredit) != 0 {
 		t.Errorf("NodeCreditBalance: got %s, want %s", balances.NodeCreditBalance, expectedCredit)
@@ -189,7 +190,7 @@ func TestGetNetworkBalancesFromState(t *testing.T) {
 	expectedUserCapital := big.NewInt(0)
 	for addr, mp := range ns.MegapoolDetails {
 		if _, hasPubkeys := ns.MegapoolToPubkeysMap[addr]; hasPubkeys {
-			expectedUserCapital.Add(expectedUserCapital, mp.UserCapital)
+			expectedUserCapital.Add(expectedUserCapital, mp.UserCapital.BigInt())
 		}
 	}
 	if balances.MegapoolsUserShareTotal.Cmp(expectedUserCapital) != 0 {
@@ -228,7 +229,7 @@ func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
 			SlotsPerEpoch: 32,
 		},
 		NetworkDetails: &rpstate.NetworkDetails{
-			ReducedBond: reducedBond,
+			ReducedBond: units.NewWei(reducedBond),
 		},
 		MegapoolValidatorDetails: state.ValidatorDetailsMap{
 			pubkey: {Pubkey: pubkey, Index: "4", Exists: true, Balance: 32000000000, ActivationEpoch: 0, ExitEpoch: ^uint64(0)},
@@ -267,10 +268,10 @@ func TestMegapoolBalanceWithDuplicatePubkey(t *testing.T) {
 	megapoolDetails := rpstate.NativeMegapoolDetails{
 		Address:        megapoolAddrA,
 		Deployed:       true,
-		UserCapital:    new(big.Int).Mul(big.NewInt(24), oneEth),
-		NodeBond:       new(big.Int).Mul(big.NewInt(8), oneEth),
-		EthBalance:     big.NewInt(0),
-		PendingRewards: big.NewInt(0),
+		UserCapital:    units.NewWei(new(big.Int).Mul(big.NewInt(24), oneEth)),
+		NodeBond:       units.NewWei(new(big.Int).Mul(big.NewInt(8), oneEth)),
+		EthBalance:     units.Wei{},
+		PendingRewards: units.Wei{},
 	}
 
 	task := &submitNetworkBalances{}

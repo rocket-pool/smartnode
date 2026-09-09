@@ -1,8 +1,6 @@
 package megapool
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -64,7 +62,7 @@ func canClaimRefund(c *cli.Command) (*api.CanClaimRefundResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if refund.Cmp(big.NewInt(0)) == 0 {
+	if refund.IsZero() {
 		response.CanClaim = false
 	}
 

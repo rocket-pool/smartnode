@@ -13,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func isFeeDistributorInitialized(c *cli.Command) (*api.NodeIsFeeDistributorInitializedResponse, error) {
@@ -177,7 +176,7 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 		if err != nil {
 			return fmt.Errorf("error getting node share for distributor %s: %w", distributorAddress.Hex(), err)
 		}
-		response.NodeShare = units.WeiToEth(nodeShareRaw)
+		response.NodeShare = nodeShareRaw.ToEth()
 		return nil
 	})
 

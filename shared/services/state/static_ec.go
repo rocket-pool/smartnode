@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Compile-time check that StaticExecutionClient satisfies rocketpool.ExecutionClient
@@ -112,8 +113,8 @@ func (c *StaticExecutionClient) BlockNumber(_ context.Context) (uint64, error) {
 	return c.state.ElBlockNumber, nil
 }
 
-func (c *StaticExecutionClient) BalanceAt(_ context.Context, _ common.Address, _ *big.Int) (*big.Int, error) {
-	return nil, ErrStaticMode
+func (c *StaticExecutionClient) BalanceAt(_ context.Context, _ common.Address, _ *big.Int) (units.Wei, error) {
+	return units.Wei{}, ErrStaticMode
 }
 
 func (c *StaticExecutionClient) TransactionByHash(_ context.Context, _ common.Hash) (*types.Transaction, bool, error) {

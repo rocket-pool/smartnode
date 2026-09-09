@@ -2,7 +2,6 @@ package pdao
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/urfave/cli/v3"
 
@@ -42,12 +41,10 @@ func getRewardsPercentages(c *cli.Command) (*api.PDAOGetRewardsPercentagesRespon
 	return &response, nil
 }
 
-func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
+func canProposeRewardsPercentages(c *cli.Command, node units.Wei, odao units.Wei, pdao units.Wei) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
 	// Validate sum of percentages == 100%
-	one := units.EthToWei(1)
-	sum := big.NewInt(0).Set(node)
-	sum.Add(sum, odao)
-	sum.Add(sum, pdao)
+	one := units.NewEth(1).ToWei()
+	sum := node.Add(odao).Add(pdao)
 	if sum.Cmp(one) != 0 {
 		return nil, fmt.Errorf("values don't add up to 100%%")
 	}
@@ -127,7 +124,7 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Command, node units.Wei, odao units.Wei, pdao units.Wei, blockNumber uint32, t *snroute.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
 	opts := t.Opts()
 
 	// Get services

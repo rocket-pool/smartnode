@@ -84,9 +84,9 @@ type MockMinipool struct {
 type BondSize *big.Int
 
 var (
-	BondSizeEightEth      = BondSize(units.EthToWei(8))
-	BondSizeSixteenEth    = BondSize(units.EthToWei(16))
-	_bondSizeThirtyTwoEth = BondSize(units.EthToWei(32))
+	BondSizeEightEth      = BondSize(units.EthFromFloat(8).ToWei().BigInt())
+	BondSizeSixteenEth    = BondSize(units.EthFromFloat(16).ToWei().BigInt())
+	_bondSizeThirtyTwoEth = BondSize(units.EthFromFloat(32).ToWei().BigInt())
 )
 
 func (h *MockHistory) GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool {
@@ -259,7 +259,7 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 	}
 
 	out.RplStake = big.NewInt(params.CollateralRpl)
-	out.RplStake.Mul(out.RplStake, units.EthToWei(1))
+	out.RplStake.Mul(out.RplStake, units.EthFromFloat(1).ToWei().BigInt())
 
 	// Opt nodes in an epoch before the start of the interval
 	if params.SmoothingPool {
@@ -517,7 +517,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].LastBondReductionTime = h.BeaconConfig.GetSlotTime(h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch + (h.EndEpoch-h.StartEpoch)/2))
-	node.Minipools[0].LastBondReductionPrevValue = big.NewInt(0).Mul(big.NewInt(16), units.EthToWei(1))
+	node.Minipools[0].LastBondReductionPrevValue = big.NewInt(0).Mul(big.NewInt(16), units.EthFromFloat(1).ToWei().BigInt())
 	// Say it was 20% for fun
 	node.Minipools[0].LastBondReductionPrevNodeFee, _ = big.NewInt(0).SetString("200000000000000000", 10)
 	node.Notes = "Node with one 16-eth that does a bond reduction to 8 eth halfway through the interval"
@@ -610,43 +610,43 @@ func NewDefaultMockHistoryNoNodes() *MockHistory {
 
 		NetworkDetails: &rpstate.NetworkDetails{
 			// Defaults to 0.24 ether, so 10 RPL is 2.4 ether and a leb8 with 10 RPL is 10% collateralized
-			RplPrice: big.NewInt(240000000000000000),
+			RplPrice: units.NewWei(big.NewInt(240000000000000000)),
 			// Defaults to 10% aka 0.1 ether
-			MinCollateralFraction: big.NewInt(100000000000000000),
+			MinCollateralFraction: units.NewWei(big.NewInt(100000000000000000)),
 			// Defaults to 60% to mimic current withdrawal limits
-			MaxCollateralFraction: big.NewInt(600000000000000000),
+			MaxCollateralFraction: units.NewWei(big.NewInt(600000000000000000)),
 			// Defaults to 100 epochs
 			IntervalDuration: 100 * 32 * 12 * time.Second,
 			// Defaults to genesis plus 100 epochs
 			IntervalStart: time.Unix(DefaultMockHistoryGenesis, 0).Add(100 * 32 * 12 * time.Second),
 			// Defaults to 0.7 ether to match mainnet
-			NodeOperatorRewardsPercent: big.NewInt(700000000000000000),
+			NodeOperatorRewardsPercent: units.NewWei(big.NewInt(700000000000000000)),
 			// Defaults to 0.015 ether to match mainnet as of 2024-10-08
-			TrustedNodeOperatorRewardsPercent: big.NewInt(15000000000000000),
+			TrustedNodeOperatorRewardsPercent: units.NewWei(big.NewInt(15000000000000000)),
 			// Defaults to 1 - 0.7 - 0.015 ether to round out to 100%
-			ProtocolDaoRewardsPercent: big.NewInt(285000000000000000),
+			ProtocolDaoRewardsPercent: units.NewWei(big.NewInt(285000000000000000)),
 			// Defaults to 70,000 ether of RPL to apprixmate 1/13th of 5% of 18m
-			PendingRPLRewards: big.NewInt(0).Mul(big.NewInt(70000), big.NewInt(1000000000000000000)),
+			PendingRPLRewards: units.NewWei(big.NewInt(0).Mul(big.NewInt(70000), big.NewInt(1000000000000000000))),
 			// RewardIndex defaults to 40000 to avoid a test tree from being taken seriously
 			RewardIndex: 40000,
 			// Put 100 ether in the smoothing pool
-			SmoothingPoolBalance: big.NewInt(0).Mul(big.NewInt(100), big.NewInt(1000000000000000000)),
+			SmoothingPoolBalance: units.NewWei(big.NewInt(0).Mul(big.NewInt(100), big.NewInt(1000000000000000000))),
 
 			// Saturn
 			MegapoolRevenueSplitSettings: rpstate.MegapoolRevenueSplitSettings{
 				// These numbers are nonsensical except NodeOperatorCommissionAddr
 				// this ensures the time-weighted averages are the onces referenced.
-				NodeOperatorCommissionShare: big.NewInt(0).Mul(oneEth, big.NewInt(2)),
-				NodeOperatorCommissionAdder: big.NewInt(1e16),
-				VoterCommissionShare:        big.NewInt(0).Mul(oneEth, big.NewInt(2)),
-				PdaoCommissionShare:         big.NewInt(0).Mul(oneEth, big.NewInt(2)),
+				NodeOperatorCommissionShare: units.NewWei(big.NewInt(0).Mul(oneEth, big.NewInt(2))),
+				NodeOperatorCommissionAdder: units.NewWei(big.NewInt(1e16)),
+				VoterCommissionShare:        units.NewWei(big.NewInt(0).Mul(oneEth, big.NewInt(2))),
+				PdaoCommissionShare:         units.NewWei(big.NewInt(0).Mul(oneEth, big.NewInt(2))),
 			},
 			MegapoolRevenueSplitTimeWeightedAverages: rpstate.MegapoolRevenueSplitTimeWeightedAverages{
-				NodeShare:  big.NewInt(4e16),
-				VoterShare: big.NewInt(6e16),
-				PdaoShare:  big.NewInt(5e16),
+				NodeShare:  units.NewWei(big.NewInt(4e16)),
+				VoterShare: units.NewWei(big.NewInt(6e16)),
+				PdaoShare:  units.NewWei(big.NewInt(5e16)),
 			},
-			PendingVoterShareEth: big.NewInt(0).Mul(big.NewInt(10), oneEth),
+			PendingVoterShareEth: units.NewWei(big.NewInt(0).Mul(big.NewInt(10), oneEth)),
 
 			// The rest of the fields seem unimportant and are left empty
 		},
@@ -691,23 +691,25 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		// Calculate the node's effective RPL stake
 		// If it's below 10% of borrowed eth per the network details, it's 0
 		rplStake := node.RplStake
-		rplPrice := h.NetworkDetails.RplPrice
+		rplPrice := h.NetworkDetails.RplPrice.BigInt()
 		// Calculate the minimum RPL stake according to the network details
-		minRplStake := big.NewInt(0).Mul(node.borrowedEth, h.NetworkDetails.MinCollateralFraction)
+		minCollateralFraction := h.NetworkDetails.MinCollateralFraction.BigInt()
+		maxCollateralFraction := h.NetworkDetails.MaxCollateralFraction.BigInt()
+		minRplStake := big.NewInt(0).Mul(node.borrowedEth, minCollateralFraction)
 		// minRplStake is now the minimum RPL stake in eth value measured in wei squared
 		// divide by the price to get the minimum RPL stake in RPL
 		minRplStake.Div(minRplStake, rplPrice)
 
 		// Same for max
-		maxRplStake := big.NewInt(0).Mul(node.borrowedEth, h.NetworkDetails.MaxCollateralFraction)
+		maxRplStake := big.NewInt(0).Mul(node.borrowedEth, maxCollateralFraction)
 		maxRplStake.Div(maxRplStake, rplPrice)
 
 		// Eth matching limit is rpl stake times the price divided by the collateral fraction
 		ethBorrowingLimit := big.NewInt(0).Mul(node.RplStake, rplPrice)
-		ethBorrowingLimit.Div(ethBorrowingLimit, h.NetworkDetails.MinCollateralFraction)
+		ethBorrowingLimit.Div(ethBorrowingLimit, minCollateralFraction)
 		collateralisationRatio := big.NewInt(0)
 		if node.borrowedEth.Sign() > 0 {
-			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, units.EthToWei(1)), node.borrowedEth))
+			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, units.EthFromFloat(1).ToWei().BigInt()), node.borrowedEth))
 		}
 
 		// Create the node details
@@ -716,20 +718,20 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			RegistrationTime:  big.NewInt(node.RegistrationTime.Unix()),
 			TimezoneLocation:  "UTC",
 			RewardNetwork:     big.NewInt(0),
-			LegacyStakedRPL:   rplStake,
-			EffectiveRPLStake: rplStake,
-			MinimumRPLStake:   minRplStake,
-			MaximumRPLStake:   maxRplStake,
-			EthBorrowed:       node.borrowedEth,
-			EthBorrowedLimit:  ethBorrowingLimit,
+			LegacyStakedRPL:   units.NewWei(rplStake),
+			EffectiveRPLStake: units.NewWei(rplStake),
+			MinimumRPLStake:   units.NewWei(minRplStake),
+			MaximumRPLStake:   units.NewWei(maxRplStake),
+			EthBorrowed:       units.NewWei(node.borrowedEth),
+			EthBorrowedLimit:  units.NewWei(ethBorrowingLimit),
 			MinipoolCount:     big.NewInt(int64(len(node.Minipools))),
 			// Empty node wallet
-			BalanceETH:                       big.NewInt(0),
-			BalanceRETH:                      big.NewInt(0),
-			BalanceRPL:                       big.NewInt(0),
-			BalanceOldRPL:                    big.NewInt(0),
-			DepositCreditBalance:             big.NewInt(0),
-			DistributorBalance:               big.NewInt(0),
+			BalanceETH:                       units.NewWei(big.NewInt(0)),
+			BalanceRETH:                      units.NewWei(big.NewInt(0)),
+			BalanceRPL:                       units.NewWei(big.NewInt(0)),
+			BalanceOldRPL:                    units.NewWei(big.NewInt(0)),
+			DepositCreditBalance:             units.NewWei(big.NewInt(0)),
+			DistributorBalance:               units.NewWei(big.NewInt(0)),
 			WithdrawalAddress:                node.Address,
 			PendingWithdrawalAddress:         common.Address{},
 			SmoothingPoolRegistrationState:   node.SmoothingPoolRegistrationState,
@@ -737,24 +739,24 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			NodeAddress:                      node.Address,
 
 			// Ratio of bonded to bonded plus borrowed
-			CollateralisationRatio: collateralisationRatio,
+			CollateralisationRatio: units.NewWei(collateralisationRatio),
 
 			MegapoolAddress:  node.MegapoolAddress(),
 			MegapoolDeployed: node.Megapool,
 
-			MegapoolETHBorrowed: big.NewInt(0),
-			MegapoolEthBonded:   big.NewInt(0),
-			MegapoolStakedRPL:   big.NewInt(0),
+			MegapoolETHBorrowed: units.NewWei(big.NewInt(0)),
+			MegapoolEthBonded:   units.NewWei(big.NewInt(0)),
+			MegapoolStakedRPL:   units.NewWei(big.NewInt(0)),
 		}
 
 		if node.MegapoolEthBorrowed != nil {
-			details.MegapoolETHBorrowed = node.MegapoolEthBorrowed
+			details.MegapoolETHBorrowed = units.NewWei(node.MegapoolEthBorrowed)
 		}
 		if node.MegapoolEthBonded != nil {
-			details.MegapoolEthBonded = node.MegapoolEthBonded
+			details.MegapoolEthBonded = units.NewWei(node.MegapoolEthBonded)
 		}
 		if node.MegapoolStakedRPL != nil {
-			details.MegapoolStakedRPL = node.MegapoolStakedRPL
+			details.MegapoolStakedRPL = units.NewWei(node.MegapoolStakedRPL)
 		}
 
 		out.NodeDetails = append(out.NodeDetails, details)
@@ -769,27 +771,27 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				StatusBlock:             minipool.StatusBlock,
 				StatusTime:              big.NewInt(minipool.StatusTime.Unix()),
 				Finalised:               minipool.Finalised,
-				NodeFee:                 minipool.NodeFee,
-				NodeDepositBalance:      minipool.NodeDepositBalance,
+				NodeFee:                 units.NewWei(minipool.NodeFee),
+				NodeDepositBalance:      units.NewWei(minipool.NodeDepositBalance),
 				NodeDepositAssigned:     true,
-				UserDepositBalance:      big.NewInt(0).Sub(_bondSizeThirtyTwoEth, minipool.NodeDepositBalance),
+				UserDepositBalance:      units.NewWei(big.NewInt(0).Sub(_bondSizeThirtyTwoEth, minipool.NodeDepositBalance)),
 				UserDepositAssigned:     true,
 				UserDepositAssignedTime: big.NewInt(h.BeaconConfig.GetSlotTime(minipool.StatusBlock.Uint64() - h.BlockOffset).Unix()),
 				NodeAddress:             minipool.NodeAddress,
-				Balance:                 big.NewInt(0),
-				DistributableBalance:    big.NewInt(0),
-				NodeShareOfBalance:      big.NewInt(0),
-				UserShareOfBalance:      big.NewInt(0),
-				NodeRefundBalance:       big.NewInt(0),
+				Balance:                 units.NewWei(big.NewInt(0)),
+				DistributableBalance:    units.NewWei(big.NewInt(0)),
+				NodeShareOfBalance:      units.NewWei(big.NewInt(0)),
+				UserShareOfBalance:      units.NewWei(big.NewInt(0)),
+				NodeRefundBalance:       units.NewWei(big.NewInt(0)),
 				PenaltyCount:            big.NewInt(0),
-				PenaltyRate:             big.NewInt(0),
+				PenaltyRate:             units.NewWei(big.NewInt(0)),
 				WithdrawalCredentials:   common.Hash{},
 				Status:                  minipool.Status,
 				DepositType:             types.Variable,
 
 				LastBondReductionTime:        big.NewInt(minipool.LastBondReductionTime.Unix()),
-				LastBondReductionPrevValue:   minipool.LastBondReductionPrevValue,
-				LastBondReductionPrevNodeFee: minipool.LastBondReductionPrevNodeFee,
+				LastBondReductionPrevValue:   units.NewWei(minipool.LastBondReductionPrevValue),
+				LastBondReductionPrevNodeFee: units.NewWei(minipool.LastBondReductionPrevNodeFee),
 			}
 			out.MinipoolDetails = append(out.MinipoolDetails, minipoolDetails)
 
@@ -832,7 +834,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				Url:              "https://example.com",
 				JoinedTime:       time.Unix(node.RegistrationTime.Unix(), 0),
 				LastProposalTime: time.Unix(node.RegistrationTime.Unix(), 0),
-				RPLBondAmount:    node.RplStake,
+				RPLBondAmount:    units.NewWei(node.RplStake),
 			}
 			out.OracleDaoMemberDetails = append(out.OracleDaoMemberDetails, details)
 		}
@@ -841,8 +843,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		if node.Megapool {
 			out.MegapoolDetails[node.MegapoolAddress()] = rpstate.NativeMegapoolDetails{
 				ActiveValidatorCount: uint32(node.MegapoolValidators),
-				UserCapital:          big.NewInt(0).Set(node.MegapoolEthBorrowed),
-				NodeBond:             big.NewInt(0).Set(node.MegapoolEthBonded),
+				UserCapital:          units.NewWei(big.NewInt(0).Set(node.MegapoolEthBorrowed)),
+				NodeBond:             units.NewWei(big.NewInt(0).Set(node.MegapoolEthBonded)),
 			}
 			for i := 0; i < node.MegapoolValidators; i++ {
 				pubkey := h.GetValidatorPubkey()

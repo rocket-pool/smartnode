@@ -127,7 +127,8 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 		return err
 	}
 
-	if canSend.Balance <= 0 {
+	balance := canSend.Balance.InexactFloat64()
+	if balance <= 0 {
 		if strings.HasPrefix(token, "0x") {
 			fmt.Printf("The node's balance of %s (%s) is zero, nothing to send.\n", canSend.TokenSymbol, token)
 		} else {
@@ -137,10 +138,10 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 	}
 
 	tokenString := fmt.Sprintf("%s (%s)", canSend.TokenSymbol, token)
-	amountRaw := canSend.Balance
+	amountRaw := balance
 
 	if strings.EqualFold(token, "eth") {
-		fmt.Printf("Node balance:    %.8f ETH\n", canSend.Balance)
+		fmt.Printf("Node balance:    %.8f ETH\n", balance)
 		fmt.Printf("For sending all ETH, we need to estimate the gas costs first.\n")
 		// For ETH, determine gas settings first so we can subtract the gas cost from the balance.
 		// This may prompt the user to select a gas price.
@@ -150,14 +151,14 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 		}
 
 		gasCost := g.GetMaxGasCostEth(canSend.GasLimits)
-		amountRaw = canSend.Balance - gasCost
+		amountRaw = balance - gasCost
 
 		if amountRaw <= 0 {
-			fmt.Printf("The node's ETH balance (%.8f ETH) is not enough to cover the gas cost (%.8f ETH).\n", canSend.Balance, gasCost)
+			fmt.Printf("The node's ETH balance (%.8f ETH) is not enough to cover the gas cost (%.8f ETH).\n", balance, gasCost)
 			return nil
 		}
 
-		fmt.Printf("Node balance:    %.8f ETH\n", canSend.Balance)
+		fmt.Printf("Node balance:    %.8f ETH\n", balance)
 		fmt.Printf("Gas reserve:     %.8f ETH\n", gasCost)
 		fmt.Printf("Send amount:     %.8f ETH\n\n", amountRaw)
 

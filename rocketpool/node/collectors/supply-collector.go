@@ -139,7 +139,7 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.nodeCount, prometheus.GaugeValue, nodeCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeFee, prometheus.GaugeValue, nodeFee)
+		collector.nodeFee, prometheus.GaugeValue, nodeFee.InexactFloat64())
 	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
 	channel <- prometheus.MustNewConstMetric(

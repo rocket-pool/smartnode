@@ -1,13 +1,12 @@
 package api
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	tn "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type TNDAOStatusResponse struct {
@@ -258,11 +257,11 @@ type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
 
 type GetTNDAOMemberSettingsResponse struct {
 	APIResponse
-	Quorum            float64  `json:"quorum"`
-	RPLBond           *big.Int `json:"rplBond"`
-	ChallengeCooldown uint64   `json:"challengeCooldown"`
-	ChallengeWindow   uint64   `json:"challengeWindow"`
-	ChallengeCost     *big.Int `json:"challengeCost"`
+	Quorum            units.Eth `json:"quorum"`
+	RPLBond           units.Wei `json:"rplBond"`
+	ChallengeCooldown uint64    `json:"challengeCooldown"`
+	ChallengeWindow   uint64    `json:"challengeWindow"`
+	ChallengeCost     units.Wei `json:"challengeCost"`
 }
 type GetTNDAOProposalSettingsResponse struct {
 	APIResponse

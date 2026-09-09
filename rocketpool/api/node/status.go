@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -73,7 +72,6 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	// Response
 	response := api.NodeStatusResponse{}
 	response.PenalizedMinipools = map[common.Address]uint64{}
-	response.NodeRPLLocked = big.NewInt(0)
 
 	// Get the legacy MinipoolQueue contract address
 	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
@@ -425,7 +423,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 
 	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
-		var rplStakeThresholdFraction *big.Int
+		var rplStakeThresholdFraction units.Wei
 
 		// MinimumLegacyRPLStake is used to compute the RPL amount that a node cannot fall under when withdrawing
 		wg2.Go(func() error {
@@ -439,8 +437,10 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 
-		response.BondedCollateralRatio = units.WeiToEth(rplPrice) * units.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - units.WeiToEth(response.EthBorrowed) - units.WeiToEth(response.PendingBorrowAmount))
-		response.BorrowedCollateralRatio = units.WeiToEth(rplPrice) * units.WeiToEth(response.TotalRplStake) / (units.WeiToEth(response.EthBorrowed) + units.WeiToEth(response.PendingBorrowAmount))
+		response.BondedCollateralRatio = rplPrice.ToEth().Mul(response.TotalRplStake.ToEth())
+		response.BondedCollateralRatio = response.BondedCollateralRatio.Div(units.NewEth(uint64(totalActiveValidators * 32)).Sub(response.EthBorrowed.ToEth()).Sub(response.PendingBorrowAmount.ToEth()))
+		response.BorrowedCollateralRatio = rplPrice.ToEth().Mul(response.TotalRplStake.ToEth())
+		response.BorrowedCollateralRatio = response.BorrowedCollateralRatio.Div(response.EthBorrowed.ToEth().Add(response.PendingBorrowAmount.ToEth()))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain
 		_, _, pendingEligibleBorrowedEth, pendingEligibleBondedEth, err := getTrueBorrowAndBondAmounts(rp, bc, nodeAccount.Address)
@@ -449,31 +449,25 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		}
 
 		// Calculate the "eligible real" maximum based on the Beacon Chain, including the pending bond reductions
-		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, rplStakeThresholdFraction)
-		pendingTrueMaximumStake.Div(pendingTrueMaximumStake, rplPrice)
+		pendingTrueMaximumStake := pendingEligibleBondedEth.Mul(rplStakeThresholdFraction)
+		pendingTrueMaximumStake = pendingTrueMaximumStake.Div(rplPrice)
 
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
 
-		pendingEligibleBondedEthFloat := units.WeiToEth(pendingEligibleBondedEth)
-		if pendingEligibleBondedEthFloat == 0 {
-			response.PendingBondedCollateralRatio = 0
-		} else {
-			response.PendingBondedCollateralRatio = units.WeiToEth(rplPrice) * units.WeiToEth(response.TotalRplStake) / pendingEligibleBondedEthFloat
+		pendingEligibleBondedEthFloat := pendingEligibleBondedEth.ToEth()
+		if !pendingEligibleBondedEthFloat.IsZero() {
+			response.PendingBondedCollateralRatio = rplPrice.ToEth().Mul(response.TotalRplStake.ToEth()).Div(pendingEligibleBondedEthFloat)
 		}
 
-		pendingEligibleBorrowedEthFloat := units.WeiToEth(pendingEligibleBorrowedEth)
-		if pendingEligibleBorrowedEthFloat == 0 {
-			response.PendingBorrowedCollateralRatio = 0
-		} else {
-			response.PendingBorrowedCollateralRatio = units.WeiToEth(rplPrice) * units.WeiToEth(response.TotalRplStake) / pendingEligibleBorrowedEthFloat
+		pendingEligibleBorrowedEthFloat := pendingEligibleBorrowedEth.ToEth()
+		if !pendingEligibleBorrowedEthFloat.IsZero() {
+			response.PendingBorrowedCollateralRatio = rplPrice.ToEth().Mul(response.TotalRplStake.ToEth()).Div(pendingEligibleBorrowedEthFloat)
 		}
 	} else {
-		response.BorrowedCollateralRatio = -1
-		response.BondedCollateralRatio = -1
-		response.PendingMinimumRplStake = big.NewInt(0)
-		response.PendingMaximumRplStake = big.NewInt(0)
-		response.PendingBondedCollateralRatio = -1
-		response.PendingBorrowedCollateralRatio = -1
+		response.BorrowedCollateralRatio = units.EthFromInt(-1)
+		response.BondedCollateralRatio = units.EthFromInt(-1)
+		response.PendingBondedCollateralRatio = units.EthFromInt(-1)
+		response.PendingBorrowedCollateralRatio = units.EthFromInt(-1)
 	}
 
 	// Return response
@@ -482,32 +476,28 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 }
 
 // Calculate the true borrowed and bonded ETH amounts for a node based on the Beacon status of the minipools
-func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
+func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) (units.Wei, units.Wei, units.Wei, units.Wei, error) {
 
 	mpDetails, err := minipool.GetNodeMinipools(rp, nodeAddress, nil)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error loading minipool details: %w", err)
+		return units.Wei{}, units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("error loading minipool details: %w", err)
 	}
 
 	beaconHead, err := bc.GetBeaconHead()
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error getting beacon head: %w", err)
+		return units.Wei{}, units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("error getting beacon head: %w", err)
 	}
 
 	pubkeys := make([]types.ValidatorPubkey, len(mpDetails))
-	nodeDeposits := make([]*big.Int, len(mpDetails))
-	userDeposits := make([]*big.Int, len(mpDetails))
-	pendingNodeDeposits := make([]*big.Int, len(mpDetails))
-	pendingUserDeposits := make([]*big.Int, len(mpDetails))
+	nodeDeposits := make([]units.Wei, len(mpDetails))
+	userDeposits := make([]units.Wei, len(mpDetails))
+	pendingNodeDeposits := make([]units.Wei, len(mpDetails))
+	pendingUserDeposits := make([]units.Wei, len(mpDetails))
 	// Data
 	var wg errgroup.Group
 
 	for i, mpd := range mpDetails {
 		if !mpd.Exists {
-			nodeDeposits[i] = big.NewInt(0)
-			userDeposits[i] = big.NewInt(0)
-			pendingNodeDeposits[i] = big.NewInt(0)
-			pendingUserDeposits[i] = big.NewInt(0)
 			continue
 		}
 
@@ -540,18 +530,18 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 
 	// Wait for data
 	if err = wg.Wait(); err != nil {
-		return nil, nil, nil, nil, err
+		return units.Wei{}, units.Wei{}, units.Wei{}, units.Wei{}, err
 	}
 
 	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error loading validator statuses: %w", err)
+		return units.Wei{}, units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("error loading validator statuses: %w", err)
 	}
 
-	eligibleBorrowedEth := big.NewInt(0)
-	eligibleBondedEth := big.NewInt(0)
-	pendingEligibleBorrowedEth := big.NewInt(0)
-	pendingEligibleBondedEth := big.NewInt(0)
+	eligibleBorrowedEth := units.Wei{}
+	eligibleBondedEth := units.Wei{}
+	pendingEligibleBorrowedEth := units.Wei{}
+	pendingEligibleBondedEth := units.Wei{}
 	for i, pubkey := range pubkeys {
 		status, exists := statuses[pubkey]
 		if !exists {
@@ -567,10 +557,10 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 			continue
 		}
 		// It's eligible, so add up the borrowed and bonded amounts
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, userDeposits[i])
-		eligibleBondedEth.Add(eligibleBondedEth, nodeDeposits[i])
-		pendingEligibleBorrowedEth.Add(pendingEligibleBorrowedEth, pendingUserDeposits[i])
-		pendingEligibleBondedEth.Add(pendingEligibleBondedEth, pendingNodeDeposits[i])
+		eligibleBorrowedEth = eligibleBorrowedEth.Add(userDeposits[i])
+		eligibleBondedEth = eligibleBondedEth.Add(nodeDeposits[i])
+		pendingEligibleBorrowedEth = pendingEligibleBorrowedEth.Add(pendingUserDeposits[i])
+		pendingEligibleBondedEth = pendingEligibleBondedEth.Add(pendingNodeDeposits[i])
 	}
 
 	return eligibleBorrowedEth, eligibleBondedEth, pendingEligibleBorrowedEth, pendingEligibleBondedEth, nil

@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -198,21 +199,21 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.Phase2EndTime = time.Unix(rawDetails.Phase2EndTime.Int64(), 0)
 	details.ExpiryTime = time.Unix(rawDetails.ExpiryTime.Int64(), 0)
 	details.CreatedTime = time.Unix(rawDetails.CreatedTime.Int64(), 0)
-	details.VotingPowerRequired = rawDetails.VotingPowerRequired
-	details.VotingPowerFor = rawDetails.VotingPowerFor
-	details.VotingPowerAgainst = rawDetails.VotingPowerAgainst
-	details.VotingPowerAbstained = rawDetails.VotingPowerAbstained
-	details.VotingPowerToVeto = rawDetails.VotingPowerToVeto
+	details.VotingPowerRequired = units.NewWei(rawDetails.VotingPowerRequired)
+	details.VotingPowerFor = units.NewWei(rawDetails.VotingPowerFor)
+	details.VotingPowerAgainst = units.NewWei(rawDetails.VotingPowerAgainst)
+	details.VotingPowerAbstained = units.NewWei(rawDetails.VotingPowerAbstained)
+	details.VotingPowerToVeto = units.NewWei(rawDetails.VotingPowerToVeto)
 	details.IsDestroyed = rawDetails.IsDestroyed
 	details.IsFinalized = rawDetails.IsFinalized
 	details.IsExecuted = rawDetails.IsExecuted
 	details.IsVetoed = rawDetails.IsVetoed
-	details.VetoQuorum = rawDetails.VetoQuorum
+	details.VetoQuorum = units.NewWei(rawDetails.VetoQuorum)
 	details.Payload = rawDetails.Payload
 	details.State = types.ProtocolDaoProposalState(rawDetails.State)
 	details.DefeatIndex = rawDetails.DefeatIndex.Uint64()
-	details.ProposalBond = rawDetails.ProposalBond
-	details.ChallengeBond = rawDetails.ChallengeBond
+	details.ProposalBond = units.NewWei(rawDetails.ProposalBond)
+	details.ChallengeBond = units.NewWei(rawDetails.ChallengeBond)
 	details.ChallengeWindow = time.Second * time.Duration(rawDetails.ChallengeWindow.Uint64())
 
 	var err error

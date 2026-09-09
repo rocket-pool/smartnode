@@ -2,14 +2,12 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func claim(yes bool) error {
@@ -26,10 +24,10 @@ func claim(yes bool) error {
 		return err
 	}
 
-	if megapoolDetails.Megapool.RefundValue != nil && megapoolDetails.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(units.WeiToEth(megapoolDetails.Megapool.RefundValue), 6))
-		if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("You have %.6f ETH of node debt to repay. This will be deducted from your refund.\n\n", math.RoundDown(units.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+	if !megapoolDetails.Megapool.RefundValue.IsZero() {
+		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(megapoolDetails.Megapool.RefundValue.ToEth().InexactFloat64(), 6))
+		if !megapoolDetails.Megapool.NodeDebt.IsZero() {
+			fmt.Printf("You have %.6f ETH of node debt to repay. This will be deducted from your refund.\n\n", math.RoundDown(megapoolDetails.Megapool.NodeDebt.ToEth().InexactFloat64(), 6))
 		}
 	} else {
 		fmt.Println("You have no megapool refund to claim.")

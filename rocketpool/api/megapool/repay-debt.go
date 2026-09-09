@@ -13,9 +13,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, error) {
+func canRepayDebt(c *cli.Command, amount units.Wei) (*api.CanRepayDebtResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -93,7 +94,7 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 	if err != nil {
 		return nil, err
 	}
-	opts.Value = amount
+	opts.Value = amount.BigInt()
 	gasLimits, err := mp.EstimateRepayDebtGas(opts)
 	if err != nil {
 		return nil, err
@@ -105,7 +106,7 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 
 }
 
-func repayDebt(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.RepayDebtResponse, error) {
+func repayDebt(c *cli.Command, amount units.Wei, t *snroute.TransactOpts) (*api.RepayDebtResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -148,11 +149,11 @@ func repayDebt(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.R
 		return nil, err
 	}
 
-	if debt.Cmp(big.NewInt(0)) == 0 {
+	if debt.IsZero() {
 		return nil, fmt.Errorf("no debt to repay")
 	}
 
-	opts.Value = amount
+	opts.Value = amount.BigInt()
 
 	// Repay debt
 	hash, err := mp.RepayDebt(opts)
@@ -167,17 +168,17 @@ func repayDebt(c *cli.Command, amount *big.Int, t *snroute.TransactOpts) (*api.R
 }
 
 func canRepayDebtHandler(ctx snroute.Context) {
-	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	amount, err := parseWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
-	resp, err := canRepayDebt(ctx.Command(), amountWei)
+	resp, err := canRepayDebt(ctx.Command(), amount)
 	response.WriteResponse(ctx.Writer, resp, err)
 }
 
 func repayDebtHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	amount, err := parseWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -187,6 +188,6 @@ func repayDebtHandler(ctx snroute.WriteContext) {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
-	resp, err := repayDebt(ctx.Command(), amountWei, opts)
+	resp, err := repayDebt(ctx.Command(), amount, opts)
 	response.WriteResponse(ctx.Writer, resp, err)
 }

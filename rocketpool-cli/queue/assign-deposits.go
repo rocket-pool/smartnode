@@ -2,7 +2,6 @@ package queue
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
@@ -31,7 +30,7 @@ func assignDeposits(yes bool) error {
 		return err
 	}
 
-	validatorDeposit := units.EthToWei(32)
+	validatorDeposit := units.EthFromFloat(32).ToWei()
 	if queueDetails.TotalLength == 0 {
 		fmt.Println("There are no validators waiting in the queue.")
 		return nil
@@ -40,7 +39,7 @@ func assignDeposits(yes bool) error {
 	// Calculate how many validator assignments are possible given the deposit pool balance
 	// and the deposit required per validator
 	depositPoolBalance := queueStatus.DepositPoolBalance
-	assignmentsPossible := new(big.Int).Div(depositPoolBalance, validatorDeposit).Uint64()
+	assignmentsPossible := depositPoolBalance.Div(validatorDeposit).BigInt().Uint64()
 
 	// The effective max is the lesser of what the deposit pool can fund and what's in the queue
 	maxAssignable := min(assignmentsPossible, uint64(queueDetails.TotalLength))

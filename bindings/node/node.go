@@ -465,27 +465,27 @@ func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts
 }
 
 // Get a node's average minipool fee
-func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
+func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Eth, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	avgFee := new(*big.Int)
-	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
-		return 0, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
+	var avgFee units.Wei
+	if err := rocketNodeManager.Call(opts, &avgFee, "getAverageNodeFee", nodeAddress); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
-	return units.WeiToEth(*avgFee), nil
+	return avgFee.ToEth(), nil
 }
 
 // Get a node's average minipool fee
-func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	avgFee := new(*big.Int)
+	avgFee := new(units.Wei)
 	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
+		return units.Wei{}, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
 	return *avgFee, nil
 }
@@ -751,31 +751,31 @@ func GetMegapoolAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, o
 }
 
 // Get the amount of unclaimed ETH rewards for a given node operator
-func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
+func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Eth, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	unclaimedRewards := new(*big.Int)
+	var unclaimedRewards units.Wei
 
-	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
-		return 0, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	if err := rocketNodeManager.Call(opts, &unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
 	}
-	return units.WeiToEth(*unclaimedRewards), nil
+	return unclaimedRewards.ToEth(), nil
 }
 
 // Get the amount of unclaimed ETH rewards for a given node operator
-func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	unclaimedRewards := new(*big.Int)
+	unclaimedRewards := units.Wei{}
 
-	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	if err := rocketNodeManager.Call(opts, &unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
 	}
-	return *unclaimedRewards, nil
+	return unclaimedRewards, nil
 }
 
 // Estimate the gas for sending unclaimed rewards to node operator's withdrawal address

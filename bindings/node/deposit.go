@@ -16,7 +16,7 @@ import (
 )
 
 type NodeDeposit struct {
-	BondAmount         *big.Int    `json:"bondAmount"`
+	BondAmount         units.Wei   `json:"bondAmount"`
 	UseExpressTicket   bool        `json:"useExpressTicket"`
 	ValidatorPubkey    []byte      `json:"validatorPubkey"`
 	ValidatorSignature []byte      `json:"validatorSignature"`
@@ -63,7 +63,7 @@ func DepositMulti(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.Trans
 }
 
 // Estimate the gas to WithdrawETH
-func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -72,7 +72,7 @@ func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, nodeAccount common.Addres
 }
 
 // Withdraw unused Ether that was staked on behalf of the node
-func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount units.Wei, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmoun
 }
 
 // Estimate the gas required to withdraw credit
-func EstimateWithdrawCreditGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateWithdrawCreditGas(rp *rocketpool.RocketPool, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -94,7 +94,7 @@ func EstimateWithdrawCreditGas(rp *rocketpool.RocketPool, amount *big.Int, opts 
 }
 
 // Withdraws credit store on a node as rETH
-func WithdrawCredit(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func WithdrawCredit(rp *rocketpool.RocketPool, amount units.Wei, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return nil, err
@@ -129,21 +129,21 @@ func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpres
 }
 
 // Estimate the gas of CreateVacantMinipool
-func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount units.Wei, minimumNodeFee units.Eth, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, units.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, minimumNodeFee.ToWei(), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 }
 
 // Make a vacant minipool for solo staker migration
-func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount units.Wei, minimumNodeFee units.Eth, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance units.Wei, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, units.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, minimumNodeFee.ToWei(), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 	if err != nil {
 		return nil, fmt.Errorf("error creating vacant minipool: %w", err)
 	}
@@ -151,86 +151,86 @@ func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, minimu
 }
 
 // Get the amount of ETH in the node's deposit credit bank
-func GetNodeDepositCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeDepositCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	creditBalance := new(*big.Int)
-	if err := rocketNodeDeposit.Call(opts, creditBalance, "getNodeDepositCredit", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node deposit credit: %w", err)
+	creditBalance := units.Wei{}
+	if err := rocketNodeDeposit.Call(opts, &creditBalance, "getNodeDepositCredit", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node deposit credit: %w", err)
 	}
-	return *creditBalance, nil
+	return creditBalance, nil
 }
 
 // Get the current ETH balance for the given node operator
-func GetNodeEthBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeEthBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	creditBalance := new(*big.Int)
-	if err := rocketNodeDeposit.Call(opts, creditBalance, "getNodeEthBalance", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH balance: %w", err)
+	creditBalance := units.Wei{}
+	if err := rocketNodeDeposit.Call(opts, &creditBalance, "getNodeEthBalance", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node ETH balance: %w", err)
 	}
-	return *creditBalance, nil
+	return creditBalance, nil
 }
 
 // Get the sum of the credit balance of a given node operator and their ETH balance
-func GetNodeCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	creditAndBalance := new(*big.Int)
-	if err := rocketNodeDeposit.Call(opts, creditAndBalance, "getNodeCreditAndBalance", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node credit and ETH balance: %w", err)
+	creditAndBalance := units.Wei{}
+	if err := rocketNodeDeposit.Call(opts, &creditAndBalance, "getNodeCreditAndBalance", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node credit and ETH balance: %w", err)
 	}
-	return *creditAndBalance, nil
+	return creditAndBalance, nil
 }
 
 // Get the sum of the amount of ETH credit currently usable by a given node operator and their balance
-func GetNodeUsableCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeUsableCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	usableCreditBalance := new(*big.Int)
-	if err := rocketNodeDeposit.Call(opts, usableCreditBalance, "getNodeUsableCreditAndBalance", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node usable credit and ETH balance: %w", err)
+	usableCreditBalance := units.Wei{}
+	if err := rocketNodeDeposit.Call(opts, &usableCreditBalance, "getNodeUsableCreditAndBalance", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node usable credit and ETH balance: %w", err)
 	}
-	return *usableCreditBalance, nil
+	return usableCreditBalance, nil
 }
 
 // Get the amount of ETH credit currently usable by a given node operator
-func GetNodeUsableCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeUsableCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	usableCredit := new(*big.Int)
+	usableCredit := new(units.Wei)
 	if err := rocketNodeDeposit.Call(opts, usableCredit, "getNodeUsableCredit", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node usable credit: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node usable credit: %w", err)
 	}
 	return *usableCredit, nil
 }
 
-func GetBondRequirement(rp *rocketpool.RocketPool, numValidators *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func GetBondRequirement(rp *rocketpool.RocketPool, numValidators *big.Int, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
 
-	bondRequirement := new(*big.Int)
-	if err := rocketNodeDeposit.Call(opts, bondRequirement, "getBondRequirement", numValidators); err != nil {
-		return nil, fmt.Errorf("error getting the bond requirement: %w", err)
+	bondRequirement := units.Wei{}
+	if err := rocketNodeDeposit.Call(opts, &bondRequirement, "getBondRequirement", numValidators); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting the bond requirement: %w", err)
 	}
-	return *bondRequirement, nil
+	return bondRequirement, nil
 }
 
 // Get contracts

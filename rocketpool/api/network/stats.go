@@ -43,7 +43,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		balance, err := deposit.GetBalance(rp, nil)
 		if err == nil {
-			response.DepositPoolBalance = units.WeiToEth(balance)
+			response.DepositPoolBalance = balance.ToEth()
 		}
 		return err
 	})
@@ -52,7 +52,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		minipoolQueueCapacity, err := minipool.GetQueueCapacity(rp, nil)
 		if err == nil {
-			response.MinipoolCapacity = units.WeiToEth(minipoolQueueCapacity.Total)
+			response.MinipoolCapacity = minipoolQueueCapacity.Total.ToEth()
 		}
 		return err
 	})
@@ -109,7 +109,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		rplPrice, err := network.GetRPLPrice(rp, nil)
 		if err == nil {
-			response.RplPrice = units.WeiToEth(rplPrice)
+			response.RplPrice = rplPrice.ToEth()
 		}
 		return err
 	})
@@ -118,7 +118,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalRplStaked = units.WeiToEth(totalStaked)
+			response.TotalRplStaked = totalStaked.ToEth()
 		}
 		return err
 	})
@@ -127,7 +127,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalMegapoolRplStaked = units.WeiToEth(megapoolStaked)
+			response.TotalMegapoolRplStaked = megapoolStaked.ToEth()
 		}
 		return err
 	})
@@ -136,7 +136,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
 		if err == nil {
-			response.TotalLegacyRplStaked = units.WeiToEth(legacyStaked)
+			response.TotalLegacyRplStaked = legacyStaked.ToEth()
 		}
 		return err
 	})
@@ -173,7 +173,7 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 			return fmt.Errorf("error getting smoothing pool balance: %w", err)
 		}
 
-		response.SmoothingPoolBalance = units.WeiToEth(smoothingPoolBalance)
+		response.SmoothingPoolBalance = smoothingPoolBalance.ToEth()
 		return nil
 	})
 
@@ -250,12 +250,17 @@ func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 	}
 
 	// Get the TVL
+	tvl := units.Eth{}
 	activeMinipools := response.InitializedMinipoolCount +
 		response.PrelaunchMinipoolCount +
 		response.StakingMinipoolCount +
 		response.WithdrawableMinipoolCount +
 		response.DissolvedMinipoolCount
-	tvl := float64(activeMinipools)*32 + response.DepositPoolBalance + response.MinipoolCapacity + (response.TotalRplStaked * response.RplPrice)
+	activeMinipoolsEth := units.NewEth(activeMinipools).Mul(units.NewEth(32))
+	tvl = tvl.Add(activeMinipoolsEth)
+	tvl = tvl.Add(response.DepositPoolBalance)
+	tvl = tvl.Add(response.MinipoolCapacity)
+	tvl = tvl.Add(response.TotalRplStaked.Mul(response.RplPrice))
 	response.TotalValueLocked = tvl
 
 	// Return response

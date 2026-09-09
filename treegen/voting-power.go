@@ -41,20 +41,20 @@ func getNodeVotingPower(s *state.NetworkStateIndex, nodeIdx int) *big.Int {
 	// Get provided ETH (32 * minipoolCount - matched)
 	ethProvided := big.NewInt(activeMinipoolCount * 32)
 	ethProvided.Mul(ethProvided, oneEth)
-	ethProvided.Sub(ethProvided, node.MinipoolETHBorrowed)
+	ethProvided.Sub(ethProvided, node.MinipoolETHBorrowed.BigInt())
 
 	// Add megapool provided ETH
 	if node.MegapoolDeployed {
 		megapoolProvidedEth := s.MegapoolDetails[node.MegapoolAddress].NodeBond
-		ethProvided.Add(ethProvided, megapoolProvidedEth)
+		ethProvided.Add(ethProvided, megapoolProvidedEth.BigInt())
 	}
 
 	// Get total RPL staked
 	nodeStake := big.NewInt(0)
-	nodeStake.Add(nodeStake, node.LegacyStakedRPL)
-	nodeStake.Add(nodeStake, node.MegapoolStakedRPL)
+	nodeStake.Add(nodeStake, node.LegacyStakedRPL.BigInt())
+	nodeStake.Add(nodeStake, node.MegapoolStakedRPL.BigInt())
 
-	rplPrice := s.NetworkDetails.RplPrice
+	rplPrice := s.NetworkDetails.RplPrice.BigInt()
 
 	// No RPL staked means no voting power
 	if nodeStake.Sign() == 0 {

@@ -4,7 +4,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Represents the collector for the Performance metrics
@@ -89,12 +88,12 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		return
 	}
 
-	ethUtilizationRate := state.NetworkDetails.ETHUtilizationRate
-	balanceFloat := units.WeiToEth(state.NetworkDetails.StakingETHBalance)
-	exchangeRate := state.NetworkDetails.RETHExchangeRate
-	tvlFloat := units.WeiToEth(state.NetworkDetails.TotalETHBalance)
-	rETHBalance := units.WeiToEth(state.NetworkDetails.RETHBalance)
-	rethFloat := units.WeiToEth(state.NetworkDetails.TotalRETHSupply)
+	ethUtilizationRate := state.NetworkDetails.ETHUtilizationRate.InexactFloat64()
+	balanceFloat := state.NetworkDetails.StakingETHBalance.ToEth().InexactFloat64()
+	exchangeRate := state.NetworkDetails.RETHExchangeRate.InexactFloat64()
+	tvlFloat := state.NetworkDetails.TotalETHBalance.ToEth().InexactFloat64()
+	rETHBalance := state.NetworkDetails.RETHBalance.ToEth().InexactFloat64()
+	rethFloat := state.NetworkDetails.TotalRETHSupply.ToEth().InexactFloat64()
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)

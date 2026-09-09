@@ -1,20 +1,19 @@
 package api
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type AuctionStatusResponse struct {
 	APIResponse
-	TotalRPLBalance     *big.Int `json:"totalRPLBalance"`
-	AllottedRPLBalance  *big.Int `json:"allottedRPLBalance"`
-	RemainingRPLBalance *big.Int `json:"remainingRPLBalance"`
-	CanCreateLot        bool     `json:"canCreateLot"`
+	TotalRPLBalance     units.Wei `json:"totalRPLBalance"`
+	AllottedRPLBalance  units.Wei `json:"allottedRPLBalance"`
+	RemainingRPLBalance units.Wei `json:"remainingRPLBalance"`
+	CanCreateLot        bool      `json:"canCreateLot"`
 	LotCounts           struct {
 		ClaimAvailable       int `json:"claimAvailable"`
 		BiddingAvailable     int `json:"biddingAvailable"`

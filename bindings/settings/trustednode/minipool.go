@@ -11,6 +11,7 @@ import (
 	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Config
@@ -37,10 +38,14 @@ func GetScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	return (*value).Uint64(), nil
 }
 func ProposeScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, val, opts)
 }
 func EstimateProposeScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, val, opts)
 }
 
 // The amount of time, in seconds, the promotion scrub check lasts before a vacant minipool can be promoted
@@ -56,10 +61,14 @@ func GetPromotionScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 	return (*value).Uint64(), nil
 }
 func ProposePromotionScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, val, opts)
 }
 func EstimateProposePromotionScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, val, opts)
 }
 
 // Whether or not the RPL slashing penalty is applied to scrubbed minipools
@@ -94,10 +103,14 @@ func GetBondReductionWindowStart(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	return (*value).Uint64(), nil
 }
 func ProposeBondReductionWindowStart(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, val, opts)
 }
 func EstimateProposeBondReductionWindowStartGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, val, opts)
 }
 
 // The amount of time, in seconds, a minipool has to reduce its bond once it has passed the check window
@@ -113,10 +126,14 @@ func GetBondReductionWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts
 	return (*value).Uint64(), nil
 }
 func ProposeBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, val, opts)
 }
 func EstimateProposeBondReductionWindowLengthGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, val, opts)
 }
 
 // The amount of time, in seconds, how long after assignment before a validator can be dissolved
@@ -132,10 +149,14 @@ func GetDissolvePeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, 
 	return (*value).Uint64(), nil
 }
 func ProposeDissolvePeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, val, opts)
 }
 func EstimateProposeDissolvePeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, big.NewInt(int64(value)), opts)
+	val := units.WeiFromUint64(value)
+
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, val, opts)
 }
 
 // Get contracts

@@ -12,41 +12,7 @@ import (
 
 // Get minipool status
 func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
-	response, err := c.callAPI[api.MinipoolStatusResponse]("GET", "/api/minipool/status", nil, "Could not get minipool status")
-	if err != nil {
-		return response, err
-	}
-	for i := 0; i < len(response.Minipools); i++ {
-		mp := &response.Minipools[i]
-		if mp.Node.DepositBalance == nil {
-			mp.Node.DepositBalance = big.NewInt(0)
-		}
-		if mp.Node.RefundBalance == nil {
-			mp.Node.RefundBalance = big.NewInt(0)
-		}
-		if mp.User.DepositBalance == nil {
-			mp.User.DepositBalance = big.NewInt(0)
-		}
-		if mp.Balances.ETH == nil {
-			mp.Balances.ETH = big.NewInt(0)
-		}
-		if mp.Balances.RPL == nil {
-			mp.Balances.RPL = big.NewInt(0)
-		}
-		if mp.Balances.RETH == nil {
-			mp.Balances.RETH = big.NewInt(0)
-		}
-		if mp.Balances.FixedSupplyRPL == nil {
-			mp.Balances.FixedSupplyRPL = big.NewInt(0)
-		}
-		if mp.Validator.Balance == nil {
-			mp.Validator.Balance = big.NewInt(0)
-		}
-		if mp.Validator.NodeBalance == nil {
-			mp.Validator.NodeBalance = big.NewInt(0)
-		}
-	}
-	return response, nil
+	return c.callAPI[api.MinipoolStatusResponse]("GET", "/api/minipool/status", nil, "Could not get minipool status")
 }
 
 // Check whether a minipool is eligible for a refund

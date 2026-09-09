@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Info for a price updated event
@@ -36,14 +37,14 @@ func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 }
 
 // Get the current network RPL price in ETH
-func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	rplPrice := new(*big.Int)
+	rplPrice := new(units.Wei)
 	if err := rocketNetworkPrices.Call(opts, rplPrice, "getRPLPrice"); err != nil {
-		return nil, fmt.Errorf("error getting network RPL price: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting network RPL price: %w", err)
 	}
 	return *rplPrice, nil
 }

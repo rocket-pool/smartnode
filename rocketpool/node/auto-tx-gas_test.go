@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/units"
+	"github.com/shopspring/decimal"
 )
 
 func TestLoadAutoTxGas(t *testing.T) {
@@ -23,10 +24,13 @@ func TestLoadAutoTxGas(t *testing.T) {
 	if gas.thresholdGwei != 12.5 {
 		t.Fatalf("threshold = %v, want 12.5", gas.thresholdGwei)
 	}
-	if gas.maxFee.Cmp(units.GweiToWei(30)) != 0 {
+	if gas.maxFee.Cmp(units.NewGwei(30).ToWei().BigInt()) != 0 {
 		t.Fatalf("maxFee = %s, want 30 gwei", gas.maxFee)
 	}
-	if gas.maxPriorityFee.Cmp(units.GweiToWei(1.5)) != 0 {
+	g := units.Gwei{
+		Decimal: decimal.NewFromFloat(1.5),
+	}
+	if gas.maxPriorityFee.Cmp(g.ToWei().BigInt()) != 0 {
 		t.Fatalf("maxPriorityFee = %s, want 1.5 gwei", gas.maxPriorityFee)
 	}
 }
@@ -45,7 +49,10 @@ func TestLoadAutoTxGasDefaults(t *testing.T) {
 	if gas.maxFee != nil {
 		t.Fatalf("maxFee = %s, want nil", gas.maxFee)
 	}
-	wantPrio := units.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+	g := units.Gwei{
+		Decimal: decimal.NewFromFloat(rpgas.DefaultPriorityFeeGwei),
+	}
+	wantPrio := g.ToWei().BigInt()
 	if gas.maxPriorityFee.Cmp(wantPrio) != 0 {
 		t.Fatalf("maxPriorityFee = %s, want default %s", gas.maxPriorityFee, wantPrio)
 	}

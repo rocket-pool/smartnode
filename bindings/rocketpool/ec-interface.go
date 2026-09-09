@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // This is the common interface for execution clients.
@@ -91,7 +92,7 @@ type ExecutionClient interface {
 
 	// BalanceAt returns the wei balance of the given account.
 	// The block number can be nil, in which case the balance is taken from the latest known block.
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
+	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (units.Wei, error)
 
 	// TransactionByHash returns the transaction with the given hash.
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)

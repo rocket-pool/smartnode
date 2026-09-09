@@ -43,40 +43,40 @@ func GetRewardsPercentages(rp *rocketpool.RocketPool, opts *bind.CallOpts) (RplR
 }
 
 // The total RPL rewards percentage for node operator collateral
-func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersNodePerc"); err != nil {
-		return nil, fmt.Errorf("error getting node operator rewards percent: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node operator rewards percent: %w", err)
 	}
 	return *value, nil
 }
 
 // The total RPL rewards percentage for Oracle DAO members
-func GetOracleDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetOracleDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersTrustedNodePerc"); err != nil {
-		return nil, fmt.Errorf("error getting oracle DAO rewards percent: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting oracle DAO rewards percent: %w", err)
 	}
 	return *value, nil
 }
 
 // The total RPL rewards percentage for the Protocol DAO treasury
-func GetProtocolDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetProtocolDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersProtocolPerc"); err != nil {
-		return nil, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
 	}
 	return *value, nil
 }
@@ -95,16 +95,16 @@ func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, opts *bind.Call
 }
 
 // The total claim amount for all claimers as a fraction
-func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	value := new(*big.Int)
-	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPercTotal"); err != nil {
-		return 0, fmt.Errorf("error getting rewards claimers total percent: %w", err)
+	var value units.Wei
+	if err := rewardsSettingsContract.Call(opts, &value, "getRewardsClaimersPercTotal"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting rewards claimers total percent: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return value.ToEth(), nil
 }
 
 // Rewards claim interval time

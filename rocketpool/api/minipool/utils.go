@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -271,10 +270,8 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 
 	// Get node share of balance
-	if details.Balances.ETH.Cmp(details.Node.RefundBalance) == -1 {
-		details.NodeShareOfETHBalance = big.NewInt(0)
-	} else {
-		effectiveBalance := big.NewInt(0).Sub(details.Balances.ETH, details.Node.RefundBalance)
+	if details.Balances.ETH.Cmp(details.Node.RefundBalance) > -1 {
+		effectiveBalance := details.Balances.ETH.Sub(details.Node.RefundBalance)
 		details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
 		if err != nil {
 			return api.MinipoolDetails{}, fmt.Errorf("error calculating node share: %w", err)
@@ -291,7 +288,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 
 	// Update & return
-	details.RefundAvailable = (details.Node.RefundBalance.Cmp(big.NewInt(0)) > 0) && (details.Balances.ETH.Cmp(details.Node.RefundBalance) >= 0)
+	details.RefundAvailable = details.Node.RefundBalance.IsPositive() && (details.Balances.ETH.Cmp(details.Node.RefundBalance) >= 0)
 	details.CloseAvailable = (details.Status.Status == types.Dissolved)
 	if details.Status.Status == types.Withdrawable {
 		details.WithdrawalAvailable = true
@@ -323,18 +320,16 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 
 	// use deposit balances if validator not activated
 	if !validatorActivated {
-		details.Balance = new(big.Int)
-		details.Balance.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
-		details.NodeBalance = new(big.Int)
-		details.NodeBalance.Set(minipoolDetails.Node.DepositBalance)
+		details.Balance = minipoolDetails.Node.DepositBalance.Add(minipoolDetails.User.DepositBalance)
+		details.NodeBalance = minipoolDetails.Node.DepositBalance.ToWei()
 		return details, nil
 	}
 
 	// Set validator balance
-	details.Balance = units.GweiToWei(float64(validator.Balance))
+	details.Balance = units.NewGwei(validator.Balance).ToWei()
 
 	// Get expected node balance
-	blockBalance := units.GweiToWei(float64(validator.Balance))
+	blockBalance := units.NewGwei(validator.Balance).ToWei()
 	nodeBalance, err := mp.CalculateNodeShare(blockBalance, nil)
 	if err != nil {
 		return api.ValidatorDetails{}, err

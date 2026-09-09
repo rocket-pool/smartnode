@@ -1,8 +1,6 @@
 package odao
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -13,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func canProposeSetting(c *cli.Command, w wallet.Wallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
@@ -39,7 +38,7 @@ func canProposeSetting(c *cli.Command, w wallet.Wallet, rp *rocketpool.RocketPoo
 
 }
 
-func canProposeSettingMembersQuorum(c *cli.Command, quorum float64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersQuorum(c *cli.Command, quorum units.Eth) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -75,7 +74,7 @@ func canProposeSettingMembersQuorum(c *cli.Command, quorum float64) (*api.CanPro
 
 }
 
-func proposeSettingMembersQuorum(c *cli.Command, quorum float64, t *snroute.TransactOpts) (*api.ProposeTNDAOSettingMembersQuorumResponse, error) {
+func proposeSettingMembersQuorum(c *cli.Command, quorum units.Eth, t *snroute.TransactOpts) (*api.ProposeTNDAOSettingMembersQuorumResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -103,7 +102,7 @@ func proposeSettingMembersQuorum(c *cli.Command, quorum float64, t *snroute.Tran
 
 }
 
-func canProposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersRplBond(c *cli.Command, bondAmountWei units.Wei) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -139,7 +138,7 @@ func canProposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int) (*a
 
 }
 
-func proposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int, t *snroute.TransactOpts) (*api.ProposeTNDAOSettingMembersRplBondResponse, error) {
+func proposeSettingMembersRplBond(c *cli.Command, bondAmountWei units.Wei, t *snroute.TransactOpts) (*api.ProposeTNDAOSettingMembersRplBondResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -808,7 +807,7 @@ func proposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWindow
 }
 
 func canProposeMembersQuorumHandler(ctx snroute.Context) {
-	quorum, err := parseFloat64(ctx.Request, "quorum")
+	quorum, err := parseEth(ctx.Request, "quorum")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -818,7 +817,7 @@ func canProposeMembersQuorumHandler(ctx snroute.Context) {
 }
 
 func proposeMembersQuorumHandler(ctx snroute.WriteContext) {
-	quorum, err := parseFloat64(ctx.Request, "quorum")
+	quorum, err := parseEth(ctx.Request, "quorum")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -833,7 +832,7 @@ func proposeMembersQuorumHandler(ctx snroute.WriteContext) {
 }
 
 func canProposeMembersRplbondHandler(ctx snroute.Context) {
-	bond, err := parseBigInt(ctx.Request, "bondAmountWei")
+	bond, err := parseWei(ctx.Request, "bondAmountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -843,7 +842,7 @@ func canProposeMembersRplbondHandler(ctx snroute.Context) {
 }
 
 func proposeMembersRplbondHandler(ctx snroute.WriteContext) {
-	bond, err := parseBigInt(ctx.Request, "bondAmountWei")
+	bond, err := parseWei(ctx.Request, "bondAmountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

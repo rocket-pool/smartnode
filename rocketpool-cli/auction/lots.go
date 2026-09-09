@@ -2,12 +2,10 @@ package auction
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getLots() error {
@@ -76,17 +74,17 @@ func getLots() error {
 			fmt.Printf("Lot ID:               %d\n", lot.Details.Index)
 			fmt.Printf("Start block:          %d\n", lot.Details.StartBlock)
 			fmt.Printf("End block:            %d\n", lot.Details.EndBlock)
-			fmt.Printf("RPL starting price:   %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.StartPrice), 6))
-			fmt.Printf("RPL reserve price:    %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.ReservePrice), 6))
-			fmt.Printf("RPL current price:    %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.CurrentPrice), 6))
-			fmt.Printf("Total RPL amount:     %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.TotalRPLAmount), 6))
-			fmt.Printf("Claimed RPL amount:   %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.ClaimedRPLAmount), 6))
-			fmt.Printf("Remaining RPL amount: %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.RemainingRPLAmount), 6))
-			fmt.Printf("Total ETH bid:        %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.TotalBidAmount), 6))
-			fmt.Printf("ETH bid by node:      %.6f\n", math.RoundDown(units.WeiToEth(lot.Details.AddressBidAmount), 6))
+			fmt.Printf("RPL starting price:   %.6f\n", math.RoundDown(lot.Details.StartPrice.ToEth().InexactFloat64(), 6))
+			fmt.Printf("RPL reserve price:    %.6f\n", math.RoundDown(lot.Details.ReservePrice.ToEth().InexactFloat64(), 6))
+			fmt.Printf("RPL current price:    %.6f\n", math.RoundDown(lot.Details.CurrentPrice.ToEth().InexactFloat64(), 6))
+			fmt.Printf("Total RPL amount:     %.6f\n", math.RoundDown(lot.Details.TotalRPLAmount.ToEth().InexactFloat64(), 6))
+			fmt.Printf("Claimed RPL amount:   %.6f\n", math.RoundDown(lot.Details.ClaimedRPLAmount.ToEth().InexactFloat64(), 6))
+			fmt.Printf("Remaining RPL amount: %.6f\n", math.RoundDown(lot.Details.RemainingRPLAmount.ToEth().InexactFloat64(), 6))
+			fmt.Printf("Total ETH bid:        %.6f\n", math.RoundDown(lot.Details.TotalBidAmount.ToEth().InexactFloat64(), 6))
+			fmt.Printf("ETH bid by node:      %.6f\n", math.RoundDown(lot.Details.AddressBidAmount.ToEth().InexactFloat64(), 6))
 			if lot.Details.Cleared {
 				fmt.Printf("Cleared:              yes\n")
-				if lot.Details.RemainingRPLAmount.Cmp(big.NewInt(0)) == 0 {
+				if lot.Details.RemainingRPLAmount.IsZero() {
 					fmt.Printf("Unclaimed RPL:        no\n")
 				} else if lot.Details.RPLRecovered {
 					fmt.Printf("Unclaimed RPL:        recovered\n")
@@ -106,21 +104,21 @@ func getLots() error {
 	if len(claimableLots) > 0 {
 		fmt.Printf("%d lot(s) you have bid on have RPL available to claim:\n", len(claimableLots))
 		for _, lot := range claimableLots {
-			fmt.Printf("- lot %d (%.6f ETH bid @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(units.WeiToEth(lot.Details.AddressBidAmount), 6), math.RoundDown(units.WeiToEth(lot.Details.CurrentPrice), 6))
+			fmt.Printf("- lot %d (%.6f ETH bid @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(lot.Details.AddressBidAmount.ToEth().InexactFloat64(), 6), math.RoundDown(lot.Details.CurrentPrice.ToEth().InexactFloat64(), 6))
 		}
 		fmt.Println("")
 	}
 	if len(biddableLots) > 0 {
 		fmt.Printf("%d lot(s) are open for bidding:\n", len(biddableLots))
 		for _, lot := range biddableLots {
-			fmt.Printf("- lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(units.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(units.WeiToEth(lot.Details.CurrentPrice), 6))
+			fmt.Printf("- lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(lot.Details.RemainingRPLAmount.ToEth().InexactFloat64(), 6), math.RoundDown(lot.Details.CurrentPrice.ToEth().InexactFloat64(), 6))
 		}
 		fmt.Println("")
 	}
 	if len(recoverableLots) > 0 {
 		fmt.Printf("%d lot(s) have unclaimed RPL ready to recover:\n", len(recoverableLots))
 		for _, lot := range recoverableLots {
-			fmt.Printf("- lot %d (%.6f RPL unclaimed)\n", lot.Details.Index, math.RoundDown(units.WeiToEth(lot.Details.RemainingRPLAmount), 6))
+			fmt.Printf("- lot %d (%.6f RPL unclaimed)\n", lot.Details.Index, math.RoundDown(lot.Details.RemainingRPLAmount.ToEth().InexactFloat64(), 6))
 		}
 		fmt.Println("")
 	}

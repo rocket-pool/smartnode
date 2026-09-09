@@ -15,6 +15,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // RegisterRoutes registers the pdao module's HTTP routes onto router.
@@ -107,24 +108,28 @@ func parseProposalVoteParams(r *http.Request) (uint64, bindtypes.VoteDirection, 
 	return id, dir, nil
 }
 
-func parseRewardPercentages(r *http.Request) (*big.Int, *big.Int, *big.Int, error) {
+func parseRewardPercentages(r *http.Request) (units.Wei, units.Wei, units.Wei, error) {
 	nodeStr := paramVal(r, "node")
 	odaoStr := paramVal(r, "odao")
 	pdaoStr := paramVal(r, "pdao")
 
-	node, ok := new(big.Int).SetString(nodeStr, 10)
-	if !ok {
-		return nil, nil, nil, fmt.Errorf("invalid node percentage: %s", nodeStr)
+	var node units.Wei
+	var odao units.Wei
+	var pdao units.Wei
+
+	err := node.UnmarshalText([]byte(nodeStr))
+	if err != nil {
+		return units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("invalid node percentage: %s", nodeStr)
 	}
-	odaoAmt, ok := new(big.Int).SetString(odaoStr, 10)
-	if !ok {
-		return nil, nil, nil, fmt.Errorf("invalid odao percentage: %s", odaoStr)
+	err = odao.UnmarshalText([]byte(odaoStr))
+	if err != nil {
+		return units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("invalid odao percentage: %s", odaoStr)
 	}
-	pdaoAmt, ok := new(big.Int).SetString(pdaoStr, 10)
-	if !ok {
-		return nil, nil, nil, fmt.Errorf("invalid pdao percentage: %s", pdaoStr)
+	err = pdao.UnmarshalText([]byte(pdaoStr))
+	if err != nil {
+		return units.Wei{}, units.Wei{}, units.Wei{}, fmt.Errorf("invalid pdao percentage: %s", pdaoStr)
 	}
-	return node, odaoAmt, pdaoAmt, nil
+	return node, odao, pdao, nil
 }
 
 func parseOneTimeSpendParams(r *http.Request) (string, common.Address, *big.Int, string, error) {

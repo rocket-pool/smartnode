@@ -275,10 +275,10 @@ func TestStaticProviderChallengeableProposal(t *testing.T) {
 			}
 
 			// Proposal bond and challenge bond must be positive
-			if prop.ProposalBond == nil || prop.ProposalBond.Sign() <= 0 {
+			if prop.ProposalBond.Sign() <= 0 {
 				t.Errorf("Pending proposal %d has non-positive ProposalBond", prop.ID)
 			}
-			if prop.ChallengeBond == nil || prop.ChallengeBond.Sign() <= 0 {
+			if prop.ChallengeBond.Sign() <= 0 {
 				t.Errorf("Pending proposal %d has non-positive ChallengeBond", prop.ID)
 			}
 

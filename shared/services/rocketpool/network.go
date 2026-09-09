@@ -2,7 +2,6 @@ package rocketpool
 
 import (
 	"fmt"
-	"math/big"
 	"net/url"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -15,14 +14,7 @@ func (c *Client) NodeFee() (api.NodeFeeResponse, error) {
 
 // Get network RPL price
 func (c *Client) RplPrice() (api.RplPriceResponse, error) {
-	response, err := c.callAPI[api.RplPriceResponse]("GET", "/api/network/rpl-price", nil, "Could not get network RPL price")
-	if err != nil {
-		return response, err
-	}
-	if response.RplPrice == nil {
-		response.RplPrice = big.NewInt(0)
-	}
-	return response, nil
+	return c.callAPI[api.RplPriceResponse]("GET", "/api/network/rpl-price", nil, "Could not get network RPL price")
 }
 
 // Get network stats

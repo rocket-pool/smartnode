@@ -26,16 +26,16 @@ func loadAutoTxGas(cfg *config.RocketPoolConfig, logger *log.ColorLogger) autoTx
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
 	var maxFee *big.Int
 	if maxFeeGwei != 0 {
-		maxFee = units.GweiToWei(maxFeeGwei)
+		maxFee = units.GweiFromFloat(maxFeeGwei).ToWei().BigInt()
 	}
 
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var maxPriorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
-		maxPriorityFee = units.GweiToWei(rpgas.DefaultPriorityFeeGwei)
+		maxPriorityFee = units.GweiFromFloat(rpgas.DefaultPriorityFeeGwei).ToWei().BigInt()
 	} else {
-		maxPriorityFee = units.GweiToWei(priorityFeeGwei)
+		maxPriorityFee = units.GweiFromFloat(priorityFeeGwei).ToWei().BigInt()
 	}
 
 	return autoTxGas{

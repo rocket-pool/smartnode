@@ -12,9 +12,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
+func canNodeBurn(c *cli.Command, amount units.Wei, token string) (*api.CanNodeBurnResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -54,7 +55,7 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return err
 			}
-			response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
+			response.InsufficientBalance = (amount.Cmp(rethBalanceWei) > 0)
 
 		}
 		return nil
@@ -70,7 +71,7 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return err
 			}
-			response.InsufficientCollateral = (amountWei.Cmp(rethTotalCollateral) > 0)
+			response.InsufficientCollateral = (amount.Cmp(rethTotalCollateral) > 0)
 
 		}
 		return nil
@@ -84,7 +85,7 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 		}
 		switch token {
 		case "reth":
-			gasLimits, err := tokens.EstimateBurnRETHGas(rp, amountWei, opts)
+			gasLimits, err := tokens.EstimateBurnRETHGas(rp, amount, opts)
 			if err == nil {
 				response.GasLimits = gasLimits
 			}
@@ -141,13 +142,13 @@ func nodeBurn(c *cli.Command, amountWei *big.Int, token string, t *snroute.Trans
 }
 
 func canBurnHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amount, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
 	token := ctx.Request.URL.Query().Get("token")
-	resp, err := canNodeBurn(ctx.Command(), amountWei, token)
+	resp, err := canNodeBurn(ctx.Command(), amount, token)
 	response.WriteResponse(ctx.Writer, resp, err)
 }
 

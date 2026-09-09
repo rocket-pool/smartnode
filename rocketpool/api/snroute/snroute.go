@@ -59,13 +59,17 @@ func (c WriteContext) Transactor() (*TransactOpts, error) {
 	}
 	r := c.Request
 	if maxFeeStr := r.FormValue("maxFee"); maxFeeStr != "" {
-		if maxFeeGwei, parseErr := strconv.ParseFloat(maxFeeStr, 64); parseErr == nil && maxFeeGwei > 0 {
-			opts.GasFeeCap = units.GweiToWei(maxFeeGwei)
+		var maxFeeGwei units.Gwei
+		err = maxFeeGwei.UnmarshalText([]byte(maxFeeStr))
+		if err == nil && maxFeeGwei.IsPositive() {
+			opts.GasFeeCap = maxFeeGwei.ToWei().BigInt()
 		}
 	}
 	if maxPrioFeeStr := r.FormValue("maxPrioFee"); maxPrioFeeStr != "" {
-		if maxPrioFeeGwei, parseErr := strconv.ParseFloat(maxPrioFeeStr, 64); parseErr == nil && maxPrioFeeGwei > 0 {
-			opts.GasTipCap = units.GweiToWei(maxPrioFeeGwei)
+		var maxPrioFeeGwei units.Gwei
+		err = maxPrioFeeGwei.UnmarshalText([]byte(maxPrioFeeStr))
+		if err == nil && maxPrioFeeGwei.IsPositive() {
+			opts.GasTipCap = maxPrioFeeGwei.ToWei().BigInt()
 		}
 	}
 	if gasLimitStr := r.FormValue("gasLimit"); gasLimitStr != "" {

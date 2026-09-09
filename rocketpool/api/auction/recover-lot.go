@@ -1,8 +1,6 @@
 package auction
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -60,7 +58,7 @@ func canRecoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.CanRecoverRPLFr
 	wg.Go(func() error {
 		remainingRpl, err := auction.GetLotRemainingRPLAmount(rp, lotIndex, nil)
 		if err == nil {
-			response.NoUnclaimedRPL = (remainingRpl.Cmp(big.NewInt(0)) == 0)
+			response.NoUnclaimedRPL = remainingRpl.IsZero()
 		}
 		return err
 	})

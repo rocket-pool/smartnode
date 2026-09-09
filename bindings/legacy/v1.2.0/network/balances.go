@@ -88,7 +88,7 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts, legac
 	if err := rocketNetworkBalances.Call(opts, ethUtilizationRate, "getETHUtilizationRate"); err != nil {
 		return 0, fmt.Errorf("Could not get network ETH utilization rate: %w", err)
 	}
-	return units.WeiToEth(*ethUtilizationRate), nil
+	return units.NewWei(*ethUtilizationRate).ToEth().InexactFloat64(), nil
 }
 
 // Estimate the gas of SubmitBalances

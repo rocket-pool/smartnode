@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/shopspring/decimal"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
@@ -21,7 +22,10 @@ func EstimateDepositGas(rp *rocketpool.RocketPool, minimumNodeFee float64, valid
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", units.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	minimumNodeFeeEth := &units.Eth{
+		Decimal: decimal.NewFromFloat(minimumNodeFee),
+	}
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", minimumNodeFeeEth.ToWei().BigInt(), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 }
 
 // Make a node deposit
@@ -30,7 +34,10 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey 
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "deposit", units.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	minimumNodeFeeEth := &units.Eth{
+		Decimal: decimal.NewFromFloat(minimumNodeFee),
+	}
+	tx, err := rocketNodeDeposit.Transact(opts, "deposit", minimumNodeFeeEth.ToWei().BigInt(), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit: %w", err)
 	}

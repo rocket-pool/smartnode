@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 	"net/http"
 	"net/url"
 	"time"
@@ -24,6 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getStatus(c *cli.Command) (*api.PDAOStatusResponse, error) {
@@ -59,7 +59,6 @@ func getStatus(c *cli.Command) (*api.PDAOStatusResponse, error) {
 
 	// Response
 	response := api.PDAOStatusResponse{}
-	response.NodeRPLLocked = big.NewInt(0)
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -181,7 +180,7 @@ func getStatus(c *cli.Command) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	response.SumVotingPower = votingTree.Nodes[0].Sum
+	response.SumVotingPower = units.NewWei(votingTree.Nodes[0].Sum)
 
 	// Get voting power
 	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)

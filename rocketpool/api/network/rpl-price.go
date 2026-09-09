@@ -1,8 +1,6 @@
 package network
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -12,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getRplPrice(c *cli.Command) (*api.RplPriceResponse, error) {
@@ -30,7 +29,7 @@ func getRplPrice(c *cli.Command) (*api.RplPriceResponse, error) {
 
 	// Data
 	var wg errgroup.Group
-	var rplPrice *big.Int
+	var rplPrice units.Wei
 
 	// Get RPL price set block
 	wg.Go(func() error {

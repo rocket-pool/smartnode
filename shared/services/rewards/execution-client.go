@@ -114,7 +114,11 @@ func (client *defaultRewardsExecutionClient) GetContract(contractName string, op
 }
 
 func (client *defaultRewardsExecutionClient) BalanceAt(ctx context.Context, address common.Address, blockNumber *big.Int) (*big.Int, error) {
-	return client.RocketPool.Client.BalanceAt(ctx, address, blockNumber)
+	balance, err := client.RocketPool.Client.BalanceAt(ctx, address, blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	return balance.BigInt(), nil
 }
 
 func (client *defaultRewardsExecutionClient) Client() *rocketpool.RocketPool {

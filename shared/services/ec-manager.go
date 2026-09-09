@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // This is a proxy for multiple ETH clients, providing natural fallback support if one of them fails.
@@ -365,7 +366,7 @@ func (p *ExecutionClientManager) BlockNumber(ctx context.Context) (uint64, error
 
 // BalanceAt returns the wei balance of the given account.
 // The block number can be nil, in which case the balance is taken from the latest known block.
-func (p *ExecutionClientManager) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+func (p *ExecutionClientManager) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (units.Wei, error) {
 	if p.static != nil {
 		return p.static.BalanceAt(ctx, account, blockNumber)
 	}
@@ -373,9 +374,9 @@ func (p *ExecutionClientManager) BalanceAt(ctx context.Context, account common.A
 		return client.BalanceAt(ctx, account, blockNumber)
 	})
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	return result.(*big.Int), err
+	return units.NewWei(result.(*big.Int)), err
 }
 
 // TransactionByHash returns the transaction with the given hash.

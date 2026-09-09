@@ -3,7 +3,6 @@ package minipool
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -48,7 +47,6 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 	}
 
 	// Load details in batches
-	zero := big.NewInt(0)
 	details := make([]api.MinipoolBalanceDistributionDetails, len(addresses))
 	for bsi := 0; bsi < len(addresses); bsi += MinipoolDetailsBatchSize {
 
@@ -67,9 +65,6 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 				address := addresses[mi]
 				minipoolDetails := &details[mi]
 				minipoolDetails.Address = address
-				minipoolDetails.Balance = big.NewInt(0)
-				minipoolDetails.Refund = big.NewInt(0)
-				minipoolDetails.NodeShareOfBalance = big.NewInt(0)
 				mp, err := minipool.NewMinipool(rp, address, nil)
 				if err != nil {
 					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
@@ -128,7 +123,7 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 				}
 
 				// Ignore minipools with 0 balance
-				if minipoolDetails.Balance.Cmp(zero) == 0 {
+				if minipoolDetails.Balance.IsZero() {
 					minipoolDetails.CanDistribute = false
 					return nil
 				}
@@ -143,8 +138,8 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 					}
 
 					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
-					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-					eight := units.EthToWei(8)
+					distributableBalance := minipoolDetails.Balance.Sub(minipoolDetails.Refund)
+					eight := units.NewEth(8).ToWei()
 					if distributableBalance.Cmp(eight) >= 0 {
 						minipoolDetails.CanDistribute = false
 						return nil

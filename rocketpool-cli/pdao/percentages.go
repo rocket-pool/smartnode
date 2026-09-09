@@ -25,9 +25,9 @@ func getRewardsPercentages() error {
 	}
 
 	// Print the settings
-	fmt.Printf("Node Operators: %.2f%% (%s)\n", units.WeiToEth(response.Node)*100, response.Node.String())
-	fmt.Printf("Oracle DAO:     %.2f%% (%s)\n", units.WeiToEth(response.OracleDao)*100, response.OracleDao.String())
-	fmt.Printf("Protocol DAO:   %.2f%% (%s)\n", units.WeiToEth(response.ProtocolDao)*100, response.ProtocolDao.String())
+	fmt.Printf("Node Operators: %.2f%% (%s)\n", units.NewWei(response.Node).ToEth().InexactFloat64()*100, response.Node.String())
+	fmt.Printf("Oracle DAO:     %.2f%% (%s)\n", units.NewWei(response.OracleDao).ToEth().InexactFloat64()*100, response.OracleDao.String())
+	fmt.Printf("Protocol DAO:   %.2f%% (%s)\n", units.NewWei(response.ProtocolDao).ToEth().InexactFloat64()*100, response.ProtocolDao.String())
 	return nil
 }
 

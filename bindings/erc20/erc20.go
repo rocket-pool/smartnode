@@ -2,7 +2,6 @@ package erc20
 
 import (
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -183,22 +183,22 @@ func (c *Erc20Contract) GetDecimals(opts *bind.CallOpts) (uint8, error) {
 }
 
 // Get the token balance for an address
-func (c *Erc20Contract) BalanceOf(address common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	balance := new(*big.Int)
-	err := c.contract.Call(opts, balance, "balanceOf", address)
+func (c *Erc20Contract) BalanceOf(address common.Address, opts *bind.CallOpts) (units.Wei, error) {
+	balance := units.Wei{}
+	err := c.contract.Call(opts, &balance, "balanceOf", address)
 	if err != nil {
-		return nil, fmt.Errorf("could not get ERC20 balance for address %s: %w", address.Hex(), err)
+		return units.Wei{}, fmt.Errorf("could not get ERC20 balance for address %s: %w", address.Hex(), err)
 	}
-	return *balance, nil
+	return balance, nil
 }
 
 // Estimate the gas for transferring an ERC20 to another address
-func (c *Erc20Contract) EstimateTransferGas(to common.Address, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func (c *Erc20Contract) EstimateTransferGas(to common.Address, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return c.contract.GetTransactionGasInfo(opts, "transfer", to, amount)
 }
 
 // Transfer an ERC20 to another address
-func (c *Erc20Contract) Transfer(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func (c *Erc20Contract) Transfer(to common.Address, amount units.Wei, opts *bind.TransactOpts) (*types.Transaction, error) {
 	tx, err := c.contract.Transact(opts, "transfer", to, amount)
 	if err != nil {
 		return nil, fmt.Errorf("could not transfer ERC20 to %s: %w", to.Hex(), err)

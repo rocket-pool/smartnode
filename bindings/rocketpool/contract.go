@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"reflect"
 	"regexp"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Transaction settings
@@ -32,17 +34,64 @@ type Contract struct {
 	Client   ExecutionClient
 }
 
+func convertWeiArgs(args []interface{}) []interface{} {
+	for i, arg := range args {
+		if wei, ok := arg.(units.Wei); ok {
+			args[i] = wei.Decimal.BigInt()
+			continue
+		}
+		if _, ok := arg.(*units.Wei); ok {
+			if arg.(*units.Wei) == nil {
+				args[i] = big.NewInt(0)
+				continue
+			}
+			args[i] = arg.(*units.Wei).Decimal.BigInt()
+			continue
+		}
+	}
+	return args
+}
+
 // Call a contract method
 func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	var local *big.Int
+	var outWei *units.Wei
+	var ok bool
+
+	// if someone passes a raw units.Wei, error- we can't populate a non-pointer type
+	if _, ok := result.(units.Wei); ok {
+		return fmt.Errorf("output units.Wei is not a pointer")
+	}
+
+	// if result is a *units.Wei, use a local *big.Int to unpack into
+	if outWei, ok = result.(*units.Wei); ok {
+		if outWei == nil {
+			return fmt.Errorf("output units.Wei is nil")
+		}
+		result = &local
+	}
+
+	params = convertWeiArgs(params)
+
 	results := make([]interface{}, 1)
 	results[0] = result
-	return c.Contract.Call(opts, &results, method, params...)
+
+	err := c.Contract.Call(opts, &results, method, params...)
+	if err != nil {
+		return err
+	}
+	if outWei != nil {
+		*outWei = units.NewWei(local)
+	}
+	return nil
 }
 
 // Get Gas Limit for transaction
 func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (gaslimit.Limits, error) {
 
 	response := gaslimit.Limits{}
+
+	params = convertWeiArgs(params)
 
 	// Pack transaction Info
 	input, err := c.ABI.Pack(method, params...)
@@ -64,6 +113,8 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
 
 // Transact on a contract method and wait for a receipt
 func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+
+	params = convertWeiArgs(params)
 
 	// Estimate gas limit
 	if opts.GasLimit == 0 {

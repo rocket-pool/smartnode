@@ -1,17 +1,16 @@
 package api
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type QueueStatusResponse struct {
 	APIResponse
-	DepositPoolBalance    *big.Int `json:"depositPoolBalance"`
-	MinipoolQueueLength   uint64   `json:"minipoolQueueLength"`
-	MinipoolQueueCapacity *big.Int `json:"minipoolQueueCapacity"`
+	DepositPoolBalance    units.Wei `json:"depositPoolBalance"`
+	MinipoolQueueLength   uint64    `json:"minipoolQueueLength"`
+	MinipoolQueueCapacity units.Wei `json:"minipoolQueueCapacity"`
 }
 
 type CanProcessQueueResponse struct {

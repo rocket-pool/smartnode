@@ -127,14 +127,14 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidator(validator
 	}
 
 	// Print the gas info
-	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
+	maxFee := units.GweiFromFloat(utils.GetWatchtowerMaxFee(t.cfg)).ToWei()
+	if !gasLimits.PrintAndCheck(false, units.NewGwei(0), &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasFeeCap = maxFee.BigInt()
+	opts.GasTipCap = units.GweiFromFloat(utils.GetWatchtowerPrioFee(t.cfg)).ToWei().BigInt()
 	opts.GasLimit = gasLimits.Safe
 
 	// Dissolve

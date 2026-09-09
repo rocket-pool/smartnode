@@ -2,7 +2,6 @@ package minipool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func getStatus(includeFinalized bool) error {
@@ -119,14 +117,14 @@ func getStatus(includeFinalized bool) error {
 	if len(refundableMinipools) > 0 {
 		fmt.Printf("%d minipool(s) have refunds available:\n", len(refundableMinipools))
 		for _, minipool := range refundableMinipools {
-			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(units.WeiToEth(minipool.Node.RefundBalance), 6))
+			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(minipool.Node.RefundBalance.ToEth().InexactFloat64(), 6))
 		}
 		fmt.Println("")
 	}
 	if len(closeableMinipools) > 0 {
 		fmt.Printf("%d dissolved minipool(s) can be closed:\n", len(closeableMinipools))
 		for _, minipool := range closeableMinipools {
-			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(units.WeiToEth(minipool.Balances.ETH), 6))
+			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(minipool.Balances.ETH.ToEth().InexactFloat64(), 6))
 		}
 		fmt.Println("")
 	}
@@ -160,8 +158,8 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	}
 	fmt.Printf("Status:                %s\n", minipool.Status.Status.String())
 	fmt.Printf("Status updated:        %s\n", minipool.Status.StatusTime.Format(cliutils.TimeFormat))
-	fmt.Printf("Node fee:              %f%%\n", minipool.Node.Fee*100)
-	fmt.Printf("Node deposit:          %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.Node.DepositBalance), 6))
+	fmt.Printf("Node fee:              %f%%\n", minipool.Node.Fee.InexactFloat64()*100)
+	fmt.Printf("Node deposit:          %.6f ETH\n", math.RoundDown(minipool.Node.DepositBalance.ToEth().InexactFloat64(), 6))
 
 	// Queue position
 	if minipool.Queue.Position != 0 {
@@ -170,17 +168,17 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 
 	// RP ETH deposit details - prelaunch & staking minipools
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
-		totalRewards := big.NewInt(0).Add(minipool.NodeShareOfETHBalance, minipool.Node.RefundBalance)
+		totalRewards := minipool.NodeShareOfETHBalance.Add(minipool.Node.RefundBalance)
 		if minipool.User.DepositAssigned {
 			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(cliutils.TimeFormat))
-			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.User.DepositBalance), 6))
+			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(minipool.User.DepositBalance.ToEth().InexactFloat64(), 6))
 		} else {
 			fmt.Printf("RP ETH assigned:       no\n")
 		}
-		fmt.Printf("Minipool Balance (EL): %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.Balances.ETH), 6))
-		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.NodeShareOfETHBalance), 6))
-		fmt.Printf("Available refund:      %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.Node.RefundBalance), 6))
-		fmt.Printf("Total EL rewards:      %.6f ETH\n", math.RoundDown(units.WeiToEth(totalRewards), 6))
+		fmt.Printf("Minipool Balance (EL): %.6f ETH\n", math.RoundDown(minipool.Balances.ETH.ToEth().InexactFloat64(), 6))
+		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(minipool.NodeShareOfETHBalance.ToEth().InexactFloat64(), 6))
+		fmt.Printf("Available refund:      %.6f ETH\n", math.RoundDown(minipool.Node.RefundBalance.ToEth().InexactFloat64(), 6))
+		fmt.Printf("Total EL rewards:      %.6f ETH\n", math.RoundDown(totalRewards.ToEth().InexactFloat64(), 6))
 	}
 
 	// Validator details - prelaunch and staking minipools
@@ -194,8 +192,8 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 			} else {
 				fmt.Printf("Validator active:      no\n")
 			}
-			fmt.Printf("Beacon balance (CL):   %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.Validator.Balance), 6))
-			fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(units.WeiToEth(minipool.Validator.NodeBalance), 6))
+			fmt.Printf("Beacon balance (CL):   %.6f ETH\n", math.RoundDown(minipool.Validator.Balance.ToEth().InexactFloat64(), 6))
+			fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(minipool.Validator.NodeBalance.ToEth().InexactFloat64(), 6))
 		} else {
 			fmt.Printf("Validator seen:        no\n")
 		}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Represents the collector for the RPL metrics
@@ -95,10 +94,10 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
-	rplPriceFloat := units.WeiToEth(state.NetworkDetails.RplPrice)
-	totalValueStakedFloat := units.WeiToEth(state.NetworkDetails.TotalRPLStake)
-	totalNetworkLegacyStakedRpl := units.WeiToEth(state.NetworkDetails.TotalLegacyStakedRpl)
-	totalNetworkMegapoolStakedRpl := units.WeiToEth(state.NetworkDetails.TotalNetworkMegapoolStakedRpl)
+	rplPriceFloat := state.NetworkDetails.RplPrice.ToEth().InexactFloat64()
+	totalValueStakedFloat := state.NetworkDetails.TotalRPLStake.ToEth().InexactFloat64()
+	totalNetworkLegacyStakedRpl := state.NetworkDetails.TotalLegacyStakedRpl.ToEth().InexactFloat64()
+	totalNetworkMegapoolStakedRpl := state.NetworkDetails.TotalNetworkMegapoolStakedRpl.ToEth().InexactFloat64()
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000

@@ -2,106 +2,64 @@ package units
 
 import (
 	"math"
-	"math/big"
 	"strconv"
+
+	"github.com/shopspring/decimal"
 )
 
-// Conversion factors
+// Exponents relative to wei (also the max fractional digits for each unit).
 const (
-	WeiPerEth      float64 = 1e18
-	WeiPerGwei     float64 = 1e9
-	WeiPerMilliEth float64 = 1e15
-	GweiPerEth     float64 = 1e9
+	weiExp      int32 = 0
+	gweiExp     int32 = 9
+	milliEthExp int32 = 15
+	ethExp      int32 = 18
 )
 
-// Convert wei to eth
-func WeiToEth(wei *big.Int) float64 {
-	if wei == nil {
-		return 0
+// Wei is the fundamental unit of value, and is always integral.
+type Wei struct {
+	decimal.Decimal
+}
+
+// Eth is 1e18 of Wei.
+type Eth struct {
+	decimal.Decimal
+}
+
+// Gwei is 1e9 of Wei.
+type Gwei struct {
+	decimal.Decimal
+}
+
+// MilliEth is 1e15 of Wei.
+type MilliEth struct {
+	decimal.Decimal
+}
+
+// Unit is a common interface for any unit of value
+type Unit interface {
+	ToWei() Wei
+	ToEth() Eth
+	ToGwei() Gwei
+	ToMilliEth() MilliEth
+}
+
+// Type assertions that each unit implements the Unit interface
+var _ Unit = Wei{}
+var _ Unit = Eth{}
+var _ Unit = Gwei{}
+var _ Unit = MilliEth{}
+
+// decimalFromFloat converts a float64 into a decimal.Decimal using the
+// float's shortest round-trip representation. This preserves precision for
+// values that were originally parsed from text (config files, user input).
+// NaN and +/-Inf collapse to zero.
+func decimalFromFloat(v float64) decimal.Decimal {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return decimal.Zero
 	}
-	var weiFloat big.Float
-	var eth big.Float
-	weiFloat.SetInt(wei)
-	eth.Quo(&weiFloat, big.NewFloat(WeiPerEth))
-	eth64, _ := eth.Float64()
-	return eth64
-}
-
-// Convert eth to wei
-func EthToWei(eth float64) *big.Int {
-	var ethFloat big.Float
-	var weiFloat big.Float
-	var wei big.Int
-	ethFloat.SetString(strconv.FormatFloat(eth, 'f', -1, 64))
-	weiFloat.Mul(&ethFloat, big.NewFloat(WeiPerEth))
-	weiFloat.Int(&wei)
-	return &wei
-}
-
-// Convert wei to gigawei
-func WeiToGwei(wei *big.Int) float64 {
-	if wei == nil {
-		return 0
+	d, err := decimal.NewFromString(strconv.FormatFloat(v, 'f', -1, 64))
+	if err != nil {
+		return decimal.NewFromFloat(v)
 	}
-	var weiFloat big.Float
-	var gwei big.Float
-	weiFloat.SetInt(wei)
-	gwei.Quo(&weiFloat, big.NewFloat(WeiPerGwei))
-	gwei64, _ := gwei.Float64()
-	return gwei64
-}
-
-// Convert gigawei to wei
-func GweiToWei(gwei float64) *big.Int {
-	var gweiFloat big.Float
-	var weiFloat big.Float
-	var wei big.Int
-	gweiFloat.SetString(strconv.FormatFloat(gwei, 'f', -1, 64))
-	weiFloat.Mul(&gweiFloat, big.NewFloat(WeiPerGwei))
-	weiFloat.Int(&wei)
-	return &wei
-}
-
-func GweiToEth(gwei uint64) float64 {
-	var gweiFloat big.Float
-	var eth big.Float
-	gweiFloat.SetUint64(gwei)
-	eth.Quo(&gweiFloat, big.NewFloat(GweiPerEth))
-	eth64, _ := eth.Float64()
-	return eth64
-}
-
-// Convert milliEth to wei
-func MilliEthToWei(milliEth float64) *big.Int {
-	var milliEthFloat big.Float
-	var weiFloat big.Float
-	var wei big.Int
-	milliEthFloat.SetString(strconv.FormatFloat(milliEth, 'f', -1, 64))
-	weiFloat.Mul(&milliEthFloat, big.NewFloat(WeiPerMilliEth))
-	weiFloat.Int(&wei)
-	return &wei
-}
-
-// Converts float amount to big.Int considering a token's decimals
-func EthToWeiWithDecimals(amountRaw float64, decimals uint8) *big.Int {
-	var ethFloat big.Float
-	var weiFloat big.Float
-	var wei big.Int
-	ethFloat.SetString(strconv.FormatFloat(amountRaw, 'f', -1, 64))
-	weiFloat.Mul(&ethFloat, big.NewFloat(math.Pow(10, float64(decimals))))
-	weiFloat.Int(&wei)
-	return &wei
-}
-
-// Converts big.Int to float64 considering a token's decimals
-func WeiToEthWithDecimals(amount *big.Int, decimals uint8) float64 {
-	if amount == nil {
-		return 0
-	}
-	var weiFloat big.Float
-	var eth big.Float
-	weiFloat.SetInt(amount)
-	eth.Quo(&weiFloat, big.NewFloat(math.Pow(10, float64(decimals))))
-	eth64, _ := eth.Float64()
-	return eth64
+	return d
 }

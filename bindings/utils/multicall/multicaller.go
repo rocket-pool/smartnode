@@ -7,6 +7,7 @@ package multicall
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -15,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type Call struct {
@@ -62,6 +64,12 @@ func NewMultiCaller(client rocketpool.ExecutionClient, multicallerAddress common
 }
 
 func (caller *MultiCaller) AddCall(contract *rocketpool.Contract, output interface{}, method string, args ...interface{}) error {
+	// iterate args and convert any units.Wei to *big.Int
+	for i, arg := range args {
+		if wei, ok := arg.(units.Wei); ok {
+			args[i] = wei.Decimal.BigInt()
+		}
+	}
 	callData, err := contract.ABI.Pack(method, args...)
 	if err != nil {
 		return fmt.Errorf("error adding call [%s]: %w", method, err)
@@ -120,10 +128,19 @@ func (caller *MultiCaller) FlexibleCall(requireSuccess bool, opts *bind.CallOpts
 	for i, call := range caller.calls {
 		callSuccess := results[i].Status
 		if callSuccess {
-			err := call.Contract.ABI.UnpackIntoInterface(call.output, call.Method, results[i].ReturnDataRaw)
+			var local *big.Int
+			dst := call.output
+			// If dst is a *units.Wei, use a local *big.Int to unpack into
+			if _, ok := dst.(*units.Wei); ok {
+				dst = &local
+			}
+			err := call.Contract.ABI.UnpackIntoInterface(dst, call.Method, results[i].ReturnDataRaw)
 			if err != nil {
 				caller.calls = []Call{}
 				return nil, err
+			}
+			if local != nil {
+				*(call.output.(*units.Wei)) = units.NewWei(local)
 			}
 		}
 		res[i].Success = callSuccess

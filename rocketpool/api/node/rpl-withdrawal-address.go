@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -12,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/units"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -50,7 +49,7 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	var primaryWithdrawalAddress common.Address
 	var isRPLWithdrawalAddressSet bool
 	var rplWithdrawalAddress common.Address
-	var rplStake *big.Int
+	var rplStake units.Wei
 
 	// Get the primary withdrawal address
 	wg.Go(func() error {

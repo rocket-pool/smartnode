@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Get the version of the Node Staking contract
@@ -22,94 +23,94 @@ func GetNodeStakingVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 }
 
 // Get the total RPL staked in the network
-func GetTotalStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, totalRplStake, "getTotalStakedRPL"); err != nil {
-		return nil, fmt.Errorf("error getting total network RPL stake: %w", err)
+	totalRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &totalRplStake, "getTotalStakedRPL"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting total network RPL stake: %w", err)
 	}
-	return *totalRplStake, nil
+	return totalRplStake, nil
 }
 
 // Get the total RPL staked in the network on megapools
-func GetTotalMegapoolStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalMegapoolStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, totalRplStake, "getTotalMegapoolStakedRPL"); err != nil {
-		return nil, fmt.Errorf("error getting total network megapool RPL stake: %w", err)
+	totalRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &totalRplStake, "getTotalMegapoolStakedRPL"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting total network megapool RPL stake: %w", err)
 	}
-	return *totalRplStake, nil
+	return totalRplStake, nil
 }
 
 // Get the total RPL staked in the network on megapools
-func GetTotalLegacyStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalLegacyStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, totalRplStake, "getTotalLegacyStakedRPL"); err != nil {
-		return nil, fmt.Errorf("error getting total network legacy RPL stake: %w", err)
+	totalRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &totalRplStake, "getTotalLegacyStakedRPL"); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting total network legacy RPL stake: %w", err)
 	}
-	return *totalRplStake, nil
+	return totalRplStake, nil
 }
 
 // Get a node's total RPL staked
-func GetNodeStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeRplStake, "getNodeStakedRPL", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting total node RPL stake: %w", err)
+	nodeRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeRplStake, "getNodeStakedRPL", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting total node RPL stake: %w", err)
 	}
-	return *nodeRplStake, nil
+	return nodeRplStake, nil
 }
 
 // Get a node's megapool RPL staked
-func GetNodeMegapoolStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMegapoolStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeRplStake, "getNodeMegapoolStakedRPL", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting megapool node RPL stake: %w", err)
+	nodeRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeRplStake, "getNodeMegapoolStakedRPL", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting megapool node RPL stake: %w", err)
 	}
-	return *nodeRplStake, nil
+	return nodeRplStake, nil
 }
 
 // Get a node's legacy RPL staked
-func GetNodeLegacyStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeLegacyStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeRplStake, "getNodeLegacyStakedRPL", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting megapool node RPL stake: %w", err)
+	nodeRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeRplStake, "getNodeLegacyStakedRPL", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting megapool node RPL stake: %w", err)
 	}
-	return *nodeRplStake, nil
+	return nodeRplStake, nil
 }
 
 // Get the amount of unstaking RPL for a node
-func GetNodeUnstakingRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeUnstakingRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	unstakingRpl := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, unstakingRpl, "getNodeUnstakingRPL", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node unstaking RPL: %w", err)
+	unstakingRpl := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &unstakingRpl, "getNodeUnstakingRPL", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node unstaking RPL: %w", err)
 	}
-	return *unstakingRpl, nil
+	return unstakingRpl, nil
 }
 
 // Get the time a node last staked RPL
@@ -152,98 +153,98 @@ func GetNodeETHCollateralisationRatio(rp *rocketpool.RocketPool, nodeAddress com
 }
 
 // Get the amount of ETH the node has borrowed from the deposit pool
-func GetNodeETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeETHBorrowed := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeETHBorrowed, "getNodeETHBorrowed", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+	nodeETHBorrowed := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeETHBorrowed, "getNodeETHBorrowed", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
-	return *nodeETHBorrowed, nil
+	return nodeETHBorrowed, nil
 }
 
 // Get the amount of ETH the node has borrowed from the deposit pool for its megapool
-func GetNodeMegapoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMegapoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeMegapoolETHBorrowed := new(*big.Int)
+	nodeMegapoolETHBorrowed := new(units.Wei)
 	if err := rocketNodeStaking.Call(opts, nodeMegapoolETHBorrowed, "getNodeMegapoolETHBorrowed", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeMegapoolETHBorrowed, nil
 }
 
 // Get the amount of ETH the node has borrowed from the deposit pool for its minipools
-func GetNodeMinipoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMinipoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeMinipoolETHBorrowed := new(*big.Int)
+	nodeMinipoolETHBorrowed := new(units.Wei)
 	if err := rocketNodeStaking.Call(opts, nodeMinipoolETHBorrowed, "getNodeMinipoolETHBorrowed", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeMinipoolETHBorrowed, nil
 }
 
 // Get the minimum amount of legacy staked RPL a node must have after unstaking
-func GetNodeMinimumLegacyRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMinimumLegacyRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeMinimumLegacyRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeMinimumLegacyRplStake, "getNodeMinimumLegacyRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node minimum legacy rpl stake: %w", err)
+	nodeMinimumLegacyRplStake := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeMinimumLegacyRplStake, "getNodeMinimumLegacyRPLStake", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node minimum legacy rpl stake: %w", err)
 	}
-	return *nodeMinimumLegacyRplStake, nil
+	return nodeMinimumLegacyRplStake, nil
 }
 
 // Get the amount of ETH the node has bonded
-func GetNodeEthBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeEthBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeETHBonded := new(*big.Int)
+	nodeETHBonded := new(units.Wei)
 	if err := rocketNodeStaking.Call(opts, nodeETHBonded, "getNodeETHBonded", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeETHBonded, nil
 }
 
 // Get the amount of ETH the node has bonded for its megapool
-func GetNodeMegapoolETHBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMegapoolETHBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeMegapoolETHBonded := new(*big.Int)
+	nodeMegapoolETHBonded := new(units.Wei)
 	if err := rocketNodeStaking.Call(opts, nodeMegapoolETHBonded, "getNodeMegapoolETHBonded", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeMegapoolETHBonded, nil
 }
 
 // Get the amount of ETH the node has bonded for its minipools
-func GetNodeMinipoolETHBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeMinipoolETHBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeMinipoolETHBonded := new(*big.Int)
+	nodeMinipoolETHBonded := new(units.Wei)
 	if err := rocketNodeStaking.Call(opts, nodeMinipoolETHBonded, "getNodeMinipoolETHBonded", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeMinipoolETHBonded, nil
 }
 
 // Estimate the gas of Stake
-func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -252,7 +253,7 @@ func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.
 }
 
 // Stake RPL
-func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func StakeRPL(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
@@ -265,7 +266,7 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 }
 
 // Estimate the gas of UnstakeRPL
-func EstimateUnstakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateUnstakeGas(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -274,7 +275,7 @@ func EstimateUnstakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bin
 }
 
 // Unstake RPL
-func UnstakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func UnstakeRPL(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
@@ -379,7 +380,7 @@ func WithdrawRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Has
 }
 
 // Estimate the gas of UnstakeLegacyRPL
-func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -388,7 +389,7 @@ func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, 
 }
 
 // Unstake legacy RPL
-func UnstakeLegacyRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func UnstakeLegacyRPL(rp *rocketpool.RocketPool, rplAmount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
@@ -401,42 +402,42 @@ func UnstakeLegacyRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.
 }
 
 // Get the amount of RPL locked as part of active PDAO proposals or challenges
-func GetNodeLockedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeLockedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, value, "getNodeLockedRPL", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+	value := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &value, "getNodeLockedRPL", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node RPL locked: %w", err)
 	}
-	return *value, nil
+	return value, nil
 }
 
 // Get the amount of ETH the node has borrowed from the deposit pool to create its minipools
-func GetNodeEthMatched(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeEthMatched(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeEthMatched := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeEthMatched, "getNodeETHMatched", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+	nodeEthMatched := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeEthMatched, "getNodeETHMatched", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
-	return *nodeEthMatched, nil
+	return nodeEthMatched, nil
 }
 
 // Get the amount of ETH the node can borrow from the deposit pool to create its minipools
-func GetNodeEthMatchedLimit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeEthMatchedLimit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	nodeEthMatchedLimit := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeEthMatchedLimit, "getNodeETHMatchedLimit", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node ETH matched limit: %w", err)
+	nodeEthMatchedLimit := units.Wei{}
+	if err := rocketNodeStaking.Call(opts, &nodeEthMatchedLimit, "getNodeETHMatchedLimit", nodeAddress); err != nil {
+		return units.Wei{}, fmt.Errorf("error getting node ETH matched limit: %w", err)
 	}
-	return *nodeEthMatchedLimit, nil
+	return nodeEthMatchedLimit, nil
 }
 
 // Get contracts

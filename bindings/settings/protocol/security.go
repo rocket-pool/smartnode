@@ -13,6 +13,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 // Config
@@ -28,14 +30,14 @@ const (
 )
 
 // Security council member quorum threshold that must be met for proposals to pass
-func GetSecurityMembersQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetSecurityMembersQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := securitySettingsContract.Call(opts, value, "getQuorum"); err != nil {
-		return nil, fmt.Errorf("error getting security members quorum: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting security members quorum: %w", err)
 	}
 	return *value, nil
 }
@@ -123,14 +125,14 @@ func EstimateProposeSecurityProposalActionTimeGas(rp *rocketpool.RocketPool, val
 }
 
 // Security council quorum threshold that must be met to veto a protocol upgrade
-func GetSecurityUpgradeVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetSecurityUpgradeVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := securitySettingsContract.Call(opts, value, "getUpgradeVetoQuorum"); err != nil {
-		return nil, fmt.Errorf("error getting security upgrade veto quorum: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting security upgrade veto quorum: %w", err)
 	}
 	return *value, nil
 }

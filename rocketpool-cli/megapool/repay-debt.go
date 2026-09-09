@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
@@ -26,8 +25,8 @@ func repayDebt(yes bool) error {
 	if err != nil {
 		return err
 	}
-	if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You have %.6f ETH of megapool debt.\n", math.RoundDown(units.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+	if !megapoolDetails.Megapool.NodeDebt.IsZero() {
+		fmt.Printf("You have %.6f ETH of megapool debt.\n", math.RoundDown(megapoolDetails.Megapool.NodeDebt.ToEth().InexactFloat64(), 6))
 	} else {
 		fmt.Println("You have no megapool debt.")
 		return nil
@@ -41,9 +40,9 @@ func repayDebt(yes bool) error {
 		return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
 	}
 
-	amountWei := units.EthToWei(amount)
+	amountWei := units.EthFromFloat(amount).ToWei()
 	// Check megapool debt can be repaid
-	canRepay, err := rp.CanRepayDebt(amountWei)
+	canRepay, err := rp.CanRepayDebt(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -65,13 +64,13 @@ func repayDebt(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to repay %.6f ETH of megapool debt?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to repay %.6f ETH of megapool debt?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Repay megapool debt
-	response, err := rp.RepayDebt(amountWei)
+	response, err := rp.RepayDebt(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -83,7 +82,7 @@ func repayDebt(yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully repaid %.6f ETH of megapool debt.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully repaid %.6f ETH of megapool debt.\n", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

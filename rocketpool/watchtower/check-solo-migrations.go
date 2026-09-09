@@ -2,7 +2,6 @@ package watchtower
 
 import (
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
@@ -29,7 +28,7 @@ const (
 	soloMigrationCheckThreshold float64 = 0.85 // Fraction of PromotionStakePeriod that can go before a minipool gets scrubbed for not having changed to 0x01
 	blsPrefix                   byte    = 0x00
 	elPrefix                    byte    = 0x01
-	migrationBalanceBuffer      float64 = 0.01
+	migrationBalanceBuffer      uint64  = 0.01 * 1e9 // 0.01 ETH in gwei
 )
 
 type checkSoloMigrations struct {
@@ -141,7 +140,6 @@ func (t *checkSoloMigrations) run(state *state.NetworkStateIndex) error {
 func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex) error {
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
-	oneGwei := units.GweiToWei(1)
 	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
 
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
@@ -158,7 +156,6 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex
 
 	// Go through each minipool
 	threshold := uint64(32000000000)
-	buffer := uint64(migrationBalanceBuffer * units.WeiPerGwei)
 	for _, mpd := range state.MinipoolDetails {
 		if mpd.Status == types.Dissolved {
 			// Ignore minipools that are already dissolved
@@ -212,11 +209,11 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex
 		}
 
 		// Check the balance
-		creationBalanceGwei := big.NewInt(0).Div(mpd.PreMigrationBalance, oneGwei).Uint64()
+		creationBalanceGwei := mpd.PreMigrationBalance.ToGwei().BigInt().Uint64()
 		currentBalance := validator.Balance
 
 		// Add the minipool balance to the Beacon balance in case it already got skimmed
-		minipoolBalanceGwei := big.NewInt(0).Div(mpd.Balance, oneGwei).Uint64()
+		minipoolBalanceGwei := mpd.Balance.ToGwei().BigInt().Uint64()
 		currentBalance += minipoolBalanceGwei
 
 		if currentBalance < threshold {
@@ -224,8 +221,8 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkStateIndex
 			balanceTooLowCount++
 			continue
 		}
-		if currentBalance < (creationBalanceGwei - buffer) {
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
+		if currentBalance < (creationBalanceGwei - migrationBalanceBuffer) {
+			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, migrationBalanceBuffer))
 			balanceTooLowCount++
 			continue
 		}
@@ -287,14 +284,14 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print the gas info
-	maxFee := units.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gasLimits.PrintAndCheck(false, 0, &t.log, maxFee, 0) {
+	maxFee := units.GweiFromFloat(utils.GetWatchtowerMaxFee(t.cfg)).ToWei()
+	if !gasLimits.PrintAndCheck(false, units.NewGwei(0), &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = units.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasFeeCap = maxFee.BigInt()
+	opts.GasTipCap = units.GweiFromFloat(utils.GetWatchtowerPrioFee(t.cfg)).ToWei().BigInt()
 	opts.GasLimit = gasLimits.Safe
 
 	// Cancel the reduction

@@ -165,9 +165,6 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	var details api.MinipoolCloseDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
-	details.Balance = big.NewInt(0)
-	details.Refund = big.NewInt(0)
-	details.NodeShare = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {
@@ -229,7 +226,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	}
 
 	// Make sure it's in a closeable state
-	effectiveBalance := big.NewInt(0).Sub(details.Balance, details.Refund)
+	effectiveBalance := details.Balance.Sub(details.Refund)
 	switch details.MinipoolStatus {
 	case types.Dissolved:
 		details.CanClose = true
@@ -242,7 +239,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		}
 
 		// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
-		eight := units.EthToWei(8)
+		eight := units.NewEth(8).ToWei()
 		if effectiveBalance.Cmp(eight) == -1 {
 			details.CanClose = false
 			return details, nil
@@ -417,7 +414,7 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address, t *snroute.Tr
 				if err != nil {
 					return nil, fmt.Errorf("error getting fee distributor balance: %w", err)
 				}
-				useBundle = distributorBalance.Cmp(big.NewInt(1)) == 0
+				useBundle = distributorBalance.Cmp(units.NewWei(big.NewInt(1))) == 0
 			}
 		}
 

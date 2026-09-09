@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
@@ -68,15 +67,14 @@ func distribute(yes bool) error {
 		return fmt.Errorf("error calculating pending rewards: %w", err)
 	}
 
-	totalRewards := big.NewInt(0)
-	totalRewards.Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
+	totalRewards := pendingRewards.RewardSplit.NodeRewards.Add(pendingRewards.RefundValue)
 
-	if totalRewards.Cmp(big.NewInt(0)) <= 0 {
+	if totalRewards.Cmp(units.Wei{}) <= 0 {
 		fmt.Println("There are no pending rewards to distribute.")
 		return nil
 	}
 	// Print rewards
-	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", units.WeiToEth(pendingRewards.RewardSplit.NodeRewards), units.WeiToEth(pendingRewards.RefundValue))
+	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", pendingRewards.RewardSplit.NodeRewards.ToEth().InexactFloat64(), pendingRewards.RefundValue.ToEth().InexactFloat64())
 	fmt.Println()
 
 	// Assign max fees

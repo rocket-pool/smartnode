@@ -583,8 +583,8 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 	if err != nil {
 		return fmt.Errorf("error approximating rETH stakers' share of the Smoothing Pool: %w", err)
 	}
-	g.log.Printlnf("Total ETH in the Smoothing Pool: %s wei (%.6f ETH)", smoothingPoolBalance.String(), units.WeiToEth(smoothingPoolBalance))
-	g.log.Printlnf("rETH stakers's share:            %s wei (%.6f ETH)", rETHShare.String(), units.WeiToEth(rETHShare))
+	g.log.Printlnf("Total ETH in the Smoothing Pool: %s wei (%.6f ETH)", smoothingPoolBalance.String(), smoothingPoolBalance.ToEth().InexactFloat64())
+	g.log.Printlnf("rETH stakers's share:            %s wei (%.6f ETH)", rETHShare.String(), units.NewWei(rETHShare).ToEth().InexactFloat64())
 
 	return nil
 }

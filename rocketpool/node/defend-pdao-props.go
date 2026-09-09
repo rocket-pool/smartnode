@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type defendableProposal struct {
@@ -256,7 +257,7 @@ func (t *defendPdaoProps) defendProposal(prop defendableProposal) error {
 	}
 
 	// Print the gas info
-	if !gasLimits.PrintAndCheck(true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, units.GweiFromFloat(t.gasThreshold).ToWei().ToGwei(), t.log, units.NewWei(maxFee), t.gasLimit) {
 		t.log.Println("NOTICE: Challenge responses bypass the automatic TX gas threshold, responding for safety.")
 	}
 

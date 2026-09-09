@@ -1,8 +1,6 @@
 package auction
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -55,7 +53,7 @@ func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotRespo
 		}
 		addressBidAmount, err := auction.GetLotAddressBidAmount(rp, lotIndex, nodeAccount.Address, nil)
 		if err == nil {
-			response.NoBidFromAddress = (addressBidAmount.Cmp(big.NewInt(0)) == 0)
+			response.NoBidFromAddress = addressBidAmount.IsZero()
 		}
 		return err
 	})

@@ -3,7 +3,6 @@ package debug
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -158,8 +157,8 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	// Data
 	var wg errgroup.Group
 	var status types.MinipoolStatus
-	var userDepositBalance *big.Int
-	var nodeFee float64
+	var userDepositBalance units.Wei
+	var nodeFee units.Eth
 
 	// Load data
 	wg.Go(func() error {
@@ -183,7 +182,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	}
 
 	// Get user balance at block
-	blockBalance := units.GweiToWei(float64(validator.Balance))
+	blockBalance := units.NewGwei(validator.Balance).ToWei()
 	userBalance, err := mp.CalculateUserShare(blockBalance, opts)
 	if err != nil {
 		return err
@@ -202,17 +201,17 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	if status == types.Initialized || status == types.Prelaunch {
 		// Use user deposit balance if initialized or prelaunch
 		userBalance = userDepositBalance
-		blockBalance = units.EthToWei(32)
-		nodeBalance.Sub(blockBalance, userBalance)
+		blockBalance = units.NewEth(32).ToWei()
+		nodeBalance = blockBalance.Sub(userBalance)
 	} else if status == types.Dissolved {
-		userBalance = big.NewInt(0)
-		blockBalance = big.NewInt(0)
-		nodeBalance = big.NewInt(0)
+		userBalance = units.Wei{}
+		blockBalance = units.Wei{}
+		nodeBalance = units.Wei{}
 	} else if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		// Use user deposit balance if validator not yet active on beacon chain at block
 		userBalance = userDepositBalance
-		blockBalance = units.EthToWei(32)
-		nodeBalance.Sub(blockBalance, userBalance)
+		blockBalance = units.NewEth(32).ToWei()
+		nodeBalance = blockBalance.Sub(userBalance)
 	}
 
 	fmt.Printf("%s\t%s\t%d\t%.10f\t%.10f\t%.10f\t%.10f\t%s\t%t\t%t\t%t\n",
@@ -220,9 +219,9 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		validator.Pubkey.Hex(),
 		validator.ActivationEpoch,
 		nodeFee,
-		units.WeiToEth(blockBalance),
-		units.WeiToEth(nodeBalance),
-		units.WeiToEth(userBalance),
+		blockBalance.ToEth(),
+		nodeBalance.ToEth(),
+		userBalance.ToEth(),
 		types.MinipoolStatuses[status],
 		finalised,
 		validator.ExitEpoch > blockEpoch,

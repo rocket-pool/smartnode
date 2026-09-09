@@ -2,7 +2,6 @@ package odao
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -12,13 +11,12 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 
-	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *big.Int) (*api.CanProposeTNDAOKickResponse, error) {
+func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei units.Wei) (*api.CanProposeTNDAOKickResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -75,7 +73,7 @@ func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei 
 		if err != nil {
 			return err
 		}
-		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(units.WeiToEth(fineAmountWei), 6))
+		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, fineAmountWei.ToEth())
 		gasLimits, err := trustednode.EstimateProposeKickMemberGas(rp, message, memberAddress, fineAmountWei, opts)
 		if err == nil {
 			response.GasLimits = gasLimits
@@ -94,7 +92,7 @@ func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei 
 
 }
 
-func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *big.Int, t *snroute.TransactOpts) (*api.ProposeTNDAOKickResponse, error) {
+func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei units.Wei, t *snroute.TransactOpts) (*api.ProposeTNDAOKickResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -132,7 +130,7 @@ func proposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei *bi
 	}
 
 	// Submit proposal
-	message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(units.WeiToEth(fineAmountWei), 6))
+	message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, fineAmountWei.ToEth())
 	proposalId, hash, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
 	if err != nil {
 		return nil, err

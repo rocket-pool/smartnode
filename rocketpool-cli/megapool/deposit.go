@@ -53,7 +53,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	var expressTicketCount uint64
 	var queueDetails api.GetQueueDetailsResponse
 	var status api.MegapoolStatusResponse
-	totalBondRequirement := big.NewInt(0)
+	totalBondRequirement := units.Wei{}
 	// Get the express ticket count
 	wg.Go(func() error {
 		expressTicket, err := rp.GetExpressTicketCount()
@@ -95,20 +95,12 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 		}
 	}
 
-	bondedEth := status.Megapool.NodeBond
-	if bondedEth == nil {
-		bondedEth = big.NewInt(0)
-	}
-	queuedBondEth := status.Megapool.NodeQueuedBond
-	if queuedBondEth == nil {
-		queuedBondEth = big.NewInt(0)
-	}
-	bondedEth = bondedEth.Add(bondedEth, queuedBondEth)
-	megapoolBondedEth := big.NewInt(0).Set(bondedEth)
-	lastBondAdded := big.NewInt(0)
+	bondedEth := status.Megapool.NodeBond.Add(status.Megapool.NodeQueuedBond)
+	megapoolBondedEth := bondedEth
+	lastBondAdded := units.Wei{}
 	// Iterate through the deposits and get the bond requirement for each
 	for i := uint64(1); i <= count; i++ {
-		bondedEth = bondedEth.Add(bondedEth, lastBondAdded)
+		bondedEth = bondedEth.Add(lastBondAdded)
 		activeValidatorCount := status.Megapool.ActiveValidatorCount
 		bondRequirementResponse, err := rp.GetBondRequirement(i + uint64(activeValidatorCount))
 		if err != nil {
@@ -117,18 +109,18 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 		lastBondAdded = bondRequirementResponse.BondRequirement
 		// Find the bond requirement for the next validator
-		nextBondRequirement := bondRequirementResponse.BondRequirement.Sub(bondRequirementResponse.BondRequirement, bondedEth)
-		if nextBondRequirement.Cmp(units.EthToWei(1)) < 0 {
-			nextBondRequirement = units.EthToWei(1)
-		} else if nextBondRequirement.Cmp(units.EthToWei(32)) > 0 {
-			nextBondRequirement = units.EthToWei(32)
+		nextBondRequirement := bondRequirementResponse.BondRequirement.Sub(bondedEth)
+		if nextBondRequirement.Cmp(units.EthFromFloat(1).ToWei()) < 0 {
+			nextBondRequirement = units.EthFromFloat(1).ToWei()
+		} else if nextBondRequirement.Cmp(units.EthFromFloat(32).ToWei()) > 0 {
+			nextBondRequirement = units.EthFromFloat(32).ToWei()
 		}
-		totalBondRequirement = totalBondRequirement.Add(totalBondRequirement, nextBondRequirement)
+		totalBondRequirement = totalBondRequirement.Add(nextBondRequirement)
 	}
 
-	totalBondRequirementEth := units.WeiToEth(totalBondRequirement)
+	totalBondRequirementEth := totalBondRequirement.ToEth().InexactFloat64()
 	// Show the node bond and the total bond requirement
-	fmt.Printf("The node is currently bonded with %.2f ETH.\n", units.WeiToEth(megapoolBondedEth))
+	fmt.Printf("The node is currently bonded with %.2f ETH.\n", megapoolBondedEth.ToEth().InexactFloat64())
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
@@ -182,7 +174,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	minNodeFee := 0.0
 
 	// Check deposit can be made
-	canDeposit, err := rp.CanNodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), uint64(expressTickets))
+	canDeposit, err := rp.CanNodeDeposits(count, totalBondRequirement.BigInt(), minNodeFee, big.NewInt(0), uint64(expressTickets))
 	if err != nil {
 		return err
 	}
@@ -192,12 +184,12 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 			fmt.Println("The node has debt. You must repay the debt before creating a new validator. Use the `rocketpool megapool repay-debt` command to repay the debt.")
 		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
-			nodeBalance := units.WeiToEth(canDeposit.NodeBalance)
-			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", units.WeiToEth(canDeposit.DepositBalance), nodeBalance)
+			nodeBalance := canDeposit.NodeBalance.ToEth().InexactFloat64()
+			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", canDeposit.DepositBalance.ToEth().InexactFloat64(), nodeBalance)
 		}
 		if canDeposit.InsufficientBalance {
-			nodeBalance := units.WeiToEth(canDeposit.NodeBalance)
-			creditBalance := units.WeiToEth(canDeposit.CreditBalance)
+			nodeBalance := canDeposit.NodeBalance.ToEth().InexactFloat64()
+			creditBalance := canDeposit.CreditBalance.ToEth().InexactFloat64()
 
 			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create %d megapool validator(s) with a total %.1f ETH bond.", nodeBalance, creditBalance, count, totalBondRequirementEth)
 
@@ -213,17 +205,17 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	useCreditBalance := false
 	totalAmountWei := totalBondRequirement
-	fmt.Printf("Your credit balance is %.2f ETH. (Credit in addition to ETH staked on your behalf).\n", units.WeiToEth(canDeposit.CreditBalance))
-	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
+	fmt.Printf("Your credit balance is %.2f ETH. (Credit in addition to ETH staked on your behalf).\n", canDeposit.CreditBalance.ToEth().InexactFloat64())
+	if canDeposit.CreditBalance.Cmp(units.Wei{}) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true
 			// usableCredit may be less than totalAmountWei due to low deposit pool balance)
 			usableCredit := canDeposit.UsableCreditBalance
-			remainingAmount := big.NewInt(0).Sub(totalAmountWei, usableCredit)
-			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", units.WeiToEth(usableCredit), units.WeiToEth(remainingAmount))
+			remainingAmount := totalAmountWei.Sub(usableCredit)
+			if remainingAmount.Cmp(units.Wei{}) > 0 {
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", usableCredit.ToEth().InexactFloat64(), remainingAmount.ToEth().InexactFloat64())
 			} else {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", units.WeiToEth(usableCredit))
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", usableCredit.ToEth().InexactFloat64())
 			}
 		} else {
 			color.YellowPrintln("NOTE: Your credit balance cannot currently be used to create a new megapool validator.")
@@ -269,7 +261,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	// Prompt for confirmation
 
 	if prompt.Declined(yes, "You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
-		math.RoundDown(units.WeiToEth(totalBondRequirement), 6),
+		math.RoundDown(totalBondRequirement.ToEth().InexactFloat64(), 6),
 		count,
 		color.Yellow("ARE YOU SURE YOU WANT TO DO THIS?"),
 	) {
@@ -279,7 +271,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Make deposit(s)
 
-	response, err := rp.NodeDeposits(count, totalBondRequirement, minNodeFee, big.NewInt(0), useCreditBalance, uint64(expressTickets), true)
+	response, err := rp.NodeDeposits(count, totalBondRequirement.BigInt(), minNodeFee, big.NewInt(0), useCreditBalance, uint64(expressTickets), true)
 	if err != nil {
 		return err
 	}
@@ -293,7 +285,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Log & return
 	fmt.Printf("The node deposit of %.6f ETH total was made successfully!\n",
-		math.RoundDown(units.WeiToEth(totalBondRequirement), 6))
+		math.RoundDown(totalBondRequirement.ToEth().InexactFloat64(), 6))
 	fmt.Printf("Validator pubkeys:\n")
 	for i, pubkey := range response.ValidatorPubkeys {
 		fmt.Printf("  %d. %s\n", i+1, pubkey.Hex())

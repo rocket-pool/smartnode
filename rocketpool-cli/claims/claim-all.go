@@ -38,12 +38,12 @@ func (c pendingClaim) valueString() string {
 	switch {
 	case hasRpl && hasEth:
 		return fmt.Sprintf("%.6f RPL + %.6f ETH",
-			math.RoundDown(units.WeiToEth(c.rplValue), 6),
-			math.RoundDown(units.WeiToEth(c.ethValue), 6))
+			math.RoundDown(units.NewWei(c.rplValue).ToEth().InexactFloat64(), 6),
+			math.RoundDown(units.NewWei(c.ethValue).ToEth().InexactFloat64(), 6))
 	case hasEth:
-		return fmt.Sprintf("%.6f ETH", math.RoundDown(units.WeiToEth(c.ethValue), 6))
+		return fmt.Sprintf("%.6f ETH", math.RoundDown(units.NewWei(c.ethValue).ToEth().InexactFloat64(), 6))
 	case hasRpl:
-		return fmt.Sprintf("%.6f RPL", math.RoundDown(units.WeiToEth(c.rplValue), 6))
+		return fmt.Sprintf("%.6f RPL", math.RoundDown(units.NewWei(c.rplValue).ToEth().InexactFloat64(), 6))
 	default:
 		return ""
 	}
@@ -115,22 +115,22 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			color.YellowPrintf("  Could not calculate pending rewards: %s\n", err)
 			fmt.Println()
 		} else {
-			megapoolTotal := new(big.Int).Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
-			if megapoolTotal.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(units.WeiToEth(pendingRewards.RewardSplit.NodeRewards), 6))
-				if pendingRewards.RefundValue.Cmp(big.NewInt(0)) > 0 {
-					fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(units.WeiToEth(pendingRewards.RefundValue), 6))
-					fmt.Printf("  Total:         %.6f ETH\n", math.RoundDown(units.WeiToEth(megapoolTotal), 6))
+			megapoolTotal := pendingRewards.RewardSplit.NodeRewards.Add(pendingRewards.RefundValue)
+			if megapoolTotal.Cmp(units.Wei{}) > 0 {
+				fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(pendingRewards.RewardSplit.NodeRewards.ToEth().InexactFloat64(), 6))
+				if pendingRewards.RefundValue.Cmp(units.Wei{}) > 0 {
+					fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(pendingRewards.RefundValue.ToEth().InexactFloat64(), 6))
+					fmt.Printf("  Total:         %.6f ETH\n", math.RoundDown(megapoolTotal.ToEth().InexactFloat64(), 6))
 				}
 				fmt.Println()
 
-				totalEthWei.Add(totalEthWei, megapoolTotal)
+				totalEthWei.Add(totalEthWei, megapoolTotal.BigInt())
 
 				gasLimits := canDistribute.GasLimits
 				claims = append(claims, pendingClaim{
 					id:        id,
 					name:      "Megapool EL Rewards (distribute)",
-					ethValue:  megapoolTotal,
+					ethValue:  megapoolTotal.BigInt(),
 					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
@@ -174,25 +174,26 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			color.YellowPrintf("  Could not check fee distributor balance: %s\n", err)
 			fmt.Println()
 		} else {
-			balance := units.WeiToEth(canDistResp.Balance)
+			balance := canDistResp.Balance.ToEth().InexactFloat64()
 			if balance == 0 {
 				fmt.Println("  No balance in fee distributor.")
 				fmt.Println()
 			} else {
-				rEthShare := balance - canDistResp.NodeShare
+				nodeShare := canDistResp.NodeShare.InexactFloat64()
+				rEthShare := balance - nodeShare
 				fmt.Printf("  Distributor balance: %.6f ETH\n", math.RoundDown(balance, 6))
-				fmt.Printf("  Your share:          %.6f ETH\n", math.RoundDown(canDistResp.NodeShare, 6))
+				fmt.Printf("  Your share:          %.6f ETH\n", math.RoundDown(nodeShare, 6))
 				fmt.Printf("  rETH stakers share:  %.6f ETH\n", math.RoundDown(rEthShare, 6))
 				fmt.Println()
 
-				nodeShareWei := units.EthToWei(canDistResp.NodeShare)
-				totalEthWei.Add(totalEthWei, nodeShareWei)
+				nodeShareWei := canDistResp.NodeShare.ToWei()
+				totalEthWei.Add(totalEthWei, nodeShareWei.BigInt())
 
 				gasLimits := canDistResp.GasLimits
 				claims = append(claims, pendingClaim{
 					id:        feeDistID,
 					name:      "Fee Distributor (distribute)",
-					ethValue:  nodeShareWei,
+					ethValue:  nodeShareWei.BigInt(),
 					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
@@ -242,35 +243,35 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				second := eligibleMinipools[j]
 				var firstAmt, secondAmt float64
 				if first.Status == types.Dissolved {
-					firstAmt = units.WeiToEth(first.Balance)
+					firstAmt = first.Balance.ToEth().InexactFloat64()
 				} else {
-					firstAmt = units.WeiToEth(first.NodeShareOfBalance) + units.WeiToEth(first.Refund)
+					firstAmt = first.NodeShareOfBalance.ToEth().InexactFloat64() + first.Refund.ToEth().InexactFloat64()
 				}
 				if second.Status == types.Dissolved {
-					secondAmt = units.WeiToEth(second.Balance)
+					secondAmt = second.Balance.ToEth().InexactFloat64()
 				} else {
-					secondAmt = units.WeiToEth(second.NodeShareOfBalance) + units.WeiToEth(second.Refund)
+					secondAmt = second.NodeShareOfBalance.ToEth().InexactFloat64() + second.Refund.ToEth().InexactFloat64()
 				}
 				return firstAmt > secondAmt
 			})
 
-			mpTotalEth := new(big.Int)
+			mpTotalEth := units.Wei{}
 			for _, mp := range eligibleMinipools {
 				if mp.Status == types.Dissolved {
-					fmt.Printf("  %s: %.6f ETH (dissolved, all to you)\n", mp.Address.Hex(), math.RoundDown(units.WeiToEth(mp.Balance), 6))
-					mpTotalEth.Add(mpTotalEth, mp.Balance)
+					fmt.Printf("  %s: %.6f ETH (dissolved, all to you)\n", mp.Address.Hex(), math.RoundDown(mp.Balance.ToEth().InexactFloat64(), 6))
+					mpTotalEth = mpTotalEth.Add(mp.Balance)
 				} else {
-					nodeAmount := new(big.Int).Add(mp.NodeShareOfBalance, mp.Refund)
+					nodeAmount := mp.NodeShareOfBalance.Add(mp.Refund)
 					fmt.Printf("  %s: %.6f ETH (your share) + %.6f ETH (refund)\n",
 						mp.Address.Hex(),
-						math.RoundDown(units.WeiToEth(mp.NodeShareOfBalance), 6),
-						math.RoundDown(units.WeiToEth(mp.Refund), 6))
-					mpTotalEth.Add(mpTotalEth, nodeAmount)
+						math.RoundDown(mp.NodeShareOfBalance.ToEth().InexactFloat64(), 6),
+						math.RoundDown(mp.Refund.ToEth().InexactFloat64(), 6))
+					mpTotalEth = mpTotalEth.Add(nodeAmount)
 				}
 			}
-			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n", len(eligibleMinipools), math.RoundDown(units.WeiToEth(mpTotalEth), 6))
+			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n", len(eligibleMinipools), math.RoundDown(mpTotalEth.ToEth().InexactFloat64(), 6))
 			fmt.Println()
-			totalEthWei.Add(totalEthWei, mpTotalEth)
+			totalEthWei.Add(totalEthWei, mpTotalEth.BigInt())
 
 			// Accumulate gas
 			var mpGasLimits gaslimit.Limits
@@ -283,7 +284,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			claims = append(claims, pendingClaim{
 				id:        minipoolID,
 				name:      fmt.Sprintf("Minipool Balance Distribution (%d minipool(s))", len(mps)),
-				ethValue:  mpTotalEth,
+				ethValue:  mpTotalEth.BigInt(),
 				gasLimits: mpGasLimits,
 				execute: func() error {
 					failCount := 0
@@ -382,12 +383,12 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				rpl := new(big.Int).Add(&interval.CollateralRplAmount.Int, &interval.ODaoRplAmount.Int)
 				ethAmt := new(big.Int).Add(&interval.SmoothingPoolEthAmount.Int, &interval.VoterShareEth.Int)
 				fmt.Printf("    Interval %d: %.6f RPL, %.6f ETH\n", interval.Index,
-					math.RoundDown(units.WeiToEth(rpl), 6),
-					math.RoundDown(units.WeiToEth(ethAmt), 6))
+					math.RoundDown(units.NewWei(rpl).ToEth().InexactFloat64(), 6),
+					math.RoundDown(units.NewWei(ethAmt).ToEth().InexactFloat64(), 6))
 			}
 			fmt.Printf("  Total: %.6f RPL + %.6f ETH\n\n",
-				math.RoundDown(units.WeiToEth(prTotalRpl), 6),
-				math.RoundDown(units.WeiToEth(prTotalEth), 6))
+				math.RoundDown(units.NewWei(prTotalRpl).ToEth().InexactFloat64(), 6),
+				math.RoundDown(units.NewWei(prTotalEth).ToEth().InexactFloat64(), 6))
 
 			totalRplWei.Add(totalRplWei, prTotalRpl)
 			totalEthWei.Add(totalEthWei, prTotalEth)
@@ -401,8 +402,8 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			} else if restakeAmount != "" {
 				stakeAmt, parseErr := strconv.ParseFloat(restakeAmount, 64)
 				if parseErr == nil && stakeAmt > 0 {
-					periodicRestakeAmount = units.EthToWei(stakeAmt)
-					if periodicRestakeAmount.Cmp(prTotalRpl) > 0 {
+					periodicRestakeAmount = units.EthFromFloat(stakeAmt).ToWei().BigInt()
+					if units.NewWei(periodicRestakeAmount).Cmp(units.NewWei(prTotalRpl)) > 0 {
 						periodicRestakeAmount = prTotalRpl
 					}
 				}
@@ -450,7 +451,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 					}
 					if periodicRestakeAmount != nil {
-						color.GreenPrintf("Successfully claimed rewards and restaked %.6f RPL.\n", units.WeiToEth(periodicRestakeAmount))
+						color.GreenPrintf("Successfully claimed rewards and restaked %.6f RPL.\n", units.NewWei(periodicRestakeAmount).ToEth().InexactFloat64())
 					} else {
 						color.GreenPrintln("Successfully claimed periodic rewards.")
 					}
@@ -485,14 +486,14 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 		unclaimedID := sectionID
 		color.GreenPrintf("--- [%d] Unclaimed Rewards ---\n", unclaimedID)
 
-		if nodeStatus.UnclaimedRewards == nil || nodeStatus.UnclaimedRewards.Cmp(big.NewInt(0)) <= 0 {
+		if nodeStatus.UnclaimedRewards.IsZero() {
 			fmt.Println("  No unclaimed rewards.")
 			fmt.Println()
 		} else {
-			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(units.WeiToEth(nodeStatus.UnclaimedRewards), 6))
+			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(nodeStatus.UnclaimedRewards.ToEth().InexactFloat64(), 6))
 			fmt.Println("  (Rewards distributed previously but not yet sent to withdrawal address)")
 			fmt.Println()
-			totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards)
+			totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards.BigInt())
 
 			nodeAddr := nodeStatus.AccountAddress
 			canClaim, canErr := rp.CanClaimUnclaimedRewards(nodeAddr)
@@ -511,7 +512,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				claims = append(claims, pendingClaim{
 					id:        unclaimedID,
 					name:      "Unclaimed Rewards (claim)",
-					ethValue:  nodeStatus.UnclaimedRewards,
+					ethValue:  nodeStatus.UnclaimedRewards.BigInt(),
 					gasLimits: gasLimits,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
@@ -536,16 +537,16 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 		creditID := sectionID
 		color.GreenPrintf("--- [%d] Credit Balance Withdrawal ---\n", creditID)
 
-		if nodeStatus.CreditBalance == nil || nodeStatus.CreditBalance.Cmp(big.NewInt(0)) <= 0 {
+		if nodeStatus.CreditBalance.IsZero() {
 			fmt.Println("  No credit balance available.")
 			fmt.Println()
 		} else {
 			creditBalance := nodeStatus.CreditBalance
 			fmt.Printf("  Credit balance: %.6f ETH (the equivalent amount in rETH will be transferred to %s)\n",
-				math.RoundDown(units.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
-			totalEthWei.Add(totalEthWei, creditBalance)
+				math.RoundDown(creditBalance.ToEth().InexactFloat64(), 6), nodeStatus.PrimaryWithdrawalAddress)
+			totalEthWei.Add(totalEthWei, creditBalance.BigInt())
 
-			canWithdraw, canErr := rp.CanNodeWithdrawCredit(creditBalance)
+			canWithdraw, canErr := rp.CanNodeWithdrawCredit(creditBalance.BigInt())
 			var gasInfo gaslimit.Limits
 			canWithdrawOk := false
 			if canErr != nil {
@@ -566,11 +567,11 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				claims = append(claims, pendingClaim{
 					id:        creditID,
 					name:      "Credit Balance Withdrawal",
-					ethValue:  withdrawAmount,
+					ethValue:  withdrawAmount.BigInt(),
 					gasLimits: gasInfo,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
-						response, err := rp.NodeWithdrawCredit(withdrawAmount)
+						response, err := rp.NodeWithdrawCredit(withdrawAmount.BigInt())
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
@@ -579,7 +580,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						color.GreenPrintf("Successfully withdrew %.6f credit as rETH.\n", math.RoundDown(units.WeiToEth(withdrawAmount), 6))
+						color.GreenPrintf("Successfully withdrew %.6f credit as rETH.\n", math.RoundDown(withdrawAmount.ToEth().InexactFloat64(), 6))
 						return nil
 					},
 				})
@@ -591,16 +592,16 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 		ethOnBehalfID := sectionID
 		color.GreenPrintf("--- [%d] Staked ETH on Behalf Withdrawal ---\n", ethOnBehalfID)
 
-		if nodeStatus.EthOnBehalfBalance == nil || nodeStatus.EthOnBehalfBalance.Cmp(big.NewInt(0)) <= 0 {
+		if nodeStatus.EthOnBehalfBalance.IsZero() {
 			fmt.Println("  No ETH staked on behalf of the node.")
 			fmt.Println()
 		} else {
 			ethOnBehalf := nodeStatus.EthOnBehalfBalance
-			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n", math.RoundDown(units.WeiToEth(ethOnBehalf), 6))
+			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n", math.RoundDown(ethOnBehalf.ToEth().InexactFloat64(), 6))
 			fmt.Println()
-			totalEthWei.Add(totalEthWei, ethOnBehalf)
+			totalEthWei.Add(totalEthWei, ethOnBehalf.BigInt())
 
-			canWithdraw, canErr := rp.CanNodeWithdrawEth(ethOnBehalf)
+			canWithdraw, canErr := rp.CanNodeWithdrawEth(ethOnBehalf.BigInt())
 			var gasInfo gaslimit.Limits
 			canWithdrawOk := false
 			if canErr != nil {
@@ -623,11 +624,11 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 				claims = append(claims, pendingClaim{
 					id:        ethOnBehalfID,
 					name:      "Staked ETH on Behalf Withdrawal",
-					ethValue:  withdrawAmount,
+					ethValue:  withdrawAmount.BigInt(),
 					gasLimits: gasInfo,
 					execute: func() error {
 						fmt.Println("  Submitting transaction...")
-						response, err := rp.NodeWithdrawEth(withdrawAmount)
+						response, err := rp.NodeWithdrawEth(withdrawAmount.BigInt())
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
@@ -636,7 +637,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						color.GreenPrintf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(units.WeiToEth(withdrawAmount), 6))
+						color.GreenPrintf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(withdrawAmount.ToEth().InexactFloat64(), 6))
 						return nil
 					},
 				})
@@ -665,11 +666,11 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			pdaoRplTotal.Add(pdaoRplTotal, bondTotal)
 			fmt.Printf("  Proposal %d: %.6f RPL (unlock) + %.6f RPL (reward)\n",
 				bond.ProposalID,
-				math.RoundDown(units.WeiToEth(bond.UnlockAmount), 6),
-				math.RoundDown(units.WeiToEth(bond.RewardAmount), 6))
+				math.RoundDown(units.NewWei(bond.UnlockAmount).ToEth().InexactFloat64(), 6),
+				math.RoundDown(units.NewWei(bond.RewardAmount).ToEth().InexactFloat64(), 6))
 		}
 		fmt.Printf("  Total: %.6f RPL from %d proposal(s)\n\n",
-			math.RoundDown(units.WeiToEth(pdaoRplTotal), 6), len(bondsResponse.ClaimableBonds))
+			math.RoundDown(units.NewWei(pdaoRplTotal).ToEth().InexactFloat64(), 6), len(bondsResponse.ClaimableBonds))
 		totalRplWei.Add(totalRplWei, pdaoRplTotal)
 
 		// Accumulate gas
@@ -728,8 +729,8 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 	color.GreenPrintf("============================================================\n")
 	color.GreenPrintf("                       Totals                               \n")
 	color.GreenPrintf("============================================================\n")
-	fmt.Printf("  ETH: %.6f\n", math.RoundDown(units.WeiToEth(totalEthWei), 6))
-	fmt.Printf("  RPL: %.6f\n\n", math.RoundDown(units.WeiToEth(totalRplWei), 6))
+	fmt.Printf("  ETH: %.6f\n", math.RoundDown(units.NewWei(totalEthWei).ToEth().InexactFloat64(), 6))
+	fmt.Printf("  RPL: %.6f\n\n", math.RoundDown(units.NewWei(totalRplWei).ToEth().InexactFloat64(), 6))
 
 	if statusOnly {
 		if len(claims) > 0 {
@@ -807,7 +808,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 	if !periodicRestakeResolved && periodicClaimRpl != nil {
 		for i := range selectedClaims {
 			if selectedClaims[i].id == periodicID {
-				availableRpl := units.WeiToEth(periodicClaimRpl)
+				availableRpl := units.NewWei(periodicClaimRpl).ToEth().InexactFloat64()
 				amountOptions := []string{
 					"None (do not restake any RPL)",
 					fmt.Sprintf("All %.6f RPL", availableRpl),
@@ -830,7 +831,7 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 						} else if stakeAmount > availableRpl {
 							fmt.Println("Amount must be less than or equal to the RPL available to claim.")
 						} else {
-							periodicRestakeAmount = units.EthToWei(stakeAmount)
+							periodicRestakeAmount = units.EthFromFloat(stakeAmount).ToWei().BigInt()
 							break
 						}
 					}

@@ -10,9 +10,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	megapoolPenalties, err := getRocketMegapoolPenalties(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
@@ -20,7 +21,7 @@ func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Addre
 	return megapoolPenalties.GetTransactionGasInfo(opts, "penalise", megapoolAddress, block, amount)
 }
 
-func Penalise(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func Penalise(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount units.Wei, opts *bind.TransactOpts) (common.Hash, error) {
 	megapoolPenalties, err := getRocketMegapoolPenalties(rp, nil)
 	if err != nil {
 		return common.Hash{}, err

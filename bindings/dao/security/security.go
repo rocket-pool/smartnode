@@ -11,6 +11,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/strings"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 // Settings
@@ -148,14 +150,14 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 }
 
 // Get the amount of member votes need for a proposal to pass (as a fraction of 1e18)
-func GetMemberQuorumVotesRequired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMemberQuorumVotesRequired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOSecurity, err := getRocketDAOSecurity(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOSecurity.Call(opts, value, "getMemberQuorumVotesRequired"); err != nil {
-		return nil, fmt.Errorf("error getting security DAO quorum votes required: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting security DAO quorum votes required: %w", err)
 	}
 	return *value, nil
 }

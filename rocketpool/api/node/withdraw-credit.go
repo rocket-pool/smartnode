@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -12,9 +10,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdrawCreditResponse, error) {
+func canNodeWithdrawCredit(c *cli.Command, amountWei units.Wei) (*api.CanNodeWithdrawCreditResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -40,7 +39,7 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 
 	// Data
 	var wg errgroup.Group
-	var credit *big.Int
+	var credit units.Wei
 
 	wg.Go(func() error {
 		var err error
@@ -75,7 +74,7 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 
 }
 
-func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
+func nodeWithdrawCredit(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -103,7 +102,7 @@ func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, t *snroute.TransactO
 }
 
 func canWithdrawCreditHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -113,7 +112,7 @@ func canWithdrawCreditHandler(ctx snroute.Context) {
 }
 
 func withdrawCreditHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

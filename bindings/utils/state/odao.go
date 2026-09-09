@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -26,7 +27,7 @@ type OracleDaoMemberDetails struct {
 	Url                 string         `json:"url"`
 	JoinedTime          time.Time      `json:"joinedTime"`
 	LastProposalTime    time.Time      `json:"lastProposalTime"`
-	RPLBondAmount       *big.Int       `json:"rplBondAmount"`
+	RPLBondAmount       units.Wei      `json:"rplBondAmount"`
 	ReplacementAddress  common.Address `json:"replacementAddress"`
 	IsChallenged        bool           `json:"isChallenged"`
 	joinedTimeRaw       *big.Int       `json:"-"`

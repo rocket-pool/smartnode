@@ -5,7 +5,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // Represents the collector for Smoothing Pool metrics
@@ -54,7 +53,7 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 		return
 	}
 
-	ethBalanceOnSmoothingPool := units.WeiToEth(state.NetworkDetails.SmoothingPoolBalance)
+	ethBalanceOnSmoothingPool := state.NetworkDetails.SmoothingPoolBalance.ToEth().InexactFloat64()
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)

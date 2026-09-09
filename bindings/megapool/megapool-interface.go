@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 type Megapool interface {
@@ -24,15 +25,15 @@ type Megapool interface {
 	GetValidatorPubkey(validatorId uint32, opts *bind.CallOpts) (rptypes.ValidatorPubkey, error)
 	GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.CallOpts) (ValidatorInfoWithPubkey, error)
 	GetLastDistributionTime(opts *bind.CallOpts) (uint64, error)
-	GetAssignedValue(opts *bind.CallOpts) (*big.Int, error)
-	GetDebt(opts *bind.CallOpts) (*big.Int, error)
-	GetRefundValue(opts *bind.CallOpts) (*big.Int, error)
-	GetNodeBond(opts *bind.CallOpts) (*big.Int, error)
-	GetNodeQueuedBond(opts *bind.CallOpts) (*big.Int, error)
-	GetUserCapital(opts *bind.CallOpts) (*big.Int, error)
+	GetAssignedValue(opts *bind.CallOpts) (units.Wei, error)
+	GetDebt(opts *bind.CallOpts) (units.Wei, error)
+	GetRefundValue(opts *bind.CallOpts) (units.Wei, error)
+	GetNodeBond(opts *bind.CallOpts) (units.Wei, error)
+	GetNodeQueuedBond(opts *bind.CallOpts) (units.Wei, error)
+	GetUserCapital(opts *bind.CallOpts) (units.Wei, error)
 	CalculatePendingRewards(opts *bind.CallOpts) (RewardSplit, error)
-	CalculateRewards(amount *big.Int, opts *bind.CallOpts) (RewardSplit, error)
-	GetPendingRewards(opts *bind.CallOpts) (*big.Int, error)
+	CalculateRewards(amount units.Wei, opts *bind.CallOpts) (RewardSplit, error)
+	GetPendingRewards(opts *bind.CallOpts) (units.Wei, error)
 	GetNodeAddress(opts *bind.CallOpts) (common.Address, error)
 	EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error)
 	NewValidator(bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, opts *bind.TransactOpts) (common.Hash, error)
@@ -48,10 +49,10 @@ type Megapool interface {
 	ClaimRefund(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateRepayDebtGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	RepayDebt(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error)
-	ReduceBond(amount *big.Int, opts *bind.TransactOpts) (common.Hash, error)
+	EstimateReduceBondGas(amount units.Wei, opts *bind.TransactOpts) (gaslimit.Limits, error)
+	ReduceBond(amount units.Wei, opts *bind.TransactOpts) (common.Hash, error)
 	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
-	GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.Int, error)
+	GetNewValidatorBondRequirement(opts *bind.CallOpts) (units.Wei, error)
 	EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (gaslimit.Limits, error)

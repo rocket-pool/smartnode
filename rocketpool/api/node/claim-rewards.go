@@ -172,21 +172,24 @@ func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 			return nil, err
 		}
 
+		totalBorrowedEth := units.Eth{}
+		totalBorrowedEth = totalBorrowedEth.Add(response.EthBorrowed.ToEth())
+		totalBorrowedEth = totalBorrowedEth.Add(response.PendingBorrowAmount.ToEth())
+
 		// bonded eth = total validators * 32 - borrowed
-		totalBorrowedEth := units.WeiToEth(response.EthBorrowed) + units.WeiToEth(response.PendingBorrowAmount)
-		totalBondedEth := float64(totalActiveValidators)*32.0 - totalBorrowedEth
+		totalBondedEth := units.NewEth(32)
+		totalBondedEth = totalBondedEth.Mul(units.NewEth(uint64(totalActiveValidators)))
+		totalBondedEth = totalBondedEth.Sub(totalBorrowedEth)
 
 		// Calculate collateral ratios
-		if totalBondedEth <= 0 {
-			response.BondedCollateralRatio = 0
-		} else {
-			response.BondedCollateralRatio = units.WeiToEth(response.RplPrice) * units.WeiToEth(response.RplStake) / totalBondedEth
+		if totalBondedEth.IsPositive() {
+			response.BondedCollateralRatio = response.RplPrice.ToEth().Mul(response.RplStake.ToEth())
+			response.BondedCollateralRatio = response.BondedCollateralRatio.Div(totalBondedEth)
 		}
 
-		if totalBorrowedEth <= 0 {
-			response.BorrowedCollateralRatio = 0
-		} else {
-			response.BorrowedCollateralRatio = units.WeiToEth(response.RplPrice) * units.WeiToEth(response.RplStake) / totalBorrowedEth
+		if totalBorrowedEth.IsPositive() {
+			response.BorrowedCollateralRatio = response.RplPrice.ToEth().Mul(response.RplStake.ToEth())
+			response.BorrowedCollateralRatio = response.BorrowedCollateralRatio.Div(totalBorrowedEth)
 		}
 	}
 

@@ -38,6 +38,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/gloas"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
@@ -249,17 +250,18 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
-	details.NodeShare, err = network.GetCurrentNodeShare(rp, opts)
+	nodeShare, err := network.GetCurrentNodeShare(rp, opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
+	details.NodeShare = nodeShare
 	details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
 
 	if !details.Deployed {
-		details.NodeBond = big.NewInt(0)
+		details.NodeBond = units.Wei{}
 		return details, nil
 	}
 
@@ -441,7 +443,7 @@ func GetMegapoolQueueDetails(rp *rocketpool.RocketPool) (api.QueueDetails, error
 
 }
 
-func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount common.Address) (api.MegapoolRewardSplitResponse, error) {
+func CalculateRewards(rp *rocketpool.RocketPool, amount units.Wei, nodeAccount common.Address) (api.MegapoolRewardSplitResponse, error) {
 
 	rewards := api.MegapoolRewardSplitResponse{}
 

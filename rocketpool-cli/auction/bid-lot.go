@@ -71,7 +71,7 @@ func bidOnLot(lot, amount string, yes bool) error {
 		// Prompt for lot selection
 		options := make([]string, len(openLots))
 		for li, lot := range openLots {
-			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(units.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(units.WeiToEth(lot.Details.CurrentPrice), 6))
+			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(lot.Details.RemainingRPLAmount.ToEth().InexactFloat64(), 6), math.RoundDown(lot.Details.CurrentPrice.ToEth().InexactFloat64(), 6))
 		}
 		selected, _ := prompt.Select("Please select a lot to bid on:", options)
 		selectedLot = openLots[selected]
@@ -85,8 +85,8 @@ func bidOnLot(lot, amount string, yes bool) error {
 		// Set bid amount to maximum
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.Details.RemainingRPLAmount, selectedLot.Details.CurrentPrice)
-		maxAmount.Quo(&tmp, units.EthToWei(1))
+		tmp.Mul(selectedLot.Details.RemainingRPLAmount.BigInt(), selectedLot.Details.CurrentPrice.BigInt())
+		maxAmount.Quo(&tmp, units.EthFromFloat(1).ToWei().BigInt())
 		amountWei = &maxAmount
 
 	} else if amount != "" {
@@ -96,18 +96,18 @@ func bidOnLot(lot, amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid bid amount '%s': %w", amount, err)
 		}
-		amountWei = units.EthToWei(bidAmount)
+		amountWei = units.EthFromFloat(bidAmount).ToWei().BigInt()
 
 	} else {
 
 		// Calculate maximum bid amount
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.Details.RemainingRPLAmount, selectedLot.Details.CurrentPrice)
-		maxAmount.Quo(&tmp, units.EthToWei(1))
+		tmp.Mul(selectedLot.Details.RemainingRPLAmount.BigInt(), selectedLot.Details.CurrentPrice.BigInt())
+		maxAmount.Quo(&tmp, units.EthFromFloat(1).ToWei().BigInt())
 
 		// Prompt for maximum amount
-		if prompt.Confirm("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(units.WeiToEth(&maxAmount), 6)) {
+		if prompt.Confirm("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(units.NewWei(&maxAmount).ToEth().InexactFloat64(), 6)) {
 			amountWei = &maxAmount
 		} else {
 
@@ -117,7 +117,7 @@ func bidOnLot(lot, amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid bid amount '%s': %w", inputAmount, err)
 			}
-			amountWei = units.EthToWei(bidAmount)
+			amountWei = units.EthFromFloat(bidAmount).ToWei().BigInt()
 
 		}
 
@@ -143,7 +143,7 @@ func bidOnLot(lot, amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(units.WeiToEth(amountWei), 6), selectedLot.Details.Index) {
+	if prompt.Declined(yes, "Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(units.NewWei(amountWei).ToEth().InexactFloat64(), 6), selectedLot.Details.Index) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -161,7 +161,7 @@ func bidOnLot(lot, amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully bid %.6f ETH on lot %d.\n", math.RoundDown(units.WeiToEth(amountWei), 6), selectedLot.Details.Index)
+	fmt.Printf("Successfully bid %.6f ETH on lot %d.\n", math.RoundDown(units.NewWei(amountWei).ToEth().InexactFloat64(), 6), selectedLot.Details.Index)
 	return nil
 
 }

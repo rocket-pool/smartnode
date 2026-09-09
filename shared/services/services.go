@@ -240,7 +240,7 @@ func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
 	}
 	if maxFeeFloat != 0 {
-		maxFee = units.GweiToWei(maxFeeFloat)
+		maxFee = units.GweiFromFloat(maxFeeFloat).ToWei().BigInt()
 	}
 
 	var maxPriorityFee *big.Int
@@ -249,7 +249,7 @@ func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
 	}
 	if maxPriorityFeeFloat != 0 {
-		maxPriorityFee = units.GweiToWei(maxPriorityFeeFloat)
+		maxPriorityFee = units.GweiFromFloat(maxPriorityFeeFloat).ToWei().BigInt()
 	}
 
 	chainId := cfg.Smartnode.GetChainID()

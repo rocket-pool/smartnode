@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
@@ -23,7 +22,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	defer rp.Close()
 
 	// Get withdrawal amount
-	var amountWei *big.Int
+	var amountWei units.Wei
 	if amount == "max" {
 
 		// Get node status
@@ -42,7 +41,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		if err != nil {
 			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
-		amountWei = units.EthToWei(withdrawalAmount)
+		amountWei = units.EthFromFloat(withdrawalAmount).ToWei()
 
 	} else {
 
@@ -55,7 +54,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.EthOnBehalfBalance
 		// Prompt for maximum amount
-		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(units.WeiToEth(maxAmount), 6)) {
+		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(maxAmount.ToEth().InexactFloat64(), 6)) {
 			amountWei = maxAmount
 		} else {
 
@@ -65,14 +64,14 @@ func nodeWithdrawEth(amount string, yes bool) error {
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
-			amountWei = units.EthToWei(withdrawalAmount)
+			amountWei = units.EthFromFloat(withdrawalAmount).ToWei()
 
 		}
 
 	}
 
 	// Check ETH can be withdrawn
-	canWithdraw, err := rp.CanNodeWithdrawEth(amountWei)
+	canWithdraw, err := rp.CanNodeWithdrawEth(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -93,13 +92,13 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(units.WeiToEth(amountWei), 6)) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f ETH?", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Withdraw ETH
-	response, err := rp.NodeWithdrawEth(amountWei)
+	response, err := rp.NodeWithdrawEth(amountWei.BigInt())
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func nodeWithdrawEth(amount string, yes bool) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(units.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(amountWei.ToEth().InexactFloat64(), 6))
 	return nil
 
 }

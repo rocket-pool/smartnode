@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/urfave/cli/v3"
 
@@ -79,7 +78,7 @@ func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse
 	return &response, nil
 }
 
-func calculateRewards(c *cli.Command, amount *big.Int) (*api.MegapoolRewardSplitResponse, error) {
+func calculateRewards(c *cli.Command, amount units.Wei) (*api.MegapoolRewardSplitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -236,23 +235,19 @@ func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRew
 	// Store map in the api response
 	response.MegapoolValidatorMap = statusValidators
 
-	weiPerGwei := big.NewInt(int64(units.WeiPerGwei))
-	totalBeaconBalanceWei := new(big.Int).SetUint64(totalBeaconBalance)
-	totalEffectiveBeaconBalanceWei := new(big.Int).SetUint64(totalEffectiveBeaconBalance)
-	totalBeaconBalanceWei = totalBeaconBalanceWei.Mul(totalBeaconBalanceWei, weiPerGwei)
-	totalEffectiveBeaconBalanceWei = totalEffectiveBeaconBalanceWei.Mul(totalEffectiveBeaconBalanceWei, weiPerGwei)
+	totalBeaconBalanceWei := units.NewGwei(totalBeaconBalance).ToWei()
+	totalEffectiveBeaconBalanceWei := units.NewGwei(totalEffectiveBeaconBalance).ToWei()
 
 	// Get the node share of CL rewards
-	nodeShareOfCLBalance := big.NewInt(0)
-	if totalBeaconBalanceWei.Cmp(totalEffectiveBeaconBalanceWei) <= 0 {
-		nodeShareOfCLBalance = big.NewInt(0)
-	} else {
-		toBeSkimmed := new(big.Int).Sub(totalBeaconBalanceWei, totalEffectiveBeaconBalanceWei)
+	nodeShareOfCLBalance := units.Wei{}
+	if totalBeaconBalanceWei.Cmp(totalEffectiveBeaconBalanceWei) > 0 {
+		toBeSkimmed := totalBeaconBalanceWei.Sub(totalEffectiveBeaconBalanceWei)
 		rewards, err := calculateRewards(c, toBeSkimmed)
 		if err != nil {
 			return &response, fmt.Errorf("Error calculating the rewards split for amount %s: %w", toBeSkimmed.String(), err)
 		}
-		nodeShareOfCLBalance = nodeShareOfCLBalance.Add(rewards.RewardSplit.NodeRewards, status.Megapool.NodeBond)
+		nodeShareOfCLBalance = nodeShareOfCLBalance.Add(rewards.RewardSplit.NodeRewards)
+		nodeShareOfCLBalance = nodeShareOfCLBalance.Add(status.Megapool.NodeBond)
 	}
 	response.TotalBeaconBalance = totalBeaconBalanceWei
 	response.NodeShareOfCLBalance = nodeShareOfCLBalance
@@ -279,11 +274,11 @@ func pendingRewardsHandler(ctx snroute.Context) {
 }
 
 func calculateRewardsHandler(ctx snroute.Context) {
-	amountWei, err := parseBigInt(ctx.Request, "amountWei")
+	amount, err := parseWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
-	resp, err := calculateRewards(ctx.Command(), amountWei)
+	resp, err := calculateRewards(ctx.Command(), amount)
 	response.WriteResponse(ctx.Writer, resp, err)
 }

@@ -112,13 +112,13 @@ func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 	totalVoterShareEth := big.NewInt(0)
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		fmt.Printf("Rewards for Interval %d (%s to %s):\n", intervalInfo.Index, intervalInfo.StartTime.Local(), intervalInfo.EndTime.Local())
-		fmt.Printf("\tStaking:        %.6f RPL\n", units.WeiToEth(&intervalInfo.CollateralRplAmount.Int))
+		fmt.Printf("\tStaking:        %.6f RPL\n", units.NewWei(&intervalInfo.CollateralRplAmount.Int).ToEth().InexactFloat64())
 		if intervalInfo.ODaoRplAmount.Cmp(big.NewInt(0)) == 1 {
-			fmt.Printf("\tOracle DAO:     %.6f RPL\n", units.WeiToEth(&intervalInfo.ODaoRplAmount.Int))
+			fmt.Printf("\tOracle DAO:     %.6f RPL\n", units.NewWei(&intervalInfo.ODaoRplAmount.Int).ToEth().InexactFloat64())
 		}
-		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", units.WeiToEth(&intervalInfo.SmoothingPoolEthAmount.Int))
-		fmt.Printf("\tVoter Share:    %.6f ETH\n", units.WeiToEth(&intervalInfo.VoterShareEth.Int))
-		fmt.Printf("\tTotal:          %.6f ETH\n\n", units.WeiToEth(&intervalInfo.TotalEthAmount.Int))
+		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", units.NewWei(&intervalInfo.SmoothingPoolEthAmount.Int).ToEth().InexactFloat64())
+		fmt.Printf("\tVoter Share:    %.6f ETH\n", units.NewWei(&intervalInfo.VoterShareEth.Int).ToEth().InexactFloat64())
+		fmt.Printf("\tTotal:          %.6f ETH\n\n", units.NewWei(&intervalInfo.TotalEthAmount.Int).ToEth().InexactFloat64())
 
 		totalRpl.Add(totalRpl, &intervalInfo.CollateralRplAmount.Int)
 		totalRpl.Add(totalRpl, &intervalInfo.ODaoRplAmount.Int)
@@ -127,9 +127,9 @@ func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 	}
 
 	fmt.Println("Total Pending Rewards:")
-	fmt.Printf("\t%.6f RPL\n", units.WeiToEth(totalRpl))
-	fmt.Printf("\t%.6f Smoothing Pool ETH\n", units.WeiToEth(totalSmoothingEth))
-	fmt.Printf("\t%.6f Voter Share ETH\n\n", units.WeiToEth(totalVoterShareEth))
+	fmt.Printf("\t%.6f RPL\n", units.NewWei(totalRpl).ToEth().InexactFloat64())
+	fmt.Printf("\t%.6f Smoothing Pool ETH\n", units.NewWei(totalSmoothingEth).ToEth().InexactFloat64())
+	fmt.Printf("\t%.6f Voter Share ETH\n\n", units.NewWei(totalVoterShareEth).ToEth().InexactFloat64())
 
 	// Get the list of intervals to claim
 	var indices []uint64
@@ -193,7 +193,7 @@ func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 			}
 		}
 	}
-	fmt.Printf("With this selection, you will claim %.6f RPL and %.6f ETH.\n\n", units.WeiToEth(claimRpl), units.WeiToEth(claimEth))
+	fmt.Printf("With this selection, you will claim %.6f RPL and %.6f ETH.\n\n", units.NewWei(claimRpl).ToEth().InexactFloat64(), units.NewWei(claimEth).ToEth().InexactFloat64())
 
 	// Get restake amount
 	restakeAmountWei, err := getRestakeAmount(restakeAmountFlag, yes, rewardsInfoResponse, claimRpl)
@@ -267,14 +267,14 @@ func getRestakeAmount(restakeAmountFlag string, yes bool, rewardsInfoResponse ap
 	currentBorrowedCollateral := float64(0)
 	totalBondedCollateral := float64(0)
 	totalBorrowedCollateral := float64(0)
-	currentRplStake := units.WeiToEth(rewardsInfoResponse.RplStake)
-	availableRpl := units.WeiToEth(claimRpl)
+	currentRplStake := rewardsInfoResponse.RplStake.ToEth().InexactFloat64()
+	availableRpl := units.NewWei(claimRpl).ToEth().InexactFloat64()
 
 	// Print info about autostaking RPL
 	total := currentRplStake + availableRpl
 	if rewardsInfoResponse.ActiveMinipools > 0 || rewardsInfoResponse.ActiveMegapoolValidators > 0 {
-		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
-		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
+		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio.InexactFloat64()
+		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio.InexactFloat64()
 
 		if currentRplStake > 0 {
 			totalBondedCollateral = currentBondedCollateral * total / currentRplStake
@@ -308,7 +308,7 @@ func getRestakeAmount(restakeAmountFlag string, yes bool, rewardsInfoResponse ap
 			restakeAmountWei = claimRpl
 		} else {
 			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", stakeAmount, total, totalBorrowedCollateral*100, totalBondedCollateral*100)
-			restakeAmountWei = units.EthToWei(stakeAmount)
+			restakeAmountWei = units.EthFromFloat(stakeAmount).ToWei().BigInt()
 		}
 	} else if yes {
 		// Ignore automatic restaking if `-y` is specified but `-a` isn't
@@ -339,7 +339,7 @@ func getRestakeAmount(restakeAmountFlag string, yes bool, rewardsInfoResponse ap
 				} else if stakeAmount > availableRpl {
 					fmt.Println("Amount must be less than the RPL available to claim.")
 				} else {
-					restakeAmountWei = units.EthToWei(stakeAmount)
+					restakeAmountWei = units.EthFromFloat(stakeAmount).ToWei().BigInt()
 					break
 				}
 			}

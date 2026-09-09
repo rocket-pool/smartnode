@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 // The number of blocks to look for events in at once when scanning
@@ -24,32 +25,32 @@ type StatusDetails struct {
 }
 type NodeDetails struct {
 	Address         common.Address `json:"address"`
-	Fee             float64        `json:"fee"`
-	DepositBalance  *big.Int       `json:"depositBalance"`
-	RefundBalance   *big.Int       `json:"refundBalance"`
+	Fee             units.Eth      `json:"fee"`
+	DepositBalance  units.Wei      `json:"depositBalance"`
+	RefundBalance   units.Wei      `json:"refundBalance"`
 	DepositAssigned bool           `json:"depositAssigned"`
 }
 type UserDetails struct {
-	DepositBalance      *big.Int  `json:"depositBalance"`
+	DepositBalance      units.Wei `json:"depositBalance"`
 	DepositAssigned     bool      `json:"depositAssigned"`
 	DepositAssignedTime time.Time `json:"depositAssignedTime"`
 }
 
 // The data from a minipool's MinipoolPrestaked event
 type MinipoolPrestakeEvent struct {
-	Pubkey                []byte   `abi:"validatorPubkey"`
-	Signature             []byte   `abi:"validatorSignature"`
-	DepositDataRoot       [32]byte `abi:"depositDataRoot"`
-	Amount                *big.Int `abi:"amount"`
-	WithdrawalCredentials []byte   `abi:"withdrawalCredentials"`
-	Time                  *big.Int `abi:"time"`
+	Pubkey                []byte    `abi:"validatorPubkey"`
+	Signature             []byte    `abi:"validatorSignature"`
+	DepositDataRoot       [32]byte  `abi:"depositDataRoot"`
+	Amount                units.Wei `abi:"amount"`
+	WithdrawalCredentials []byte    `abi:"withdrawalCredentials"`
+	Time                  *big.Int  `abi:"time"`
 }
 
 // Formatted MinipoolPrestaked event data
 type PrestakeData struct {
 	Pubkey                rptypes.ValidatorPubkey    `json:"pubkey"`
 	WithdrawalCredentials common.Hash                `json:"withdrawalCredentials"`
-	Amount                *big.Int                   `json:"amount"`
+	Amount                units.Wei                  `json:"amount"`
 	Signature             rptypes.ValidatorSignature `json:"signature"`
 	DepositDataRoot       common.Hash                `json:"depositDataRoot"`
 	Time                  time.Time                  `json:"time"`
@@ -67,13 +68,12 @@ type Minipool interface {
 	GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit, error)
 	GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error)
 	GetNodeAddress(opts *bind.CallOpts) (common.Address, error)
-	GetNodeFee(opts *bind.CallOpts) (float64, error)
-	GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error)
-	GetNodeDepositBalance(opts *bind.CallOpts) (*big.Int, error)
-	GetNodeRefundBalance(opts *bind.CallOpts) (*big.Int, error)
+	GetNodeFee(opts *bind.CallOpts) (units.Eth, error)
+	GetNodeDepositBalance(opts *bind.CallOpts) (units.Wei, error)
+	GetNodeRefundBalance(opts *bind.CallOpts) (units.Wei, error)
 	GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error)
 	GetUserDetails(opts *bind.CallOpts) (UserDetails, error)
-	GetUserDepositBalance(opts *bind.CallOpts) (*big.Int, error)
+	GetUserDepositBalance(opts *bind.CallOpts) (units.Wei, error)
 	GetUserDepositAssigned(opts *bind.CallOpts) (bool, error)
 	GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error)
 	EstimateRefundGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
@@ -94,8 +94,8 @@ type Minipool interface {
 	GetDelegate(opts *bind.CallOpts) (common.Address, error)
 	GetPreviousDelegate(opts *bind.CallOpts) (common.Address, error)
 	GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error)
-	CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error)
-	CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error)
+	CalculateNodeShare(balance units.Wei, opts *bind.CallOpts) (units.Wei, error)
+	CalculateUserShare(balance units.Wei, opts *bind.CallOpts) (units.Wei, error)
 	EstimateVoteScrubGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 	VoteScrub(opts *bind.TransactOpts) (common.Hash, error)
 	GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error)

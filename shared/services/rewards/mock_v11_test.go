@@ -64,15 +64,15 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	nodeSummary := history.GetNodeSummary()
 	customBalanceNodes := nodeSummary.MustGetClass(tt, "single_eight_eth_opted_in_quarter")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = units.EthToWei(0.75)
+		node.Minipools[0].SPWithdrawals = units.EthFromFloat(0.75).ToWei().BigInt()
 	}
 	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_eight_eth_opted_out_three_quarters")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = units.EthToWei(0.75)
+		node.Minipools[0].SPWithdrawals = units.EthFromFloat(0.75).ToWei().BigInt()
 	}
 	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_bond_reduction")
 	for _, node := range customBalanceNodes {
-		node.Minipools[0].SPWithdrawals = units.EthToWei(0.5)
+		node.Minipools[0].SPWithdrawals = units.EthFromFloat(0.5).ToWei().BigInt()
 	}
 
 	history.SetWithdrawals(t.bc)
@@ -848,9 +848,9 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	// Overwrite the SP balance to a value under the bonus commission
-	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1100)
+	history.NetworkDetails.SmoothingPoolBalance = units.NewWei(big.NewInt(1100))
 	// Set the SP voter share to 0
-	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
+	history.NetworkDetails.PendingVoterShareEth = units.NewWei(big.NewInt(100))
 	// Set the pdao share to 0
 	state := history.GetEndNetworkState().ToIndexedNetworkState()
 

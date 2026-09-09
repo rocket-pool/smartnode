@@ -12,6 +12,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 // Config
@@ -67,14 +69,14 @@ func EstimateProposeAssignDepositsEnabledGas(rp *rocketpool.RocketPool, value bo
 }
 
 // Minimum deposit amount
-func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := depositSettingsContract.Call(opts, value, "getMinimumDeposit"); err != nil {
-		return nil, fmt.Errorf("error getting minimum deposit amount: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting minimum deposit amount: %w", err)
 	}
 	return *value, nil
 }
@@ -86,14 +88,14 @@ func EstimateProposeMinimumDepositGas(rp *rocketpool.RocketPool, value *big.Int,
 }
 
 // Maximum deposit pool size
-func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := depositSettingsContract.Call(opts, value, "getMaximumDepositPoolSize"); err != nil {
-		return nil, fmt.Errorf("error getting maximum deposit pool size: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting maximum deposit pool size: %w", err)
 	}
 	return *value, nil
 }
@@ -143,14 +145,14 @@ func EstimateProposeMaximumSocializedDepositAssignmentsGas(rp *rocketpool.Rocket
 }
 
 // Current fee taken from user deposits
-func GetDepositFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetDepositFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := depositSettingsContract.Call(opts, value, "getDepositFee"); err != nil {
-		return nil, fmt.Errorf("error getting deposit fee: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting deposit fee: %w", err)
 	}
 	return *value, nil
 }

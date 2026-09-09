@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 const (
@@ -39,13 +40,13 @@ func NewBalanceBatcher(client rocketpool.ExecutionClient, address common.Address
 	}, nil
 }
 
-func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.CallOpts) ([]*big.Int, error) {
+func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.CallOpts) ([]units.Wei, error) {
 
 	// Sync
 	count := len(addresses)
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
-	balances := make([]*big.Int, count)
+	balances := make([]units.Wei, count)
 
 	// Run the getters in batches
 	for i := 0; i < count; i += balanceBatchSize {
@@ -80,7 +81,7 @@ func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.C
 				if balance == nil {
 					return fmt.Errorf("received nil balance for address %s", subAddresses[j].String())
 				}
-				balances[i+j] = balance
+				balances[i+j] = units.NewWei(balance)
 			}
 
 			return nil

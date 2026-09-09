@@ -51,55 +51,55 @@ func GetBalancesBlockRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.I
 }
 
 // Get the current network total ETH balance
-func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalEthBalance := new(*big.Int)
+	totalEthBalance := new(units.Wei)
 	if err := rocketNetworkBalances.Call(opts, totalEthBalance, "getTotalETHBalance"); err != nil {
-		return nil, fmt.Errorf("error getting network total ETH balance: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting network total ETH balance: %w", err)
 	}
 	return *totalEthBalance, nil
 }
 
 // Get the current network staking ETH balance
-func GetStakingETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetStakingETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	stakingEthBalance := new(*big.Int)
+	stakingEthBalance := new(units.Wei)
 	if err := rocketNetworkBalances.Call(opts, stakingEthBalance, "getStakingETHBalance"); err != nil {
-		return nil, fmt.Errorf("error getting network staking ETH balance: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting network staking ETH balance: %w", err)
 	}
 	return *stakingEthBalance, nil
 }
 
 // Get the current network total rETH supply
-func GetTotalRETHSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalRETHSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Wei, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	totalRethSupply := new(*big.Int)
+	totalRethSupply := new(units.Wei)
 	if err := rocketNetworkBalances.Call(opts, totalRethSupply, "getTotalRETHSupply"); err != nil {
-		return nil, fmt.Errorf("error getting network total rETH supply: %w", err)
+		return units.Wei{}, fmt.Errorf("error getting network total rETH supply: %w", err)
 	}
 	return *totalRethSupply, nil
 }
 
 // Get the current network ETH utilization rate
-func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (units.Eth, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
-		return 0, err
+		return units.Eth{}, err
 	}
-	ethUtilizationRate := new(*big.Int)
-	if err := rocketNetworkBalances.Call(opts, ethUtilizationRate, "getETHUtilizationRate"); err != nil {
-		return 0, fmt.Errorf("error getting network ETH utilization rate: %w", err)
+	var ethUtilizationRate units.Wei
+	if err := rocketNetworkBalances.Call(opts, &ethUtilizationRate, "getETHUtilizationRate"); err != nil {
+		return units.Eth{}, fmt.Errorf("error getting network ETH utilization rate: %w", err)
 	}
-	return units.WeiToEth(*ethUtilizationRate), nil
+	return ethUtilizationRate.ToEth(), nil
 }
 
 // Estimate the gas of SubmitBalances

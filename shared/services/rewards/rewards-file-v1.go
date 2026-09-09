@@ -111,7 +111,7 @@ func (p *MinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
 	return p.MissingAttestationSlots
 }
 func (p *MinipoolPerformance_v1) GetEthEarned() *big.Int {
-	return units.EthToWei(p.EthEarned)
+	return units.EthFromFloat(p.EthEarned).ToWei().BigInt()
 }
 func (p *MinipoolPerformance_v1) GetBonusEthEarned() *big.Int {
 	return big.NewInt(0)

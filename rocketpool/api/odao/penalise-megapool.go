@@ -12,9 +12,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int) (*api.CanPenaliseMegapoolResponse, error) {
+func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount units.Wei) (*api.CanPenaliseMegapoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -59,7 +60,7 @@ func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *
 
 }
 
-func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int, t *snroute.TransactOpts) (*api.PenaliseMegapoolResponse, error) {
+func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount units.Wei, t *snroute.TransactOpts) (*api.PenaliseMegapoolResponse, error) {
 	opts := t.Opts()
 
 	// Get services

@@ -40,6 +40,7 @@ require (
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
+	github.com/shopspring/decimal v1.4.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v3 v3.10.1
 	github.com/wealdtech/go-ens/v3 v3.6.0

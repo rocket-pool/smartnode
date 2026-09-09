@@ -32,7 +32,7 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
 		return 0, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return units.NewWei(*value).ToEth().InexactFloat64(), nil
 }
 func ProposeMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
@@ -64,7 +64,7 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
 		return 0, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
 	}
-	return units.WeiToEth(*value), nil
+	return units.NewWei(*value).ToEth().InexactFloat64(), nil
 }
 func ProposeMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)

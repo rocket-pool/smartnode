@@ -36,9 +36,9 @@ type distributeMinipools struct {
 	bc                  beacon.Client
 	d                   *client.Client
 	gasThreshold        float64
-	distributeThreshold *big.Int
+	distributeThreshold units.Wei
 	disabled            bool
-	eight               *big.Int
+	eight               units.Wei
 	maxFee              *big.Int
 	maxPriorityFee      *big.Int
 	gasLimit            uint64
@@ -93,9 +93,9 @@ func newDistributeMinipools(c *cli.Command, logger log.ColorLogger) (*distribute
 		bc:                  bc,
 		d:                   d,
 		gasThreshold:        gas.thresholdGwei,
-		distributeThreshold: units.EthToWei(distributeThreshold),
+		distributeThreshold: units.EthFromFloat(distributeThreshold).ToWei(),
 		disabled:            disabled,
-		eight:               units.EthToWei(8),
+		eight:               units.EthFromFloat(8).ToWei(),
 		maxFee:              gas.maxFee,
 		maxPriorityFee:      gas.maxPriorityFee,
 		gasLimit:            0,
@@ -191,7 +191,7 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), units.WeiToEth(mpd.Balance))
+	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), mpd.Balance.ToEth().InexactFloat64())
 
 	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {
@@ -230,7 +230,7 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	}
 
 	// Print the gas info
-	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gasLimits.PrintAndCheck(true, units.GweiFromFloat(t.gasThreshold).ToWei().ToGwei(), &t.log, units.NewWei(maxFee), t.gasLimit) {
 		return false, nil
 	}
 

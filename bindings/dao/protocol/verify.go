@@ -17,6 +17,8 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
+	"github.com/rocket-pool/smartnode/shared/units"
+
 )
 
 const (
@@ -166,27 +168,27 @@ func GetDefeatIndex(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Cal
 }
 
 // Get the proposal bond for a proposal
-func GetProposalBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetProposalBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolVerifier.Call(opts, value, "getProposalBond", big.NewInt(int64(proposalId))); err != nil {
-		return nil, fmt.Errorf("error getting proposal %d proposal bond: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting proposal %d proposal bond: %w", proposalId, err)
 	}
 	return *value, nil
 }
 
 // Get the challenge bond for a proposal
-func GetChallengeBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+func GetChallengeBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (units.Wei, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
-		return nil, err
+		return units.Wei{}, err
 	}
-	value := new(*big.Int)
+	value := new(units.Wei)
 	if err := rocketDAOProtocolVerifier.Call(opts, value, "getChallengeBond", big.NewInt(int64(proposalId))); err != nil {
-		return nil, fmt.Errorf("error getting proposal %d challenge bond: %w", proposalId, err)
+		return units.Wei{}, fmt.Errorf("error getting proposal %d challenge bond: %w", proposalId, err)
 	}
 	return *value, nil
 }

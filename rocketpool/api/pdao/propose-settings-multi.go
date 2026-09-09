@@ -2,7 +2,6 @@ package pdao
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -14,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
 func canProposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, customMessage string) (*api.CanProposePDAOSettingMultiResponse, error) {
@@ -47,9 +47,9 @@ func canProposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, cus
 		return nil, err
 	}
 
-	var stakedRpl *big.Int
-	var lockedRpl *big.Int
-	var proposalBond *big.Int
+	var stakedRpl units.Wei
+	var lockedRpl units.Wei
+	var proposalBond units.Wei
 	var isRplLockingAllowed bool
 	var wg errgroup.Group
 
@@ -82,7 +82,7 @@ func canProposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, cus
 	response.ProposalBond = proposalBond
 	response.IsRplLockingDisallowed = !isRplLockingAllowed
 
-	freeRpl := big.NewInt(0).Sub(stakedRpl, lockedRpl)
+	freeRpl := stakedRpl.Sub(lockedRpl)
 	response.InsufficientRpl = freeRpl.Cmp(proposalBond) < 0
 	response.CanPropose = !response.InsufficientRpl && !response.IsRplLockingDisallowed
 	if !response.CanPropose {

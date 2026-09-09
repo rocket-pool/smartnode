@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -12,9 +10,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdrawEthResponse, error) {
+func canNodeWithdrawEth(c *cli.Command, amountWei units.Wei) (*api.CanNodeWithdrawEthResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -41,7 +40,7 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 	// Data
 	var wg errgroup.Group
 	var nodeDetails node.NodeDetails
-	var ethStaked *big.Int
+	var ethStaked units.Wei
 
 	// Get node details
 	wg.Go(func() error {
@@ -85,7 +84,7 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 
 }
 
-func nodeWithdrawEth(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawEth(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -123,7 +122,7 @@ func nodeWithdrawEth(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts
 }
 
 func canWithdrawEthHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -133,7 +132,7 @@ func canWithdrawEthHandler(ctx snroute.Context) {
 }
 
 func withdrawEthHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return

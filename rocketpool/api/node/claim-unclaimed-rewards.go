@@ -33,7 +33,7 @@ func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.
 		return nil, err
 	}
 
-	if unclaimedRewards != nil {
+	if !unclaimedRewards.IsZero() {
 		response.CanClaim = false
 	}
 

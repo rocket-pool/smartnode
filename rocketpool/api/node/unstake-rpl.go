@@ -1,8 +1,6 @@
 package node
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -13,9 +11,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/units"
 )
 
-func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeRplResponse, error) {
+func canNodeUnstakeRpl(c *cli.Command, amountWei units.Wei) (*api.CanNodeUnstakeRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -41,8 +40,8 @@ func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeR
 
 	// Data
 	var wg errgroup.Group
-	var rplStake *big.Int
-	nodeRplLocked := big.NewInt(0)
+	var rplStake units.Wei
+	var nodeRplLocked units.Wei
 	var isRPLWithdrawalAddressSet bool
 	var rplWithdrawalAddress common.Address
 
@@ -93,9 +92,9 @@ func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeR
 	}
 
 	// Check data
-	var remainingRplStake big.Int
-	remainingRplStake.Sub(rplStake, amountWei)
-	remainingRplStake.Sub(&remainingRplStake, nodeRplLocked)
+	var remainingRplStake units.Wei
+	remainingRplStake = rplStake.Sub(amountWei)
+	remainingRplStake = remainingRplStake.Sub(nodeRplLocked)
 	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
@@ -105,7 +104,7 @@ func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeR
 
 }
 
-func nodeUnstakeRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts) (*api.NodeUnstakeRplResponse, error) {
+func nodeUnstakeRpl(c *cli.Command, amountWei units.Wei, t *snroute.TransactOpts) (*api.NodeUnstakeRplResponse, error) {
 	opts := t.Opts()
 
 	// Get services
@@ -134,7 +133,7 @@ func nodeUnstakeRpl(c *cli.Command, amountWei *big.Int, t *snroute.TransactOpts)
 }
 
 func canUnstakeRplHandler(ctx snroute.Context) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
@@ -144,7 +143,7 @@ func canUnstakeRplHandler(ctx snroute.Context) {
 }
 
 func unstakeRplHandler(ctx snroute.WriteContext) {
-	amountWei, err := parseNodeBigInt(ctx.Request, "amountWei")
+	amountWei, err := parseNodeWei(ctx.Request, "amountWei")
 	if err != nil {
 		response.WriteErrorResponse(ctx.Writer, err)
 		return
