@@ -61,3 +61,15 @@ func GetBeaconStateVerifierVersion(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	return rocketpool.GetContractVersion(rp, *beaconStateVerifier.Address, opts)
 }
+
+func UsesProofBundles(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	version, err := GetBeaconStateVerifierVersion(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	return usesProofBundles(version), nil
+}
+
+func usesProofBundles(beaconStateVerifierVersion uint8) bool {
+	return beaconStateVerifierVersion >= 2
+}

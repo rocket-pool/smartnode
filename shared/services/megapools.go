@@ -798,68 +798,102 @@ func GetFinalizedBlockSlotAndFork(bc beacon.Client) (uint64, string, error) {
 	return 0, "", fmt.Errorf("failed to find a finalized beacon block within %d slots of finalized epoch %d", maxAttempts, head.FinalizedEpoch)
 }
 
-// GetFinalBalanceProofBundle builds the versioned proof payload for
-// RocketMegapoolManager.notifyFinalBalance. Version 1 is used for pre-Gloas
-// withdrawals; version 2 for post-Gloas withdrawals.
-func GetFinalBalanceProofBundle(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
-	bc, err := GetBeaconClient(c)
+// GetFinalBalanceProofs builds the 1.4.0 structured proofs for
+// RocketMegapoolManager.notifyFinalBalance. Gloas withdrawals are not supported
+// on 1.4.0 contracts.
+func GetFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (megapool.WithdrawalProof, megapool.ValidatorProof, megapool.SlotProof, uint64, error) {
+	withdrawalProof, validatorProof, slotProof, slotTimestamp, err := getPreGloasFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
 	if err != nil {
-		return nil, nil, 0, err
+		if errors.Is(err, ErrGloasBoundaryReached) {
+			return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, fmt.Errorf("1.4.0 contracts cannot verify Gloas final-balance proofs: %w", err)
+		}
+		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 	}
-	eth2Config, err := bc.GetEth2Config()
+	return withdrawalProof, validatorProof, slotProof, slotTimestamp, nil
+}
+
+// GetFinalBalanceProofBundle builds the versioned proof payload for
+// RocketMegapoolManager.notifyFinalBalance on 1.4.1+. Version 1 is used for
+// pre-Gloas withdrawals; version 2 for post-Gloas withdrawals.
+func GetFinalBalanceProofBundle(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
+	withdrawalProof, validatorProof, slotProof, slotTimestamp, err := getPreGloasFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
 	if err != nil {
+		if errors.Is(err, ErrGloasBoundaryReached) {
+			bc, bcErr := GetBeaconClient(c)
+			if bcErr != nil {
+				return nil, nil, 0, bcErr
+			}
+			eth2Config, cfgErr := bc.GetEth2Config()
+			if cfgErr != nil {
+				return nil, nil, 0, cfgErr
+			}
+			return getGloasFinalBalanceProofBundle(c, bc, eth2Config, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+		}
 		return nil, nil, 0, err
 	}
 
-	withdrawalProof, proofSlot, stateUsed, err := GetWithdrawalProofForSlot(c, slotHint, validatorIndex)
+	encoded, err := megapool.EncodeFinalBalanceProofBundleV1(withdrawalProof, validatorProof, slotProof)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return megapool.FinalBalanceProofVersion1, encoded, slotTimestamp, nil
+}
+
+func getPreGloasFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (megapool.WithdrawalProof, megapool.ValidatorProof, megapool.SlotProof, uint64, error) {
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
+	}
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
+	}
+
+	rawProof, proofSlot, stateUsed, err := GetWithdrawalProofForSlot(c, slotHint, validatorIndex)
 	if err != nil {
 		if errors.Is(err, ErrGloasBoundaryReached) {
-			return getGloasFinalBalanceProofBundle(c, bc, eth2Config, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+			return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 		}
 		cfg, cfgErr := GetConfig(c)
 		if cfgErr != nil {
-			return nil, nil, 0, err
+			return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 		}
 		fmt.Printf("An error occurred while getting the withdrawal proof: %s\n", err)
 		head, headErr := bc.GetBeaconHead()
 		if headErr != nil {
-			return nil, nil, 0, err
+			return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 		}
 		finalizedSlot := head.FinalizedEpoch * eth2Config.SlotsPerEpoch
 		network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 		var apiErr error
-		withdrawalProof, proofSlot, apiErr = GetWithdrawalProofForSlotFromAPI(c, finalizedSlot, slotHint, validatorIndex, network)
+		rawProof, proofSlot, apiErr = GetWithdrawalProofForSlotFromAPI(c, finalizedSlot, slotHint, validatorIndex, network)
 		if apiErr != nil {
 			fmt.Printf("An error occurred while getting the withdrawal proof from the Rocket Pool API: %s\n", apiErr)
-			return nil, nil, 0, err
+			return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 		}
 		stateUsed = nil
 	}
 
 	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, validatorPubkey, stateUsed)
 	if err != nil {
-		return nil, nil, 0, err
+		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 	}
 
-	encoded, err := megapool.EncodeFinalBalanceProofBundleV1(
-		megapool.WithdrawalProof{
-			WithdrawalSlot: withdrawalProof.WithdrawalSlot,
-			WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
-			Withdrawal: megapool.Withdrawal{
-				Index:                 withdrawalProof.WithdrawalIndex,
-				ValidatorIndex:        validatorIndex,
-				WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
-				AmountInGwei:          withdrawalProof.Amount.Uint64(),
-			},
-			Witnesses: withdrawalProof.Witnesses,
+	return finalBalanceWithdrawalProof(rawProof, validatorIndex), validatorProof, slotProof, slotTimestamp, nil
+}
+
+func finalBalanceWithdrawalProof(proof megapool.FinalBalanceProof, validatorIndex uint64) megapool.WithdrawalProof {
+	return megapool.WithdrawalProof{
+		WithdrawalSlot: proof.WithdrawalSlot,
+		WithdrawalNum:  uint16(proof.IndexInWithdrawalsArray),
+		Withdrawal: megapool.Withdrawal{
+			Index:                 proof.WithdrawalIndex,
+			ValidatorIndex:        validatorIndex,
+			WithdrawalCredentials: proof.WithdrawalAddress,
+			AmountInGwei:          proof.Amount.Uint64(),
 		},
-		validatorProof,
-		slotProof,
-	)
-	if err != nil {
-		return nil, nil, 0, err
+		Witnesses: proof.Witnesses,
 	}
-	return megapool.FinalBalanceProofVersion1, encoded, slotTimestamp, nil
 }
 
 func getGloasFinalBalanceProofBundle(c *cli.Command, bc beacon.Client, eth2Config beacon.Eth2Config, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
