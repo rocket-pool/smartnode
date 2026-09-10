@@ -78,10 +78,6 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(proof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	if !validatorInfo.InPrestake {
 		response.CanDissolve = false
@@ -105,7 +101,7 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, err
 	}
-	gasLimits, err := megapool.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+	gasLimits, err := services.EstimateMegapoolDissolveWithProofGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +167,9 @@ func dissolveWithProof(c *cli.Command, validatorId uint32, t *snroute.TransactOp
 	if err != nil {
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+	tx, err := services.DissolveMegapoolWithProof(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

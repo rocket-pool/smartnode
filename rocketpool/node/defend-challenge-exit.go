@@ -156,29 +156,25 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 		return err
 	}
 
-	t.log.Printlnf("[STARTED] Crafting a validator proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
+	t.log.Printlnf("Crafting a validator proof.")
 
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, nil)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
-	if err != nil {
-		return err
-	}
 
-	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
+	t.log.Printlnf("The beacon state proof has been successfully created.")
 	var gasLimits gaslimit.Limits
 
 	if !exiting {
 		// Get the gas limit
-		gasLimits, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+		gasLimits, err = services.EstimateMegapoolNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	} else {
-		gasLimits, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+		gasLimits, err = services.EstimateMegapoolNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
@@ -206,13 +202,13 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	var tx *coretypes.Transaction
 	if !exiting {
 		t.log.Printlnf("Notifying that validator %d is not exiting.", validatorId)
-		tx, err = megapool.NotifyNotExit(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+		tx, err = services.NotifyMegapoolNotExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	} else {
 		t.log.Printlnf("Notifying that validator %d is exiting.", validatorId)
-		tx, err = megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+		tx, err = services.NotifyMegapoolExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}

@@ -126,10 +126,6 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 	if err != nil {
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(proof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -137,7 +133,7 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasLimits, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+	gasLimits, err := services.EstimateMegapoolNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -215,13 +211,9 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.Transact
 	if err != nil {
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	// Notify the validator exit
-	tx, err := megapool.NotifyExit(rp, megapoolAddress, validatorId, slotTimetamp, megapool.ValidatorProofVersion1, proofData, opts)
+	tx, err := services.NotifyMegapoolExit(rp, megapoolAddress, validatorId, slotTimetamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

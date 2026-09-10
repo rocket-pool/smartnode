@@ -41,7 +41,7 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 			continue
 		}
 		if validator.Exiting {
-			if validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
+			if beacon.HasFinalBalanceWithdrawal(validator.BeaconStatus) {
 				readyValidators = append(readyValidators, validator)
 			} else {
 				pendingValidators = append(pendingValidators, validator)
@@ -139,14 +139,7 @@ func printPendingFinalBalanceValidator(v api.MegapoolValidatorDetails, currentEp
 	if withdrawableEpoch != 0 && withdrawableEpoch != FarFutureEpoch {
 		fmt.Printf("    withdrawable_epoch:  %d%s\n", withdrawableEpoch, epochTimingSuffix(withdrawableEpoch, currentEpoch, secondsPerEpoch))
 		if currentEpoch >= withdrawableEpoch {
-			switch bs.Status {
-			case beacon.ValidatorState_WithdrawalPossible:
-				fmt.Printf("    note:                withdrawable; waiting for the beacon withdrawal sweep (full balance)\n")
-			case beacon.ValidatorState_ExitedUnslashed, beacon.ValidatorState_ExitedSlashed:
-				fmt.Printf("    note:                exited; waiting to become withdrawal_possible, then for the sweep\n")
-			default:
-				fmt.Printf("    note:                withdrawable epoch reached; waiting for full withdrawal (status %s)\n", bs.Status)
-			}
+			fmt.Printf("    note:                %s\n", beacon.FinalBalanceSweepNote(bs))
 		}
 	} else {
 		fmt.Printf("    withdrawable_epoch:  not yet set on finalized state\n")

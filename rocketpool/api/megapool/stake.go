@@ -99,17 +99,13 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 		}
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasLimits, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+	gasLimits, err := services.EstimateMegapoolStakeGas(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -175,13 +171,9 @@ func stake(c *cli.Command, validatorId uint64, t *snroute.TransactOpts) (*api.St
 	if err != nil {
 		return nil, err
 	}
-	proofData, err := megapool.EncodeValidatorProofBundleV1(validatorProof, slotProof)
-	if err != nil {
-		return nil, err
-	}
 
 	// Stake
-	tx, err := megapool.Stake(rp, megapoolAddress, uint32(validatorId), slotTimestamp, megapool.ValidatorProofVersion1, proofData, opts)
+	tx, err := services.StakeMegapool(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
