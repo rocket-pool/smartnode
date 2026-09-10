@@ -792,6 +792,59 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					},
 				},
 			},
+
+			{
+				Name:      "pending-transactions",
+				Aliases:   []string{"pending-txs", "pending", "txs"},
+				Usage:     "View the node's pending transactions in the mempool",
+				UsageText: "rocketpool node pending-transactions",
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return getPendingTransactions()
+
+				},
+			},
+
+			{
+				Name:      "cancel-transaction",
+				Aliases:   []string{"cancel-tx", "cancel"},
+				Usage:     "Cancel or unblock a pending transaction by sending a 0-ETH replacement transaction with higher fees",
+				UsageText: "rocketpool node cancel-transaction [options]",
+				Flags: []cli.Flag{
+					&cli.Uint64Flag{
+						Name:    "nonce",
+						Aliases: []string{"n"},
+						Usage:   "The specific nonce to cancel (defaults to the lowest pending nonce)",
+					},
+					&cli.BoolFlag{
+						Name:    "all",
+						Aliases: []string{"a"},
+						Usage:   "Cancel all pending transactions sequentially",
+					},
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm cancellation without interactive prompts",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return cancelTransaction(c.Uint64("nonce"), c.IsSet("nonce"), c.Bool("all"), c.Bool("yes"))
+
+				},
+			},
 		},
 	})
 }
