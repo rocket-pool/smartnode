@@ -590,7 +590,7 @@ func recreateDockerNetwork(rp *rocketpool.Client, prefix string) error {
 
 type startServiceParams struct {
 	yes bool // Whether to automatically confirm prompts
-	// N.B.: This should ALYWAYS be false unless --ignore-slash-timer is set!
+	// N.B.: This should ALWAYS be false unless --ignore-slash-timer is set!
 	ignoreSlashTimer       bool     // Whether to ignore the slash timer
 	ignoreConfigSuggestion bool     // Whether to skip suggesting the user run config first
 	composeFiles           []string // The compose files to start the service with
