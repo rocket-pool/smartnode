@@ -127,9 +127,9 @@ func executeUpgrade(c *cli.Command, upgradeProposalId uint64, t *snroute.Transac
 }
 
 func canExecuteUpgradeHandler(ctx snroute.Context) {
-	id, err := cliutils.ValidatePositiveUint("upgrade proposal ID", ctx.Request.URL.Query().Get("id"))
+	id, err := cliutils.ValidatePositiveUint("upgrade proposal ID", ctx.Request.FormValue("id"))
 	if err != nil {
-		response.WriteResponse(ctx.Writer, nil, err)
+		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
 	resp, err := canExecuteUpgrade(ctx.Command(), id)
@@ -137,9 +137,9 @@ func canExecuteUpgradeHandler(ctx snroute.Context) {
 }
 
 func executeUpgradeHandler(ctx snroute.WriteContext) {
-	id, err := strconv.ParseUint(ctx.Request.URL.Query().Get("id"), 10, 64)
+	id, err := strconv.ParseUint(ctx.Request.FormValue("id"), 10, 64)
 	if err != nil {
-		response.WriteResponse(ctx.Writer, nil, err)
+		response.WriteErrorResponse(ctx.Writer, err)
 		return
 	}
 	opts, err := ctx.Transactor()
