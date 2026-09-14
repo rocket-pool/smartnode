@@ -14,14 +14,6 @@ import (
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
-	beaconStateVerifierVersion, err := megapool.GetBeaconStateVerifierVersion(rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error checking beacon state verifier version: %w", err)
-	}
-	if beaconStateVerifierVersion == 2 {
-		return version.NewSemver("1.4.1")
-	}
-
 	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error checking deposit pool version: %w", err)
@@ -30,6 +22,14 @@ func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version
 	// Check for v1.5 (Saturn 2)
 	if depositPoolVersion > 4 {
 		return version.NewSemver("1.5.0")
+	}
+
+	beaconStateVerifierVersion, err := megapool.GetBeaconStateVerifierVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking beacon state verifier version: %w", err)
+	}
+	if beaconStateVerifierVersion == 2 {
+		return version.NewSemver("1.4.1")
 	}
 
 	// Check for v1.4 (Saturn 1)
