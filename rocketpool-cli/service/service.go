@@ -84,6 +84,10 @@ func installService(yes, verbose, noDeps bool, path string) error {
 	if path == "" {
 		path = rp.ConfigPath()
 	}
+	path, err = homedir.Expand(path)
+	if err != nil {
+		return fmt.Errorf("error expanding install path [%s]: %w", path, err)
+	}
 
 	// Install service
 	err = rp.InstallService(verbose, noDeps, path, dataPath)
