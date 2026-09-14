@@ -144,7 +144,7 @@ func newDefendChallengePerformance(c *cli.Command, logger log.ColorLogger) (*def
 }
 
 // Check for performance challenges
-func (t *defendChallengePerformance) run(state *state.NetworkState) error {
+func (t *defendChallengePerformance) run(state *state.NetworkStateIndex) error {
 	// Check if Saturn 2 is deployed
 	if !state.Saturn2Deployed {
 		t.log.Println("Saturn 2 is not deployed, skipping performance challenges check.")
@@ -346,7 +346,7 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 
 // respondWithValidator responds to a performance challenge with a validator
 // proof showing the defender was not staking during the challenge window.
-func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerformanceChallenge, defender challengedValidator, state *state.NetworkState) error {
+func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerformanceChallenge, defender challengedValidator, state *state.NetworkStateIndex) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()

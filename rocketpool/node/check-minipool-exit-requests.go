@@ -125,7 +125,7 @@ func newCheckMinipoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 }
 
 // Check for minipool validators that did not respond to an exit request
-func (t *checkMinipoolExitRequests) run(state *state.NetworkState) error {
+func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 	// Check if Saturn 2 is deployed
 	if !state.Saturn2Deployed {
 		t.log.Println("Saturn 2 is not deployed, skipping minipool exit requests check.")
@@ -371,7 +371,7 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 	return nil
 }
 
-func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState, state *state.NetworkState, validator didNotExitValidator) error {
+func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState, state *state.NetworkStateIndex, validator didNotExitValidator) error {
 
 	t.log.Printlnf("[STARTED] Crafting a did-not-exit proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 

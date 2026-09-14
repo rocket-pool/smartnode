@@ -115,7 +115,7 @@ func newCheckMegapoolExitRequests(c *cli.Command, logger log.ColorLogger) (*chec
 }
 
 // Check for megapool validators that did not respond to an exit request
-func (t *checkMegapoolExitRequests) run(state *state.NetworkState) error {
+func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 	// Check if Saturn 2 is deployed
 	if !state.Saturn2Deployed {
 		t.log.Println("Saturn 2 is not deployed, skipping megapool exit requests check.")
@@ -243,7 +243,7 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkState) error {
 }
 
 // Sign and broadcast the voluntary exit for a megapool validator belonging to this node
-func (t *checkMegapoolExitRequests) exitOwnMegapoolValidator(state *state.NetworkState, request network.MegapoolExitRequest, status beacon.ValidatorStatus) error {
+func (t *checkMegapoolExitRequests) exitOwnMegapoolValidator(state *state.NetworkStateIndex, request network.MegapoolExitRequest, status beacon.ValidatorStatus) error {
 
 	// Check the validator status on the megapool
 	validatorInfo, exists := state.GetMegapoolValidatorInfo(request.MegapoolAddress, request.Pubkey)

@@ -67,7 +67,6 @@ type ChallengeParams struct {
 }
 
 // GetChallengeParams fetches the pDAO performance-challenge settings.
-// Before Saturn 2 the contracts do not exist, so challenges are disabled.
 func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
 	saturn2Deployed, err := state.IsSaturn2Deployed(rp, nil)
 	if err != nil {
