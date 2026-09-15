@@ -192,6 +192,48 @@ func TestComposeEnvOverrides(t *testing.T) {
 	if defaults[ECImageTagDefault] == "" || defaults[ECImageTagDefault] == "my/geth:custom" {
 		t.Fatalf("default should stay the catalog pin, got %q", defaults[ECImageTagDefault])
 	}
+	env, err := cfg.ComposeImageEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if env[ECImageTagDefault] != defaults[ECImageTagDefault] {
+		t.Fatalf("merged default %q", env[ECImageTagDefault])
+	}
+	if env[ECImageTagOverride] != "my/geth:custom" {
+		t.Fatalf("merged override %q", env[ECImageTagOverride])
+	}
+}
+
+func TestComposeEnvAssignmentsSorted(t *testing.T) {
+	cfg := mustNewRocketPoolConfig(t, "", false)
+	cfg.Smartnode.Network.Value = config.Network("mainnet")
+	cfg.ExecutionClientMode.Value = config.Mode_Local
+	cfg.ExecutionClient.Value = config.ExecutionClient_Geth
+	cfg.Geth.ContainerTag.Value = "my/geth:custom"
+	cfg.Prometheus.ContainerTag.Value = "my/prom:custom"
+	got, err := cfg.ComposeEnvAssignments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) < 2 {
+		t.Fatalf("expected multiple assignments, got %v", got)
+	}
+	for i := 1; i < len(got); i++ {
+		if got[i-1] >= got[i] {
+			t.Fatalf("assignments not sorted: %v", got)
+		}
+	}
+}
+
+func TestComposeEnvAssignmentsRejectsWhitespace(t *testing.T) {
+	cfg := mustNewRocketPoolConfig(t, "", false)
+	cfg.Smartnode.Network.Value = config.Network("mainnet")
+	cfg.ExecutionClientMode.Value = config.Mode_Local
+	cfg.ExecutionClient.Value = config.ExecutionClient_Geth
+	cfg.Geth.ContainerTag.Value = "my/geth custom"
+	if _, err := cfg.ComposeEnvAssignments(); err == nil {
+		t.Fatal("expected error for whitespace in override value")
+	}
 }
 
 func TestContainerTagsAreSerialized(t *testing.T) {

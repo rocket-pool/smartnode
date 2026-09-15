@@ -379,7 +379,8 @@ func (cfg *RocketPoolConfig) overlayFileName() string {
 	return catalogFileName(info.ID())
 }
 
-// ImagesEnvFiles is the Compose env_file list: mainnet.env, then the network overlay if it exists.
+// ImagesEnvFiles is the on-disk catalog list (mainnet.env, then {network}.env).
+// Compose interpolates runtime/image-tags.env, which is generated from these.
 func (cfg *RocketPoolConfig) ImagesEnvFiles() []string {
 	files := []string{ImagesMainnetFile}
 	if name := cfg.overlayFileName(); name != "" {
@@ -664,6 +665,52 @@ func (cfg *RocketPoolConfig) ComposeEnvOverrides() map[string]string {
 		}
 	}
 	return out
+}
+
+func validateEnvAssignment(key, value string) error {
+	if strings.ContainsAny(key, " \t\n\r") {
+		return fmt.Errorf("image env name %q contains whitespace", key)
+	}
+	if strings.ContainsAny(value, " \t\n\r") {
+		return fmt.Errorf("image env %s value %q contains whitespace", key, value)
+	}
+	return nil
+}
+
+// ComposeImageEnv is the single env map Compose interpolates: service
+// *_DEFAULT pins (mainnet + network overlay) plus *_OVERRIDE when the TUI
+// customized a tag.
+func (cfg *RocketPoolConfig) ComposeImageEnv() (map[string]string, error) {
+	out := cfg.ComposeImageDefaults()
+	for key, value := range cfg.ComposeEnvOverrides() {
+		out[key] = value
+	}
+	for key, value := range out {
+		if err := validateEnvAssignment(key, value); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// ComposeEnvAssignments returns KEY=value strings for TUI image overrides.
+// Keys are sorted so command logs and diffs are reproducible.
+func (cfg *RocketPoolConfig) ComposeEnvAssignments() ([]string, error) {
+	overrides := cfg.ComposeEnvOverrides()
+	keys := make([]string, 0, len(overrides))
+	for key := range overrides {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := make([]string, 0, len(keys))
+	for _, key := range keys {
+		value := overrides[key]
+		if err := validateEnvAssignment(key, value); err != nil {
+			return nil, err
+		}
+		out = append(out, key+"="+value)
+	}
+	return out, nil
 }
 
 func (cfg *RocketPoolConfig) resolveParamImage(param *config.Parameter, key string) string {
