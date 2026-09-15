@@ -28,9 +28,17 @@ type BeaconState interface {
 	ValidatorAndSlotProof(validatorIndex uint64) (validatorProof [][]byte, slotProof [][]byte, err error)
 	HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error)
 	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
+	HistoricalSummaryStateRootProof(slot int) ([][]byte, error)
 	BlockRootProof(slot uint64) ([][]byte, error)
+	StateRootProof(slot uint64) ([][]byte, error)
 	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
+	GetPreviousEpochParticipation() []byte
+	// PreviousEpochParticipationChunkProof proves the previous_epoch_participation
+	// chunk containing validatorIndex's flags up to the state root (no
+	// block-header cap). chunk is the 32-byte merkle leaf; the validator's flags
+	// are at byte validatorIndex % 32 within it
+	PreviousEpochParticipationChunkProof(validatorIndex uint64) (chunk [32]byte, participationProofBytes [][]byte, err error)
 }
 
 type SignedBeaconBlock interface {

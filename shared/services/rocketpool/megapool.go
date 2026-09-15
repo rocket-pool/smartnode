@@ -1,15 +1,109 @@
 package rocketpool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+// VerifyMegapoolValidatorPerformance computes RPIP-73 target-vote performance
+// over [startEpoch, endEpoch] for one or more validators of a megapool. If
+// megapoolAddress is the zero address the daemon resolves the node's own
+// megapool. targets is either the literal "all" or a comma-separated list of
+// validator IDs. This call has no client-side deadline because each epoch
+// requires fetching attestation data that can take a while per epoch on an
+// archival beacon node.
+func (c *Client) VerifyMegapoolValidatorPerformance(megapoolAddress common.Address, targets string, startEpoch, endEpoch uint64) (api.VerifyPerformanceBatchResponse, error) {
+	values := url.Values{
+		"targets":    {targets},
+		"startEpoch": {strconv.FormatUint(startEpoch, 10)},
+		"endEpoch":   {strconv.FormatUint(endEpoch, 10)},
+	}
+	if (megapoolAddress != common.Address{}) {
+		values.Set("megapoolAddress", megapoolAddress.Hex())
+	}
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/megapool/verify-performance", values)
+	if err != nil {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not verify megapool validator performance: %w", err)
+	}
+	var response api.VerifyPerformanceBatchResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not decode verify-performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not verify megapool validator performance: %s", response.Error)
+	}
+	return response, nil
+}
+
+// challengePerformanceValues builds the shared parameters of the
+// can-challenge-performance and challenge-performance calls. participation is
+// serialized as comma-separated decimal strings.
+func challengePerformanceValues(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) url.Values {
+	words := make([]string, len(participation))
+	for i, word := range participation {
+		words[i] = word.String()
+	}
+	values := url.Values{
+		"validatorId":   {strconv.FormatUint(uint64(validatorId), 10)},
+		"startEpoch":    {strconv.FormatUint(startEpoch, 10)},
+		"participation": {strings.Join(words, ",")},
+	}
+	if (megapoolAddress != common.Address{}) {
+		values.Set("megapoolAddress", megapoolAddress.Hex())
+	}
+	return values
+}
+
+// CanChallengeMegapoolPerformance checks whether the node can challenge the
+// target-vote performance of a megapool validator, returning the
+// challenge bond, the node's RPL balance, and the gas estimate. If
+// megapoolAddress is the zero address the daemon resolves the node's own
+// megapool. This call has no client-side deadline because the gas estimate
+// requires downloading a beacon state to build the slot proof.
+func (c *Client) CanChallengeMegapoolPerformance(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) (api.CanChallengeMegapoolPerformanceResponse, error) {
+	values := challengePerformanceValues(megapoolAddress, validatorId, startEpoch, participation)
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/megapool/can-challenge-performance", values)
+	if err != nil {
+		return api.CanChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not get can challenge megapool performance status: %w", err)
+	}
+	var response api.CanChallengeMegapoolPerformanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not decode can challenge megapool performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not get can challenge megapool performance status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// ChallengeMegapoolPerformance submits a target-vote performance challenge
+// against a megapool validator. This call has no client-side
+// deadline because the transaction requires downloading a beacon state to
+// build the slot proof.
+func (c *Client) ChallengeMegapoolPerformance(megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int) (api.ChallengeMegapoolPerformanceResponse, error) {
+	values := challengePerformanceValues(megapoolAddress, validatorId, startEpoch, participation)
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "POST", "/api/megapool/challenge-performance", values)
+	if err != nil {
+		return api.ChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not challenge megapool performance: %w", err)
+	}
+	var response api.ChallengeMegapoolPerformanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not decode challenge megapool performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ChallengeMegapoolPerformanceResponse{}, fmt.Errorf("Could not challenge megapool performance: %s", response.Error)
+	}
+	return response, nil
+}
 
 // Get megapool status
 func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {

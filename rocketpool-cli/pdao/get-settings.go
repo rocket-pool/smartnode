@@ -132,6 +132,26 @@ func getSettings() error {
 	fmt.Printf("\tUpgrade Delay:         %s\n", response.Security.UpgradeDelay)
 	fmt.Println()
 
+	if response.Saturn2Deployed {
+		// Performance
+		fmt.Println("== Performance Settings ==")
+		fmt.Printf("\tPerformance Exits Enabled:   %t\n", response.Performance.ExitsEnabled)
+		fmt.Printf("\tPerformance Period:          %d Epochs\n", response.Performance.Period)
+		fmt.Printf("\tProof Buffer:                %d Epochs\n", response.Performance.ProofBuffer)
+		fmt.Printf("\tPerformance Threshold:       %.2f%%\n", math.WeiToEth(response.Performance.Threshold)*100)
+		fmt.Printf("\tChallenge Period:            %s\n", response.Performance.ChallengePeriod)
+		fmt.Printf("\tChallenge Bond:              %.6f RPL\n", math.WeiToEth(response.Performance.ChallengeBond))
+		fmt.Println()
+
+		// Exit
+		fmt.Println("== Exit Settings (RPIP-80) ==")
+		fmt.Printf("\tCooperative Exit Phase:      %.0f Hours\n", response.Exit.CooperativeExitPhase.Hours())
+		fmt.Printf("\tDid Not Exit Penalty Base:   %.6f ETH\n", math.WeiToEth(response.Exit.DidNotExitPenaltyBase))
+		fmt.Printf("\tDid Not Exit Base:           %s\n", response.Exit.DidNotExitBase)
+		fmt.Printf("\tDid Not Exit Backoff:        %.2fx\n", math.WeiToEth(response.Exit.DidNotExitBackoff))
+		fmt.Println()
+	}
+
 	// Megapool
 	fmt.Println("== Megapool Settings ==")
 	fmt.Printf("\tTime Before Dissolve:                   %s\n", response.Megapool.TimeBeforeDissolve)
@@ -142,6 +162,9 @@ func getSettings() error {
 	fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
 	fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
 	fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", math.WeiToEth(response.Megapool.PenaltyThreshold)*100)
+	if response.Saturn2Deployed {
+		fmt.Printf("\tPrestake Challenge Period:              %.0f Hours\n", response.Megapool.PrestakeChallengePeriod.Hours())
+	}
 
 	return nil
 }

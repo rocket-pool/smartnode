@@ -17,6 +17,14 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
+type ParticipationProof struct {
+	ParticipationSlot uint64
+	ValidatorIndex    *big.Int
+	// ParticipationFlagsChunk is the 32-byte merkle chunk of previous_epoch_participation
+	ParticipationFlagsChunk [32]byte
+	Witnesses               [][32]byte
+}
+
 type SlotProof struct {
 	Slot      uint64     `json:"slot"`
 	Witnesses [][32]byte `json:"witnesses"`

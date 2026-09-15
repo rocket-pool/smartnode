@@ -1,11 +1,14 @@
 package rocketpool
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"net/url"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -168,6 +171,30 @@ func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic st
 // Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
 func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
 	return c.callAPI[api.GetMinipoolRescueDissolvedDetailsForNodeResponse]("GET", "/api/minipool/get-rescue-dissolved-details-for-node", nil, "Could not get get-minipool-rescue-dissolved-details-for-node status")
+}
+
+// VerifyMinipoolPerformance computes RPIP-73 target-vote performance over
+// [startEpoch, endEpoch] for one or more of the node's minipools. targets is
+// either the literal "all" or a comma-separated list of minipool addresses.
+// This call has no client-side deadline because each epoch requires fetching
+// attestation data that can take a while per epoch on an archival beacon node.
+func (c *Client) VerifyMinipoolPerformance(targets string, startEpoch, endEpoch uint64) (api.VerifyPerformanceBatchResponse, error) {
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/minipool/verify-performance", url.Values{
+		"targets":    {targets},
+		"startEpoch": {strconv.FormatUint(startEpoch, 10)},
+		"endEpoch":   {strconv.FormatUint(endEpoch, 10)},
+	})
+	if err != nil {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not verify minipool performance: %w", err)
+	}
+	var response api.VerifyPerformanceBatchResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not decode verify-performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.VerifyPerformanceBatchResponse{}, fmt.Errorf("Could not verify minipool performance: %s", response.Error)
+	}
+	return response, nil
 }
 
 // Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract

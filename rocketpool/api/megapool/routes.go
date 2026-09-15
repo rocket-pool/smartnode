@@ -5,6 +5,9 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
@@ -48,6 +51,9 @@ func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/megapool/get-effective-delegate", getEffectiveDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/latest-block-withdrawals", latestBlockWithdrawalsHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/beacon-withdrawal-queue-estimate", beaconWithdrawalQueueEstimateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/verify-performance", verifyPerformanceHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-challenge-performance", canChallengePerformanceHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/challenge-performance", challengePerformanceHandler).RegisterTo(router)
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {
@@ -80,6 +86,58 @@ func parseBool(r *http.Request, name string) (bool, error) {
 		return false, &response.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
 	}
 	return v, nil
+}
+
+// parseChallengePerformanceParams parses the shared parameters of the
+// can-challenge-performance and challenge-performance routes. megapoolAddress
+// is optional (the zero address means "use the node's own megapool").
+func parseChallengePerformanceParams(r *http.Request) (common.Address, uint32, uint64, []*big.Int, error) {
+	var megapoolAddr common.Address
+	if raw := r.URL.Query().Get("megapoolAddress"); raw != "" {
+		megapoolAddr = common.HexToAddress(raw)
+	} else if raw := r.FormValue("megapoolAddress"); raw != "" {
+		megapoolAddr = common.HexToAddress(raw)
+	}
+	validatorId, err := parseUint32(r, "validatorId")
+	if err != nil {
+		return common.Address{}, 0, 0, nil, err
+	}
+	startEpoch, err := parseUint64(r, "startEpoch")
+	if err != nil {
+		return common.Address{}, 0, 0, nil, err
+	}
+	participation, err := parseBigIntList(r, "participation")
+	if err != nil {
+		return common.Address{}, 0, 0, nil, err
+	}
+	return megapoolAddr, validatorId, startEpoch, participation, nil
+}
+
+func parseBigIntList(r *http.Request, name string) ([]*big.Int, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	if raw == "" {
+		return nil, &response.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+	}
+	parts := strings.Split(raw, ",")
+	values := make([]*big.Int, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		v, ok := new(big.Int).SetString(part, 10)
+		if !ok {
+			return nil, &response.BadRequestError{Err: fmt.Errorf("invalid %s entry: %s", name, part)}
+		}
+		values = append(values, v)
+	}
+	if len(values) == 0 {
+		return nil, &response.BadRequestError{Err: fmt.Errorf("no valid entries in parameter '%s'", name)}
+	}
+	return values, nil
 }
 
 func parseBigInt(r *http.Request, name string) (*big.Int, error) {

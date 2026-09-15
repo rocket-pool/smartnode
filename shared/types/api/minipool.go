@@ -301,3 +301,51 @@ type GetBondReductionEnabledResponse struct {
 	APIResponse
 	BondReductionEnabled bool `json:"bondReductionEnabled"`
 }
+
+// VerifyPerformanceResponse reports the result of an RPIP-73 target-vote
+// performance check for a single validator over a range of epochs.
+type VerifyPerformanceResponse struct {
+	Status                  string                `json:"status"`
+	Error                   string                `json:"error"`
+	ValidatorPubkey         types.ValidatorPubkey `json:"validatorPubkey"`
+	ValidatorIndex          uint64                `json:"validatorIndex"`
+	StartEpoch              uint64                `json:"startEpoch"`
+	EndEpoch                uint64                `json:"endEpoch"`
+	TotalEpochs             uint64                `json:"totalEpochs"`
+	TimelyEpochs            uint64                `json:"timelyEpochs"`
+	MissedEpochs            uint64                `json:"missedEpochs"`
+	InactiveEpochs          uint64                `json:"inactiveEpochs"`
+	PerformancePct          float64               `json:"performancePct"`
+	PerformanceThresholdPct float64               `json:"performanceThresholdPct"`
+	PassesThreshold         bool                  `json:"passesThreshold"`
+	MissedEpochList         []uint64              `json:"missedEpochList"`
+	TimelyEpochList         []uint64              `json:"timelyEpochList"`
+	// Participation is the challengeMegapool participation calldata (uint256[]):
+	// the epochs [StartEpoch, EndEpoch] as a bitset, 1 = not-timely target vote.
+	Participation []*big.Int `json:"participation"`
+	// Challengeable reports whether this check could back an on-chain challenge:
+	// performance exits are enabled, the range is exactly one performance period,
+	// it is recent enough to be within the proof buffer, and the validator's
+	// missed share of the period exceeds 100% - performance_threshold.
+	Challengeable bool `json:"challengeable"`
+}
+
+// VerifyPerformanceResult is one validator's entry in a batch verify-performance
+// response. Either MinipoolAddress (for minipools) or ValidatorId (for megapool
+// validators) identifies the target. Performance holds the result when the
+// check succeeded; Error is populated instead when that single target failed so
+// one bad target does not abort the rest of the batch.
+type VerifyPerformanceResult struct {
+	MinipoolAddress common.Address             `json:"minipoolAddress"`
+	ValidatorId     uint32                     `json:"validatorId"`
+	Performance     *VerifyPerformanceResponse `json:"performance"`
+	Error           string                     `json:"error"`
+}
+
+// VerifyPerformanceBatchResponse reports RPIP-73 target-vote performance for one
+// or more validators verified in a single run.
+type VerifyPerformanceBatchResponse struct {
+	Status  string                    `json:"status"`
+	Error   string                    `json:"error"`
+	Results []VerifyPerformanceResult `json:"results"`
+}

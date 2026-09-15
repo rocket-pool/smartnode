@@ -3,6 +3,7 @@ package megapool
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
@@ -430,6 +431,61 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						return err
 					}
 					return delegateUpgradeMegapool(c.Bool("yes"))
+				},
+			},
+			{
+				Name:        "verify-performance",
+				Aliases:     []string{"vp"},
+				Usage:       "Verify the RPIP-73 target-vote attestation performance of one or more megapool validators over a range of epochs.",
+				UsageText:   "rocketpool megapool verify-performance validator-ids [options]",
+				Description: "validator-ids is either a single validator id, a comma-separated list of validator ids, or 'all' to check every validator on the megapool.",
+				Flags: []cli.Flag{
+					&cli.Uint64Flag{
+						Name:    "start-epoch",
+						Aliases: []string{"s"},
+						Usage:   "The first epoch in the inclusive performance period.",
+					},
+					&cli.Uint64Flag{
+						Name:    "epochs",
+						Aliases: []string{"e"},
+						Usage:   "Number of epochs to inspect starting at --start-epoch. Defaults to the pDAO performance_period setting.",
+					},
+					&cli.StringFlag{
+						Name:    "megapool",
+						Aliases: []string{"M"},
+						Usage:   "The megapool address to inspect. Defaults to the current node's megapool when omitted.",
+					},
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Skip the warning prompt when --epochs is large.",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					targets := c.Args().Get(0)
+					if err := validateMegapoolTargets(targets); err != nil {
+						return err
+					}
+
+					var megapoolAddr common.Address
+					if c.IsSet("megapool") {
+						var err error
+						megapoolAddr, err = cliutils.ValidateAddress("megapool", c.String("megapool"))
+						if err != nil {
+							return err
+						}
+					}
+
+					return verifyMegapoolPerformance(
+						megapoolAddr,
+						targets,
+						c.Uint64("start-epoch"),
+						c.Uint64("epochs"),
+						c.Bool("yes"),
+					)
 				},
 			},
 			{

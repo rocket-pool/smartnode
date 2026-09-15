@@ -80,6 +80,16 @@ func submitBatch(file string, message string, yes bool) error {
 	}
 	defer rp.Close()
 
+	for _, setting := range settings {
+		if cliutils.IsSaturn2OnlySetting(setting.Contract, setting.Setting) {
+			ok, err := cliutils.RequireSaturn2(rp)
+			if err != nil || !ok {
+				return err
+			}
+			break
+		}
+	}
+
 	canPropose, err := rp.PDAOCanProposeSettingMulti(settings, message)
 	if err != nil {
 		return err

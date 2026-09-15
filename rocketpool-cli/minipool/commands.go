@@ -327,6 +327,46 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:        "verify-performance",
+				Aliases:     []string{"vp"},
+				Usage:       "Verify the RPIP-73 target-vote attestation performance of one or more minipools over a range of epochs.",
+				UsageText:   "rocketpool minipool verify-performance minipools [options]",
+				Description: "minipools is either a single minipool address, a comma-separated list of minipool addresses, or 'all' to check every minipool owned by the node.",
+				Flags: []cli.Flag{
+					&cli.Uint64Flag{
+						Name:    "start-epoch",
+						Aliases: []string{"s"},
+						Usage:   "The first epoch in the inclusive performance period.",
+					},
+					&cli.Uint64Flag{
+						Name:    "epochs",
+						Aliases: []string{"e"},
+						Usage:   "Number of epochs to inspect starting at --start-epoch. Defaults to the pDAO performance_period setting.",
+					},
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Skip the warning prompt when --epochs is large.",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					targets := c.Args().Get(0)
+					if err := validateMinipoolTargets(targets); err != nil {
+						return err
+					}
+					return verifyMinipoolPerformance(
+						targets,
+						c.Uint64("start-epoch"),
+						c.Uint64("epochs"),
+						c.Bool("yes"),
+					)
+				},
+			},
+
+			{
 				Name:      "rescue-dissolved",
 				Aliases:   []string{"rd"},
 				Usage:     "Manually deposit ETH into the Beacon deposit contract for a dissolved minipool, activating it on the Beacon Chain so it can be exited.",

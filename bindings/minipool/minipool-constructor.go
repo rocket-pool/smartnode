@@ -33,6 +33,8 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 		return newMinipool_v2(rp, address)
 	case 3:
 		return newMinipool_v3(rp, address, opts)
+	case 4:
+		return newMinipool_v4(rp, address, opts)
 	default:
 		return nil, fmt.Errorf("unexpected minipool contract version [%d]", version)
 	}
@@ -45,6 +47,8 @@ func NewMinipoolFromVersion(rp *rocketpool.RocketPool, address common.Address, v
 		return newMinipool_v2(rp, address)
 	case 3:
 		return newMinipool_v3(rp, address, opts)
+	case 4:
+		return newMinipool_v4(rp, address, opts)
 	default:
 		return nil, fmt.Errorf("unexpected minipool contract version [%d]", version)
 	}

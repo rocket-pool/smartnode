@@ -749,6 +749,21 @@ type NotifyValidatorExitResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanChallengeMegapoolPerformanceResponse struct {
+	Status                 string          `json:"status"`
+	Error                  string          `json:"error"`
+	CanChallenge           bool            `json:"canChallenge"`
+	InsufficientRplBalance bool            `json:"insufficientRplBalance"`
+	ChallengeBond          *big.Int        `json:"challengeBond"`
+	RplBalance             *big.Int        `json:"rplBalance"`
+	GasLimits              gaslimit.Limits `json:"gasLimits"`
+}
+type ChallengeMegapoolPerformanceResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanNotifyFinalBalanceResponse struct {
 	APIResponse
 	CanExit       bool            `json:"canExit"`

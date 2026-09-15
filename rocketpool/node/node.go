@@ -39,24 +39,27 @@ var (
 const (
 	MaxConcurrentEth1Requests = 200
 
-	DownloadRewardsTreesColor      = color.FgGreen
-	MetricsColor                   = color.FgHiYellow
-	ManageFeeRecipientColor        = color.FgHiCyan
-	DefendPdaoPropsColor           = color.FgYellow
-	VerifyPdaoPropsColor           = color.FgYellow
-	DistributeMinipoolsColor       = color.FgHiGreen
-	ErrorColor                     = color.FgRed
-	WarningColor                   = color.FgYellow
-	ObserveWarningColor            = color.FgHiRed
-	UpdateColor                    = color.FgHiWhite
-	PrestakeMegapoolValidatorColor = color.FgHiGreen
-	StakeMegapoolValidatorColor    = color.FgHiBlue
-	NotifyValidatorExitColor       = color.FgHiYellow
-	NotifyFinalBalanceColor        = color.FgHiMagenta
-	DefendChallengeExitColor       = color.FgHiGreen
-	ProvisionExpressTickets        = color.FgMagenta
-	SetUseLatestDelegateColor      = color.FgBlue
-	CheckPortConnectivityColor     = color.FgHiYellow
+	DownloadRewardsTreesColor       = color.FgGreen
+	MetricsColor                    = color.FgHiYellow
+	ManageFeeRecipientColor         = color.FgHiCyan
+	DefendPdaoPropsColor            = color.FgYellow
+	VerifyPdaoPropsColor            = color.FgYellow
+	DistributeMinipoolsColor        = color.FgHiGreen
+	ErrorColor                      = color.FgRed
+	WarningColor                    = color.FgYellow
+	ObserveWarningColor             = color.FgHiRed
+	UpdateColor                     = color.FgHiWhite
+	PrestakeMegapoolValidatorColor  = color.FgHiGreen
+	StakeMegapoolValidatorColor     = color.FgHiBlue
+	NotifyValidatorExitColor        = color.FgHiYellow
+	NotifyFinalBalanceColor         = color.FgHiMagenta
+	CheckMinipoolExitRequestsColor  = color.FgHiCyan
+	CheckMegapoolExitRequestsColor  = color.FgCyan
+	DefendChallengeExitColor        = color.FgHiGreen
+	DefendChallengePerformanceColor = color.FgHiBlue
+	ProvisionExpressTickets         = color.FgMagenta
+	SetUseLatestDelegateColor       = color.FgBlue
+	CheckPortConnectivityColor      = color.FgHiYellow
 )
 
 // Register node command
@@ -205,6 +208,12 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+
+	defendChallengePerformance, err := newDefendChallengePerformance(c, log.NewColorLogger(DefendChallengePerformanceColor))
+	if err != nil {
+		return err
+	}
+
 	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
 	if err != nil {
 		return err
@@ -222,6 +231,14 @@ func run(c *cli.Command) error {
 		return err
 	}
 	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyFinalBalanceColor))
+	if err != nil {
+		return err
+	}
+	checkMinipoolExitRequests, err := newCheckMinipoolExitRequests(c, log.NewColorLogger(CheckMinipoolExitRequestsColor))
+	if err != nil {
+		return err
+	}
+	checkMegapoolExitRequests, err := newCheckMegapoolExitRequests(c, log.NewColorLogger(CheckMegapoolExitRequestsColor))
 	if err != nil {
 		return err
 	}
@@ -366,6 +383,11 @@ func run(c *cli.Command) error {
 				errorLog.Println(err)
 			}
 
+			// Run the defend challenge performance task
+			if err := defendChallengePerformance.run(state); err != nil {
+				errorLog.Println(err)
+			}
+
 			// Run the rewards download check
 			if err := downloadRewardsTrees.run(state); err != nil {
 				errorLog.Println(err)
@@ -420,6 +442,22 @@ func run(c *cli.Command) error {
 
 			// Run the megapool notify final balance check
 			if err := notifyFinalBalance.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
+
+			// Run the minipool exit request check
+			if err := checkMinipoolExitRequests.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
+
+			// Run the megapool exit request check
+			if err := checkMegapoolExitRequests.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			if !sleepWithContext(ctx, taskCooldown) {

@@ -82,6 +82,11 @@ func proposeSettingNodeComissionShareSecurityCouncilAdder(value *big.Int, yes bo
 	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue, yes)
 }
 
+func proposeSettingPerformanceExitsEnabled(value bool, yes bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes)
+}
+
 // Master general proposal function
 func proposeSetting(contract string, setting string, value string, yes bool) error {
 	// Get RP client
@@ -90,6 +95,13 @@ func proposeSetting(contract string, setting string, value string, yes bool) err
 		return err
 	}
 	defer rp.Close()
+
+	if cliutils.IsSaturn2OnlySetting(contract, setting) {
+		ok, err := cliutils.RequireSaturn2(rp)
+		if err != nil || !ok {
+			return err
+		}
+	}
 
 	// Check if proposal can be made
 	canPropose, err := rp.SecurityCanProposeSetting(contract, setting, value)

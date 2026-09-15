@@ -18,7 +18,10 @@ const (
 	percentUsage          string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
 	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
 	uintUsage             string = "specify an integer (e.g., '50')"
+	floatMultiplierUsage  string = "specify a multiplier (e.g., '1.5')"
 	epochCountUsage       string = "specify a number, in epochs (eg., '100')"
+	hourCountUsage        string = "specify a number, in hours (e.g., '72')"
+	dayCountUsage         string = "specify a number, in days (e.g., '28')"
 	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
 	addressListUsage      string = "specify a list of one or more addresses separated by commas (e.g., '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')"
 )
@@ -3306,6 +3309,401 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 											// Run
 											return proposeSettingPenaltyThreshold(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "prestake-challenge-period",
+										Aliases:   []string{"pcp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolPrestakeChallengePeriodPath, hourCountUsage),
+										UsageText: "rocketpool pdao propose setting megapool prestake-challenge-period value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolPrestakeChallengePeriod(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "performance",
+								Aliases: []string{"perf"},
+								Usage:   "Performance exit settings (RPIP-73)",
+								Commands: []*cli.Command{
+
+									{
+										Name:      "exits-enabled",
+										Aliases:   []string{"ee"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceExitsEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting performance exits-enabled value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformanceExitsEnabled(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "period",
+										Aliases:   []string{"p"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformancePeriodSettingPath, epochCountUsage),
+										UsageText: "rocketpool pdao propose setting performance period value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformancePeriod(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "proof-buffer",
+										Aliases:   []string{"pb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ProofBufferSettingPath, epochCountUsage),
+										UsageText: "rocketpool pdao propose setting performance proof-buffer value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProofBuffer(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "threshold",
+										Aliases:   []string{"t"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceThresholdSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting performance threshold value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformanceThreshold(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "challenge-period",
+										Aliases:   []string{"cp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceChallengePeriodSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting performance challenge-period value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformanceChallengePeriod(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "challenge-bond",
+										Aliases:   []string{"cb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceChallengeBondSettingPath, floatRplUsage),
+										UsageText: "rocketpool pdao propose setting performance challenge-bond value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformanceChallengeBond(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "exit",
+								Aliases: []string{"x"},
+								Usage:   "Exit request settings (RPIP-80)",
+								Commands: []*cli.Command{
+
+									{
+										Name:      "cooperative-exit-phase",
+										Aliases:   []string{"cep"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.CooperativeExitPhaseSettingPath, hourCountUsage),
+										UsageText: "rocketpool pdao propose setting exit cooperative-exit-phase value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingCooperativeExitPhase(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "did-not-exit-penalty-base",
+										Aliases:   []string{"dnepb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DidNotExitPenaltyBaseSettingPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting exit did-not-exit-penalty-base value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingDidNotExitPenaltyBase(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "did-not-exit-base",
+										Aliases:   []string{"dneb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DidNotExitBaseSettingPath, dayCountUsage),
+										UsageText: "rocketpool pdao propose setting exit did-not-exit-base value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingDidNotExitBase(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "did-not-exit-backoff",
+										Aliases:   []string{"dnebo"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DidNotExitBackoffSettingPath, floatMultiplierUsage),
+										UsageText: "rocketpool pdao propose setting exit did-not-exit-backoff value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingDidNotExitBackoff(value, c.Bool("yes"), c.String("to-json"))
 
 										},
 									},
