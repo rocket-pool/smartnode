@@ -40,9 +40,9 @@ func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Exporter Container Tag",
-			Description:        "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageDefault(ImageExporter)},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageMainnet(ImageExporter)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Exporter},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

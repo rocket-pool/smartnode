@@ -175,9 +175,9 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the MEV-Boost container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the MEV-Boost container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageMevBoostProd), cfg.imageDefault(ImageMevBoostTest)),
+			Default:            cfg.imageTagDefaults(ImageMevBoost),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

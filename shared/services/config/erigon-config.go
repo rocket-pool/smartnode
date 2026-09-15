@@ -81,9 +81,9 @@ func NewErigonConfig(cfg *RocketPoolConfig) *ErigonConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Erigon container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Erigon container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageErigonProd), cfg.imageDefault(ImageErigonTest)),
+			Default:            cfg.imageTagDefaults(ImageErigon),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

@@ -54,9 +54,9 @@ func NewGrafanaConfig(cfg *RocketPoolConfig) *GrafanaConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Grafana Container Tag",
-			Description:        "The tag name of the Grafana container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Grafana container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageDefault(ImageGrafana)},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageMainnet(ImageGrafana)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Grafana},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

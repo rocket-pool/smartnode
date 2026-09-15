@@ -96,9 +96,9 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Teku container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Teku container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageTekuProd), cfg.imageDefault(ImageTekuTest)),
+			Default:            cfg.imageTagDefaults(ImageTeku),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

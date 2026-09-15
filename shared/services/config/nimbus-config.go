@@ -73,9 +73,9 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		BnContainerTag: config.Parameter{
 			ID:                 "bnContainerTag",
 			Name:               "Beacon Node Container Tag",
-			Description:        "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageNimbusBnProd), cfg.imageDefault(ImageNimbusBnTest)),
+			Default:            cfg.imageTagDefaults(ImageNimbusBn),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
@@ -84,9 +84,9 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		VcContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Validator Client Container Tag",
-			Description:        "The tag name of the Nimbus Validator Client container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Nimbus Validator Client container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageNimbusVcProd), cfg.imageDefault(ImageNimbusVcTest)),
+			Default:            cfg.imageTagDefaults(ImageNimbusVc),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

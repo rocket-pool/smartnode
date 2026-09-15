@@ -67,8 +67,9 @@ type RocketPoolConfig struct {
 	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
 	IsCLI bool `yaml:"-"`
 
-	networks *NetworksConfig `yaml:"-"`
-	images   *ImageCatalog   `yaml:"-"`
+	networks        *NetworksConfig                  `yaml:"-"`
+	imagesMainnet   *ImageCatalog                    `yaml:"-"`
+	imagesByNetwork map[config.Network]*ImageCatalog `yaml:"-"`
 
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
@@ -265,10 +266,6 @@ func (cfg *RocketPoolConfig) Save(directory, filename string) error {
 		return err
 	}
 
-	if err := cfg.SaveImagesEnv(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -278,14 +275,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) (*RocketPoolConfig, er
 	if err != nil {
 		return nil, fmt.Errorf("could not load networks: %w", err)
 	}
-	images, err := LoadImages(rpDir)
+	mainnet, overlays, err := LoadImageCatalogs(rpDir, networks)
 	if err != nil {
 		return nil, fmt.Errorf("could not load images: %w", err)
 	}
-	return newRocketPoolConfig(rpDir, isNativeMode, networks, images)
+	return newRocketPoolConfig(rpDir, isNativeMode, networks, mainnet, overlays)
 }
 
-func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig, images *ImageCatalog) (*RocketPoolConfig, error) {
+func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig, mainnet *ImageCatalog, overlays map[config.Network]*ImageCatalog) (*RocketPoolConfig, error) {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
@@ -302,7 +299,8 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 		RocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
 		networks:            networks,
-		images:              images,
+		imagesMainnet:       mainnet,
+		imagesByNetwork:     overlays,
 
 		ExecutionClientMode: config.Parameter{
 			ID:                 "executionClientMode",
@@ -624,9 +622,8 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 	cfg.MevBoost = NewMevBoostConfig(cfg)
 	cfg.CommitBoost = NewCommitBoostConfig(cfg)
 	// Addons
-	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter(images.Must(ImageGWW))
+	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter(mainnet.Must(ImageGWW))
 	cfg.RescueNode = addons.NewRescueNode()
-	cfg.skipPersistingImageTags()
 
 	// Apply the default values for the default network from YAML
 	cfg.Smartnode.Network.Value = cfg.networks.DefaultNetwork()
@@ -660,7 +657,7 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig, err := newRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks, cfg.images)
+	newConfig, err := newRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks, cfg.imagesMainnet, cfg.imagesByNetwork)
 	if err != nil {
 		panic(err)
 	}
@@ -1373,15 +1370,15 @@ func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
 
 	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
 	case config.ExecutionClient_Geth:
-		return cfg.resolveParamImage(&cfg.Geth.ContainerTag, ImageGethProd, ImageGethTest), nil
+		return cfg.resolveParamImage(&cfg.Geth.ContainerTag, ImageGeth), nil
 	case config.ExecutionClient_Nethermind:
-		return cfg.resolveParamImage(&cfg.Nethermind.ContainerTag, ImageNethermindProd, ImageNethermindTest), nil
+		return cfg.resolveParamImage(&cfg.Nethermind.ContainerTag, ImageNethermind), nil
 	case config.ExecutionClient_Besu:
-		return cfg.resolveParamImage(&cfg.Besu.ContainerTag, ImageBesuProd, ImageBesuTest), nil
+		return cfg.resolveParamImage(&cfg.Besu.ContainerTag, ImageBesu), nil
 	case config.ExecutionClient_Reth:
-		return cfg.resolveParamImage(&cfg.Reth.ContainerTag, ImageRethProd, ImageRethTest), nil
+		return cfg.resolveParamImage(&cfg.Reth.ContainerTag, ImageReth), nil
 	case config.ExecutionClient_Erigon:
-		return cfg.resolveParamImage(&cfg.Erigon.ContainerTag, ImageErigonProd, ImageErigonTest), nil
+		return cfg.resolveParamImage(&cfg.Erigon.ContainerTag, ImageErigon), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))

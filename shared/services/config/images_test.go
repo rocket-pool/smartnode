@@ -12,7 +12,7 @@ import (
 func TestParseEnvFile(t *testing.T) {
 	data := []byte(`
 # comment
-RP_IMAGE_GETH_PROD=ethereum/client-go:v1.17.5@sha256:abc
+RP_IMAGE_GETH=ethereum/client-go:v1.17.5@sha256:abc
 
 RP_IMAGE_CURL="curlimages/curl:8.13.0"
 RP_IMAGE_ALPINE='alpine:3.21.3'
@@ -21,8 +21,8 @@ RP_IMAGE_ALPINE='alpine:3.21.3'
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got["RP_IMAGE_GETH_PROD"] != "ethereum/client-go:v1.17.5@sha256:abc" {
-		t.Fatalf("geth: %q", got["RP_IMAGE_GETH_PROD"])
+	if got["RP_IMAGE_GETH"] != "ethereum/client-go:v1.17.5@sha256:abc" {
+		t.Fatalf("geth: %q", got["RP_IMAGE_GETH"])
 	}
 	if got["RP_IMAGE_CURL"] != "curlimages/curl:8.13.0" {
 		t.Fatalf("curl: %q", got["RP_IMAGE_CURL"])
@@ -38,46 +38,76 @@ func TestParseEnvFileRejectsBadLine(t *testing.T) {
 	}
 }
 
-func TestLoadImagesEmbedded(t *testing.T) {
-	catalog, err := LoadImages("")
+func TestLoadImageCatalogsEmbedded(t *testing.T) {
+	mainnet, overlays, err := LoadImageCatalogs("", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if catalog.Must(ImageGethProd) == "" {
-		t.Fatal("empty geth prod")
+	if !strings.Contains(mainnet.Must(ImageGeth), "ethereum/client-go:") {
+		t.Fatalf("unexpected geth image %s", mainnet.Must(ImageGeth))
 	}
-	if !strings.Contains(catalog.Must(ImageGethProd), "ethereum/client-go:") {
-		t.Fatalf("unexpected geth image %s", catalog.Must(ImageGethProd))
+	if len(overlays) != 0 {
+		t.Fatalf("expected no overlays without networks, got %v", overlays)
 	}
 }
 
-func TestLoadImagesPrefersDisk(t *testing.T) {
+func TestLoadImageCatalogsPrefersDisk(t *testing.T) {
 	dir := t.TempDir()
-	embedded, err := LoadImages("")
+	mainnet, _, err := LoadImageCatalogs("", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	values := embedded.Map()
-	values[ImageGethProd] = "example.com/geth:custom"
-	if err := WriteEnvFile(filepath.Join(dir, ImagesEnvFile), values); err != nil {
+	values := mainnet.Map()
+	values[ImageGeth] = "example.com/geth:custom"
+	if err := WriteEnvFile(filepath.Join(dir, ImagesMainnetFile), values); err != nil {
 		t.Fatal(err)
 	}
-	catalog, err := LoadImages(dir)
+	loaded, _, err := LoadImageCatalogs(dir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if catalog.Must(ImageGethProd) != "example.com/geth:custom" {
-		t.Fatalf("got %s", catalog.Must(ImageGethProd))
+	if loaded.Must(ImageGeth) != "example.com/geth:custom" {
+		t.Fatalf("got %s", loaded.Must(ImageGeth))
+	}
+}
+
+func TestNetworkOverlayOverridesMainnet(t *testing.T) {
+	dir := t.TempDir()
+	mainnet, _, err := LoadImageCatalogs("", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteEnvFile(filepath.Join(dir, ImagesMainnetFile), mainnet.Map()); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ImagesTestnetFile), []byte("RP_IMAGE_GETH=example.com/geth:testnet\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	networks, err := LoadNetworks("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := mustNewRocketPoolConfig(t, dir, false)
+	cfg.networks = networks
+	cfg.Smartnode.Network.Value = config.Network("testnet")
+	if got := cfg.imageForNetwork(ImageGeth, config.Network("testnet")); got != "example.com/geth:testnet" {
+		t.Fatalf("testnet geth %s", got)
+	}
+	if got := cfg.imageForNetwork(ImageLighthouse, config.Network("testnet")); got != mainnet.Must(ImageLighthouse) {
+		t.Fatalf("testnet lighthouse should inherit mainnet, got %s", got)
+	}
+	if got := cfg.imageForNetwork(ImageGeth, config.Network("mainnet")); got != mainnet.Must(ImageGeth) {
+		t.Fatalf("mainnet geth should be unchanged, got %s", got)
 	}
 }
 
 func TestUpdateEnvFilePreservesComments(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ImagesEnvFile)
-	if err := os.WriteFile(path, []byte("# comment\nRP_IMAGE_GETH_PROD=old/geth:1\nRP_IMAGE_CURL=keep/curl:1\n"), 0644); err != nil {
+	path := filepath.Join(dir, ImagesMainnetFile)
+	if err := os.WriteFile(path, []byte("# comment\nRP_IMAGE_GETH=old/geth:1\nRP_IMAGE_CURL=keep/curl:1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateEnvFile(path, map[string]string{ImageGethProd: "my/geth:custom"}); err != nil {
+	if err := UpdateEnvFile(path, map[string]string{ImageGeth: "my/geth:custom"}); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(path)
@@ -92,8 +122,8 @@ func TestUpdateEnvFilePreservesComments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if parsed[ImageGethProd] != "my/geth:custom" {
-		t.Fatalf("geth %q", parsed[ImageGethProd])
+	if parsed[ImageGeth] != "my/geth:custom" {
+		t.Fatalf("geth %q", parsed[ImageGeth])
 	}
 	if parsed[ImageCurl] != "keep/curl:1" {
 		t.Fatalf("curl %q", parsed[ImageCurl])
@@ -112,15 +142,22 @@ func TestClientImageEnvRefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ref != EnvRef(ImageGethProd) {
+	if ref != ImageTagRef(ECImageTagOverride, ECImageTagDefault) {
 		t.Fatalf("ec ref %s", ref)
 	}
 	bn, err := cfg.GetBeaconImageEnvRef()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bn != EnvRef(ImageLighthouseProd) {
+	if bn != ImageTagRef(BNImageTagOverride, BNImageTagDefault) {
 		t.Fatalf("bn ref %s", bn)
+	}
+	vc, err := cfg.GetVCImageEnvRef()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vc != ImageTagRef(VCImageTagOverride, VCImageTagDefault) {
+		t.Fatalf("vc ref %s", vc)
 	}
 
 	cfg.ChangeNetwork(config.Network("testnet"))
@@ -128,78 +165,40 @@ func TestClientImageEnvRefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ref != EnvRef(ImageGethTest) {
+	if ref != ImageTagRef(ECImageTagOverride, ECImageTagDefault) {
 		t.Fatalf("ec test ref %s", ref)
 	}
+	files := cfg.ImagesEnvFiles()
+	if len(files) < 1 || files[0] != ImagesMainnetFile {
+		t.Fatalf("expected mainnet.env first, got %v", files)
+	}
 }
 
-func TestComposeTemplatesUseEnvRefs(t *testing.T) {
+func TestComposeEnvOverrides(t *testing.T) {
 	cfg := mustNewRocketPoolConfig(t, "", false)
-	cfg.ExecutionClientMode.Value = config.Mode_Local
-	cfg.ExecutionClient.Value = config.ExecutionClient_Geth
-	cfg.ConsensusClientMode.Value = config.Mode_Local
-	cfg.ConsensusClient.Value = config.ConsensusClient_Lighthouse
 	cfg.Smartnode.Network.Value = config.Network("mainnet")
-
-	ec, err := cfg.GetECImageEnvRef()
-	if err != nil {
+	if err := cfg.Geth.ContainerTag.SetToDefault(config.Network("mainnet")); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(ec, "${RP_IMAGE_") || !strings.HasSuffix(ec, "}") {
-		t.Fatalf("ec ref should be compose interpolation, got %s", ec)
+	if len(cfg.ComposeEnvOverrides()) != 0 {
+		t.Fatalf("expected no overrides, got %v", cfg.ComposeEnvOverrides())
 	}
-	bn, err := cfg.GetBeaconImageEnvRef()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.HasPrefix(bn, "${RP_IMAGE_") {
-		t.Fatalf("bn ref %s", bn)
-	}
-}
-
-func TestSaveImagesEnvWritesTuiOverrides(t *testing.T) {
-	dir := t.TempDir()
-	embedded, err := LoadImages("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(dir, ImagesEnvFile)
-	if err := WriteEnvFile(path, embedded.Map()); err != nil {
-		t.Fatal(err)
-	}
-	cfg := mustNewRocketPoolConfig(t, dir, false)
-	cfg.Smartnode.Network.Value = config.Network("mainnet")
 	cfg.Geth.ContainerTag.Value = "my/geth:custom"
-	if err := cfg.SaveImagesEnv(); err != nil {
-		t.Fatal(err)
+	overrides := cfg.ComposeEnvOverrides()
+	if overrides[ECImageTagOverride] != "my/geth:custom" {
+		t.Fatalf("got %v", overrides)
 	}
-	parsed, err := LoadEnvFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if parsed[ImageGethProd] != "my/geth:custom" {
-		t.Fatalf("images.env geth %q", parsed[ImageGethProd])
-	}
-	if cfg.ResolvedImage(ImageGethProd) != "my/geth:custom" {
-		t.Fatalf("catalog geth %q", cfg.ResolvedImage(ImageGethProd))
-	}
-
-	// Reloading picks the TUI value from images.env, not user-settings.yml.
-	reloaded := mustNewRocketPoolConfig(t, dir, false)
-	reloaded.Smartnode.Network.Value = config.Network("mainnet")
-	if err := reloaded.Geth.ContainerTag.SetToDefault(config.Network("mainnet")); err != nil {
-		t.Fatal(err)
-	}
-	if reloaded.Geth.ContainerTag.Value != "my/geth:custom" {
-		t.Fatalf("reloaded geth default %v", reloaded.Geth.ContainerTag.Value)
+	defaults := cfg.ComposeImageDefaults()
+	if defaults[ECImageTagDefault] == "" || defaults[ECImageTagDefault] == "my/geth:custom" {
+		t.Fatalf("default should stay the catalog pin, got %q", defaults[ECImageTagDefault])
 	}
 }
 
-func TestContainerTagsAreNotSerialized(t *testing.T) {
+func TestContainerTagsAreSerialized(t *testing.T) {
 	cfg := mustNewRocketPoolConfig(t, "", false)
 	cfg.Geth.ContainerTag.Value = "my/geth:custom"
 	serialized := cfg.Serialize()
-	if tag, ok := serialized["geth"]["containerTag"]; ok {
-		t.Fatalf("container tags must not be saved to user-settings.yml, got %q", tag)
+	if tag, ok := serialized["geth"]["containerTag"]; !ok || tag != "my/geth:custom" {
+		t.Fatalf("container tags should be saved to user-settings.yml, got %v", serialized["geth"]["containerTag"])
 	}
 }

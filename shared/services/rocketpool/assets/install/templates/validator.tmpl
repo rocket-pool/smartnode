@@ -7,7 +7,7 @@
 
 services:
   validator:
-    image: {{.GetVCImageEnvRef}}
+    image: ${VC_IMAGE_TAG_OVERRIDE:-${VC_IMAGE_TAG_DEFAULT}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_validator
     restart: unless-stopped

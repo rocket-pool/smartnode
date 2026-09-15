@@ -14,40 +14,29 @@ import (
 )
 
 const (
-	ImagesEnvFile = "images.env"
+	ImagesMainnetFile = "mainnet.env"
+	ImagesTestnetFile = "testnet.env"
+	ImagesDevnetFile  = "devnet.env"
+	ComposeMainFile   = "compose.yml"
 
 	ImageSmartnode = "RP_IMAGE_SMARTNODE"
 
-	ImageGethProd       = "RP_IMAGE_GETH_PROD"
-	ImageGethTest       = "RP_IMAGE_GETH_TEST"
-	ImageNethermindProd = "RP_IMAGE_NETHERMIND_PROD"
-	ImageNethermindTest = "RP_IMAGE_NETHERMIND_TEST"
-	ImageBesuProd       = "RP_IMAGE_BESU_PROD"
-	ImageBesuTest       = "RP_IMAGE_BESU_TEST"
-	ImageRethProd       = "RP_IMAGE_RETH_PROD"
-	ImageRethTest       = "RP_IMAGE_RETH_TEST"
-	ImageErigonProd     = "RP_IMAGE_ERIGON_PROD"
-	ImageErigonTest     = "RP_IMAGE_ERIGON_TEST"
+	ImageGeth       = "RP_IMAGE_GETH"
+	ImageNethermind = "RP_IMAGE_NETHERMIND"
+	ImageBesu       = "RP_IMAGE_BESU"
+	ImageReth       = "RP_IMAGE_RETH"
+	ImageErigon     = "RP_IMAGE_ERIGON"
 
-	ImageLighthouseProd = "RP_IMAGE_LIGHTHOUSE_PROD"
-	ImageLighthouseTest = "RP_IMAGE_LIGHTHOUSE_TEST"
-	ImageLodestarProd   = "RP_IMAGE_LODESTAR_PROD"
-	ImageLodestarTest   = "RP_IMAGE_LODESTAR_TEST"
-	ImageNimbusBnProd   = "RP_IMAGE_NIMBUS_BN_PROD"
-	ImageNimbusBnTest   = "RP_IMAGE_NIMBUS_BN_TEST"
-	ImageNimbusVcProd   = "RP_IMAGE_NIMBUS_VC_PROD"
-	ImageNimbusVcTest   = "RP_IMAGE_NIMBUS_VC_TEST"
-	ImageTekuProd       = "RP_IMAGE_TEKU_PROD"
-	ImageTekuTest       = "RP_IMAGE_TEKU_TEST"
-	ImagePrysmBnProd    = "RP_IMAGE_PRYSM_BN_PROD"
-	ImagePrysmBnTest    = "RP_IMAGE_PRYSM_BN_TEST"
-	ImagePrysmVcProd    = "RP_IMAGE_PRYSM_VC_PROD"
-	ImagePrysmVcTest    = "RP_IMAGE_PRYSM_VC_TEST"
+	ImageLighthouse = "RP_IMAGE_LIGHTHOUSE"
+	ImageLodestar   = "RP_IMAGE_LODESTAR"
+	ImageNimbusBn   = "RP_IMAGE_NIMBUS_BN"
+	ImageNimbusVc   = "RP_IMAGE_NIMBUS_VC"
+	ImageTeku       = "RP_IMAGE_TEKU"
+	ImagePrysmBn    = "RP_IMAGE_PRYSM_BN"
+	ImagePrysmVc    = "RP_IMAGE_PRYSM_VC"
 
-	ImageMevBoostProd    = "RP_IMAGE_MEV_BOOST_PROD"
-	ImageMevBoostTest    = "RP_IMAGE_MEV_BOOST_TEST"
-	ImageCommitBoostProd = "RP_IMAGE_COMMIT_BOOST_PROD"
-	ImageCommitBoostTest = "RP_IMAGE_COMMIT_BOOST_TEST"
+	ImageMevBoost    = "RP_IMAGE_MEV_BOOST"
+	ImageCommitBoost = "RP_IMAGE_COMMIT_BOOST"
 
 	ImagePrometheus   = "RP_IMAGE_PROMETHEUS"
 	ImageExporter     = "RP_IMAGE_EXPORTER"
@@ -56,25 +45,45 @@ const (
 	ImageGWW          = "RP_IMAGE_GWW"
 	ImageCurl         = "RP_IMAGE_CURL"
 	ImageAlpine       = "RP_IMAGE_ALPINE"
+
+	ECImageTagDefault            = "EC_IMAGE_TAG_DEFAULT"
+	ECImageTagOverride           = "EC_IMAGE_TAG_OVERRIDE"
+	BNImageTagDefault            = "BN_IMAGE_TAG_DEFAULT"
+	BNImageTagOverride           = "BN_IMAGE_TAG_OVERRIDE"
+	VCImageTagDefault            = "VC_IMAGE_TAG_DEFAULT"
+	VCImageTagOverride           = "VC_IMAGE_TAG_OVERRIDE"
+	SmartnodeImageTagDefault     = "SMARTNODE_IMAGE_TAG_DEFAULT"
+	SmartnodeImageTagOverride    = "SMARTNODE_IMAGE_TAG_OVERRIDE"
+	MevBoostImageTagDefault      = "MEV_BOOST_IMAGE_TAG_DEFAULT"
+	MevBoostImageTagOverride     = "MEV_BOOST_IMAGE_TAG_OVERRIDE"
+	CommitBoostImageTagDefault   = "COMMIT_BOOST_IMAGE_TAG_DEFAULT"
+	CommitBoostImageTagOverride  = "COMMIT_BOOST_IMAGE_TAG_OVERRIDE"
+	PrometheusImageTagDefault    = "PROMETHEUS_IMAGE_TAG_DEFAULT"
+	PrometheusImageTagOverride   = "PROMETHEUS_IMAGE_TAG_OVERRIDE"
+	GrafanaImageTagDefault       = "GRAFANA_IMAGE_TAG_DEFAULT"
+	GrafanaImageTagOverride      = "GRAFANA_IMAGE_TAG_OVERRIDE"
+	ExporterImageTagDefault      = "EXPORTER_IMAGE_TAG_DEFAULT"
+	ExporterImageTagOverride     = "EXPORTER_IMAGE_TAG_OVERRIDE"
+	AlertmanagerImageTagDefault  = "ALERTMANAGER_IMAGE_TAG_DEFAULT"
+	AlertmanagerImageTagOverride = "ALERTMANAGER_IMAGE_TAG_OVERRIDE"
+	GWWImageTagDefault           = "GWW_IMAGE_TAG_DEFAULT"
+	GWWImageTagOverride          = "GWW_IMAGE_TAG_OVERRIDE"
+	CurlImageTagDefault          = "CURL_IMAGE_TAG_DEFAULT"
+	CurlImageTagOverride         = "CURL_IMAGE_TAG_OVERRIDE"
+
+	ImageTagsEnvFile = "runtime/image-tags.env"
 )
 
-// requiredImageKeys must be present in the official catalog.
+func ImageTagRef(overrideKey, defaultKey string) string {
+	return "${" + overrideKey + ":-${" + defaultKey + "}}"
+}
+
+// requiredImageKeys must be present in mainnet.env. Network overlays may omit keys.
 var requiredImageKeys = []string{
 	ImageSmartnode,
-	ImageGethProd, ImageGethTest,
-	ImageNethermindProd, ImageNethermindTest,
-	ImageBesuProd, ImageBesuTest,
-	ImageRethProd, ImageRethTest,
-	ImageErigonProd, ImageErigonTest,
-	ImageLighthouseProd, ImageLighthouseTest,
-	ImageLodestarProd, ImageLodestarTest,
-	ImageNimbusBnProd, ImageNimbusBnTest,
-	ImageNimbusVcProd, ImageNimbusVcTest,
-	ImageTekuProd, ImageTekuTest,
-	ImagePrysmBnProd, ImagePrysmBnTest,
-	ImagePrysmVcProd, ImagePrysmVcTest,
-	ImageMevBoostProd, ImageMevBoostTest,
-	ImageCommitBoostProd, ImageCommitBoostTest,
+	ImageGeth, ImageNethermind, ImageBesu, ImageReth, ImageErigon,
+	ImageLighthouse, ImageLodestar, ImageNimbusBn, ImageNimbusVc, ImageTeku, ImagePrysmBn, ImagePrysmVc,
+	ImageMevBoost, ImageCommitBoost,
 	ImagePrometheus, ImageExporter, ImageAlertmanager, ImageGrafana,
 	ImageGWW, ImageCurl, ImageAlpine,
 }
@@ -167,31 +176,87 @@ func LoadEnvFile(path string) (map[string]string, error) {
 	return ParseEnvFile(data)
 }
 
-// LoadImages loads the official catalog: embed, then on-disk images.env if present.
-func LoadImages(rpDir string) (*ImageCatalog, error) {
-	values, err := ParseEnvFile(assets.ImagesEnv())
+func catalogFileName(network config.Network) string {
+	if network == "" || network == config.Network_Unknown {
+		return ""
+	}
+	return string(network) + ".env"
+}
+
+func loadCatalogBytes(name string, data []byte, requireAll bool) (*ImageCatalog, error) {
+	values, err := ParseEnvFile(data)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse embedded %s: %w", ImagesEnvFile, err)
+		return nil, fmt.Errorf("could not parse %s: %w", name, err)
 	}
-	if rpDir != "" {
-		diskPath := filepath.Join(rpDir, ImagesEnvFile)
-		if _, err := os.Stat(diskPath); err == nil {
-			diskValues, err := LoadEnvFile(diskPath)
-			if err != nil {
-				return nil, fmt.Errorf("could not load %s: %w", diskPath, err)
-			}
-			values = diskValues
-		} else if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("could not stat %s: %w", diskPath, err)
+	if requireAll {
+		if err := validateImageCatalog(name, values); err != nil {
+			return nil, err
 		}
-	}
-	if err := validateImageCatalog(values); err != nil {
-		return nil, err
 	}
 	return &ImageCatalog{values: values}, nil
 }
 
-func validateImageCatalog(values map[string]string) error {
+func loadCatalogFromDisk(rpDir, name string, requireAll bool) (*ImageCatalog, error) {
+	path := filepath.Join(rpDir, name)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return loadCatalogBytes(name, data, requireAll)
+}
+
+// LoadImageCatalogs loads mainnet.env (full catalog) and optional per-network
+// overlays ({network}.env). Overlay keys replace mainnet; missing keys inherit.
+func LoadImageCatalogs(rpDir string, networks *NetworksConfig) (mainnet *ImageCatalog, overlays map[config.Network]*ImageCatalog, err error) {
+	mainnet, err = loadCatalogBytes(ImagesMainnetFile, assets.ImagesMainnetEnv(), true)
+	if err != nil {
+		return nil, nil, err
+	}
+	if rpDir != "" {
+		disk, err := loadCatalogFromDisk(rpDir, ImagesMainnetFile, true)
+		if err == nil {
+			mainnet = disk
+		} else if !os.IsNotExist(err) {
+			return nil, nil, fmt.Errorf("could not load %s: %w", filepath.Join(rpDir, ImagesMainnetFile), err)
+		}
+	}
+
+	overlays = map[config.Network]*ImageCatalog{}
+	if networks == nil {
+		return mainnet, overlays, nil
+	}
+	for _, n := range networks.AllNetworks() {
+		id := n.ID()
+		if id == "mainnet" {
+			continue
+		}
+		name := catalogFileName(id)
+		var overlay *ImageCatalog
+		if rpDir != "" {
+			disk, err := loadCatalogFromDisk(rpDir, name, false)
+			if err == nil {
+				overlay = disk
+			} else if !os.IsNotExist(err) {
+				return nil, nil, fmt.Errorf("could not load %s: %w", filepath.Join(rpDir, name), err)
+			}
+		}
+		if overlay == nil {
+			if data, ok := assets.EmbeddedNetworkEnv(name); ok {
+				parsed, err := loadCatalogBytes(name, data, false)
+				if err != nil {
+					return nil, nil, err
+				}
+				overlay = parsed
+			}
+		}
+		if overlay != nil {
+			overlays[id] = overlay
+		}
+	}
+	return mainnet, overlays, nil
+}
+
+func validateImageCatalog(name string, values map[string]string) error {
 	var missing []string
 	for _, key := range requiredImageKeys {
 		if v, ok := values[key]; !ok || v == "" {
@@ -199,7 +264,7 @@ func validateImageCatalog(values map[string]string) error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("%s is missing required keys: %s", ImagesEnvFile, strings.Join(missing, ", "))
+		return fmt.Errorf("%s is missing required keys: %s", name, strings.Join(missing, ", "))
 	}
 	return nil
 }
@@ -282,70 +347,134 @@ func WriteEnvFile(path string, values map[string]string) error {
 	return os.Rename(tmp, path)
 }
 
-func (cfg *RocketPoolConfig) imageDefault(key string) string {
-	return cfg.images.Must(key)
+func (cfg *RocketPoolConfig) imageMainnet(key string) string {
+	return cfg.imagesMainnet.Must(key)
 }
 
-func (cfg *RocketPoolConfig) clientImageKey(prodKey, testKey string) string {
-	info := cfg.GetNetworkInfo()
-	if info != nil && info.ClientTagSet == config.ClientTagSetProduction {
-		return prodKey
+func (cfg *RocketPoolConfig) imageForNetwork(key string, network config.Network) string {
+	if overlay := cfg.imagesByNetwork[network]; overlay != nil {
+		if v, ok := overlay.Get(key); ok && v != "" {
+			return v
+		}
 	}
-	return testKey
+	return cfg.imagesMainnet.Must(key)
 }
 
-func (cfg *RocketPoolConfig) LoadedImages() *ImageCatalog {
-	return cfg.images
+func (cfg *RocketPoolConfig) imageTagDefaults(key string) map[config.Network]interface{} {
+	defaults := map[config.Network]interface{}{config.Network_All: cfg.imageMainnet(key)}
+	if cfg.networks == nil {
+		return defaults
+	}
+	for _, n := range cfg.networks.AllNetworks() {
+		defaults[n.ID()] = cfg.imageForNetwork(key, n.ID())
+	}
+	return defaults
 }
 
-func (cfg *RocketPoolConfig) ImageEnvPath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, ImagesEnvFile)
+func (cfg *RocketPoolConfig) overlayFileName() string {
+	info := cfg.GetNetworkInfo()
+	if info == nil || info.Name == "" || info.Name == "mainnet" {
+		return ""
+	}
+	return catalogFileName(info.ID())
 }
 
-// GetECImageEnvRef returns the compose interpolation for the selected execution client.
-func (cfg *RocketPoolConfig) GetECImageEnvRef() (string, error) {
+// ImagesEnvFiles is the Compose env_file list: mainnet.env, then the network overlay if it exists.
+func (cfg *RocketPoolConfig) ImagesEnvFiles() []string {
+	files := []string{ImagesMainnetFile}
+	if name := cfg.overlayFileName(); name != "" {
+		path := filepath.Join(cfg.RocketPoolDirectory, name)
+		if cfg.RocketPoolDirectory == "" {
+			if _, ok := assets.EmbeddedNetworkEnv(name); ok {
+				files = append(files, name)
+			}
+			return files
+		}
+		if _, err := os.Stat(path); err == nil {
+			files = append(files, name)
+		} else if _, ok := assets.EmbeddedNetworkEnv(name); ok {
+			files = append(files, name)
+		}
+	}
+	return files
+}
+
+func (cfg *RocketPoolConfig) selectedECCatalogKey() (string, error) {
 	if !cfg.ExecutionClientLocal() {
 		return "", fmt.Errorf("Execution client is external, there is no container tag")
 	}
 	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
 	case config.ExecutionClient_Geth:
-		return EnvRef(cfg.clientImageKey(ImageGethProd, ImageGethTest)), nil
+		return ImageGeth, nil
 	case config.ExecutionClient_Nethermind:
-		return EnvRef(cfg.clientImageKey(ImageNethermindProd, ImageNethermindTest)), nil
+		return ImageNethermind, nil
 	case config.ExecutionClient_Besu:
-		return EnvRef(cfg.clientImageKey(ImageBesuProd, ImageBesuTest)), nil
+		return ImageBesu, nil
 	case config.ExecutionClient_Reth:
-		return EnvRef(cfg.clientImageKey(ImageRethProd, ImageRethTest)), nil
+		return ImageReth, nil
 	case config.ExecutionClient_Erigon:
-		return EnvRef(cfg.clientImageKey(ImageErigonProd, ImageErigonTest)), nil
+		return ImageErigon, nil
 	}
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
-// GetBeaconImageEnvRef returns the compose interpolation for the selected beacon client.
-func (cfg *RocketPoolConfig) GetBeaconImageEnvRef() (string, error) {
+func (cfg *RocketPoolConfig) selectedECTagParam() (*config.Parameter, error) {
+	if !cfg.ExecutionClientLocal() {
+		return nil, fmt.Errorf("Execution client is external, there is no container tag")
+	}
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Geth:
+		return &cfg.Geth.ContainerTag, nil
+	case config.ExecutionClient_Nethermind:
+		return &cfg.Nethermind.ContainerTag, nil
+	case config.ExecutionClient_Besu:
+		return &cfg.Besu.ContainerTag, nil
+	case config.ExecutionClient_Reth:
+		return &cfg.Reth.ContainerTag, nil
+	case config.ExecutionClient_Erigon:
+		return &cfg.Erigon.ContainerTag, nil
+	}
+	return nil, fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
+}
+
+// GetECImageEnvRef is ${EC_IMAGE_TAG_OVERRIDE:-${EC_IMAGE_TAG_DEFAULT}}.
+func (cfg *RocketPoolConfig) GetECImageEnvRef() (string, error) {
+	if _, err := cfg.selectedECCatalogKey(); err != nil {
+		return "", err
+	}
+	return ImageTagRef(ECImageTagOverride, ECImageTagDefault), nil
+}
+
+func (cfg *RocketPoolConfig) selectedBNCatalogKey() (string, error) {
 	cCfg, err := cfg.GetSelectedConsensusClientConfig()
 	if err != nil {
 		return "", err
 	}
 	switch cCfg.(type) {
 	case *LighthouseConfig:
-		return EnvRef(cfg.clientImageKey(ImageLighthouseProd, ImageLighthouseTest)), nil
+		return ImageLighthouse, nil
 	case *LodestarConfig:
-		return EnvRef(cfg.clientImageKey(ImageLodestarProd, ImageLodestarTest)), nil
+		return ImageLodestar, nil
 	case *NimbusConfig:
-		return EnvRef(cfg.clientImageKey(ImageNimbusBnProd, ImageNimbusBnTest)), nil
+		return ImageNimbusBn, nil
 	case *PrysmConfig:
-		return EnvRef(cfg.clientImageKey(ImagePrysmBnProd, ImagePrysmBnTest)), nil
+		return ImagePrysmBn, nil
 	case *TekuConfig:
-		return EnvRef(cfg.clientImageKey(ImageTekuProd, ImageTekuTest)), nil
+		return ImageTeku, nil
 	default:
 		return "", fmt.Errorf("unknown consensus client config %T", cCfg)
 	}
 }
 
-// GetVCImageEnvRef returns the compose interpolation for the selected validator client.
-func (cfg *RocketPoolConfig) GetVCImageEnvRef() (string, error) {
+// GetBeaconImageEnvRef is ${BN_IMAGE_TAG_OVERRIDE:-${BN_IMAGE_TAG_DEFAULT}}.
+func (cfg *RocketPoolConfig) GetBeaconImageEnvRef() (string, error) {
+	if _, err := cfg.selectedBNCatalogKey(); err != nil {
+		return "", err
+	}
+	return ImageTagRef(BNImageTagOverride, BNImageTagDefault), nil
+}
+
+func (cfg *RocketPoolConfig) selectedVCCatalogKey() (string, error) {
 	mode := cfg.ConsensusClientMode.Value.(config.Mode)
 	if mode == config.Mode_Local {
 		cCfg, err := cfg.GetSelectedConsensusClientConfig()
@@ -354,15 +483,15 @@ func (cfg *RocketPoolConfig) GetVCImageEnvRef() (string, error) {
 		}
 		switch cCfg.(type) {
 		case *LighthouseConfig:
-			return EnvRef(cfg.clientImageKey(ImageLighthouseProd, ImageLighthouseTest)), nil
+			return ImageLighthouse, nil
 		case *LodestarConfig:
-			return EnvRef(cfg.clientImageKey(ImageLodestarProd, ImageLodestarTest)), nil
+			return ImageLodestar, nil
 		case *NimbusConfig:
-			return EnvRef(cfg.clientImageKey(ImageNimbusVcProd, ImageNimbusVcTest)), nil
+			return ImageNimbusVc, nil
 		case *PrysmConfig:
-			return EnvRef(cfg.clientImageKey(ImagePrysmVcProd, ImagePrysmVcTest)), nil
+			return ImagePrysmVc, nil
 		case *TekuConfig:
-			return EnvRef(cfg.clientImageKey(ImageTekuProd, ImageTekuTest)), nil
+			return ImageTeku, nil
 		default:
 			return "", fmt.Errorf("unknown consensus client config %T", cCfg)
 		}
@@ -370,139 +499,174 @@ func (cfg *RocketPoolConfig) GetVCImageEnvRef() (string, error) {
 	client := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
 	switch client {
 	case config.ConsensusClient_Lighthouse:
-		return EnvRef(cfg.clientImageKey(ImageLighthouseProd, ImageLighthouseTest)), nil
+		return ImageLighthouse, nil
 	case config.ConsensusClient_Lodestar:
-		return EnvRef(cfg.clientImageKey(ImageLodestarProd, ImageLodestarTest)), nil
+		return ImageLodestar, nil
 	case config.ConsensusClient_Nimbus:
-		return EnvRef(cfg.clientImageKey(ImageNimbusVcProd, ImageNimbusVcTest)), nil
+		return ImageNimbusVc, nil
 	case config.ConsensusClient_Prysm:
-		return EnvRef(cfg.clientImageKey(ImagePrysmVcProd, ImagePrysmVcTest)), nil
+		return ImagePrysmVc, nil
 	case config.ConsensusClient_Teku:
-		return EnvRef(cfg.clientImageKey(ImageTekuProd, ImageTekuTest)), nil
+		return ImageTeku, nil
 	default:
 		return "", fmt.Errorf("unknown external consensus client [%v]", client)
 	}
 }
 
-func (cfg *RocketPoolConfig) GetMevBoostImageEnvRef() string {
-	return EnvRef(cfg.clientImageKey(ImageMevBoostProd, ImageMevBoostTest))
-}
-
-func (cfg *RocketPoolConfig) GetCommitBoostImageEnvRef() string {
-	return EnvRef(cfg.clientImageKey(ImageCommitBoostProd, ImageCommitBoostTest))
-}
-
-type imageOverrideParam struct {
-	param   *config.Parameter
-	prodKey string
-	testKey string
-}
-
-func (cfg *RocketPoolConfig) imageOverrideParams() []imageOverrideParam {
-	gwwTag := cfg.GraffitiWallWriter.GetConfig().GetParameters()
-	var gwwContainer *config.Parameter
-	for _, p := range gwwTag {
-		if p.ID == "containerTag" {
-			gwwContainer = p
-			break
+func (cfg *RocketPoolConfig) selectedVCTagParam() *config.Parameter {
+	mode := cfg.ConsensusClientMode.Value.(config.Mode)
+	if mode == config.Mode_Local {
+		switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+		case config.ConsensusClient_Lighthouse:
+			return &cfg.Lighthouse.ContainerTag
+		case config.ConsensusClient_Lodestar:
+			return &cfg.Lodestar.ContainerTag
+		case config.ConsensusClient_Nimbus:
+			return &cfg.Nimbus.VcContainerTag
+		case config.ConsensusClient_Prysm:
+			return &cfg.Prysm.VcContainerTag
+		case config.ConsensusClient_Teku:
+			return &cfg.Teku.ContainerTag
 		}
-	}
-	params := []imageOverrideParam{
-		{&cfg.Geth.ContainerTag, ImageGethProd, ImageGethTest},
-		{&cfg.Nethermind.ContainerTag, ImageNethermindProd, ImageNethermindTest},
-		{&cfg.Besu.ContainerTag, ImageBesuProd, ImageBesuTest},
-		{&cfg.Reth.ContainerTag, ImageRethProd, ImageRethTest},
-		{&cfg.Erigon.ContainerTag, ImageErigonProd, ImageErigonTest},
-		{&cfg.Lighthouse.ContainerTag, ImageLighthouseProd, ImageLighthouseTest},
-		{&cfg.Lodestar.ContainerTag, ImageLodestarProd, ImageLodestarTest},
-		{&cfg.Nimbus.BnContainerTag, ImageNimbusBnProd, ImageNimbusBnTest},
-		{&cfg.Nimbus.VcContainerTag, ImageNimbusVcProd, ImageNimbusVcTest},
-		{&cfg.Prysm.BnContainerTag, ImagePrysmBnProd, ImagePrysmBnTest},
-		{&cfg.Prysm.VcContainerTag, ImagePrysmVcProd, ImagePrysmVcTest},
-		{&cfg.Teku.ContainerTag, ImageTekuProd, ImageTekuTest},
-		{&cfg.ExternalLighthouse.ContainerTag, ImageLighthouseProd, ImageLighthouseTest},
-		{&cfg.ExternalLodestar.ContainerTag, ImageLodestarProd, ImageLodestarTest},
-		{&cfg.ExternalNimbus.ContainerTag, ImageNimbusVcProd, ImageNimbusVcTest},
-		{&cfg.ExternalPrysm.ContainerTag, ImagePrysmVcProd, ImagePrysmVcTest},
-		{&cfg.ExternalTeku.ContainerTag, ImageTekuProd, ImageTekuTest},
-		{&cfg.MevBoost.ContainerTag, ImageMevBoostProd, ImageMevBoostTest},
-		{&cfg.CommitBoost.ContainerTag, ImageCommitBoostProd, ImageCommitBoostTest},
-		{&cfg.Prometheus.ContainerTag, ImagePrometheus, ""},
-		{&cfg.Grafana.ContainerTag, ImageGrafana, ""},
-		{&cfg.Exporter.ContainerTag, ImageExporter, ""},
-		{&cfg.Alertmanager.ContainerTag, ImageAlertmanager, ""},
-	}
-	if gwwContainer != nil {
-		params = append(params, imageOverrideParam{gwwContainer, ImageGWW, ""})
-	}
-	return params
-}
-
-func (cfg *RocketPoolConfig) skipPersistingImageTags() {
-	for _, item := range cfg.imageOverrideParams() {
-		item.param.SkipUserSettings = true
-	}
-}
-
-// tuiImageValues maps the current TUI container-tag values onto images.env keys
-// for the selected network (_PROD vs _TEST).
-func (cfg *RocketPoolConfig) tuiImageValues() map[string]string {
-	out := map[string]string{}
-	for _, item := range cfg.imageOverrideParams() {
-		if item.param.Value == nil {
-			continue
-		}
-		value := fmt.Sprint(item.param.Value)
-		if value == "" {
-			continue
-		}
-		key := item.prodKey
-		if item.testKey != "" {
-			key = cfg.clientImageKey(item.prodKey, item.testKey)
-		}
-		out[key] = value
-	}
-	return out
-}
-
-// SaveImagesEnv writes current TUI container tags into images.env.
-// A later `rocketpool service install` replaces that file with the official catalog.
-func (cfg *RocketPoolConfig) SaveImagesEnv() error {
-	if cfg.RocketPoolDirectory == "" {
 		return nil
 	}
-	path := cfg.ImageEnvPath()
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	updates := cfg.tuiImageValues()
-	if err := UpdateEnvFile(path, updates); err != nil {
-		return fmt.Errorf("could not update %s: %w", path, err)
-	}
-	network := cfg.GetNetwork()
-	for _, item := range cfg.imageOverrideParams() {
-		if item.param.Value == nil {
-			continue
-		}
-		value := fmt.Sprint(item.param.Value)
-		if value == "" {
-			continue
-		}
-		key := item.prodKey
-		if item.testKey != "" {
-			key = cfg.clientImageKey(item.prodKey, item.testKey)
-			item.param.Default[network] = value
-		} else {
-			item.param.Default[config.Network_All] = value
-		}
-		cfg.images.Set(key, value)
+	switch cfg.ExternalConsensusClient.Value.(config.ConsensusClient) {
+	case config.ConsensusClient_Lighthouse:
+		return &cfg.ExternalLighthouse.ContainerTag
+	case config.ConsensusClient_Lodestar:
+		return &cfg.ExternalLodestar.ContainerTag
+	case config.ConsensusClient_Nimbus:
+		return &cfg.ExternalNimbus.ContainerTag
+	case config.ConsensusClient_Prysm:
+		return &cfg.ExternalPrysm.ContainerTag
+	case config.ConsensusClient_Teku:
+		return &cfg.ExternalTeku.ContainerTag
 	}
 	return nil
 }
 
-func (cfg *RocketPoolConfig) resolveParamImage(param *config.Parameter, prodKey, testKey string) string {
+func (cfg *RocketPoolConfig) selectedBNTagParam() *config.Parameter {
+	if cfg.ConsensusClientMode.Value.(config.Mode) != config.Mode_Local {
+		return nil
+	}
+	switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+	case config.ConsensusClient_Lighthouse:
+		return &cfg.Lighthouse.ContainerTag
+	case config.ConsensusClient_Lodestar:
+		return &cfg.Lodestar.ContainerTag
+	case config.ConsensusClient_Nimbus:
+		return &cfg.Nimbus.BnContainerTag
+	case config.ConsensusClient_Prysm:
+		return &cfg.Prysm.BnContainerTag
+	case config.ConsensusClient_Teku:
+		return &cfg.Teku.ContainerTag
+	}
+	return nil
+}
+
+// GetVCImageEnvRef is ${VC_IMAGE_TAG_OVERRIDE:-${VC_IMAGE_TAG_DEFAULT}}.
+func (cfg *RocketPoolConfig) GetVCImageEnvRef() (string, error) {
+	if _, err := cfg.selectedVCCatalogKey(); err != nil {
+		return "", err
+	}
+	return ImageTagRef(VCImageTagOverride, VCImageTagDefault), nil
+}
+
+func (cfg *RocketPoolConfig) GetMevBoostImageEnvRef() string {
+	return ImageTagRef(MevBoostImageTagOverride, MevBoostImageTagDefault)
+}
+
+func (cfg *RocketPoolConfig) GetCommitBoostImageEnvRef() string {
+	return ImageTagRef(CommitBoostImageTagOverride, CommitBoostImageTagDefault)
+}
+
+func (cfg *RocketPoolConfig) tuiOverride(param *config.Parameter) (string, bool) {
+	if param == nil || param.Value == nil {
+		return "", false
+	}
+	value := fmt.Sprint(param.Value)
+	if value == "" {
+		return "", false
+	}
+	def, err := param.GetDefault(cfg.GetNetwork())
+	if err != nil || value == fmt.Sprint(def) {
+		return "", false
+	}
+	return value, true
+}
+
+// ComposeImageDefaults maps service-level *_IMAGE_TAG_DEFAULT vars to the
+// catalog pin for the selected client/network.
+func (cfg *RocketPoolConfig) ComposeImageDefaults() map[string]string {
+	out := map[string]string{
+		SmartnodeImageTagDefault:    cfg.ResolvedImage(ImageSmartnode),
+		PrometheusImageTagDefault:   cfg.ResolvedImage(ImagePrometheus),
+		GrafanaImageTagDefault:      cfg.ResolvedImage(ImageGrafana),
+		ExporterImageTagDefault:     cfg.ResolvedImage(ImageExporter),
+		AlertmanagerImageTagDefault: cfg.ResolvedImage(ImageAlertmanager),
+		GWWImageTagDefault:          cfg.ResolvedImage(ImageGWW),
+		CurlImageTagDefault:         cfg.ResolvedImage(ImageCurl),
+		MevBoostImageTagDefault:     cfg.ResolvedImage(ImageMevBoost),
+		CommitBoostImageTagDefault:  cfg.ResolvedImage(ImageCommitBoost),
+	}
+	if key, err := cfg.selectedECCatalogKey(); err == nil {
+		out[ECImageTagDefault] = cfg.ResolvedImage(key)
+	}
+	if key, err := cfg.selectedBNCatalogKey(); err == nil {
+		out[BNImageTagDefault] = cfg.ResolvedImage(key)
+	}
+	if key, err := cfg.selectedVCCatalogKey(); err == nil {
+		out[VCImageTagDefault] = cfg.ResolvedImage(key)
+	}
+	return out
+}
+
+// ComposeEnvOverrides returns *_IMAGE_TAG_OVERRIDE vars for TUI values that
+// differ from the catalog pin. Unset override vars fall back to *_DEFAULT.
+func (cfg *RocketPoolConfig) ComposeEnvOverrides() map[string]string {
+	out := map[string]string{}
+	if param, err := cfg.selectedECTagParam(); err == nil {
+		if v, ok := cfg.tuiOverride(param); ok {
+			out[ECImageTagOverride] = v
+		}
+	}
+	if v, ok := cfg.tuiOverride(cfg.selectedBNTagParam()); ok {
+		out[BNImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(cfg.selectedVCTagParam()); ok {
+		out[VCImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.MevBoost.ContainerTag); ok {
+		out[MevBoostImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.CommitBoost.ContainerTag); ok {
+		out[CommitBoostImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.Prometheus.ContainerTag); ok {
+		out[PrometheusImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.Grafana.ContainerTag); ok {
+		out[GrafanaImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.Exporter.ContainerTag); ok {
+		out[ExporterImageTagOverride] = v
+	}
+	if v, ok := cfg.tuiOverride(&cfg.Alertmanager.ContainerTag); ok {
+		out[AlertmanagerImageTagOverride] = v
+	}
+	gww := cfg.GraffitiWallWriter.GetConfig().GetParameters()
+	for _, p := range gww {
+		if p.ID == "containerTag" {
+			if v, ok := cfg.tuiOverride(p); ok {
+				out[GWWImageTagOverride] = v
+			}
+			break
+		}
+	}
+	return out
+}
+
+func (cfg *RocketPoolConfig) resolveParamImage(param *config.Parameter, key string) string {
 	if param == nil {
 		return ""
 	}
@@ -513,10 +677,6 @@ func (cfg *RocketPoolConfig) resolveParamImage(param *config.Parameter, prodKey,
 			return value
 		}
 	}
-	key := prodKey
-	if testKey != "" {
-		key = cfg.clientImageKey(prodKey, testKey)
-	}
 	if v := cfg.ResolvedImage(key); v != "" {
 		return v
 	}
@@ -525,20 +685,28 @@ func (cfg *RocketPoolConfig) resolveParamImage(param *config.Parameter, prodKey,
 
 func (cfg *RocketPoolConfig) imageFromEnvRef(ref, tuiValue string) string {
 	key := strings.TrimSuffix(strings.TrimPrefix(ref, "${"), "}")
-	if cfg.images != nil {
-		if catalog, ok := cfg.images.Get(key); ok && tuiValue != "" && tuiValue != catalog {
-			return tuiValue
-		}
+	official := cfg.ResolvedImage(key)
+	if tuiValue != "" && official != "" && tuiValue != official {
+		return tuiValue
 	}
-	if v := cfg.ResolvedImage(key); v != "" {
-		return v
+	if official != "" {
+		return official
 	}
 	return tuiValue
 }
 
 func (cfg *RocketPoolConfig) ResolvedImage(key string) string {
-	if cfg.images != nil {
-		if v, ok := cfg.images.Get(key); ok && v != "" {
+	network := config.Network_Unknown
+	if cfg.Smartnode != nil && cfg.Smartnode.Network.Value != nil {
+		network = cfg.Smartnode.Network.Value.(config.Network)
+	}
+	if overlay := cfg.imagesByNetwork[network]; overlay != nil {
+		if v, ok := overlay.Get(key); ok && v != "" {
+			return v
+		}
+	}
+	if cfg.imagesMainnet != nil {
+		if v, ok := cfg.imagesMainnet.Get(key); ok && v != "" {
 			return v
 		}
 	}

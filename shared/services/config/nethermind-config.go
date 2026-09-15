@@ -166,9 +166,9 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Nethermind container you want to use on Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Nethermind container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageNethermindProd), cfg.imageDefault(ImageNethermindTest)),
+			Default:            cfg.imageTagDefaults(ImageNethermind),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

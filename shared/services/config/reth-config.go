@@ -96,9 +96,9 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Reth container you want to use. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Reth container you want to use.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageRethProd), cfg.imageDefault(ImageRethTest)),
+			Default:            cfg.imageTagDefaults(ImageReth),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

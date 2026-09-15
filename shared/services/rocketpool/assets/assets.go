@@ -38,13 +38,28 @@ func NetworksDefaultYAML() []byte {
 	return bytes
 }
 
-// ImagesEnv is the packaged official image catalog
-func ImagesEnv() []byte {
-	bytes, err := installFS.ReadFile("install/images.env")
+func ImagesMainnetEnv() []byte {
+	bytes, err := installFS.ReadFile("install/mainnet.env")
 	if err != nil {
-		panic("embedded install/images.env is missing: " + err.Error())
+		panic("embedded install/mainnet.env is missing: " + err.Error())
 	}
 	return bytes
+}
+
+func ImagesTestnetEnv() []byte {
+	bytes, ok := EmbeddedNetworkEnv("testnet.env")
+	if !ok {
+		panic("embedded install/testnet.env is missing")
+	}
+	return bytes
+}
+
+func EmbeddedNetworkEnv(name string) ([]byte, bool) {
+	bytes, err := installFS.ReadFile("install/" + name)
+	if err != nil {
+		return nil, false
+	}
+	return bytes, true
 }
 
 func InstallUpdateTrackerScript() ScriptWithContext {

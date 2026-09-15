@@ -8,7 +8,7 @@
 {{$port := (or .Grafana.Port.Value 3100) -}}
 services:
   grafana:
-    image: ${RP_IMAGE_GRAFANA}
+    image: ${GRAFANA_IMAGE_TAG_OVERRIDE:-${GRAFANA_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_grafana
     restart: unless-stopped
     environment:

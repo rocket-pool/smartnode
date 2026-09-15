@@ -64,9 +64,9 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 		ContainerTag: config.Parameter{
 			ID:                 "containerTag",
 			Name:               "Container Tag",
-			Description:        "The tag name of the Lodestar container you want to use from Docker Hub. Official pins are in images.env. TUI container-tag changes are written there and replaced on the next Smart Node install.",
+			Description:        "The tag name of the Lodestar container you want to use from Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, cfg.imageDefault(ImageLodestarProd), cfg.imageDefault(ImageLodestarTest)),
+			Default:            cfg.imageTagDefaults(ImageLodestar),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

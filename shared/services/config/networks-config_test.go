@@ -185,7 +185,7 @@ func TestOfficialGetterLock(t *testing.T) {
 	if cfg.Smartnode.GetChainID() != 1 {
 		t.Fatalf("mainnet chainID %d", cfg.Smartnode.GetChainID())
 	}
-	if tag, _ := cfg.Geth.ContainerTag.GetDefault(config.Network("mainnet")); tag != cfg.imageDefault(ImageGethProd) {
+	if tag, _ := cfg.Geth.ContainerTag.GetDefault(config.Network("mainnet")); tag != cfg.imageMainnet(ImageGeth) {
 		t.Fatalf("mainnet geth tag %v", tag)
 	}
 

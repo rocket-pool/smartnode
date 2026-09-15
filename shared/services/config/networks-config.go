@@ -244,21 +244,6 @@ func hexAddresses(values []string) []common.Address {
 	return out
 }
 
-func clientTagDefaults(networks *NetworksConfig, prod, test string) map[config.Network]interface{} {
-	defaults := map[config.Network]interface{}{config.Network_All: test}
-	if networks == nil {
-		return defaults
-	}
-	for _, n := range networks.AllNetworks() {
-		if n.ClientTagSet == config.ClientTagSetProduction {
-			defaults[n.ID()] = prod
-		} else {
-			defaults[n.ID()] = test
-		}
-	}
-	return defaults
-}
-
 func nethermindPruneThresholdDefaults(networks *NetworksConfig) map[config.Network]interface{} {
 	defaults := map[config.Network]interface{}{config.Network_All: uint64(51200)}
 	if networks == nil {
