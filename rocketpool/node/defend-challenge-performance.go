@@ -147,7 +147,6 @@ func newDefendChallengePerformance(c *cli.Command, logger log.ColorLogger) (*def
 func (t *defendChallengePerformance) run(state *state.NetworkStateIndex) error {
 	// Check if Saturn 2 is deployed
 	if !state.Saturn2Deployed {
-		t.log.Println("Saturn 2 is not deployed, skipping performance challenges check.")
 		return nil
 	}
 
