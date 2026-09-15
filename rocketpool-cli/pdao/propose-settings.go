@@ -468,6 +468,13 @@ func proposeSetting(contract string, setting string, value string, yes bool, toJ
 	}
 	defer rp.Close()
 
+	if cliutils.IsSaturn2OnlySetting(contract, setting) {
+		ok, err := cliutils.RequireSaturn2(rp)
+		if err != nil || !ok {
+			return err
+		}
+	}
+
 	// Check if proposal can be made
 	canPropose, err := rp.PDAOCanProposeSetting(contract, setting, value)
 	if err != nil {
