@@ -1182,22 +1182,16 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", err
 	}
 
-	imageEnv, err := cfg.ComposeImageEnv()
-	if err != nil {
-		return "", err
-	}
-	tagsPath := filepath.Join(expandedConfigPath, config.ImageTagsEnvFile)
-	if err := config.WriteEnvFile(tagsPath, imageEnv); err != nil {
-		return "", fmt.Errorf("error writing %s: %w", tagsPath, err)
-	}
-
 	composePaths := template.ComposePaths{
 		RuntimePath:  filepath.Join(expandedConfigPath, runtimeDir),
 		TemplatePath: filepath.Join(expandedConfigPath, templatesDir),
 		OverridePath: filepath.Join(expandedConfigPath, overrideDir),
 	}
 	composePair, err := composePaths.File("compose").Write(composeTemplateData{
-		Includes: composeIncludes(expandedConfigPath, config.ImageTagsEnvFile, deployedContainers),
+		Includes:      composeIncludes(expandedConfigPath, deployedContainers),
+		ProjectDir:    expandedConfigPath,
+		Network:       string(cfg.GetNetwork()),
+		ExtraNetworks: cfg.OverlayNetworkNames(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("error writing compose.yml: %w", err)
@@ -1211,13 +1205,20 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 
-	parts := []string{
+	envPrefix := []string{
 		fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", cfg.Smartnode.ProjectName.Value.(string)),
-		"docker compose",
+	}
+	assignments, err := cfg.ComposeEnvAssignments()
+	if err != nil {
+		return "", err
+	}
+	envPrefix = append(envPrefix, assignments...)
+
+	parts := append(envPrefix, "docker compose",
 		"--project-directory", shellescape.Quote(expandedConfigPath),
 		strings.Join(composeFileFlags, " "),
 		args,
-	}
+	)
 	return strings.Join(parts, " "), nil
 
 }
@@ -1248,21 +1249,60 @@ func ensureImageEnvFiles(dir string) error {
 
 type composeInclude struct {
 	Path    string
-	EnvFile string
+	WithEnv bool
 }
 
 type composeTemplateData struct {
-	Includes []composeInclude
+	Includes      []composeInclude
+	ProjectDir    string
+	Network       string
+	ExtraNetworks []string
 }
 
-func composeIncludes(projectDir, envFile string, deployed []string) []composeInclude {
-	envAbs := filepath.Join(projectDir, envFile)
+func (d composeTemplateData) TestnetOnly() string {
+	if d.Network == "testnet" {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) DevnetOnly() string {
+	if d.Network == "devnet" {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) CommentUnless(network string) string {
+	if d.Network == network {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) MainnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesMainnetFile)
+}
+
+func (d composeTemplateData) TestnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesTestnetFile)
+}
+
+func (d composeTemplateData) DevnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesDevnetFile)
+}
+
+func (d composeTemplateData) EnvFile(network string) string {
+	return filepath.Join(d.ProjectDir, network+".env")
+}
+
+func composeIncludes(projectDir string, deployed []string) []composeInclude {
 	out := make([]composeInclude, 0, len(deployed))
 	for _, path := range deployed {
-		entry := composeInclude{Path: path}
+		entry := composeInclude{Path: path, WithEnv: true}
 		rel, err := filepath.Rel(projectDir, path)
-		if err != nil || (rel != overrideDir && !strings.HasPrefix(rel, overrideDir+string(filepath.Separator))) {
-			entry.EnvFile = envAbs
+		if err == nil && (rel == overrideDir || strings.HasPrefix(rel, overrideDir+string(filepath.Separator))) {
+			entry.WithEnv = false
 		}
 		out = append(out, entry)
 	}

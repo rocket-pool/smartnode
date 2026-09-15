@@ -70,8 +70,6 @@ const (
 	GWWImageTagOverride          = "GWW_IMAGE_TAG_OVERRIDE"
 	CurlImageTagDefault          = "CURL_IMAGE_TAG_DEFAULT"
 	CurlImageTagOverride         = "CURL_IMAGE_TAG_OVERRIDE"
-
-	ImageTagsEnvFile = "runtime/image-tags.env"
 )
 
 func ImageTagRef(overrideKey, defaultKey string) string {
@@ -379,8 +377,50 @@ func (cfg *RocketPoolConfig) overlayFileName() string {
 	return catalogFileName(info.ID())
 }
 
+func (cfg *RocketPoolConfig) IsTestnet() bool {
+	info := cfg.GetNetworkInfo()
+	return info != nil && string(info.ID()) == "testnet"
+}
+
+func (cfg *RocketPoolConfig) IsDevnet() bool {
+	info := cfg.GetNetworkInfo()
+	return info != nil && string(info.ID()) == "devnet"
+}
+
+// TestnetOnly returns "" on testnet so a compose.tmpl line is active, otherwise "#".
+func (cfg *RocketPoolConfig) TestnetOnly() string {
+	if cfg.IsTestnet() {
+		return ""
+	}
+	return "#"
+}
+
+// DevnetOnly returns "" on devnet so a compose.tmpl line is active, otherwise "#".
+func (cfg *RocketPoolConfig) DevnetOnly() string {
+	if cfg.IsDevnet() {
+		return ""
+	}
+	return "#"
+}
+
 // ImagesEnvFiles is the on-disk catalog list (mainnet.env, then {network}.env).
 // Compose interpolates runtime/image-tags.env, which is generated from these.
+func (cfg *RocketPoolConfig) OverlayNetworkNames() []string {
+	if cfg.networks == nil {
+		return nil
+	}
+	var names []string
+	for _, n := range cfg.networks.AllNetworks() {
+		id := string(n.ID())
+		if id == "" || id == "mainnet" || id == "testnet" || id == "devnet" {
+			continue
+		}
+		names = append(names, id)
+	}
+	sort.Strings(names)
+	return names
+}
+
 func (cfg *RocketPoolConfig) ImagesEnvFiles() []string {
 	files := []string{ImagesMainnetFile}
 	if name := cfg.overlayFileName(); name != "" {
@@ -693,22 +733,22 @@ func (cfg *RocketPoolConfig) ComposeImageEnv() (map[string]string, error) {
 	return out, nil
 }
 
-// ComposeEnvAssignments returns KEY=value strings for TUI image overrides.
-// Keys are sorted so command logs and diffs are reproducible.
+// ComposeEnvAssignments returns KEY=value strings for Compose interpolation:
+// *_IMAGE_TAG_DEFAULT from the catalog and *_IMAGE_TAG_OVERRIDE when the TUI
+// customized a tag. Keys are sorted so command logs and diffs are reproducible.
 func (cfg *RocketPoolConfig) ComposeEnvAssignments() ([]string, error) {
-	overrides := cfg.ComposeEnvOverrides()
-	keys := make([]string, 0, len(overrides))
-	for key := range overrides {
+	env, err := cfg.ComposeImageEnv()
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(env))
+	for key := range env {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 	out := make([]string, 0, len(keys))
 	for _, key := range keys {
-		value := overrides[key]
-		if err := validateEnvAssignment(key, value); err != nil {
-			return nil, err
-		}
-		out = append(out, key+"="+value)
+		out = append(out, key+"="+env[key])
 	}
 	return out, nil
 }

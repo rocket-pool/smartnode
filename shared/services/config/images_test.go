@@ -168,6 +168,12 @@ func TestClientImageEnvRefs(t *testing.T) {
 	if ref != ImageTagRef(ECImageTagOverride, ECImageTagDefault) {
 		t.Fatalf("ec test ref %s", ref)
 	}
+	if !cfg.IsTestnet() {
+		t.Fatal("expected IsTestnet")
+	}
+	if cfg.TestnetOnly() != "" {
+		t.Fatalf("TestnetOnly on testnet should be empty, got %q", cfg.TestnetOnly())
+	}
 	files := cfg.ImagesEnvFiles()
 	if len(files) < 1 || files[0] != ImagesMainnetFile {
 		t.Fatalf("expected mainnet.env first, got %v", files)
@@ -233,6 +239,20 @@ func TestComposeEnvAssignmentsRejectsWhitespace(t *testing.T) {
 	cfg.Geth.ContainerTag.Value = "my/geth custom"
 	if _, err := cfg.ComposeEnvAssignments(); err == nil {
 		t.Fatal("expected error for whitespace in override value")
+	}
+}
+
+func TestTestnetOnlyComment(t *testing.T) {
+	cfg := mustNewRocketPoolConfig(t, "", false)
+	cfg.Smartnode.Network.Value = config.Network("mainnet")
+	if cfg.IsTestnet() {
+		t.Fatal("mainnet should not be testnet")
+	}
+	if cfg.TestnetOnly() != "#" {
+		t.Fatalf("TestnetOnly on mainnet should be #, got %q", cfg.TestnetOnly())
+	}
+	if cfg.DevnetOnly() != "#" {
+		t.Fatalf("DevnetOnly on mainnet should be #, got %q", cfg.DevnetOnly())
 	}
 }
 
