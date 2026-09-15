@@ -220,6 +220,12 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
+		// Skip requests within the cooperative exit phase
+		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
+		if time.Now().Before(deadline) {
+			continue
+		}
+
 		// Delegates from version 4 support a forced exit request, so the
 		// did-not-exit path only applies to older delegates
 		if minipoolDetails.Version >= 4 {
@@ -228,11 +234,6 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 			if err != nil {
 				t.log.Printlnf("Error force-exiting minipool %s: %s", minipoolDetails.MinipoolAddress.Hex(), err.Error())
 			}
-			continue
-		}
-		// Skip requests still within the cooperative exit phase
-		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
-		if time.Now().Before(deadline) {
 			continue
 		}
 
