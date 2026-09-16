@@ -7,7 +7,7 @@
 
 services:
   eth1:
-    image: {{.GetECContainerTag}}
+    image: ${EC_IMAGE_TAG_OVERRIDE:-${EC_IMAGE_TAG_DEFAULT}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_eth1
     restart: unless-stopped

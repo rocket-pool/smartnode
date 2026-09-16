@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	tekuTagTest                string = "consensys/teku:26.8.0"
-	tekuTagProd                string = "consensys/teku:26.8.0"
 	defaultTekuMaxPeers        uint16 = 100
 	defaultTekuP2pIpv6Port     uint16 = 9090
 	defaultTekuP2pQuicIpv6Port uint16 = 8002
@@ -100,7 +98,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the Teku container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, tekuTagProd, tekuTagTest),
+			Default:            cfg.imageTagDefaults(ImageTeku),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

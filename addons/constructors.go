@@ -6,8 +6,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/addons"
 )
 
-func NewGraffitiWallWriter() addons.SmartnodeAddon {
-	return graffiti_wall_writer.NewGraffitiWallWriter()
+func NewGraffitiWallWriter(containerTag string) addons.SmartnodeAddon {
+	return graffiti_wall_writer.NewGraffitiWallWriter(containerTag)
 }
 
 func NewRescueNode() addons.SmartnodeAddon {

@@ -1,0 +1,8 @@
+# Global compose overrides. These persist across upgrades and are merged after
+# runtime/compose.yml, so they can add includes or override any service.
+#
+# Example:
+# include:
+#   - path: extra.yml
+#     env_file:
+#       - extra.env

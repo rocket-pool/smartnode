@@ -475,6 +475,11 @@ func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
 }
 
 func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
+	if cfg.parent != nil {
+		if tag := cfg.parent.ResolvedImage(ImageSmartnode); tag != "" {
+			return tag
+		}
+	}
 	return smartnodeTagPrefix + shared.RocketPoolVersion()
 }
 

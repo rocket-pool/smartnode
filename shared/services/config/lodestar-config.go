@@ -5,8 +5,6 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v1.48.0"
-	lodestarTagProd         string = "chainsafe/lodestar:v1.48.0"
 	defaultLodestarMaxPeers uint16 = 200
 )
 
@@ -68,7 +66,7 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the Lodestar container you want to use from Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, lodestarTagProd, lodestarTagTest),
+			Default:            cfg.imageTagDefaults(ImageLodestar),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

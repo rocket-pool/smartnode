@@ -11,8 +11,6 @@ import (
 const (
 	CommitBoostConfigFile     string = "cb_config.toml"
 	CommitBoostConfigTemplate string = "commit-boost-config"
-	commitBoostProdTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.1"
-	commitBoostTestTag        string = "ghcr.io/commit-boost/commit-boost:v0.10.1"
 )
 
 // Relay selection mode for Commit-Boost PBS
@@ -180,7 +178,7 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, commitBoostProdTag, commitBoostTestTag),
+			Default:            cfg.imageTagDefaults(ImageCommitBoost),
 		},
 
 		ExternalUrl: config.Parameter{
@@ -343,6 +341,9 @@ func (cfg *CommitBoostConfig) GetRelayString() string {
 
 // Get the container tag value as a string (for use in templates)
 func (cfg *CommitBoostConfig) GetContainerTag() string {
+	if cfg.parentConfig != nil {
+		return cfg.parentConfig.resolveParamImage(&cfg.ContainerTag, ImageCommitBoost)
+	}
 	return fmt.Sprint(cfg.ContainerTag.Value)
 }
 

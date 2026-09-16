@@ -5,10 +5,6 @@ import (
 )
 
 const (
-	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v7.1.8"
-	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v7.1.8"
-	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v7.1.8"
-	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v7.1.8"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
@@ -108,7 +104,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Name:               "Beacon Node Container Tag",
 			Description:        "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, prysmBnProd, prysmBnTest),
+			Default:            cfg.imageTagDefaults(ImagePrysmBn),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
@@ -119,7 +115,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Name:               "Validator Client Container Tag",
 			Description:        "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, prysmVcProd, prysmVcTest),
+			Default:            cfg.imageTagDefaults(ImagePrysmVc),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

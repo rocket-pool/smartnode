@@ -7,7 +7,7 @@
 
 services:
   addon_gww:
-    image: {{.GraffitiWallWriter.GetConfig.ContainerTag}}
+    image: ${GWW_IMAGE_TAG_OVERRIDE:-${GWW_IMAGE_TAG_DEFAULT}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_addon_gww
     restart: unless-stopped

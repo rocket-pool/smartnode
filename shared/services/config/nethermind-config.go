@@ -10,8 +10,6 @@ import (
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.39.3"
-	nethermindTagTest          string = "nethermind/nethermind:1.39.3"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -170,7 +168,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the Nethermind container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, nethermindTagProd, nethermindTagTest),
+			Default:            cfg.imageTagDefaults(ImageNethermind),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

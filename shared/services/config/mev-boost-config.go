@@ -9,8 +9,6 @@ import (
 
 // Constants
 const (
-	mevBoostTagProd             string = "flashbots/mev-boost:1.12.0"
-	mevBoostTagTest             string = "flashbots/mev-boost:1.12.0"
 	mevDocsUrl                  string = "https://docs.rocketpool.net/node-staking/mev"
 	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
 	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
@@ -179,7 +177,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the MEV-Boost container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, mevBoostTagProd, mevBoostTagTest),
+			Default:            cfg.imageTagDefaults(ImageMevBoost),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

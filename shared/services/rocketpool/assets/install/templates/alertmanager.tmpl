@@ -7,7 +7,7 @@
 
 services:
   alertmanager:
-    image: {{.Alertmanager.ContainerTag}}
+    image: ${ALERTMANAGER_IMAGE_TAG_OVERRIDE:-${ALERTMANAGER_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_alertmanager
     restart: unless-stopped
     command:

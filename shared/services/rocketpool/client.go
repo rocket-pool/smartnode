@@ -925,9 +925,20 @@ func (c *Client) RunPruneProvisioner(container, volume string) error {
 	return c.TouchEthclientMarker(container, volume, "prune.lock")
 }
 
+func (c *Client) resolvedImage(key, fallback string) string {
+	cfg, _, err := c.LoadConfig()
+	if err != nil || cfg == nil {
+		return fallback
+	}
+	if v := cfg.ResolvedImage(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 // Creates a marker file on the execution client volume (used for prune and DB migrations).
 func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/%s'", container, volume, marker)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.21.3")), marker)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -948,7 +959,7 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 
 	for i := 0; i < retryCount; i++ {
 		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
-		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s curlimages/curl -Ss %s`, pruneStarterContainerSuffix, executionContainerName, command)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.13.0")), command)
 
 		if i != 0 {
 			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
@@ -1167,18 +1178,135 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", fmt.Errorf("error deploying Docker templates: %w", err)
 	}
 
-	// Include all of the relevant docker compose definition files
+	if err := ensureImageEnvFiles(expandedConfigPath); err != nil {
+		return "", err
+	}
+
+	composePaths := template.ComposePaths{
+		RuntimePath:  filepath.Join(expandedConfigPath, runtimeDir),
+		TemplatePath: filepath.Join(expandedConfigPath, templatesDir),
+		OverridePath: filepath.Join(expandedConfigPath, overrideDir),
+	}
+	composePair, err := composePaths.File("compose").Write(composeTemplateData{
+		Includes:      composeIncludes(expandedConfigPath, deployedContainers),
+		ProjectDir:    expandedConfigPath,
+		Network:       string(cfg.GetNetwork()),
+		ExtraNetworks: cfg.OverlayNetworkNames(),
+	})
+	if err != nil {
+		return "", fmt.Errorf("error writing compose.yml: %w", err)
+	}
+
 	composeFileFlags := []string{}
-	for _, container := range deployedContainers {
-		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
+	for _, path := range composePair {
+		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(path)))
 	}
 	for _, container := range composeFiles {
 		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 
-	// Return command
-	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	envPrefix := []string{
+		fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", cfg.Smartnode.ProjectName.Value.(string)),
+	}
+	assignments, err := cfg.ComposeEnvAssignments()
+	if err != nil {
+		return "", err
+	}
+	envPrefix = append(envPrefix, assignments...)
 
+	parts := append(envPrefix, "docker compose",
+		"--project-directory", shellescape.Quote(expandedConfigPath),
+		strings.Join(composeFileFlags, " "),
+		args,
+	)
+	return strings.Join(parts, " "), nil
+
+}
+
+func ensureImageEnvFiles(dir string) error {
+	official := []string{config.ImagesMainnetFile, config.ImagesTestnetFile, config.ImagesDevnetFile}
+	for _, name := range official {
+		data, ok := assets.EmbeddedNetworkEnv(name)
+		if !ok && name == config.ImagesMainnetFile {
+			data = assets.ImagesMainnetEnv()
+			ok = true
+		}
+		if !ok {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		if _, err := os.Stat(path); err == nil {
+			continue
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("could not stat %s: %w", path, err)
+		}
+		if err := os.WriteFile(path, data, 0664); err != nil {
+			return fmt.Errorf("could not write %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+type composeInclude struct {
+	Path    string
+	WithEnv bool
+}
+
+type composeTemplateData struct {
+	Includes      []composeInclude
+	ProjectDir    string
+	Network       string
+	ExtraNetworks []string
+}
+
+func (d composeTemplateData) TestnetOnly() string {
+	if d.Network == "testnet" {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) DevnetOnly() string {
+	if d.Network == "devnet" {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) CommentUnless(network string) string {
+	if d.Network == network {
+		return ""
+	}
+	return "#"
+}
+
+func (d composeTemplateData) MainnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesMainnetFile)
+}
+
+func (d composeTemplateData) TestnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesTestnetFile)
+}
+
+func (d composeTemplateData) DevnetEnv() string {
+	return filepath.Join(d.ProjectDir, config.ImagesDevnetFile)
+}
+
+func (d composeTemplateData) EnvFile(network string) string {
+	return filepath.Join(d.ProjectDir, network+".env")
+}
+
+func composeIncludes(projectDir string, deployed []string) []composeInclude {
+	out := make([]composeInclude, 0, len(deployed))
+	for _, path := range deployed {
+		entry := composeInclude{Path: path, WithEnv: true}
+		rel, err := filepath.Rel(projectDir, path)
+		if err == nil && (rel == overrideDir || strings.HasPrefix(rel, overrideDir+string(filepath.Separator))) {
+			entry.WithEnv = false
+		}
+		out = append(out, entry)
+	}
+	return out
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration

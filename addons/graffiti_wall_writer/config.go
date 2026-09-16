@@ -4,11 +4,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Constants
-const (
-	containerTag string = "rocketpool/graffiti-wall-addon:v1.0.1"
-)
-
 // Configuration for the Graffiti Wall Writer
 type GraffitiWallWriterConfig struct {
 	Title string `yaml:"-"`
@@ -31,7 +26,7 @@ type GraffitiWallWriterConfig struct {
 }
 
 // Creates a new configuration instance
-func NewConfig() *GraffitiWallWriterConfig {
+func NewConfig(containerTag string) *GraffitiWallWriterConfig {
 	return &GraffitiWallWriterConfig{
 		Title: "Graffiti Wall Writer Settings",
 
