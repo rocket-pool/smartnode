@@ -1,7 +1,7 @@
 .DS_Store
 vendor
 node_modules
-/scripts/config.js
+/scripts/*
 /rocketpool/rocketpool
 /rocketpool-cli/rocketpool-cli-darwin-amd64
 /rocketpool-cli/rocketpool-cli-linux-amd64

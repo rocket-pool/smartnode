@@ -7,7 +7,7 @@
 
 services:
   mev-boost:
-    image: {{.MevBoost.ContainerTag}}
+    image: ${MEV_BOOST_IMAGE_TAG_OVERRIDE:-${MEV_BOOST_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_mev-boost
     restart: unless-stopped
     ports: [{{.GetMevBoostOpenPorts}}]

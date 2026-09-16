@@ -5,9 +5,7 @@ import (
 )
 
 const (
-	lighthouseTagPortableTest string = "sigp/lighthouse:v8.2.2"
-	lighthouseTagPortableProd string = "sigp/lighthouse:v8.2.2"
-	defaultLhMaxPeers         uint16 = 100
+	defaultLhMaxPeers uint16 = 100
 )
 
 // Configuration for Lighthouse
@@ -67,7 +65,7 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the Lighthouse container you want to use from Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, lighthouseTagPortableProd, lighthouseTagPortableTest),
+			Default:            cfg.imageTagDefaults(ImageLighthouse),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

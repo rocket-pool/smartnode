@@ -96,6 +96,13 @@ func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title
 			param := layout.parameters[formItem].parameter
 			defaultValue, _ := param.GetDefault(networkParam.Value.(cfgtypes.Network))
 			descriptionText := fmt.Sprintf("Default: %v\n\n%s", defaultValue, param.Description)
+			if param.ID == "containerTag" {
+				if fmt.Sprint(param.Value) == fmt.Sprint(defaultValue) {
+					descriptionText = "This is the default version of this service for the current Smart Node release.\n\n" + param.Description
+				} else {
+					descriptionText = fmt.Sprintf("The default version for this service is %v.\n\n%s", defaultValue, param.Description)
+				}
+			}
 			layout.descriptionBox.SetText(descriptionText)
 			layout.descriptionBox.ScrollToBeginning()
 		}

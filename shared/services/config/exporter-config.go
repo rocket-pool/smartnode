@@ -4,9 +4,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Constants
-const exporterTag string = "prom/node-exporter:v1.12.1"
-
 // Defaults
 const defaultExporterRootFs bool = false
 
@@ -45,7 +42,7 @@ func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 			Name:               "Exporter Container Tag",
 			Description:        "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: exporterTag},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageMainnet(ImageExporter)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Exporter},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

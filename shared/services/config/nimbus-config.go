@@ -7,14 +7,6 @@ import (
 )
 
 const (
-	// Testnet
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v26.8.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
-
-	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v26.8.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v26.8.0"
-
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
 )
@@ -83,7 +75,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			Name:               "Beacon Node Container Tag",
 			Description:        "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, nimbusBnTagProd, nimbusBnTagTest),
+			Default:            cfg.imageTagDefaults(ImageNimbusBn),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
@@ -94,7 +86,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			Name:               "Validator Client Container Tag",
 			Description:        "The tag name of the Nimbus Validator Client container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, nimbusVcTagProd, nimbusVcTagTest),
+			Default:            cfg.imageTagDefaults(ImageNimbusVc),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

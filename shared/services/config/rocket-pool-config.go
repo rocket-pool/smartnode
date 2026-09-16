@@ -67,7 +67,9 @@ type RocketPoolConfig struct {
 	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
 	IsCLI bool `yaml:"-"`
 
-	networks *NetworksConfig `yaml:"-"`
+	networks        *NetworksConfig                  `yaml:"-"`
+	imagesMainnet   *ImageCatalog                    `yaml:"-"`
+	imagesByNetwork map[config.Network]*ImageCatalog `yaml:"-"`
 
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
@@ -273,10 +275,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) (*RocketPoolConfig, er
 	if err != nil {
 		return nil, fmt.Errorf("could not load networks: %w", err)
 	}
-	return newRocketPoolConfig(rpDir, isNativeMode, networks)
+	mainnet, overlays, err := LoadImageCatalogs(rpDir, networks)
+	if err != nil {
+		return nil, fmt.Errorf("could not load images: %w", err)
+	}
+	return newRocketPoolConfig(rpDir, isNativeMode, networks, mainnet, overlays)
 }
 
-func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig) (*RocketPoolConfig, error) {
+func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig, mainnet *ImageCatalog, overlays map[config.Network]*ImageCatalog) (*RocketPoolConfig, error) {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
@@ -293,6 +299,8 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 		RocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
 		networks:            networks,
+		imagesMainnet:       mainnet,
+		imagesByNetwork:     overlays,
 
 		ExecutionClientMode: config.Parameter{
 			ID:                 "executionClientMode",
@@ -614,7 +622,7 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 	cfg.MevBoost = NewMevBoostConfig(cfg)
 	cfg.CommitBoost = NewCommitBoostConfig(cfg)
 	// Addons
-	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter()
+	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter(mainnet.Must(ImageGWW))
 	cfg.RescueNode = addons.NewRescueNode()
 
 	// Apply the default values for the default network from YAML
@@ -649,7 +657,7 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig, err := newRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks)
+	newConfig, err := newRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks, cfg.imagesMainnet, cfg.imagesByNetwork)
 	if err != nil {
 		panic(err)
 	}
@@ -1039,8 +1047,11 @@ func (cfg *RocketPoolConfig) GetVCContainerTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	return cCfg.GetValidatorImage(), nil
+	ref, err := cfg.GetVCImageEnvRef()
+	if err != nil {
+		return cCfg.GetValidatorImage(), nil
+	}
+	return cfg.imageFromEnvRef(ref, cCfg.GetValidatorImage()), nil
 }
 
 // Used by text/template to format validator.yml
@@ -1359,15 +1370,15 @@ func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
 
 	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
 	case config.ExecutionClient_Geth:
-		return cfg.Geth.ContainerTag.Value.(string), nil
+		return cfg.resolveParamImage(&cfg.Geth.ContainerTag, ImageGeth), nil
 	case config.ExecutionClient_Nethermind:
-		return cfg.Nethermind.ContainerTag.Value.(string), nil
+		return cfg.resolveParamImage(&cfg.Nethermind.ContainerTag, ImageNethermind), nil
 	case config.ExecutionClient_Besu:
-		return cfg.Besu.ContainerTag.Value.(string), nil
+		return cfg.resolveParamImage(&cfg.Besu.ContainerTag, ImageBesu), nil
 	case config.ExecutionClient_Reth:
-		return cfg.Reth.ContainerTag.Value.(string), nil
+		return cfg.resolveParamImage(&cfg.Reth.ContainerTag, ImageReth), nil
 	case config.ExecutionClient_Erigon:
-		return cfg.Erigon.ContainerTag.Value.(string), nil
+		return cfg.resolveParamImage(&cfg.Erigon.ContainerTag, ImageErigon), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1542,8 +1553,11 @@ func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	return cCfg.GetBeaconNodeImage(), nil
+	ref, err := cfg.GetBeaconImageEnvRef()
+	if err != nil {
+		return cCfg.GetBeaconNodeImage(), nil
+	}
+	return cfg.imageFromEnvRef(ref, cCfg.GetBeaconNodeImage()), nil
 }
 
 // Used by text/template to format eth2.yml

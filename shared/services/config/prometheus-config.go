@@ -4,9 +4,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Constants
-const prometheusTag string = "prom/prometheus:v3.14.0"
-
 // Defaults
 const defaultPrometheusPort uint16 = 9091
 const defaultPrometheusOpenPort string = string(config.RPC_Closed)
@@ -62,7 +59,7 @@ func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
 			Name:               "Prometheus Container Tag",
 			Description:        "The tag name of the Prometheus container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: prometheusTag},
+			Default:            map[config.Network]interface{}{config.Network_All: cfg.imageMainnet(ImagePrometheus)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Prometheus},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,

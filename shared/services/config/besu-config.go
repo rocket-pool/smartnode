@@ -6,8 +6,6 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:26.8.1"
-	besuTagProd          string = "hyperledger/besu:26.8.1"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -97,7 +95,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 			Name:               "Container Tag",
 			Description:        "The tag name of the Besu container you want to use on Docker Hub.",
 			Type:               config.ParameterType_String,
-			Default:            clientTagDefaults(cfg.networks, besuTagProd, besuTagTest),
+			Default:            cfg.imageTagDefaults(ImageBesu),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
