@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -41,10 +40,6 @@ const (
 
 	PruneFreeSpaceRequired           uint64 = 50 * 1024 * 1024 * 1024
 	NethermindPruneFreeSpaceRequired uint64 = 250 * 1024 * 1024 * 1024
-
-	// Capture the entire image name, including the custom registry if present.
-	// Just ignore the version tag.
-	dockerImageRegex string = "(?P<image>.+):.*"
 
 	clearLine string = "\033[2K"
 )
@@ -891,7 +886,9 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 }
 
-// Extract the image name from a Docker image string
+// Extract the repository name from a Docker image string (registry/name).
+// Tags (:v1.2.3) and digests (@sha256:...) are ignored so a version bump of the
+// same client is not treated as a client switch.
 func getDockerImageName(imageString string) (string, error) {
 
 	// Return the empty string if the validator didn't exist (probably because this is the first time starting it up)
@@ -899,18 +896,19 @@ func getDockerImageName(imageString string) (string, error) {
 		return "", nil
 	}
 
-	reg := regexp.MustCompile(dockerImageRegex)
-	matches := reg.FindStringSubmatch(imageString)
-	if matches == nil {
+	name := imageString
+	if i := strings.Index(name, "@"); i >= 0 {
+		name = name[:i]
+	}
+	slash := strings.LastIndex(name, "/")
+	colon := strings.LastIndex(name, ":")
+	if colon > slash {
+		name = name[:colon]
+	}
+	if name == "" {
 		return "", fmt.Errorf("Couldn't parse the Docker image string [%s]", imageString)
 	}
-	imageIndex := reg.SubexpIndex("image")
-	if imageIndex == -1 {
-		return "", fmt.Errorf("Image name not found in Docker image [%s]", imageString)
-	}
-
-	imageName := matches[imageIndex]
-	return imageName, nil
+	return name, nil
 }
 
 // Prepares the execution client for pruning
