@@ -114,7 +114,9 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	if err := cpCmd.Run(); err != nil {
 		return fmt.Errorf("error backing up current cli: %w", err)
 	}
-	defer os.Remove(backupPath)
+	defer func() {
+		_ = os.Remove(backupPath)
+	}()
 
 	downloadDir := filepath.Join(filepath.Dir(oldBinaryPath), downloadDirName)
 	err = os.MkdirAll(downloadDir, 0755)
