@@ -109,6 +109,13 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	}
 	fmt.Printf("Replacing the cli at %s with the latest version...\n", oldBinaryPath)
 
+	backupPath := oldBinaryPath + ".bak"
+	cpCmd := exec.Command("cp", oldBinaryPath, backupPath)
+	if err := cpCmd.Run(); err != nil {
+		return fmt.Errorf("error backing up current cli: %w", err)
+	}
+	defer os.Remove(backupPath)
+
 	downloadDir := filepath.Join(filepath.Dir(oldBinaryPath), downloadDirName)
 	err = os.MkdirAll(downloadDir, 0755)
 	if err != nil {
@@ -213,8 +220,8 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	fmt.Println("=========================================")
 	fmt.Println("========= Stopping service... ===========")
 	fmt.Println("=========================================")
-	stopCmd := []string{"service", "stop"}
-	cmd = forkCommand(oldBinaryPath, yes, stopCmd...)
+	// Stop with the previous CLI so compose matches the running containers.
+	cmd = forkCommand(backupPath, yes, "service", "stop")
 	err = cmd.Run()
 	if err != nil {
 		errorPartialSuccess(err)
