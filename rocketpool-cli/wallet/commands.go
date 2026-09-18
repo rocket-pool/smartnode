@@ -44,7 +44,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					&cli.StringFlag{
 						Name:    "password",
 						Aliases: []string{"p"},
-						Usage:   "The password to secure the wallet with (if not already set)",
+						Usage:   "The password to secure the wallet with (randomly generated if omitted; only used if not already set)",
 					},
 					&cli.BoolFlag{
 						Name:    "confirm-mnemonic",
@@ -86,7 +86,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					&cli.StringFlag{
 						Name:    "password",
 						Aliases: []string{"p"},
-						Usage:   "The password to secure the wallet with (if not already set)",
+						Usage:   "The password to secure the wallet with (randomly generated if omitted; only used if not already set)",
 					},
 					&cli.StringFlag{
 						Name:    "mnemonic",

@@ -9,6 +9,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"github.com/sethvargo/go-password/password"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -17,26 +18,17 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	hexutils "github.com/rocket-pool/smartnode/shared/hex"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Prompt for a wallet password
-func promptPassword() string {
-	for {
-		password := promptcli.PromptPassword(
-			"Please enter a password to secure your wallet with:",
-			fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
-			fmt.Sprintf("Your password must be at least %d characters long. Please try again:", passwords.MinPasswordLength),
-		)
-		confirmation := promptcli.PromptPassword("Please confirm your password:", "^.*$", "")
-		if password == confirmation {
-			return password
-		}
-		fmt.Println("Password confirmation does not match.")
-		fmt.Println("")
+// Generate a wallet password using cryptographically secure randomness.
+func generatePassword() (string, error) {
+	generated, err := password.Generate(32, 6, 6, false, false)
+	if err != nil {
+		return "", fmt.Errorf("error generating wallet password: %w", err)
 	}
+	return generated, nil
 }
 
 // Prompt for a recovery mnemonic phrase

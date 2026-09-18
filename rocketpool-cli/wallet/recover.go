@@ -69,7 +69,10 @@ func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecov
 	// Set password if not set
 	if !status.PasswordSet {
 		if password == "" {
-			password = promptPassword()
+			password, err = generatePassword()
+			if err != nil {
+				return err
+			}
 		}
 		if _, err := rp.SetPassword(password); err != nil {
 			return err
