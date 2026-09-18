@@ -9,15 +9,17 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
-	ImagesMainnetFile = "mainnet.env"
-	ImagesTestnetFile = "testnet.env"
-	ImagesDevnetFile  = "devnet.env"
-	ComposeMainFile   = "compose.yml"
+	ImagesMainnetFile   = "mainnet.env"
+	ImagesTestnetFile   = "testnet.env"
+	ImagesDevnetFile    = "devnet.env"
+	ComposeMainFile     = "compose.yml"
+	ComposeImageEnvFile = "image-tags.env"
 
 	ImageSmartnode = "RP_IMAGE_SMARTNODE"
 
@@ -403,8 +405,7 @@ func (cfg *RocketPoolConfig) DevnetOnly() string {
 	return "#"
 }
 
-// ImagesEnvFiles is the on-disk catalog list (mainnet.env, then {network}.env).
-// Compose interpolates runtime/image-tags.env, which is generated from these.
+// OverlayNetworkNames lists custom networks that may have image overlays.
 func (cfg *RocketPoolConfig) OverlayNetworkNames() []string {
 	if cfg.networks == nil {
 		return nil
@@ -421,6 +422,8 @@ func (cfg *RocketPoolConfig) OverlayNetworkNames() []string {
 	return names
 }
 
+// ImagesEnvFiles returns mainnet.env followed by the selected network's env
+// file, if present. A network without an overlay inherits the mainnet pins.
 func (cfg *RocketPoolConfig) ImagesEnvFiles() []string {
 	files := []string{ImagesMainnetFile}
 	if name := cfg.overlayFileName(); name != "" {
@@ -636,28 +639,46 @@ func (cfg *RocketPoolConfig) tuiOverride(param *config.Parameter) (string, bool)
 	return value, true
 }
 
-// ComposeImageDefaults maps service-level *_IMAGE_TAG_DEFAULT vars to the
-// catalog pin for the selected client/network.
-func (cfg *RocketPoolConfig) ComposeImageDefaults() map[string]string {
+// composeImageKeys maps each service to its selected client's catalog key.
+func (cfg *RocketPoolConfig) composeImageKeys() map[string]string {
 	out := map[string]string{
-		SmartnodeImageTagDefault:    cfg.ResolvedImage(ImageSmartnode),
-		PrometheusImageTagDefault:   cfg.ResolvedImage(ImagePrometheus),
-		GrafanaImageTagDefault:      cfg.ResolvedImage(ImageGrafana),
-		ExporterImageTagDefault:     cfg.ResolvedImage(ImageExporter),
-		AlertmanagerImageTagDefault: cfg.ResolvedImage(ImageAlertmanager),
-		GWWImageTagDefault:          cfg.ResolvedImage(ImageGWW),
-		CurlImageTagDefault:         cfg.ResolvedImage(ImageCurl),
-		MevBoostImageTagDefault:     cfg.ResolvedImage(ImageMevBoost),
-		CommitBoostImageTagDefault:  cfg.ResolvedImage(ImageCommitBoost),
+		SmartnodeImageTagDefault:    ImageSmartnode,
+		PrometheusImageTagDefault:   ImagePrometheus,
+		GrafanaImageTagDefault:      ImageGrafana,
+		ExporterImageTagDefault:     ImageExporter,
+		AlertmanagerImageTagDefault: ImageAlertmanager,
+		GWWImageTagDefault:          ImageGWW,
+		CurlImageTagDefault:         ImageCurl,
+		MevBoostImageTagDefault:     ImageMevBoost,
+		CommitBoostImageTagDefault:  ImageCommitBoost,
 	}
 	if key, err := cfg.selectedECCatalogKey(); err == nil {
-		out[ECImageTagDefault] = cfg.ResolvedImage(key)
+		out[ECImageTagDefault] = key
 	}
 	if key, err := cfg.selectedBNCatalogKey(); err == nil {
-		out[BNImageTagDefault] = cfg.ResolvedImage(key)
+		out[BNImageTagDefault] = key
 	}
 	if key, err := cfg.selectedVCCatalogKey(); err == nil {
-		out[VCImageTagDefault] = cfg.ResolvedImage(key)
+		out[VCImageTagDefault] = key
+	}
+	return out
+}
+
+// ComposeImageDefaultRefs generates dotenv aliases, evaluated by Compose after
+// loading mainnet.env and the selected network overlay.
+func (cfg *RocketPoolConfig) ComposeImageDefaultRefs() map[string]string {
+	out := cfg.composeImageKeys()
+	for name, key := range out {
+		out[name] = EnvRef(key)
+	}
+	return out
+}
+
+// ComposeImageDefaults resolves the same aliases for Go callers.
+func (cfg *RocketPoolConfig) ComposeImageDefaults() map[string]string {
+	out := cfg.composeImageKeys()
+	for name, key := range out {
+		out[name] = cfg.ResolvedImage(key)
 	}
 	return out
 }
@@ -733,13 +754,15 @@ func (cfg *RocketPoolConfig) ComposeImageEnv() (map[string]string, error) {
 	return out, nil
 }
 
-// ComposeEnvAssignments returns KEY=value strings for Compose interpolation:
-// *_IMAGE_TAG_DEFAULT from the catalog and *_IMAGE_TAG_OVERRIDE when the TUI
-// customized a tag. Keys are sorted so command logs and diffs are reproducible.
+// ComposeEnvAssignments returns shell-quoted TUI overrides. Defaults come from
+// Compose's env_file list so network overlays can replace mainnet values.
+// Keys are sorted so command logs and diffs are reproducible.
 func (cfg *RocketPoolConfig) ComposeEnvAssignments() ([]string, error) {
-	env, err := cfg.ComposeImageEnv()
-	if err != nil {
-		return nil, err
+	env := cfg.ComposeEnvOverrides()
+	for key, value := range env {
+		if err := validateEnvAssignment(key, value); err != nil {
+			return nil, err
+		}
 	}
 	keys := make([]string, 0, len(env))
 	for key := range env {
@@ -748,7 +771,7 @@ func (cfg *RocketPoolConfig) ComposeEnvAssignments() ([]string, error) {
 	sort.Strings(keys)
 	out := make([]string, 0, len(keys))
 	for _, key := range keys {
-		out = append(out, key+"="+env[key])
+		out = append(out, key+"="+shellescape.Quote(env[key]))
 	}
 	return out, nil
 }

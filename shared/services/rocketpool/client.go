@@ -1149,6 +1149,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	expandedConfigPath, err = filepath.Abs(expandedConfigPath)
+	if err != nil {
+		return "", err
+	}
 
 	// Load config
 	cfg, isNew, err := c.LoadConfig()
@@ -1178,35 +1182,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", fmt.Errorf("error deploying Docker templates: %w", err)
 	}
 
-	if err := ensureImageEnvFiles(expandedConfigPath); err != nil {
-		return "", err
-	}
-
-	composePaths := template.ComposePaths{
-		RuntimePath:  filepath.Join(expandedConfigPath, runtimeDir),
-		TemplatePath: filepath.Join(expandedConfigPath, templatesDir),
-		OverridePath: filepath.Join(expandedConfigPath, overrideDir),
-	}
-	composePair, err := composePaths.File("compose").Write(composeTemplateData{
-		Includes:      composeIncludes(expandedConfigPath, deployedContainers),
-		ProjectDir:    expandedConfigPath,
-		Network:       string(cfg.GetNetwork()),
-		ExtraNetworks: cfg.OverlayNetworkNames(),
-	})
+	composePath, err := writeComposeFile(cfg, expandedConfigPath, deployedContainers, composeFiles)
 	if err != nil {
 		return "", fmt.Errorf("error writing compose.yml: %w", err)
 	}
 
-	composeFileFlags := []string{}
-	for _, path := range composePair {
-		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(path)))
-	}
-	for _, container := range composeFiles {
-		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
-	}
-
 	envPrefix := []string{
-		fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", cfg.Smartnode.ProjectName.Value.(string)),
+		"COMPOSE_PROJECT_NAME=" + shellescape.Quote(cfg.Smartnode.ProjectName.Value.(string)),
 	}
 	assignments, err := cfg.ComposeEnvAssignments()
 	if err != nil {
@@ -1216,7 +1198,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	parts := append(envPrefix, "docker compose",
 		"--project-directory", shellescape.Quote(expandedConfigPath),
-		strings.Join(composeFileFlags, " "),
+		"-f", shellescape.Quote(composePath),
 		args,
 	)
 	return strings.Join(parts, " "), nil
@@ -1247,66 +1229,48 @@ func ensureImageEnvFiles(dir string) error {
 	return nil
 }
 
-type composeInclude struct {
-	Path    string
-	WithEnv bool
-}
-
 type composeTemplateData struct {
-	Includes      []composeInclude
-	ProjectDir    string
-	Network       string
-	ExtraNetworks []string
+	Paths      []string
+	ProjectDir string
+	EnvFiles   []string
 }
 
-func (d composeTemplateData) TestnetOnly() string {
-	if d.Network == "testnet" {
-		return ""
+// Merge the entire application in one include path list. Splitting it into
+// includes changes precedence for services and shared networks/volumes.
+func writeComposeFile(cfg *config.RocketPoolConfig, projectDir string, deployed, extra []string) (string, error) {
+	if err := ensureImageEnvFiles(projectDir); err != nil {
+		return "", err
 	}
-	return "#"
-}
-
-func (d composeTemplateData) DevnetOnly() string {
-	if d.Network == "devnet" {
-		return ""
+	data := composeTemplateData{
+		Paths:      append(slices.Clone(deployed), filepath.Join(projectDir, overrideDir, config.ComposeMainFile)),
+		ProjectDir: projectDir,
 	}
-	return "#"
-}
-
-func (d composeTemplateData) CommentUnless(network string) string {
-	if d.Network == network {
-		return ""
-	}
-	return "#"
-}
-
-func (d composeTemplateData) MainnetEnv() string {
-	return filepath.Join(d.ProjectDir, config.ImagesMainnetFile)
-}
-
-func (d composeTemplateData) TestnetEnv() string {
-	return filepath.Join(d.ProjectDir, config.ImagesTestnetFile)
-}
-
-func (d composeTemplateData) DevnetEnv() string {
-	return filepath.Join(d.ProjectDir, config.ImagesDevnetFile)
-}
-
-func (d composeTemplateData) EnvFile(network string) string {
-	return filepath.Join(d.ProjectDir, network+".env")
-}
-
-func composeIncludes(projectDir string, deployed []string) []composeInclude {
-	out := make([]composeInclude, 0, len(deployed))
-	for _, path := range deployed {
-		entry := composeInclude{Path: path, WithEnv: true}
-		rel, err := filepath.Rel(projectDir, path)
-		if err == nil && (rel == overrideDir || strings.HasPrefix(rel, overrideDir+string(filepath.Separator))) {
-			entry.WithEnv = false
+	for _, path := range extra {
+		// CLI -f paths are relative to the working directory, not the include.
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return "", err
 		}
-		out = append(out, entry)
+		data.Paths = append(data.Paths, absolute)
 	}
-	return out
+	for _, name := range cfg.ImagesEnvFiles() {
+		data.EnvFiles = append(data.EnvFiles, filepath.Join(projectDir, name))
+	}
+	// Resolve the selected client aliases after mainnet and the network overlay
+	// have been loaded by Compose. Only TUI overrides go in the shell environment.
+	imageEnv := filepath.Join(projectDir, runtimeDir, config.ComposeImageEnvFile)
+	if err := config.WriteEnvFile(imageEnv, cfg.ComposeImageDefaultRefs()); err != nil {
+		return "", fmt.Errorf("could not write image aliases: %w", err)
+	}
+	data.EnvFiles = append(data.EnvFiles, imageEnv)
+	tmpl := template.Template{
+		Src: filepath.Join(projectDir, templatesDir, "compose.tmpl"),
+		Dst: filepath.Join(projectDir, runtimeDir, config.ComposeMainFile),
+	}
+	if err := tmpl.Write(data); err != nil {
+		return "", err
+	}
+	return tmpl.Dst, nil
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
