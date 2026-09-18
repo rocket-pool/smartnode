@@ -29,8 +29,9 @@ func (c *ComposePaths) File(name string) *ComposeFile {
 }
 
 // Given a ComposeFile returned by ComposePaths.File, find and parse the .tmpl
-// from the TemplatePath, populate and save to the RuntimePath, and return a
-// slice of compose definitions pertaining to the container (including the override).
+// from the TemplatePath, populate and save to the RuntimePath, and return the
+// generated compose file followed by its override. Preserve this order when
+// merging with -f flags or a single include path list.
 func (c *ComposeFile) Write(data interface{}) ([]string, error) {
 	composePath := filepath.Join(c.paths.RuntimePath, c.name+composeFileSuffix)
 	tmpl := Template{
