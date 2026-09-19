@@ -1,6 +1,5 @@
 #!/bin/sh
-# TODO(Hegota): Remove this detector when Smart Node drops Patricia state pruning.
-# Shared by start-ec.sh and prune-eth1. Inspect persisted state, not just the flat
+# Shared by start-ec.sh, prune-eth1, and get-db-details. Inspect persisted state, not just the flat
 # directory: Nethermind 2.0 also creates empty flat column families on Patricia.
 # Based on https://github.com/ethstaker/eth-docker/pull/2819.
 DB_ROOT=${1:-/ethclient/nethermind/nethermind_db}

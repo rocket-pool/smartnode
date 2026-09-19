@@ -198,16 +198,8 @@ if [ "$CLIENT" = "nethermind" ]; then
     # TODO(Hegota): Remove Patricia detection and the state pruning flags below.
     NETHERMIND_DB=$(sh /setup/nethermind-db.sh) || exit 1
     # A fresh/resynced database uses FlatDB in v2.0 unless explicitly opted out.
-    if [ "$NETHERMIND_DB" = "none" ]; then
-        if printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.enabled|flatdb-enabled)(=|[[:space:]]+)false([[:space:]]|$)'; then
-            NETHERMIND_DB=patricia
-        elif ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.enabled|flatdb-enabled)(=|[[:space:]]+)true([[:space:]]|$)'; then
-            # Preserve fresh-sync auto pruning with the still-supported v1 images.
-            NETHERMIND_VERSION=$("$NETHERMIND_BINARY" --version) || exit 1
-            if printf '%s\n' "$NETHERMIND_VERSION" | grep -Eq '(^|/|[[:space:]])v?1\.[0-9]'; then
-                NETHERMIND_DB=patricia
-            fi
-        fi
+    if [ "$NETHERMIND_DB" = "none" ] && printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.enabled|flatdb-enabled)(=|[[:space:]]+)false([[:space:]]|$)'; then
+        NETHERMIND_DB=patricia
     fi
 
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
