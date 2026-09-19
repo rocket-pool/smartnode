@@ -231,6 +231,17 @@ func (p *ExecutionClientManager) PendingNonceAt(ctx context.Context, account com
 	return result.(uint64), err
 }
 
+// RawCallContext executes a raw JSON-RPC call against the active execution client.
+func (p *ExecutionClientManager) RawCallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+	if p.static != nil {
+		return fmt.Errorf("raw RPC call %s not supported in static mode", method)
+	}
+	_, err := p.runFunction(func(client *EthClient) (interface{}, error) {
+		return nil, client.Client.Client().CallContext(ctx, result, method, args...)
+	})
+	return err
+}
+
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 // execution of a transaction.
 func (p *ExecutionClientManager) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
