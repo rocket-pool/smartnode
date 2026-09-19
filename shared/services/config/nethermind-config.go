@@ -33,6 +33,8 @@ type NethermindConfig struct {
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
+	// TODO(Hegota): Remove these four Patricia-only state pruning parameters,
+	// their defaults/GetParameters entries, and their eth1.tmpl environment variables.
 	// Nethermind's memory for in-memory pruning
 	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
 
@@ -100,7 +102,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		PruneMemSize: config.Parameter{
 			ID:                 "pruneMemSize",
 			Name:               "In-Memory Pruning Cache Size",
-			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\n Leave it blank to use the client's default.",
+			Description:        "Only used with Nethermind's legacy Patricia database; ignored with FlatDB.\n\nThe amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\n Leave it blank to use the client's default.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -111,7 +113,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		FullPruneMemoryBudget: config.Parameter{
 			ID:                 "fullPruneMemoryBudget",
 			Name:               "Full Prune Memory Budget Size",
-			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its full pruning system. Higher values mean less writes to your SSD and faster pruning times.\n\n Leave blank to use the client's default.",
+			Description:        "Only used with Nethermind's legacy Patricia database; ignored with FlatDB.\n\nThe amount of RAM (in MB) you want to dedicate to Nethermind for its full pruning system. Higher values mean less writes to your SSD and faster pruning times.\n\n Leave blank to use the client's default.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -122,7 +124,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		FullPruningThresholdMb: config.Parameter{
 			ID:                 "fullPruningThresholdMb",
 			Name:               "Prune threshold (MB)",
-			Description:        "When the volume free space (in MB) hits this level, Nethermind will automatically start full pruning to reclaim disk space.",
+			Description:        "Only used with Nethermind's legacy Patricia database; ignored with FlatDB.\n\nWhen the volume free space (in MB) hits this level, Nethermind will automatically start full pruning to reclaim disk space.",
 			Type:               config.ParameterType_Uint,
 			Default:            nethermindPruneThresholdDefaults(cfg.networks),
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -133,7 +135,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		FullPruningMaxDegreeOfParallelism: config.Parameter{
 			ID:                 "fullPruningMaxDegreeOfParallelism",
 			Name:               "Full pruning parallelism",
-			Description:        "This option will be used to determine the number of threads allocated to concurrently by Nethermind to prune data.",
+			Description:        "Only used with Nethermind's legacy Patricia database; ignored with FlatDB.\n\nThis option will be used to determine the number of threads allocated to concurrently by Nethermind to prune data.",
 			Type:               config.ParameterType_Int,
 			Default:            map[config.Network]interface{}{config.Network_All: int64(0)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
