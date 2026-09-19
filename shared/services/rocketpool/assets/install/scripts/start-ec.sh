@@ -195,11 +195,29 @@ if [ "$CLIENT" = "nethermind" ]; then
         RP_NETHERMIND_NETWORK="${RP_NETHERMIND_NETWORK}_archive"
     fi
 
-    # TODO(Hegota): Remove Patricia detection and the state pruning flags below.
+    # Detect persisted state before selecting pruning flags or a fresh FlatDB layout.
     NETHERMIND_DB=$(sh /setup/nethermind-db.sh) || exit 1
     # A fresh/resynced database uses FlatDB in v2.0 unless explicitly opted out.
     if [ "$NETHERMIND_DB" = "none" ] && printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.enabled|flatdb-enabled)(=|[[:space:]]+)false([[:space:]]|$)'; then
         NETHERMIND_DB=patricia
+    fi
+
+    # Prefer FlatInTrie for fresh FlatDB syncs on machines with up to 16 GiB RAM.
+    # Persisting the choice so restarts and RAM upgrades cannot change an existing database's layout. resync-eth1
+    # deletes this marker together with the execution data volume.
+    NETHERMIND_LAYOUT_FLAGS=""
+    NETHERMIND_LAYOUT_MARKER=/ethclient/nethermind/.smartnode-flat-in-trie
+    if [ "$NETHERMIND_DB" != "patricia" ] &&
+        [ -z "$NETHERMIND_FLATDBCONFIG_LAYOUT" ] && [ -z "$NETHERMIND_FLATDB_LAYOUT" ] &&
+        ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.layout|flatdb-layout)(=|[[:space:]])'; then
+        if [ "$NETHERMIND_DB" = "none" ] && [ ! -f "$NETHERMIND_LAYOUT_MARKER" ] &&
+            [ "$(awk '/^MemTotal:/ {print ($2 > 0 && $2 <= 16777216)}' /proc/meminfo)" = "1" ]; then
+            mkdir -p /ethclient/nethermind && touch "$NETHERMIND_LAYOUT_MARKER" || exit 1
+        fi
+        if [ -f "$NETHERMIND_LAYOUT_MARKER" ]; then
+            NETHERMIND_LAYOUT_FLAGS="--FlatDb.Layout FlatInTrie"
+            echo "Using FlatInTrie, the saved Nethermind layout selected for a system with up to 16 GiB RAM."
+        fi
     fi
 
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
@@ -213,6 +231,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
+        $NETHERMIND_LAYOUT_FLAGS \
         $EC_ADDITIONAL_FLAGS"
 
     # TODO(Hegota): Drop automatic state pruning; FlatDB does not use it.
