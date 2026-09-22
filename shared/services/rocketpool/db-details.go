@@ -53,7 +53,7 @@ func gethDBVersionFromFiles(listing string) (string, error) {
 		}
 	}
 	// Match Geth core/rawdb.PreexistingDatabase, including old LevelDB nodes.
-	if !hasManifest && !(hasCurrent && hasOptions) {
+	if !hasManifest && (!hasCurrent || !hasOptions) {
 		if hasCurrent {
 			return "leveldb", nil
 		}
