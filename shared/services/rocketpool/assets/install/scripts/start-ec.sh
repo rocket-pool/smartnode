@@ -195,6 +195,31 @@ if [ "$CLIENT" = "nethermind" ]; then
         RP_NETHERMIND_NETWORK="${RP_NETHERMIND_NETWORK}_archive"
     fi
 
+    # Detect persisted state before selecting pruning flags or a fresh FlatDB layout.
+    NETHERMIND_DB=$(sh /setup/nethermind-db.sh) || exit 1
+    # A fresh/resynced database uses FlatDB in v2.0 unless explicitly opted out.
+    if [ "$NETHERMIND_DB" = "none" ] && printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.enabled|flatdb-enabled)(=|[[:space:]]+)false([[:space:]]|$)'; then
+        NETHERMIND_DB=patricia
+    fi
+
+    # Prefer FlatInTrie for fresh FlatDB syncs on machines with up to 16 GiB RAM.
+    # Persisting the choice so restarts and RAM upgrades cannot change an existing database's layout. resync-eth1
+    # deletes this marker together with the execution data volume.
+    NETHERMIND_LAYOUT_FLAGS=""
+    NETHERMIND_LAYOUT_MARKER=/ethclient/nethermind/.smartnode-flat-in-trie
+    if [ "$NETHERMIND_DB" != "patricia" ] &&
+        [ -z "$NETHERMIND_FLATDBCONFIG_LAYOUT" ] && [ -z "$NETHERMIND_FLATDB_LAYOUT" ] &&
+        ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.layout|flatdb-layout)(=|[[:space:]])'; then
+        if [ "$NETHERMIND_DB" = "none" ] && [ ! -f "$NETHERMIND_LAYOUT_MARKER" ] &&
+            [ "$(awk '/^MemTotal:/ {print ($2 > 0 && $2 <= 16777216)}' /proc/meminfo)" = "1" ]; then
+            mkdir -p /ethclient/nethermind && touch "$NETHERMIND_LAYOUT_MARKER" || exit 1
+        fi
+        if [ -f "$NETHERMIND_LAYOUT_MARKER" ]; then
+            NETHERMIND_LAYOUT_FLAGS="--FlatDb.Layout FlatInTrie"
+            echo "Using FlatInTrie, the saved Nethermind layout selected for a system with up to 16 GiB RAM."
+        fi
+    fi
+
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
         --config $RP_NETHERMIND_NETWORK \
         --data-dir /ethclient/nethermind \
@@ -206,10 +231,13 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
+        $NETHERMIND_LAYOUT_FLAGS \
         $EC_ADDITIONAL_FLAGS"
 
-    if [ "$EC_PRUNING_MODE" != "archive" ]; then
-        CMD="$CMD --Pruning.FullPruningTrigger=VolumeFreeSpace \
+    # TODO(Hegota): Drop automatic state pruning; FlatDB does not use it.
+    if [ "$NETHERMIND_DB" = "patricia" ] && [ "$EC_PRUNING_MODE" != "archive" ]; then
+        CMD="$CMD --Pruning.Mode=Hybrid \
+            --Pruning.FullPruningTrigger=VolumeFreeSpace \
             --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
             --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
             --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM"
@@ -221,23 +249,23 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
         CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
-        CMD="$CMD --Pruning.Mode=None --Receipt.TxLookupLimit=0"
+        CMD="$CMD --Receipt.TxLookupLimit=0"
+        if [ "$NETHERMIND_DB" = "patricia" ]; then
+            CMD="$CMD --Pruning.Mode=None"
+        fi
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
-        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
         CMD="$CMD --History.Pruning=UseAncientBarriers"
-        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
 
     if [ "$EC_PRUNING_MODE" = "rollingHistoryExpiry" ]; then
         CMD="$CMD --History.Pruning=Rolling"
-        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
     
     # Add optional supplemental primary JSON-RPC modules
@@ -272,7 +300,8 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Network.DiscoveryPort $EC_P2P_PORT --Network.P2PPort $EC_P2P_PORT"
     fi
 
-    if [ "$EC_PRUNING_MODE" != "archive" ]; then
+    # TODO(Hegota): Drop the Patricia state pruning memory settings.
+    if [ "$NETHERMIND_DB" = "patricia" ] && [ "$EC_PRUNING_MODE" != "archive" ]; then
         if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
             CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
         fi

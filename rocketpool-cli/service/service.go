@@ -38,7 +38,8 @@ const (
 	clientDataVolumeName              string = "/ethclient"
 	dataFolderVolumeName              string = "/.rocketpool/data"
 
-	PruneFreeSpaceRequired           uint64 = 50 * 1024 * 1024 * 1024
+	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
+	// TODO(Hegota): Remove the free-space requirement for Patricia state pruning.
 	NethermindPruneFreeSpaceRequired uint64 = 250 * 1024 * 1024 * 1024
 
 	clearLine string = "\033[2K"
@@ -934,6 +935,7 @@ func pruneExecutionClient(yes bool) error {
 	}
 	if cfg.IsNativeMode {
 		fmt.Println("You are using Native Mode.\nThe Smart Node cannot prune your Execution client for you, you'll have to do it manually.")
+		return nil
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 
@@ -944,6 +946,30 @@ func pruneExecutionClient(yes bool) error {
 	}
 
 	pruningMode, _ := cfg.ExecutionCommon.PruningMode.Value.(cfgtypes.Mode)
+
+	// Get the execution container before checking whether it supports pruning.
+	prefix, err := rp.GetContainerPrefix()
+	if err != nil {
+		return fmt.Errorf("Error getting container prefix: %w", err)
+	}
+	executionContainerName := prefix + ExecutionContainerSuffix
+
+	// TODO(Hegota): Remove Nethermind's Patricia state pruning path and free-space requirement.
+	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
+		layout, err := rp.NethermindDBLayout(executionContainerName)
+		if err != nil {
+			return err
+		}
+		if layout == "flat" {
+			fmt.Println("Nethermind is using FlatDB, which does not need or support manual state pruning.")
+			fmt.Println("History expiry is managed separately by your configured pruning mode.")
+			return nil
+		}
+		if layout == "none" {
+			fmt.Println("Nethermind has no persisted state database to prune yet.")
+			return nil
+		}
+	}
 
 	// Besu rolling expiry is applied continuously at startup; there is no offline prune step.
 	if selectedEc == cfgtypes.ExecutionClient_Besu && pruningMode == cfgtypes.PruningMode_RollingHistoryExpiry {
@@ -989,20 +1015,11 @@ func pruneExecutionClient(yes bool) error {
 	}
 	fmt.Println()
 
-	// Get the container prefix
-	prefix, err := rp.GetContainerPrefix()
-	if err != nil {
-		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
 	// Prompt for confirmation
 	if prompt.Declined(yes, "Are you sure you want to prune your main execution client?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
-
-	// Get the execution container name
-	executionContainerName := prefix + ExecutionContainerSuffix
 
 	// Check for enough free space
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)

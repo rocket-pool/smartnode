@@ -56,6 +56,7 @@ services:
       - BESU_JVM_HEAP_SIZE={{.Besu.JvmHeapSize}}
       {{- else if eq .ExecutionClient.String "nethermind"}}
       - EC_CACHE_SIZE={{.Nethermind.CacheSize}}
+      {{- /* TODO(Hegota): Remove the four Patricia state pruning environment variables below. */}}
       - RP_NETHERMIND_PRUNE_MEM_SIZE={{.Nethermind.PruneMemSize}}
       - RP_NETHERMIND_ADDITIONAL_MODULES={{.Nethermind.AdditionalModules}}
       - RP_NETHERMIND_ADDITIONAL_URLS={{.Nethermind.AdditionalUrls}}

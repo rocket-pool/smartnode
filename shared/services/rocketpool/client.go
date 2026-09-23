@@ -952,7 +952,25 @@ func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
 	return nil
 }
 
+// NethermindDBLayout inspects the execution container's persisted state using the
+// same detector as client startup. Errors must not be treated as Patricia.
+func (c *Client) NethermindDBLayout(executionContainerName string) (string, error) {
+	cmd := fmt.Sprintf("docker exec %s sh /setup/nethermind-db.sh", shellescape.Quote(executionContainerName))
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", fmt.Errorf("could not inspect Nethermind state database (the execution container must be running): %w", err)
+	}
+	layout := strings.TrimSpace(string(output))
+	switch layout {
+	case "patricia", "flat", "none":
+		return layout, nil
+	default:
+		return "", fmt.Errorf("unexpected Nethermind database layout: %q", layout)
+	}
+}
+
 // Curls the Nethermind admin URL to trigger pruning
+// TODO(Hegota): Remove RunNethermindPruneStarter when dropping Patricia pruning.
 func (c *Client) RunNethermindPruneStarter(executionContainerName string) error {
 	retryCount := 5
 	retryTime := 3 * time.Second

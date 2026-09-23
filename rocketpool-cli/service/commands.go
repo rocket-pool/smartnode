@@ -400,6 +400,18 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "get-db-details",
+				Usage:     "View the Nethermind database layout or Geth Pebble database version",
+				UsageText: "rocketpool service get-db-details",
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					return getDBDetails()
+				},
+			},
+
+			{
 				Name:      "prune-eth1",
 				Aliases:   []string{"n"},
 				Usage:     "Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.",
