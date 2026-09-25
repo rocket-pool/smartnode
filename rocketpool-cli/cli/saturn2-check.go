@@ -12,12 +12,13 @@ const Saturn2NotDeployedMessage = "This command is not available until Saturn 2 
 // IsSaturn2OnlySetting reports whether a protocol setting exists only after Saturn 2.
 func IsSaturn2OnlySetting(contract, setting string) bool {
 	switch contract {
-	case protocol.PerformanceSettingsContractName:
-		return true
 	case protocol.NetworkSettingsContractName:
 		switch setting {
 		case protocol.CooperativeExitPhaseSettingPath, protocol.DidNotExitPenaltyBaseSettingPath,
-			protocol.DidNotExitBaseSettingPath, protocol.DidNotExitBackoffSettingPath:
+			protocol.DidNotExitBaseSettingPath, protocol.DidNotExitBackoffSettingPath,
+			protocol.PerformanceExitsEnabledSettingPath, protocol.PerformancePeriodSettingPath,
+			protocol.ProofBufferSettingPath, protocol.PerformanceThresholdSettingPath,
+			protocol.PerformanceChallengePeriodSettingPath, protocol.PerformanceChallengeBondSettingPath:
 			return true
 		}
 		return false

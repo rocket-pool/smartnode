@@ -62,6 +62,12 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MinipoolUserDistributeWindowLengthSettingPath: settingKindUint256,
 	},
 	NetworkSettingsContractName: {
+		PerformanceExitsEnabledSettingPath:                 settingKindBool,
+		PerformancePeriodSettingPath:                       settingKindUint256,
+		ProofBufferSettingPath:                             settingKindUint256,
+		PerformanceThresholdSettingPath:                    settingKindUint256,
+		PerformanceChallengePeriodSettingPath:              settingKindUint256,
+		PerformanceChallengeBondSettingPath:                settingKindUint256,
 		CooperativeExitPhaseSettingPath:                    settingKindUint256,
 		DidNotExitPenaltyBaseSettingPath:                   settingKindUint256,
 		DidNotExitBaseSettingPath:                          settingKindUint256,
@@ -133,14 +139,6 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MegapoolUserDistributeDelayShortfallPath: settingKindUint256,
 		MegapoolPenaltyThreshold:                 settingKindUint256,
 		MegapoolPrestakeChallengePeriodPath:      settingKindUint256,
-	},
-	PerformanceSettingsContractName: {
-		PerformanceExitsEnabledSettingPath:    settingKindBool,
-		PerformancePeriodSettingPath:          settingKindUint256,
-		ProofBufferSettingPath:                settingKindUint256,
-		PerformanceThresholdSettingPath:       settingKindUint256,
-		PerformanceChallengePeriodSettingPath: settingKindUint256,
-		PerformanceChallengeBondSettingPath:   settingKindUint256,
 	},
 }
 

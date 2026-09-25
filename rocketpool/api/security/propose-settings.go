@@ -122,6 +122,17 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 
 	case protocol.NetworkSettingsContractName:
 		switch settingName {
+		// PerformanceExitsEnabled
+		case protocol.PerformanceExitsEnabledSettingPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = security.EstimateProposePerformanceExitsEnabledGas(rp, newValue, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformanceExitsEnabled: %w", err)
+			}
+
 		// SubmitBalancesEnabled
 		case protocol.SubmitBalancesEnabledSettingPath:
 			newValue, err := cliutils.ValidateBool(valueName, value)
@@ -203,19 +214,6 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			}
 		}
 
-	case protocol.PerformanceSettingsContractName:
-		switch settingName {
-		// PerformanceExitsEnabled
-		case protocol.PerformanceExitsEnabledSettingPath:
-			newValue, err := cliutils.ValidateBool(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasLimits, err = security.EstimateProposePerformanceExitsEnabledGas(rp, newValue, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing PerformanceExitsEnabled: %w", err)
-			}
-		}
 	}
 
 	// Make sure a setting was actually hit
@@ -329,6 +327,17 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 
 	case protocol.NetworkSettingsContractName:
 		switch settingName {
+		// PerformanceExitsEnabled
+		case protocol.PerformanceExitsEnabledSettingPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = security.ProposePerformanceExitsEnabled(rp, newValue, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformanceExitsEnabled: %w", err)
+			}
+
 		// SubmitBalancesEnabled
 		case protocol.SubmitBalancesEnabledSettingPath:
 			newValue, err := cliutils.ValidateBool(valueName, value)
@@ -409,19 +418,6 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			}
 		}
 
-	case protocol.PerformanceSettingsContractName:
-		switch settingName {
-		// PerformanceExitsEnabled
-		case protocol.PerformanceExitsEnabledSettingPath:
-			newValue, err := cliutils.ValidateBool(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = security.ProposePerformanceExitsEnabled(rp, newValue, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing PerformanceExitsEnabled: %w", err)
-			}
-		}
 	}
 
 	// Make sure a setting was actually hit

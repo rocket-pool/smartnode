@@ -84,7 +84,7 @@ func proposeSettingNodeComissionShareSecurityCouncilAdder(value *big.Int, yes bo
 
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes)
 }
 
 // Master general proposal function
