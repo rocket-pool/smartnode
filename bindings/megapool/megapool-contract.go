@@ -193,7 +193,11 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 		return ValidatorInfo{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
 
-	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
+	var blockNumber *big.Int
+	if opts != nil && opts.BlockNumber != nil {
+		blockNumber = opts.BlockNumber
+	}
+	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, blockNumber)
 	if err != nil {
 		return ValidatorInfo{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	}

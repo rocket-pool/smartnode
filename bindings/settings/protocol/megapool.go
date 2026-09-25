@@ -29,6 +29,19 @@ const (
 	MegapoolPrestakeChallengePeriodPath      string = "prestake.challenge.period"
 )
 
+// Get the deficit threshold in wei for permissionless megapool exits (Saturn 2).
+func GetMegapoolExitDeficit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	contract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := contract.Call(opts, value, "getExitDeficit"); err != nil {
+		return nil, fmt.Errorf("error getting megapool exit deficit: %w", err)
+	}
+	return *value, nil
+}
+
 // How long after an assignment a watcher must wait to dissolve a megapool validator
 func GetMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)

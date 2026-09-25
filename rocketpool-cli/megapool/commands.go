@@ -269,6 +269,33 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:        "exit-deficit",
+				Usage:       "Force exits from another operator's megapool when its deficit permits (Saturn 2 only)",
+				UsageText:   "rocketpool megapool exit-deficit megapool-address [options]",
+				Description: "Exits validators on another operator's megapool while its deficit still permits a permissionless exit. Exits the fewest validators that bring the deficit under the exit threshold when possible, and otherwise exits every eligible validator. Your node pays transaction gas and the EIP-7002 exit fees.",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm the exits and fees",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return exitDeficit(address, c.Bool("yes"))
+				},
+			},
+			{
 				Name:      "exit-validator",
 				Aliases:   []string{"t"},
 				Usage:     "Request to exit a megapool validator",
