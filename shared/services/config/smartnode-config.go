@@ -114,6 +114,9 @@ type SmartnodeConfig struct {
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
+	// The toggle for opting into Enforcer duties
+	EnableEnforcerTasks config.Parameter `yaml:"enableEnforcerTasks,omitempty"`
+
 	// Delay for automatic queue assignment
 	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
 }
@@ -227,6 +230,17 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		EnableEnforcerTasks: config.Parameter{
+			ID:                 "enableEnforcerTasks",
+			Name:               "Enable Enforcer tasks",
+			Description:        "Check this box to opt into Enforcer duties. Your node will enforce other operators' minipool exit requests after the cooperative exit phase by submitting forced exits or proofs that legacy minipools did not exit. These tasks spend ETH from your node wallet on transaction fees and may require CPU and memory intensive proof generation.\n\nYour own validators will continue to exit voluntarily in response to exit requests when this is disabled.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		AutoAssignmentDelay: config.Parameter{
 			ID:                 "autoAssignmentDelay",
 			Name:               "Automatic queue assignment delay",
@@ -327,6 +341,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
+		&cfg.EnableEnforcerTasks,
 		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
