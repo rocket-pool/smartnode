@@ -400,24 +400,24 @@ func proposeSettingPerformanceChallengeBond(value *big.Int, yes bool, toJson str
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceChallengeBondSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingCooperativeExitPhase(value uint64, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.CooperativeExitPhaseSettingPath, trueValue, yes, toJson)
+func proposeSettingCooperativeExitPhase(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.CooperativeExitPhaseSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingDidNotExitPenaltyBase(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitPenaltyBaseSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.DidNotExitPenaltyBaseSettingPath, trueValue, yes, toJson)
 }
 
-func proposeSettingDidNotExitBase(value uint64, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBaseSettingPath, trueValue, yes, toJson)
+func proposeSettingDidNotExitBase(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.DidNotExitBaseSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingDidNotExitBackoff(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.ExitSettingsContractName, protocol.DidNotExitBackoffSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.DidNotExitBackoffSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingNodeCommissionShare(value *big.Int, yes bool, toJson string) error {
