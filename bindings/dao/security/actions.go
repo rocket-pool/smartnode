@@ -34,50 +34,6 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of Kick
-func EstimateKickGas(rp *rocketpool.RocketPool, address common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionKick", address)
-}
-
-// Removes a member from the security DAO
-func Kick(rp *rocketpool.RocketPool, address common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAOSecurityActions.Transact(opts, "actionKick", address)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error kicking %s from the security DAO: %w", address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of KickMulti
-func EstimateKickMultiGas(rp *rocketpool.RocketPool, addresses []common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketDAOSecurityActions.GetTransactionGasInfo(opts, "actionKickMulti", addresses)
-}
-
-// Removes multiple members from the security DAO
-func KickMulti(rp *rocketpool.RocketPool, addresses []common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAOSecurityActions.Transact(opts, "actionKickMulti", addresses)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error kicking members from the security DAO: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of RequestLeave
 func EstimateRequestLeaveGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketDAOSecurityActions, err := getRocketDAOSecurityActions(rp, nil)

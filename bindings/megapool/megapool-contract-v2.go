@@ -1,26 +1,21 @@
 package megapool
 
 import (
-	"fmt"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 )
 
 type MegapoolV2 interface {
 	Megapool
-	EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error)
-	ForceExit(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (common.Hash, error)
 }
 
 // Megapool contract from delegate version 2, which adds support for EL-triggered forced exits
 type megapoolV2 struct {
 	megapoolV1
+	// TODO keeping this while waiting for megapoolv2 details
 }
 
 const (
@@ -56,18 +51,4 @@ func NewMegaPoolV2(rp *rocketpool.RocketPool, address common.Address, opts *bind
 			RocketPool: rp,
 		},
 	}, nil
-}
-
-// Estimate the gas of ForceExit
-func (mp *megapoolV2) EstimateForceExitGas(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "forceExit", validatorIds, feeLimit)
-}
-
-// Force exit megapool validators that failed to exit within the cooperative exit phase
-func (mp *megapoolV2) ForceExit(validatorIds []uint32, feeLimit *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "forceExit", validatorIds, feeLimit)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error force exiting megapool %s validators: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
 }

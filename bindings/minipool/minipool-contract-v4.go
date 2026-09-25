@@ -36,8 +36,6 @@ type MinipoolV4 interface {
 	EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (gaslimit.Limits, error)
 	DistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (common.Hash, error)
 	PrepareDistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (*types.Transaction, error)
-	ForceExit(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateForceExitGas(opts *bind.TransactOpts) (gaslimit.Limits, error)
 }
 
 // Minipool contract
@@ -77,10 +75,10 @@ func newMinipool_v4(rp *rocketpool.RocketPool, address common.Address, opts *bin
 	}, nil
 }
 
-// Get the minipool as a v4 minipool if it implements the required methods
+// Get the minipool as a v4 minipool if its version and methods support it.
 func GetMinipoolAsV4(mp Minipool) (MinipoolV4, bool) {
 	castedMp, ok := mp.(MinipoolV4)
-	if ok {
+	if ok && mp.GetVersion() >= 4 {
 		return castedMp, true
 	}
 	return nil, false
@@ -650,18 +648,4 @@ func (mp *minipool_v4) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 		Time:                  time.Unix(prestakeEvent.Time.Int64(), 0),
 	}
 	return prestakeData, nil
-}
-
-// Estimate the gas required to force exit a minipool
-func (mp *minipool_v4) EstimateForceExitGas(opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "forceExit")
-}
-
-// Force exit a minipool
-func (mp *minipool_v4) ForceExit(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "forceExit")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error forcing exit for minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
 }
