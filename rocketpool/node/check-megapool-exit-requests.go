@@ -142,8 +142,9 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 		return err
 	}
 
-	// Search MegapoolExitRequested events over a window covering the cooperative exit phase
-	lookbackBlocks := uint64(cooperativeExitPhase / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
+	// Search the cooperative phase plus the enforcement window so overdue requests can be retried.
+	lookbackDuration := cooperativeExitPhase + exitRequestEnforcementWindow
+	lookbackBlocks := uint64(lookbackDuration / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
 	if lookbackBlocks == 0 {
 		lookbackBlocks = 1
 	}
