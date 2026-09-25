@@ -165,6 +165,31 @@ func ForceMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address
 	return tx.Hash(), nil
 }
 
+// Estimate the gas to exit a list of megapool validators. The caller must fund
+// getExitFee() * len(validatorIds) through opts.Value. Non-owner callers must
+// satisfy the contract's projected deficit check.
+func EstimateExitMegapoolValidatorsGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return rocketNetworkExit.GetTransactionGasInfo(opts, "exitMegapoolValidators", megapoolAddress, validatorIds)
+}
+
+// Exit a list of megapool validators through RocketNetworkExit. The caller
+// supplies the total EIP-7002 fee in opts.Value.
+func ExitMegapoolValidators(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkExit.Transact(opts, "exitMegapoolValidators", megapoolAddress, validatorIds)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error exiting validators for megapool %s: %w", megapoolAddress.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get MinipoolExitRequested events emitted during the given block range
 func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MinipoolExitRequest, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)

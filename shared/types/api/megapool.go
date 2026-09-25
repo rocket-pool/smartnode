@@ -14,6 +14,33 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
+type MegapoolDeficitResponse struct {
+	APIResponse
+	Saturn2Deployed          bool     `json:"saturn2Deployed"`
+	Deficit                  *big.Int `json:"deficit"`
+	ExitDeficit              *big.Int `json:"exitDeficit"`
+	DeficitAfterPendingExits *big.Int `json:"deficitAfterPendingExits"`
+	ProjectedDeficit         *big.Int `json:"projectedDeficit"`
+	ExistingExits            uint32   `json:"existingExits"`
+	ValidatorsRequired       uint32   `json:"validatorsRequired"`
+	ValidatorIds             []uint32 `json:"validatorIds"`
+	CanExit                  bool     `json:"canExit"`
+	Reason                   string   `json:"reason"`
+}
+
+type CanExitMegapoolDeficitResponse struct {
+	APIResponse
+	CanExit      bool            `json:"canExit"`
+	ValidatorIds []uint32        `json:"validatorIds"`
+	ExitFee      *big.Int        `json:"exitFee"` // Total EIP-7002 fee in wei, excluding transaction gas.
+	GasLimits    gaslimit.Limits `json:"gasLimits"`
+}
+
+type ExitMegapoolDeficitResponse struct {
+	APIResponse
+	TxHash common.Hash `json:"txHash"`
+}
+
 type MegapoolStatusResponse struct {
 	APIResponse
 	Megapool       MegapoolDetails   `json:"megapoolDetails"`
