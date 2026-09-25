@@ -217,8 +217,7 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
-		// Megapools from version 2 support a forced exit request, so the
-		// did-not-exit penalty only applies to version 1
+		// Megapools from version 2 support a forced exit request
 		if mpv2, ok := mp.(megapool.MegapoolV2); ok {
 			t.log.Printlnf("Megapool %s (validator %d) uses version %d; submitting ForceExit", request.MegapoolAddress.Hex(), validatorIndex, mp.GetVersion())
 			err := t.forceExitMegapoolValidator(mpv2, request)
@@ -226,15 +225,6 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 				t.log.Printlnf("Error force-exiting megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
 			}
 			continue
-		}
-
-		// Log
-		t.log.Printlnf("The validator %d (megapool %s) did not exit within the cooperative exit phase", validatorIndex, request.MegapoolAddress.Hex())
-
-		err = t.penaliseMegapoolValidator(request)
-		// dont return if there was an error, just log it so we can continue with the next validator
-		if err != nil {
-			t.log.Printlnf("Error penalising megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
 		}
 	}
 
@@ -350,58 +340,6 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.Megap
 
 	// Log
 	t.log.Printlnf("Successfully submitted ForceExit for megapool %s validator %d.", request.MegapoolAddress.Hex(), request.ValidatorId)
-
-	// Return
-	return nil
-}
-
-func (t *checkMegapoolExitRequests) penaliseMegapoolValidator(request network.MegapoolExitRequest) error {
-
-	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
-	if err != nil {
-		return err
-	}
-
-	// Get the gas limit
-	gasInfo, err := network.EstimatePenaliseMegapoolValidatorGas(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
-	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to penalise megapool %s validator %d: %w", request.MegapoolAddress.Hex(), request.ValidatorId, err)
-	}
-	gas := big.NewInt(int64(gasInfo.Safe))
-
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Print the gas info
-	if !gasInfo.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
-		return nil
-	}
-
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
-	opts.GasLimit = gas.Uint64()
-
-	// Penalise the megapool validator for failing to exit within the cooperative phase
-	hash, err := network.PenaliseMegapoolValidator(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
-	if err != nil {
-		return err
-	}
-
-	// Print TX info and wait for it to be included in a block
-	err = transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
-	if err != nil {
-		return err
-	}
-
-	// Log
-	t.log.Printlnf("Successfully penalised megapool %s (validator %d) for not exiting.", request.MegapoolAddress.Hex(), request.ValidatorId)
 
 	// Return
 	return nil
