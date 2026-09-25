@@ -39,6 +39,9 @@ var (
 const (
 	MaxConcurrentEth1Requests = 200
 
+	// Keep exit requests in the scan for seven days after the cooperative phase.
+	exitRequestEnforcementWindow = 7 * 24 * time.Hour
+
 	DownloadRewardsTreesColor       = color.FgGreen
 	MetricsColor                    = color.FgHiYellow
 	ManageFeeRecipientColor         = color.FgHiCyan

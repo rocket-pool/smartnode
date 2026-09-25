@@ -47,6 +47,19 @@ func GetRequestedEth(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, 
 	return *value, nil
 }
 
+// Get the current EIP-7002 exit fee in wei
+func GetExitFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketNetworkExit.Call(opts, value, "getExitFee"); err != nil {
+		return nil, fmt.Errorf("error getting exit fee: %w", err)
+	}
+	return *value, nil
+}
+
 // Get the start of the cooperative exit phase for a Minipool
 func GetMinipoolCooperativeExitStart(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)

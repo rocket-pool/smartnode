@@ -152,8 +152,9 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 		return err
 	}
 
-	// Search MinipoolExitRequested events over a window covering the cooperative exit phase
-	lookbackBlocks := uint64(cooperativeExitPhase / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
+	// Search the cooperative phase plus the enforcement window so overdue requests can be retried.
+	lookbackDuration := cooperativeExitPhase + exitRequestEnforcementWindow
+	lookbackBlocks := uint64(lookbackDuration / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
 	if lookbackBlocks == 0 {
 		lookbackBlocks = 1
 	}
@@ -322,6 +323,13 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 	if err != nil {
 		return err
 	}
+
+	// Fund the EIP-7002 exit fee for both gas estimation and submission
+	exitFee, err := network.GetExitFee(t.rp, nil)
+	if err != nil {
+		return err
+	}
+	opts.Value = exitFee
 
 	// Get the gas limit
 	gasInfo, err := network.EstimateForceMinipoolExitGas(t.rp, mpd.MinipoolAddress, opts)

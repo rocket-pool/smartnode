@@ -21,7 +21,6 @@ const (
 	floatMultiplierUsage  string = "specify a multiplier (e.g., '1.5')"
 	epochCountUsage       string = "specify a number, in epochs (eg., '100')"
 	hourCountUsage        string = "specify a number, in hours (e.g., '72')"
-	dayCountUsage         string = "specify a number, in days (e.g., '28')"
 	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
 	addressListUsage      string = "specify a list of one or more addresses separated by commas (e.g., '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')"
 )
@@ -3571,7 +3570,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 									{
 										Name:      "cooperative-exit-phase",
 										Aliases:   []string{"cep"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.CooperativeExitPhaseSettingPath, hourCountUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.CooperativeExitPhaseSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting exit cooperative-exit-phase value",
 										Flags: []cli.Flag{
 											&cli.BoolFlag{
@@ -3590,7 +3589,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -3641,7 +3640,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 									{
 										Name:      "did-not-exit-base",
 										Aliases:   []string{"dneb"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DidNotExitBaseSettingPath, dayCountUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DidNotExitBaseSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting exit did-not-exit-base value",
 										Flags: []cli.Flag{
 											&cli.BoolFlag{
@@ -3660,7 +3659,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}

@@ -62,6 +62,10 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MinipoolUserDistributeWindowLengthSettingPath: settingKindUint256,
 	},
 	NetworkSettingsContractName: {
+		CooperativeExitPhaseSettingPath:                    settingKindUint256,
+		DidNotExitPenaltyBaseSettingPath:                   settingKindUint256,
+		DidNotExitBaseSettingPath:                          settingKindUint256,
+		DidNotExitBackoffSettingPath:                       settingKindUint256,
 		NodeConsensusThresholdSettingPath:                  settingKindUint256,
 		SubmitBalancesEnabledSettingPath:                   settingKindBool,
 		SubmitBalancesFrequencySettingPath:                 settingKindUint256,
@@ -137,12 +141,6 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		PerformanceThresholdSettingPath:       settingKindUint256,
 		PerformanceChallengePeriodSettingPath: settingKindUint256,
 		PerformanceChallengeBondSettingPath:   settingKindUint256,
-	},
-	ExitSettingsContractName: {
-		CooperativeExitPhaseSettingPath:  settingKindUint256,
-		DidNotExitPenaltyBaseSettingPath: settingKindUint256,
-		DidNotExitBaseSettingPath:        settingKindUint256,
-		DidNotExitBackoffSettingPath:     settingKindUint256,
 	},
 }
 
