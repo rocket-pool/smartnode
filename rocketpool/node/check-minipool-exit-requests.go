@@ -323,6 +323,13 @@ func (t *checkMinipoolExitRequests) forceExitMinipool(mpd *rpstate.NativeMinipoo
 		return err
 	}
 
+	// Fund the EIP-7002 exit fee for both gas estimation and submission
+	exitFee, err := network.GetExitFee(t.rp, nil)
+	if err != nil {
+		return err
+	}
+	opts.Value = exitFee
+
 	// Get the gas limit
 	gasInfo, err := network.EstimateForceMinipoolExitGas(t.rp, mpd.MinipoolAddress, opts)
 	if err != nil {

@@ -298,6 +298,13 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.Megap
 		return err
 	}
 
+	// Fund the EIP-7002 exit fee for both gas estimation and submission
+	exitFee, err := network.GetExitFee(t.rp, nil)
+	if err != nil {
+		return err
+	}
+	opts.Value = exitFee
+
 	// Get the gas limit
 	gasInfo, err := network.EstimateForceMegapoolExitGas(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
 	if err != nil {
