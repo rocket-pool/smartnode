@@ -372,32 +372,32 @@ func proposeSettingMegapoolPrestakeChallengePeriod(value uint64, yes bool, toJso
 
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformancePeriod(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingProofBuffer(value uint64, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.ProofBufferSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.ProofBufferSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformanceThreshold(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceThresholdSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceThresholdSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformanceChallengePeriod(value time.Duration, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(uint64(value.Hours()))
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceChallengePeriodSettingPath, trueValue, yes, toJson)
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceChallengePeriodSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformanceChallengeBond(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
-	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceChallengeBondSettingPath, trueValue, yes, toJson)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceChallengeBondSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingCooperativeExitPhase(value time.Duration, yes bool, toJson string) error {
