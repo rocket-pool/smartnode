@@ -218,9 +218,9 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 		}
 
 		// Megapools from version 2 support a forced exit request
-		if mpv2, ok := mp.(megapool.MegapoolV2); ok {
+		if mp.GetVersion() >= 2 {
 			t.log.Printlnf("Megapool %s (validator %d) uses version %d; submitting ForceExit", request.MegapoolAddress.Hex(), validatorIndex, mp.GetVersion())
-			err := t.forceExitMegapoolValidator(mpv2, request)
+			err := t.forceExitMegapoolValidator(request)
 			if err != nil {
 				t.log.Printlnf("Error force-exiting megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
 			}
@@ -281,7 +281,7 @@ func (t *checkMegapoolExitRequests) exitOwnMegapoolValidator(state *state.Networ
 	return nil
 }
 
-func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(mp megapool.MegapoolV2, request network.MegapoolExitRequest) error {
+func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(request network.MegapoolExitRequest) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()

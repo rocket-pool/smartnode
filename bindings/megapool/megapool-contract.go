@@ -400,20 +400,6 @@ func (mp *megapoolV1) GetNodeAddress(opts *bind.CallOpts) (common.Address, error
 	return *nodeAddress, nil
 }
 
-// Estimate the gas required to create a new validator as part of a megapool
-func (mp *megapoolV1) EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "newValidator", validatorId, validatorSignature[:], depositDataRoot)
-}
-
-// Create a new validator as part of a megapool
-func (mp *megapoolV1) NewValidator(bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "newValidator", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:])
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error creating new validator %s: %w", validatorPubkey.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas required to remove a validator from the deposit queue
 func (mp *megapoolV1) EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "dequeue", validatorId)
@@ -424,20 +410,6 @@ func (mp *megapoolV1) Dequeue(validatorId uint32, opts *bind.TransactOpts) (comm
 	tx, err := mp.Contract.Transact(opts, "dequeue", validatorId)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error dequeuing validator ID %d: %w", validatorId, err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas required to accept requested funds from the deposit pool
-func (mp *megapoolV1) EstimateAssignFundsGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "assignFunds", validatorId)
-}
-
-// Accept requested funds from the deposit pool
-func (mp *megapoolV1) AssignFunds(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "assignFunds", validatorId)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error assigning funds to validator ID %d: %w", validatorId, err)
 	}
 	return tx.Hash(), nil
 }

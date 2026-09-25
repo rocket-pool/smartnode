@@ -99,28 +99,6 @@ func GetMinipoolLastExit(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 	return time.Unix((*value).Int64(), 0), nil
 }
 
-// Estimate the gas of RequestMinipoolExit
-func EstimateRequestMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketNetworkExit.GetTransactionGasInfo(opts, "requestMinipoolExit", minipoolAddress)
-}
-
-// Request a Minipool to exit cooperatively
-func RequestMinipoolExit(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkExit.Transact(opts, "requestMinipoolExit", minipoolAddress)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error requesting minipool exit for %s: %w", minipoolAddress.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of ForceMinipoolExit
 func EstimateForceMinipoolExitGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
@@ -161,28 +139,6 @@ func PenaliseMinipool(rp *rocketpool.RocketPool, minipoolAddress common.Address,
 	tx, err := rocketNetworkExit.Transact(opts, "penaliseMinipool", minipoolAddress, slotTimestamp, validatorProof, slotProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error penalising minipool %s: %w", minipoolAddress.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of RequestMegapoolExit
-func EstimateRequestMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketNetworkExit.GetTransactionGasInfo(opts, "requestMegapoolExit", megapoolAddress, validatorId)
-}
-
-// Request a Megapool validator to exit cooperatively
-func RequestMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkExit.Transact(opts, "requestMegapoolExit", megapoolAddress, validatorId)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error requesting megapool exit for %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
 	}
 	return tx.Hash(), nil
 }
