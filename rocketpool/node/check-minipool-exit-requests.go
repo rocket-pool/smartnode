@@ -221,6 +221,11 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
+		// Enforcing other operators' exit requests is an opt-in duty.
+		if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+			continue
+		}
+
 		// Skip requests within the cooperative exit phase
 		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
 		if time.Now().Before(deadline) {
