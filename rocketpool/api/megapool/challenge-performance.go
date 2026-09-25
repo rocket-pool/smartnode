@@ -187,7 +187,7 @@ func getChallengeSlotProof(
 	if err != nil {
 		return 0, megapool.SlotProof{}, fmt.Errorf("error getting beacon config: %w", err)
 	}
-	_, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, pubkey, nil)
+	_, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, pubkey, nil)
 	if err != nil {
 		return 0, megapool.SlotProof{}, fmt.Errorf("error building slot proof: %w", err)
 	}

@@ -200,7 +200,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 
 	t.log.Printlnf("Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, beaconState)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validatorPubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("There was an error during the proof creation process: %w", err)
 		return err

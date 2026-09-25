@@ -122,7 +122,7 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
-	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, pubkey, beaconState)
+	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, pubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.Transact
 		return nil, err
 	}
 
-	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, pubkey, beaconState)
+	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, pubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}

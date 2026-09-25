@@ -202,7 +202,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 
 	t.log.Printlnf("Crafting an exit proof.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, beaconState)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validatorPubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err

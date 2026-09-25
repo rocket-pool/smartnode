@@ -384,8 +384,7 @@ func (t *checkMinipoolExitRequests) proveDidNotExit(beaconState eth2.BeaconState
 
 	t.log.Printlnf("[STARTED] Crafting a did-not-exit proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	// The megapool proof structs are generic SSZ proofs; the address parameter is unused by GetValidatorProof
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, common.Address{}, validator.pubkey, beaconState)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validator.pubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %s", err.Error())
 		return err

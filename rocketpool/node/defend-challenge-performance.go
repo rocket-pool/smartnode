@@ -357,7 +357,7 @@ func (t *defendChallengePerformance) respondWithValidator(challenge megapoolPerf
 
 	// Build a fresh validator proof against the head state to satisfy the
 	// contract's slot recency requirement
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, challenge.megapoolAddress, defender.pubkey, nil)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, defender.pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error creating the validator proof: %w", err)
 	}

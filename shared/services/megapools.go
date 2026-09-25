@@ -61,7 +61,7 @@ type WithdrawalProofResponse struct {
 	Witnesses      []common.Hash `json:"witnesses"`
 }
 
-func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
+func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
@@ -1212,7 +1212,7 @@ func getPreGloasFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorInd
 		stateUsed = nil
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, validatorPubkey, stateUsed)
+	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, proofSlot, w, eth2Config, validatorPubkey, stateUsed)
 	if err != nil {
 		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
 	}
@@ -1339,7 +1339,7 @@ func getGloasFinalBalanceProofBundle(c *cli.Command, bc beacon.Client, eth2Confi
 		return nil, nil, 0, err
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, finalizedSlot, w, eth2Config, megapoolAddress, validatorPubkey, proofState)
+	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, finalizedSlot, w, eth2Config, validatorPubkey, proofState)
 	if err != nil {
 		return nil, nil, 0, err
 	}
