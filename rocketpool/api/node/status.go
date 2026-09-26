@@ -14,10 +14,8 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
-	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -78,6 +76,10 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	// Get the legacy MinipoolQueue contract address
 	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
 
+	// Get the multicall / balance batcher addresses used for the batched minipool details fetch
+	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
@@ -136,7 +138,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	})
 
 	wg.Go(func() error {
-		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
+		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress, multicallerAddress, balanceBatcherAddress)
 		if err == nil {
 			response.Minipools = mpDetails
 		}
@@ -320,45 +322,6 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		})
 	}
 
-	// Get node minipool counts
-	wg.Go(func() error {
-		details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)
-		if err == nil {
-			response.MinipoolCounts.Total = len(details)
-			for _, mpDetails := range details {
-				if mpDetails.Penalties > 0 {
-					response.PenalizedMinipools[mpDetails.Address] = mpDetails.Penalties
-				}
-				if mpDetails.Finalised {
-					response.MinipoolCounts.Finalised++
-				} else {
-					switch mpDetails.Status {
-					case types.Initialized:
-						response.MinipoolCounts.Initialized++
-					case types.Prelaunch:
-						response.MinipoolCounts.Prelaunch++
-					case types.Staking:
-						response.MinipoolCounts.Staking++
-					case types.Withdrawable:
-						response.MinipoolCounts.Withdrawable++
-					case types.Dissolved:
-						response.MinipoolCounts.Dissolved++
-					}
-					if mpDetails.RefundAvailable {
-						response.MinipoolCounts.RefundAvailable++
-					}
-					if mpDetails.WithdrawalAvailable {
-						response.MinipoolCounts.WithdrawalAvailable++
-					}
-					if mpDetails.CloseAvailable {
-						response.MinipoolCounts.CloseAvailable++
-					}
-				}
-			}
-		}
-		return err
-	})
-
 	wg.Go(func() error {
 		var err error
 		response.IsFeeDistributorInitialized, err = node.GetFeeDistributorInitialized(rp, nodeAccount.Address, nil)
@@ -379,6 +342,39 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		// Cancel in-flight requests.
 		cancel()
 		return nil, err
+	}
+
+	// Derive the minipool counts
+	response.MinipoolCounts.Total = len(response.Minipools)
+	for _, mpDetails := range response.Minipools {
+		if mpDetails.Penalties > 0 {
+			response.PenalizedMinipools[mpDetails.Address] = mpDetails.Penalties
+		}
+		if mpDetails.Finalised {
+			response.MinipoolCounts.Finalised++
+		} else {
+			switch mpDetails.Status.Status {
+			case types.Initialized:
+				response.MinipoolCounts.Initialized++
+			case types.Prelaunch:
+				response.MinipoolCounts.Prelaunch++
+			case types.Staking:
+				response.MinipoolCounts.Staking++
+			case types.Withdrawable:
+				response.MinipoolCounts.Withdrawable++
+			case types.Dissolved:
+				response.MinipoolCounts.Dissolved++
+			}
+			if mpDetails.RefundAvailable {
+				response.MinipoolCounts.RefundAvailable++
+			}
+			if mpDetails.WithdrawalAvailable {
+				response.MinipoolCounts.WithdrawalAvailable++
+			}
+			if mpDetails.CloseAvailable {
+				response.MinipoolCounts.CloseAvailable++
+			}
+		}
 	}
 
 	// Get withdrawal address balances
@@ -443,7 +439,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		response.BorrowedCollateralRatio = math.WeiToEth(rplPrice) * math.WeiToEth(response.TotalRplStake) / (math.WeiToEth(response.EthBorrowed) + math.WeiToEth(response.PendingBorrowAmount))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain
-		_, _, pendingEligibleBorrowedEth, pendingEligibleBondedEth, err := getTrueBorrowAndBondAmounts(rp, bc, nodeAccount.Address)
+		_, _, pendingEligibleBorrowedEth, pendingEligibleBondedEth, err := getTrueBorrowAndBondAmounts(bc, response.Minipools)
 		if err != nil {
 			return nil, fmt.Errorf("error calculating eligible borrowed and bonded amounts: %w", err)
 		}
@@ -482,65 +478,25 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 }
 
 // Calculate the true borrowed and bonded ETH amounts for a node based on the Beacon status of the minipools
-func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
-
-	mpDetails, err := minipool.GetNodeMinipools(rp, nodeAddress, nil)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error loading minipool details: %w", err)
-	}
+func getTrueBorrowAndBondAmounts(bc beacon.Client, minipools []api.MinipoolDetails) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
 
 	beaconHead, err := bc.GetBeaconHead()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("error getting beacon head: %w", err)
 	}
 
-	pubkeys := make([]types.ValidatorPubkey, len(mpDetails))
-	nodeDeposits := make([]*big.Int, len(mpDetails))
-	userDeposits := make([]*big.Int, len(mpDetails))
-	pendingNodeDeposits := make([]*big.Int, len(mpDetails))
-	pendingUserDeposits := make([]*big.Int, len(mpDetails))
-	// Data
-	var wg errgroup.Group
+	pubkeys := make([]types.ValidatorPubkey, len(minipools))
+	nodeDeposits := make([]*big.Int, len(minipools))
+	userDeposits := make([]*big.Int, len(minipools))
+	pendingNodeDeposits := make([]*big.Int, len(minipools))
+	pendingUserDeposits := make([]*big.Int, len(minipools))
 
-	for i, mpd := range mpDetails {
-		if !mpd.Exists {
-			nodeDeposits[i] = big.NewInt(0)
-			userDeposits[i] = big.NewInt(0)
-			pendingNodeDeposits[i] = big.NewInt(0)
-			pendingUserDeposits[i] = big.NewInt(0)
-			continue
-		}
-
-		i := i
-		address := mpd.Address
-		pubkeys[i] = mpd.Pubkey
-
-		wg.Go(func() error {
-			mp, err := minipool.NewMinipool(rp, address, nil)
-			if err != nil {
-				return fmt.Errorf("error making binding for minipool %s: %w", address.Hex(), err)
-			}
-
-			nodeDeposit, err := mp.GetNodeDepositBalance(nil)
-			if err != nil {
-				return fmt.Errorf("error getting node deposit for minipool %s: %w", address.Hex(), err)
-			}
-			nodeDeposits[i] = nodeDeposit
-			pendingNodeDeposits[i] = nodeDeposit
-
-			userDeposit, err := mp.GetUserDepositBalance(nil)
-			if err != nil {
-				return fmt.Errorf("error getting user deposit for minipool %s: %w", address.Hex(), err)
-			}
-			userDeposits[i] = userDeposit
-			pendingUserDeposits[i] = userDeposit
-			return nil
-		})
-	}
-
-	// Wait for data
-	if err = wg.Wait(); err != nil {
-		return nil, nil, nil, nil, err
+	for i, mpd := range minipools {
+		pubkeys[i] = mpd.ValidatorPubkey
+		nodeDeposits[i] = mpd.Node.DepositBalance
+		pendingNodeDeposits[i] = mpd.Node.DepositBalance
+		userDeposits[i] = mpd.User.DepositBalance
+		pendingUserDeposits[i] = mpd.User.DepositBalance
 	}
 
 	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)

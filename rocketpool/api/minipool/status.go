@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
@@ -48,7 +49,9 @@ func getStatus(c *cli.Command) (*api.MinipoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	details, err := GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
+	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+	details, err := GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress, multicallerAddress, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
 	}
