@@ -166,6 +166,12 @@ func RegisterRoutes(router *snroute.Router) {
 	// --- Bond requirement ---
 
 	snroute.Read("/api/node/get-bond-requirement", getBondRequirementHandler).RegisterTo(router)
+
+	// --- Pending transactions ---
+
+	snroute.Read("/api/node/pending-transactions", pendingTransactionsHandler).RegisterTo(router)
+	snroute.Read("/api/node/can-cancel-transaction", canCancelTransactionHandler).RegisterTo(router)
+	snroute.Write("/api/node/cancel-transaction", cancelTransactionHandler).RegisterTo(router)
 }
 
 // --- Helper types and functions ---
