@@ -41,6 +41,7 @@ type defendChallengePerformance struct {
 	gasLimit       uint64
 	intervalSize   *big.Int
 	discovery      performanceChallengeDiscovery
+	bondDiscovery  challengeBondDiscovery
 }
 
 type megapoolPerformanceChallenge struct {
@@ -169,6 +170,11 @@ func (t *defendChallengePerformance) run(state *state.NetworkStateIndex) error {
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
 		return err
+	}
+	// Settlement applies to challenges of either pool type, including those
+	// against other nodes. It must run even when this node has no megapool.
+	if err := t.settleChallengeBonds(nodeAccount.Address, state.ElBlockNumber); err != nil {
+		t.log.Printlnf("error checking performance challenge bonds: %v", err)
 	}
 
 	// Check if the megapool is deployed

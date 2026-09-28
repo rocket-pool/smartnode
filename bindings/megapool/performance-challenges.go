@@ -24,9 +24,20 @@ type PerformanceChallenge struct {
 
 type PerformanceChallengeStatus struct {
 	Proposer         common.Address
+	Responder        common.Address
+	BondAmount       *big.Int
 	ResponseDeadline *big.Int
+	BondSettled      bool
 	Responded        bool
 	Finalised        bool
+}
+
+func (s PerformanceChallengeStatus) CanReleaseBond(timestamp uint64) bool {
+	return !s.BondSettled && !s.Responded && s.ResponseDeadline.Cmp(new(big.Int).SetUint64(timestamp)) < 0
+}
+
+func (s PerformanceChallengeStatus) CanClaimReward(caller common.Address) bool {
+	return !s.BondSettled && s.Responded && s.Responder == caller
 }
 
 // GetMegapoolPerformanceChallenges reads challenge events, including events from
@@ -41,34 +52,9 @@ func GetMegapoolPerformanceChallenges(rp *rocketpool.RocketPool, address common.
 	if !ok {
 		return nil, fmt.Errorf("MegapoolChallenged event not found in rocketNetworkParticipation ABI")
 	}
-	// Include every address active within this range. Each upgrade identifies
-	// the old address; the current contract supplies the last address. Limiting
-	// upgrade discovery to the same range keeps subsequent scans incremental.
-	upgrade, err := rp.GetContract("rocketDAONodeTrustedUpgrade", opts)
+	addresses, err := participationContractAddresses(rp, contract, interval, fromBlock, toBlock, opts)
 	if err != nil {
 		return nil, err
-	}
-	upgradeEvent, ok := upgrade.ABI.Events["ContractUpgraded"]
-	if !ok {
-		return nil, fmt.Errorf("ContractUpgraded event not found in rocketDAONodeTrustedUpgrade ABI")
-	}
-	upgrades, err := logs.GetLogs(rp, []common.Address{*upgrade.Address}, [][]common.Hash{
-		{upgradeEvent.ID}, {crypto.Keccak256Hash([]byte("rocketNetworkParticipation"))},
-	}, interval, fromBlock, toBlock, nil)
-	if err != nil {
-		return nil, err
-	}
-	addresses := []common.Address{*contract.Address}
-	seen := map[common.Address]bool{*contract.Address: true}
-	for _, entry := range upgrades {
-		if len(entry.Topics) != 4 {
-			return nil, fmt.Errorf("invalid ContractUpgraded event topics")
-		}
-		old := common.BytesToAddress(entry.Topics[2].Bytes())
-		if !seen[old] {
-			addresses = append(addresses, old)
-			seen[old] = true
-		}
 	}
 	entries, err := logs.GetLogs(rp, addresses, [][]common.Hash{
 		{event.ID}, {common.BytesToHash(address.Bytes())},
@@ -127,7 +113,10 @@ func GetPerformanceChallengeStatus(rp *rocketpool.RocketPool, challengeId *big.I
 	if len(values) != 5 {
 		return PerformanceChallengeStatus{}, fmt.Errorf("invalid challenge bond details")
 	}
-	status := PerformanceChallengeStatus{Proposer: values[0].(common.Address), ResponseDeadline: values[3].(*big.Int)}
+	status := PerformanceChallengeStatus{
+		Proposer: values[0].(common.Address), Responder: values[1].(common.Address),
+		BondAmount: values[2].(*big.Int), ResponseDeadline: values[3].(*big.Int), BondSettled: values[4].(bool),
+	}
 	for key, target := range map[string]*bool{
 		"participation.challenge.responded": &status.Responded,
 		"participation.challenge.finalised": &status.Finalised,
@@ -141,4 +130,39 @@ func GetPerformanceChallengeStatus(rp *rocketpool.RocketPool, challengeId *big.I
 		*target = value
 	}
 	return status, nil
+}
+
+// participationContractAddresses includes upgraded implementations without rescanning
+// upgrade history outside the requested event range.
+func participationContractAddresses(rp *rocketpool.RocketPool, contract *rocketpool.Contract, interval, fromBlock, toBlock *big.Int, opts *bind.CallOpts) ([]common.Address, error) {
+	// Include every address active within this range. Each upgrade identifies
+	// the old address; the current contract supplies the last address. Limiting
+	// upgrade discovery to the same range keeps subsequent scans incremental.
+	upgrade, err := rp.GetContract("rocketDAONodeTrustedUpgrade", opts)
+	if err != nil {
+		return nil, err
+	}
+	upgradeEvent, ok := upgrade.ABI.Events["ContractUpgraded"]
+	if !ok {
+		return nil, fmt.Errorf("ContractUpgraded event not found in rocketDAONodeTrustedUpgrade ABI")
+	}
+	upgrades, err := logs.GetLogs(rp, []common.Address{*upgrade.Address}, [][]common.Hash{
+		{upgradeEvent.ID}, {crypto.Keccak256Hash([]byte("rocketNetworkParticipation"))},
+	}, interval, fromBlock, toBlock, nil)
+	if err != nil {
+		return nil, err
+	}
+	addresses := []common.Address{*contract.Address}
+	seen := map[common.Address]bool{*contract.Address: true}
+	for _, entry := range upgrades {
+		if len(entry.Topics) != 4 {
+			return nil, fmt.Errorf("invalid ContractUpgraded event topics")
+		}
+		old := common.BytesToAddress(entry.Topics[2].Bytes())
+		if !seen[old] {
+			addresses = append(addresses, old)
+			seen[old] = true
+		}
+	}
+	return addresses, nil
 }
