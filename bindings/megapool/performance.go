@@ -100,6 +100,48 @@ func FinaliseChallenge(rp *rocketpool.RocketPool, challengeId *big.Int, opts *bi
 	return tx.Hash(), nil
 }
 
+// ReleaseChallengeBond unlocks the proposer's recorded bond independently of exit finalisation.
+func ReleaseChallengeBond(rp *rocketpool.RocketPool, challengeId *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+	contract, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := contract.Transact(opts, "releaseChallengeBond", challengeId)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error releasing challenge %s bond: %w", challengeId, err)
+	}
+	return tx.Hash(), nil
+}
+
+func EstimateReleaseChallengeBondGas(rp *rocketpool.RocketPool, challengeId *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	contract, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return contract.GetTransactionGasInfo(opts, "releaseChallengeBond", challengeId)
+}
+
+// ClaimChallengeReward credits the recorded defender with recoverable staked RPL after the burn.
+func ClaimChallengeReward(rp *rocketpool.RocketPool, challengeId *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+	contract, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := contract.Transact(opts, "claimChallengeReward", challengeId)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error claiming challenge %s reward: %w", challengeId, err)
+	}
+	return tx.Hash(), nil
+}
+
+func EstimateClaimChallengeRewardGas(rp *rocketpool.RocketPool, challengeId *big.Int, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	contract, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return contract.GetTransactionGasInfo(opts, "claimChallengeReward", challengeId)
+}
+
 // Get contracts
 var rocketNetworkParticipationLock sync.Mutex
 

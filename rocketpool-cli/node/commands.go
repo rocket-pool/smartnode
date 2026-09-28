@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -18,6 +19,51 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node",
 		Commands: []*cli.Command{
+			{
+				Name:      "release-challenge-bond",
+				Usage:     "Unlock an undefeated performance challenge's RPL bond after its response deadline.",
+				UsageText: "rocketpool node release-challenge-bond challenge-id [options]",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm interactive questions",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					id, ok := new(big.Int).SetString(c.Args().Get(0), 10)
+					if !ok || id.Sign() <= 0 || id.BitLen() > 256 {
+						return fmt.Errorf("challenge ID must be a positive uint256")
+					}
+					return releaseChallengeBond(id, c.Bool("yes"))
+				},
+			},
+
+			{
+				Name:      "claim-challenge-reward",
+				Usage:     "Claim a defeated performance challenge's reward as staked RPL (recorded defender only).",
+				UsageText: "rocketpool node claim-challenge-reward challenge-id [options]",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm interactive questions",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					id, ok := new(big.Int).SetString(c.Args().Get(0), 10)
+					if !ok || id.Sign() <= 0 || id.BitLen() > 256 {
+						return fmt.Errorf("challenge ID must be a positive uint256")
+					}
+					return claimChallengeReward(id, c.Bool("yes"))
+				},
+			},
 
 			{
 				Name:      "status",
