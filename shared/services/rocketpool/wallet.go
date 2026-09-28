@@ -32,7 +32,8 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 	if skipValidatorKeyRecovery {
 		skipStr = "true"
 	}
-	return c.callAPI[api.RecoverWalletResponse]("POST", "/api/wallet/recover", url.Values{
+	// Recovering validator keys on large nodes can exceed the default API timeout.
+	return c.callAPICtx[api.RecoverWalletResponse](context.Background(), "POST", "/api/wallet/recover", url.Values{
 		"mnemonic":                 {mnemonic},
 		"skipValidatorKeyRecovery": {skipStr},
 		"derivationPath":           {derivationPath},
