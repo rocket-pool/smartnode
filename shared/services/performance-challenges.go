@@ -143,6 +143,16 @@ func PreparePerformanceChallenge(c *cli.Command, request PerformanceChallengeReq
 		var mp megapool.Megapool
 		mp, err = megapool.NewMegapool(rp, request.MegapoolAddress, nil)
 		if err == nil {
+			for _, validatorId := range request.ValidatorIds {
+				validator, err := mp.GetValidatorInfo(validatorId, nil)
+				if err != nil {
+					return nil, nil, err
+				}
+				if !validator.Staked {
+					result.Reason = fmt.Sprintf("Validator %d is not staked.", validatorId)
+					return result, nil, nil
+				}
+			}
 			pubkey, err = mp.GetValidatorPubkey(request.ValidatorIds[0], nil)
 		}
 	}
