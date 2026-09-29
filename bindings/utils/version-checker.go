@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hashicorp/go-version"
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
@@ -14,6 +15,14 @@ import (
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
+	protocolVersion, err := rp.RocketStorage.GetString(opts, crypto.Keccak256Hash([]byte("protocol.version")))
+	if err != nil {
+		return nil, fmt.Errorf("error checking protocol version: %w", err)
+	}
+	if protocolVersion != "" {
+		return version.NewVersion(protocolVersion)
+	}
+
 	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error checking deposit pool version: %w", err)
