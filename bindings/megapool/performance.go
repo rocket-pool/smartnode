@@ -12,21 +12,21 @@ import (
 )
 
 // Estimate the gas to call ChallengeMegapool
-func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, []uint32{validatorId}, startEpoch, participation, slotTimestamp, slotProof)
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof)
 }
 
 // Challenge the megapool
-func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
+func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMegapool", megapoolAddress, []uint32{validatorId}, startEpoch, participation, slotTimestamp, slotProof)
+	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error challenging megapool: %w", err)
 	}

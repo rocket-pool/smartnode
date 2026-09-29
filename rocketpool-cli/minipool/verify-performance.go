@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	verifyperf "github.com/rocket-pool/smartnode/rocketpool-cli/cli/verify-performance"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -60,5 +62,5 @@ func verifyMinipoolPerformance(targets string, startEpoch uint64, epochs uint64,
 		return "minipool " + r.MinipoolAddress.Hex()
 	})
 	verifyperf.PrintElapsed(elapsed)
-	return nil
+	return verifyperf.SubmitChallenges(rp, common.Address{}, resp, true, yes)
 }

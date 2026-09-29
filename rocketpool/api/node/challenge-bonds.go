@@ -80,6 +80,9 @@ func preflightChallengeBond(c *cli.Command, id *big.Int, claim bool, opts *bind.
 		}
 		result.EstimatedReward, result.EstimatedBurn = challengeRewardAmounts(status.BondAmount, stake)
 		result.GasLimits, err = megapool.EstimateClaimChallengeRewardGas(rp, id, opts)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		result.GasLimits, err = megapool.EstimateReleaseChallengeBondGas(rp, id, opts)
 	}

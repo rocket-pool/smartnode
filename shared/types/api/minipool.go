@@ -320,13 +320,13 @@ type VerifyPerformanceResponse struct {
 	PassesThreshold         bool                  `json:"passesThreshold"`
 	MissedEpochList         []uint64              `json:"missedEpochList"`
 	TimelyEpochList         []uint64              `json:"timelyEpochList"`
-	// Participation is the challengeMegapool participation calldata (uint256[]):
-	// the epochs [StartEpoch, EndEpoch] as a bitset, 1 = not-timely target vote.
+	// Participation is challenge calldata (uint256[]): measured epochs as a
+	// bitset, 1 = missed target vote, padded to the configured challenge period.
 	Participation []*big.Int `json:"participation"`
 	// Challengeable reports whether this check could back an on-chain challenge:
-	// performance exits are enabled, the range is exactly one performance period,
+	// performance exits are enabled, the bitmap covers the configured performance period,
 	// it is recent enough to be within the proof buffer, and the validator's
-	// missed share of the period exceeds 100% - performance_threshold.
+	// missed count meets ceil(period * (1 - performance_threshold)).
 	Challengeable bool `json:"challengeable"`
 }
 
@@ -336,6 +336,7 @@ type VerifyPerformanceResponse struct {
 // check succeeded; Error is populated instead when that single target failed so
 // one bad target does not abort the rest of the batch.
 type VerifyPerformanceResult struct {
+	NodeAddress     common.Address             `json:"nodeAddress"`
 	MinipoolAddress common.Address             `json:"minipoolAddress"`
 	ValidatorId     uint32                     `json:"validatorId"`
 	Performance     *VerifyPerformanceResponse `json:"performance"`

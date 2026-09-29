@@ -15,11 +15,13 @@ import (
 
 // PerformanceChallenge contains the data needed to reconstruct a challenge proof.
 type PerformanceChallenge struct {
-	ChallengeId     *big.Int
-	MegapoolAddress common.Address
-	ValidatorIds    []uint32
-	StartEpoch      uint64
-	Participation   []*big.Int
+	ChallengeId       *big.Int
+	MegapoolAddress   common.Address
+	NodeAddress       common.Address
+	MinipoolAddresses []common.Address
+	ValidatorIds      []uint32
+	StartEpoch        uint64
+	Participation     []*big.Int
 }
 
 type PerformanceChallengeStatus struct {
