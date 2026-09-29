@@ -135,3 +135,104 @@ func TestChallengeDeadlineBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestDiscoverMinipoolsWithoutMegapool(t *testing.T) {
+	source, _ := discoveryFixture()
+	owner, member := common.Address{1}, common.Address{2}
+	source.entries = []megapool.PerformanceChallenge{
+		{
+			ChallengeId:       big.NewInt(7),
+			NodeAddress:       owner,
+			MinipoolAddresses: []common.Address{member},
+			StartEpoch:        42,
+			Participation:     []*big.Int{big.NewInt(5)},
+		},
+	}
+	var discovery performanceChallengeDiscovery
+	got, _, err := discovery.discover(source, common.Address{}, 100)
+	if err != nil || len(got) != 1 {
+		t.Fatalf("minipool discovery failed: %v, %v", got, err)
+	}
+	binding := got[0].binding()
+	if binding.NodeAddress != owner || len(binding.MinipoolAddresses) != 1 || binding.MinipoolAddresses[0] != member {
+		t.Fatalf("lost minipool membership: %+v", binding)
+	}
+}
+
+func TestPerformanceChallengeTaskScope(t *testing.T) {
+	for _, test := range []struct {
+		name                                   string
+		own, proposed, enforcer, expired, want bool
+	}{
+		{
+			name:     "always defend own validators",
+			own:      true,
+			proposed: false,
+			enforcer: false,
+			expired:  false,
+			want:     true,
+		},
+		{
+			name:     "do not defend own proposal",
+			own:      true,
+			proposed: true,
+			enforcer: true,
+			expired:  false,
+			want:     false,
+		},
+		{
+			name:     "third-party defense opt out",
+			own:      false,
+			proposed: false,
+			enforcer: false,
+			expired:  false,
+			want:     false,
+		},
+		{
+			name:     "third-party defense opt in",
+			own:      false,
+			proposed: false,
+			enforcer: true,
+			expired:  false,
+			want:     true,
+		},
+		{
+			name:     "finalise own proposal",
+			own:      false,
+			proposed: true,
+			enforcer: false,
+			expired:  true,
+			want:     true,
+		},
+		{
+			name:     "finalise own validators",
+			own:      true,
+			proposed: false,
+			enforcer: false,
+			expired:  true,
+			want:     true,
+		},
+		{
+			name:     "third-party finalisation opt out",
+			own:      false,
+			proposed: false,
+			enforcer: false,
+			expired:  true,
+			want:     false,
+		},
+		{
+			name:     "third-party finalisation opt in",
+			own:      false,
+			proposed: false,
+			enforcer: true,
+			expired:  true,
+			want:     true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := shouldHandlePerformanceChallenge(test.own, test.proposed, test.enforcer, test.expired); got != test.want {
+				t.Fatalf("got %t, want %t", got, test.want)
+			}
+		})
+	}
+}

@@ -28,7 +28,7 @@ func (s onchainPerformanceChallenges) header(block uint64) (*types.Header, error
 }
 
 func (s onchainPerformanceChallenges) events(address common.Address, from, to *big.Int) ([]megapool.PerformanceChallenge, error) {
-	return megapool.GetMegapoolPerformanceChallenges(s.rp, address, s.interval, from, to, &bind.CallOpts{BlockNumber: to})
+	return megapool.GetPerformanceChallenges(s.rp, nil, s.interval, from, to, &bind.CallOpts{BlockNumber: to})
 }
 
 func (s onchainPerformanceChallenges) status(id, block *big.Int) (megapool.PerformanceChallengeStatus, error) {
@@ -71,7 +71,7 @@ func (d *performanceChallengeDiscovery) discover(source performanceChallengeSour
 	unresolved := make([]megapool.PerformanceChallenge, 0, len(candidates))
 	seen := make(map[string]bool)
 	for _, event := range candidates {
-		if event.MegapoolAddress != address || seen[event.ChallengeId.String()] {
+		if (address != (common.Address{}) && event.MegapoolAddress != address && event.NodeAddress != address) || seen[event.ChallengeId.String()] {
 			continue
 		}
 		seen[event.ChallengeId.String()] = true
@@ -86,6 +86,7 @@ func (d *performanceChallengeDiscovery) discover(source performanceChallengeSour
 		active = append(active, megapoolPerformanceChallenge{
 			challengeId: event.ChallengeId, megapoolAddress: event.MegapoolAddress,
 			validatorIds: event.ValidatorIds, startEpoch: event.StartEpoch,
+			minipoolAddresses: event.MinipoolAddresses, nodeAddress: event.NodeAddress,
 			participationCallData: event.Participation, responseDeadline: status.ResponseDeadline,
 			proposer: status.Proposer,
 		})

@@ -89,12 +89,20 @@ func verifyPerformance(
 		pubkeys[i] = pubkey
 	}
 
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, err
+	}
+	if err := performance.ValidateMeasurementRange(head.Epoch, startEpoch, endEpoch); err != nil {
+		return nil, err
+	}
+
 	batch, err := performance.VerifyPerformanceBatch(rp, bc, pubkeys, startEpoch, endEpoch)
 	if err != nil {
 		return nil, err
 	}
 
-	challengeable, err := performance.IsRangeChallengeable(rp, bc, startEpoch, endEpoch)
+	challengeParams, err := performance.GetChallengeParams(rp)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +111,7 @@ func verifyPerformance(
 		Results: make([]api.VerifyPerformanceResult, 0, len(validatorIds)),
 	}
 	for i, validatorId := range validatorIds {
-		if !batch[i].Active {
+		if !batch[i].Active && pubkeyErrs[i] == "" && batch[i].Err == nil {
 			continue
 		}
 		result := api.VerifyPerformanceResult{ValidatorId: validatorId}
@@ -114,7 +122,7 @@ func verifyPerformance(
 			result.Error = batch[i].Err.Error()
 		default:
 			result.Performance = batch[i].Response
-			result.Performance.Challengeable = challengeable && performance.ExceedsChallengeThreshold(result.Performance)
+			performance.SetChallengeability(result.Performance, challengeParams, head.Epoch)
 		}
 		response.Results = append(response.Results, result)
 	}

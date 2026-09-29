@@ -746,17 +746,19 @@ type NotifyValidatorExitResponse struct {
 }
 
 type CanChallengeMegapoolPerformanceResponse struct {
-	Status                 string          `json:"status"`
-	Error                  string          `json:"error"`
-	CanChallenge           bool            `json:"canChallenge"`
-	InsufficientRplBalance bool            `json:"insufficientRplBalance"`
-	ChallengeBond          *big.Int        `json:"challengeBond"`
-	RplBalance             *big.Int        `json:"rplBalance"`
-	GasLimits              gaslimit.Limits `json:"gasLimits"`
+	APIResponse
+	RplLockingAllowed      bool     `json:"rplLockingAllowed"`
+	Reason                 string   `json:"reason"`
+	CanChallenge           bool     `json:"canChallenge"`
+	InsufficientRplBalance bool     `json:"insufficientRplBalance"`
+	ChallengeBond          *big.Int `json:"challengeBond"`
+	// RplBalance is available unlocked staked RPL, not the liquid wallet balance.
+	RplBalance *big.Int        `json:"rplBalance"`
+	GasLimits  gaslimit.Limits `json:"gasLimits"`
 }
+
 type ChallengeMegapoolPerformanceResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+	APIResponse
 	TxHash common.Hash `json:"txHash"`
 }
 

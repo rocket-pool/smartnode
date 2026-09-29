@@ -20,6 +20,72 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node",
 		Commands: []*cli.Command{
 			{
+				Name:      "performance-challenges",
+				Usage:     "List unresolved performance challenges and unsettled bonds, or inspect a challenge by ID",
+				UsageText: "rocketpool node performance-challenges [challenge-id]",
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if c.Args().Len() > 1 {
+						return fmt.Errorf("expected at most one challenge ID")
+					}
+					var id *big.Int
+					if c.Args().Len() == 1 {
+						var err error
+						id, err = validatePerformanceChallengeID(c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+					}
+					return getPerformanceChallenges(id)
+				},
+			},
+
+			{
+				Name:      "defend-performance-challenge",
+				Usage:     "Find and submit a proof defeating an unresolved performance challenge",
+				UsageText: "rocketpool node defend-performance-challenge challenge-id [options]",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm interactive questions",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					id, err := validatePerformanceChallengeID(c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					return actOnPerformanceChallenge(id, true, c.Bool("yes"))
+				},
+			},
+
+			{
+				Name:      "finalise-performance-challenge",
+				Usage:     "Finalise an undefeated performance challenge after its response deadline",
+				UsageText: "rocketpool node finalise-performance-challenge challenge-id [options]",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm interactive questions",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					id, err := validatePerformanceChallengeID(c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					return actOnPerformanceChallenge(id, false, c.Bool("yes"))
+				},
+			},
+
+			{
 				Name:      "release-challenge-bond",
 				Usage:     "Unlock an undefeated performance challenge's RPL bond after its response deadline.",
 				UsageText: "rocketpool node release-challenge-bond challenge-id [options]",
