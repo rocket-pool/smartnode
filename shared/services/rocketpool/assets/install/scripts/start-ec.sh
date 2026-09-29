@@ -191,7 +191,15 @@ if [ "$CLIENT" = "nethermind" ]; then
         exit 1
     fi
 
+    # The _archive config sets BaseDbPath to nethermind_db/<network>_archive, but archive nodes synced
+    # before v1.21.0 used the non-archive config and keep their data in nethermind_db/<network>.
+    # Keep using that legacy directory so switching configs cannot silently start a fresh sync.
+    NETHERMIND_DB_PATH_FLAGS=""
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
+        if [ -d "/ethclient/nethermind/nethermind_db/$RP_NETHERMIND_NETWORK" ] &&
+            [ ! -d "/ethclient/nethermind/nethermind_db/${RP_NETHERMIND_NETWORK}_archive" ]; then
+            NETHERMIND_DB_PATH_FLAGS="--Init.BaseDbPath=nethermind_db/$RP_NETHERMIND_NETWORK"
+        fi
         RP_NETHERMIND_NETWORK="${RP_NETHERMIND_NETWORK}_archive"
     fi
 
@@ -231,6 +239,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
+        $NETHERMIND_DB_PATH_FLAGS \
         $NETHERMIND_LAYOUT_FLAGS \
         $EC_ADDITIONAL_FLAGS"
 
