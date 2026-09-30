@@ -205,6 +205,11 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
+		// Enforcing other operators' exit requests is an opt-in duty.
+		if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+			continue
+		}
+
 		mp, err := megapool.NewMegapool(t.rp, request.MegapoolAddress, opts)
 		if err != nil {
 			t.log.Printlnf("Error creating a binding for megapool %s: %s", request.MegapoolAddress.Hex(), err.Error())
