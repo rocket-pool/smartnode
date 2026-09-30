@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/smartnode/bindings/logs"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -163,6 +164,54 @@ func ForceMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address
 		return common.Hash{}, fmt.Errorf("error forcing megapool exit for %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
 	}
 	return tx.Hash(), nil
+}
+
+// Estimate the gas of RetryMegapoolExit
+func EstimateRetryMegapoolExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return rocketNetworkExit.GetTransactionGasInfo(opts, "retryMegapoolExit", megapoolAddress, validatorId)
+}
+
+// Resubmit an EL exit for a Megapool validator already marked as exiting
+func RetryMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNetworkExit, err := getRocketNetworkExit(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkExit.Transact(opts, "retryMegapoolExit", megapoolAddress, validatorId)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error retrying megapool exit for %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get the latest forced exit or retry submission in the given block range
+func GetLatestMegapoolExitSubmission(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, intervalSize, fromBlock, toBlock *big.Int) (time.Time, error) {
+	topicFilter := [][]common.Hash{{
+		crypto.Keccak256Hash([]byte("MegapoolValidatorForceExited(uint256,uint256)")),
+		crypto.Keccak256Hash([]byte("MegapoolValidatorExitRetried(uint256,uint256)")),
+	}, {common.BigToHash(new(big.Int).SetUint64(uint64(validatorId)))}}
+	entries, err := logs.GetLogs(rp, []common.Address{megapoolAddress}, topicFilter, intervalSize, fromBlock, toBlock, nil)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting megapool exit submissions: %w", err)
+	}
+	if len(entries) == 0 {
+		return time.Time{}, nil
+	}
+	block := entries[0].BlockNumber
+	for _, entry := range entries[1:] {
+		if entry.BlockNumber > block {
+			block = entry.BlockNumber
+		}
+	}
+	header, err := rp.Client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(block))
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting megapool exit submission block %d: %w", block, err)
+	}
+	return time.Unix(int64(header.Time), 0), nil
 }
 
 // Get MinipoolExitRequested events emitted during the given block range
