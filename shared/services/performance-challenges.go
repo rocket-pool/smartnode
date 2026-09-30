@@ -132,6 +132,20 @@ func PreparePerformanceChallenge(c *cli.Command, request PerformanceChallengeReq
 	}
 	var pubkey types.ValidatorPubkey
 	if len(request.MinipoolAddresses) > 0 {
+		for _, address := range request.MinipoolAddresses {
+			mp, err := minipool.NewMinipool(rp, address, nil)
+			if err != nil {
+				return nil, nil, err
+			}
+			status, err := mp.GetStatus(nil)
+			if err != nil {
+				return nil, nil, err
+			}
+			if status != types.Staking {
+				result.Reason = fmt.Sprintf("Minipool %s is not staking.", address.Hex())
+				return result, nil, nil
+			}
+		}
 		pubkey, err = minipool.GetMinipoolPubkey(rp, request.MinipoolAddresses[0], nil)
 	} else {
 		if request.MegapoolAddress == (common.Address{}) {
