@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -176,7 +177,14 @@ func (t *defendChallengePerformance) run(state *state.NetworkStateIndex) error {
 		if !shouldHandlePerformanceChallenge(own, challenge.proposer == nodeAccount.Address, enforcer, challenge.expired(timestamp)) {
 			continue
 		}
+		if len(challenge.minipoolAddresses) > 0 {
+			t.log.Printlnf("Challenge %s: node %s, minipools %v.", challenge.challengeId, challenge.nodeAddress, challenge.minipoolAddresses)
+		} else {
+			t.log.Printlnf("Challenge %s: megapool %s, validator IDs %v.", challenge.challengeId, challenge.megapoolAddress, challenge.validatorIds)
+		}
+		t.log.Printlnf("Challenge %s: proposer %s, start epoch %d, %d claimed missed epochs, response deadline %s.", challenge.challengeId, challenge.proposer, challenge.startEpoch, len(challenge.getChallengedEpochs()), time.Unix(challenge.responseDeadline.Int64(), 0).UTC().Format(time.RFC3339))
 		if challenge.expired(timestamp) {
+			t.log.Printlnf("Challenge %s: response deadline has passed; preparing finalisation.", challenge.challengeId)
 			if err := t.finaliseChallenge(challenge); err != nil {
 				t.log.Printlnf("error finalising challenge %s: %v", challenge.challengeId, err)
 			}
@@ -193,14 +201,16 @@ func (t *defendChallengePerformance) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 		if !status.CanDefend(nodeAccount.Address, timestamp) {
+			t.log.Printlnf("Challenge %s: no longer eligible for defense; skipping.", challenge.challengeId)
 			continue
 		}
+		t.log.Printlnf("Challenge %s: building a defense proof.", challenge.challengeId)
 		defense, err := services.BuildPerformanceChallengeDefense(t.c, challenge.binding())
 		if err != nil {
 			t.log.Printlnf("challenge %s: %v", challenge.challengeId, err)
 			continue
 		}
-		if err := t.submitDefense(defense); err != nil {
+		if err := t.submitDefense(challenge, defense); err != nil {
 			t.log.Printlnf("error defending challenge %s: %v", challenge.challengeId, err)
 		}
 	}
@@ -232,26 +242,36 @@ func (t *defendChallengePerformance) finaliseChallenge(challenge megapoolPerform
 	if err != nil {
 		return err
 	}
-	return t.submitChallengeTransaction(opts, func() (gaslimit.Limits, error) {
+	return t.submitChallengeTransaction(challenge.challengeId, "finalisation", opts, func() (gaslimit.Limits, error) {
 		return megapool.EstimateFinaliseChallengeGas(t.rp, challenge.challengeId, opts)
 	}, func() (common.Hash, error) {
 		return megapool.FinaliseChallenge(t.rp, challenge.challengeId, opts)
 	})
 }
 
-func (t *defendChallengePerformance) submitDefense(defense megapool.PerformanceChallengeDefense) error {
+func (t *defendChallengePerformance) submitDefense(challenge megapoolPerformanceChallenge, defense megapool.PerformanceChallengeDefense) error {
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
 		return err
 	}
-	return t.submitChallengeTransaction(opts, func() (gaslimit.Limits, error) {
+	if defense.MinipoolAddress != (common.Address{}) {
+		t.log.Printlnf("Challenge %s: using minipool %s, beacon validator index %s.", defense.ChallengeId, defense.MinipoolAddress, defense.Validator.ValidatorIndex)
+	} else {
+		t.log.Printlnf("Challenge %s: using megapool validator %d, beacon validator index %s.", defense.ChallengeId, defense.ValidatorId, defense.Validator.ValidatorIndex)
+	}
+	if defense.Participation != nil {
+		t.log.Printlnf("Challenge %s: prepared a timely target participation proof for epoch %d, anchored at beacon slot %d, to defeat the entire challenge.", defense.ChallengeId, challenge.startEpoch+defense.Offset, defense.Slot.Slot)
+	} else {
+		t.log.Printlnf("Challenge %s: prepared an activation proof with activation epoch %d after start epoch %d, anchored at beacon slot %d, to defeat the entire challenge.", defense.ChallengeId, defense.Validator.Validator.ActivationEpoch, challenge.startEpoch, defense.Slot.Slot)
+	}
+	return t.submitChallengeTransaction(defense.ChallengeId, "defense", opts, func() (gaslimit.Limits, error) {
 		return defense.EstimateGas(t.rp, opts)
 	}, func() (common.Hash, error) {
 		return defense.Submit(t.rp, opts)
 	})
 }
 
-func (t *defendChallengePerformance) submitChallengeTransaction(opts *bind.TransactOpts, estimate func() (gaslimit.Limits, error), submit func() (common.Hash, error)) error {
+func (t *defendChallengePerformance) submitChallengeTransaction(id *big.Int, action string, opts *bind.TransactOpts, estimate func() (gaslimit.Limits, error), submit func() (common.Hash, error)) error {
 	opts.Value = nil
 	limits, err := estimate()
 	if err != nil {
@@ -265,6 +285,7 @@ func (t *defendChallengePerformance) submitChallengeTransaction(opts *bind.Trans
 		}
 	}
 	if !limits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+		t.log.Printlnf("Challenge %s: deferring %s because the gas price exceeds the configured threshold.", id, action)
 		return nil
 	}
 	opts.GasFeeCap = maxFee
@@ -273,9 +294,14 @@ func (t *defendChallengePerformance) submitChallengeTransaction(opts *bind.Trans
 	if t.gasLimit != 0 {
 		opts.GasLimit = t.gasLimit
 	}
+	t.log.Printlnf("Challenge %s: submitting %s.", id, action)
 	hash, err := submit()
 	if err != nil {
 		return err
 	}
-	return transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	if err := transactions.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log); err != nil {
+		return err
+	}
+	t.log.Printlnf("Challenge %s: successfully completed %s.", id, action)
+	return nil
 }
