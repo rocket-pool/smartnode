@@ -1151,8 +1151,8 @@ func GetFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorIndex uint6
 }
 
 // GetFinalBalanceProofBundle builds the versioned proof payload for
-// RocketMegapoolManager.notifyFinalBalance on 1.4.1+. Version 1 is used for
-// pre-Gloas withdrawals; version 2 for post-Gloas withdrawals.
+// RocketMegapoolManager.notifyFinalBalance on 1.4.1+. The actual withdrawal
+// slot determines the version: 1 below Gloas activation, 2 at or above it.
 func GetFinalBalanceProofBundle(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (*big.Int, []byte, uint64, error) {
 	withdrawalProof, validatorProof, slotProof, slotTimestamp, err := getPreGloasFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
 	if err != nil {
@@ -1175,6 +1175,23 @@ func GetFinalBalanceProofBundle(c *cli.Command, slotHint uint64, validatorIndex 
 		return nil, nil, 0, err
 	}
 	return megapool.FinalBalanceProofVersion1, encoded, slotTimestamp, nil
+}
+
+func validateFinalBalanceProofVersion(version *big.Int, withdrawalSlot uint64, eth2Config beacon.Eth2Config) error {
+	slotGloas := eth2Config.GloasActivationSlot()
+	switch {
+	case version.Cmp(megapool.FinalBalanceProofVersion1) == 0:
+		if withdrawalSlot >= slotGloas {
+			return fmt.Errorf("version 1 final balance proofs require withdrawal slot %d < Gloas activation slot %d: %w", withdrawalSlot, slotGloas, ErrGloasBoundaryReached)
+		}
+	case version.Cmp(megapool.FinalBalanceProofVersion2) == 0:
+		if withdrawalSlot < slotGloas {
+			return fmt.Errorf("version 2 final balance proofs require withdrawal slot %d >= Gloas activation slot %d", withdrawalSlot, slotGloas)
+		}
+	default:
+		return fmt.Errorf("unsupported final balance proof version %s", version)
+	}
+	return nil
 }
 
 func getPreGloasFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorIndex uint64, validatorPubkey types.ValidatorPubkey, megapoolAddress common.Address, w wallet.Wallet) (megapool.WithdrawalProof, megapool.ValidatorProof, megapool.SlotProof, uint64, error) {
@@ -1212,6 +1229,12 @@ func getPreGloasFinalBalanceProofs(c *cli.Command, slotHint uint64, validatorInd
 		stateUsed = nil
 	}
 
+	// Apply the verifier's slot boundary to local and API proofs alike. Returning
+	// the boundary error lets the bundle builder switch to the Gloas proof path.
+	if err := validateFinalBalanceProofVersion(megapool.FinalBalanceProofVersion1, rawProof.WithdrawalSlot, eth2Config); err != nil {
+		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
+	}
+
 	validatorProof, slotTimestamp, slotProof, err := GetValidatorProof(c, proofSlot, w, eth2Config, validatorPubkey, stateUsed)
 	if err != nil {
 		return megapool.WithdrawalProof{}, megapool.ValidatorProof{}, megapool.SlotProof{}, 0, err
@@ -1245,12 +1268,18 @@ func getGloasFinalBalanceProofBundle(c *cli.Command, bc beacon.Client, eth2Confi
 	}
 	capellaOffset := eth2Config.HistoricalSummaryOffset()
 
-	withdrawalSlot, indexInWithdrawalsArray, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(slotHint, validatorIndex, ec, eth2Config)
+	// A pre-Gloas hint can reach this path when the beacon scan crosses the fork.
+	// Only withdrawals at or after activation are eligible for version 2.
+	startSlot := max(slotHint, eth2Config.GloasActivationSlot())
+	withdrawalSlot, indexInWithdrawalsArray, withdrawal, err := FindGloasWithdrawalSlotAndArrayPosition(startSlot, validatorIndex, ec, eth2Config)
 	if err != nil {
 		return nil, nil, 0, err
 	}
 	if withdrawalSlot == 0 {
 		return nil, nil, 0, fmt.Errorf("withdrawal slot must be greater than zero")
+	}
+	if err := validateFinalBalanceProofVersion(megapool.FinalBalanceProofVersion2, withdrawalSlot, eth2Config); err != nil {
+		return nil, nil, 0, err
 	}
 
 	withdrawalStateResponse, err := bc.GetBeaconStateSSZ(withdrawalSlot)
