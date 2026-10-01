@@ -169,12 +169,12 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 
 	if !exiting {
 		// Get the gas limit
-		gasLimits, err = services.EstimateMegapoolNotifyNotExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = services.EstimateMegapoolNotifyNotExitGas(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	} else {
-		gasLimits, err = services.EstimateMegapoolNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		gasLimits, err = services.EstimateMegapoolNotifyExitGas(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
@@ -202,13 +202,13 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	var tx *coretypes.Transaction
 	if !exiting {
 		t.log.Printlnf("Notifying that validator %d is not exiting.", validatorId)
-		tx, err = services.NotifyMegapoolNotExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		tx, err = services.NotifyMegapoolNotExit(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
 	} else {
 		t.log.Printlnf("Notifying that validator %d is exiting.", validatorId)
-		tx, err = services.NotifyMegapoolExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+		tx, err = services.NotifyMegapoolExit(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 		if err != nil {
 			return err
 		}
