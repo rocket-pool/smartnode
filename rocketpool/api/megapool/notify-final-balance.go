@@ -76,7 +76,7 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 		return nil, err
 	}
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(c, rp, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(c, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 		withdrawalSlot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(c, rp, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(c, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
 	if err != nil {
 		return nil, err
 	}

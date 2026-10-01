@@ -197,7 +197,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	}
 	slot := validatorDetails.WithdrawableEpoch * slotsPerEpoch
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(t.c, rp, mp.GetAddress(), slot, validatorIndex, validatorDetails.Pubkey, t.w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(t.c, mp.GetAddress(), slot, validatorIndex, validatorDetails.Pubkey, t.w)
 	if err != nil {
 		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorDetails.Pubkey.String(), validatorIndex, err)
 	}

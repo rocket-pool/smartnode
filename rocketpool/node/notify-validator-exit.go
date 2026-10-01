@@ -211,7 +211,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 	t.log.Printlnf("The validator exit proof has been successfully created.")
 
 	// Get the gas limit
-	gasLimits, err := services.EstimateMegapoolNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+	gasLimits, err := services.EstimateMegapoolNotifyExitGas(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		t.log.Printlnf("Could not estimate the gas required to notify exit on megapool validator %d: %w", validatorId, err)
 		return err
@@ -236,7 +236,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 	opts.GasLimit = gas.Uint64()
 
 	// Call Notify Exit
-	tx, err := services.NotifyMegapoolExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
+	tx, err := services.NotifyMegapoolExit(t.c, rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}

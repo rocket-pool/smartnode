@@ -133,7 +133,7 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasLimits, err := services.EstimateMegapoolNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
+	gasLimits, err := services.EstimateMegapoolNotifyExitGas(c, rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.Transact
 	}
 
 	// Notify the validator exit
-	tx, err := services.NotifyMegapoolExit(rp, megapoolAddress, validatorId, slotTimetamp, validatorProof, slotProof, opts)
+	tx, err := services.NotifyMegapoolExit(c, rp, megapoolAddress, validatorId, slotTimetamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
