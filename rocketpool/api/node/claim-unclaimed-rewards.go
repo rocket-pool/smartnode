@@ -33,8 +33,9 @@ func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.
 		return nil, err
 	}
 
-	if unclaimedRewards != nil {
-		response.CanClaim = false
+	response.CanClaim = unclaimedRewards != nil && unclaimedRewards.Sign() > 0
+	if !response.CanClaim {
+		return &response, nil
 	}
 
 	// Get gas estimate
@@ -46,7 +47,6 @@ func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.
 	if err != nil {
 		return nil, err
 	}
-	response.CanClaim = true
 
 	return &response, nil
 

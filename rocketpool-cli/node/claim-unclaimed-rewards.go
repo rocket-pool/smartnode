@@ -31,12 +31,13 @@ func claimUnclaimedRewards(yes bool) error {
 	fmt.Printf("The node's withdrawal address is %s\n", status.PrimaryWithdrawalAddress)
 	if status.UnclaimedRewards != nil && status.UnclaimedRewards.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("You have %.6f ETH in unclaimed rewards.\n", math.RoundDown(math.WeiToEth(status.UnclaimedRewards), 6))
-		fmt.Printf("Your node %s's rewards were distributed, but the withdrawal address (at the time of distribution) was unable to accept ETH. ",
+		fmt.Printf("Your node %s has rewards that were distributed to its unclaimed rewards balance instead of its withdrawal address. ",
 			color.LightBlue(status.AccountAddress.String()))
-		fmt.Println("Before continuing, please use the command `rocketpool node set-primary-withdrawal-address` to configure an address that can accept ETH")
+		fmt.Println("This happens whenever your fee distributor is distributed by anyone other than your node or withdrawal address.")
+		fmt.Println("Claiming will send them to your current withdrawal address.")
 	} else {
 		fmt.Println("You have no unclaimed rewards.")
-		fmt.Println("Unclaimed rewards occur when a withdrawal address cannot accept ETH during distribution.")
+		fmt.Println("Unclaimed rewards occur when your fee distributor is distributed by anyone other than your node or withdrawal address.")
 		fmt.Println("If you have unclaimed rewards in the future, you can use this command to claim them.")
 		return nil
 	}
@@ -44,7 +45,12 @@ func claimUnclaimedRewards(yes bool) error {
 	// Check the node can claim unclaimed rewards
 	canClaim, err := rp.CanClaimUnclaimedRewards(status.AccountAddress)
 	if err != nil {
+		fmt.Println("Could not claim unclaimed rewards. If your current withdrawal address cannot accept ETH, use `rocketpool node set-primary-withdrawal-address` to reconfigure your withdrawal address.")
 		return err
+	}
+	if !canClaim.CanClaim {
+		fmt.Println("You have no unclaimed rewards.")
+		return nil
 	}
 
 	// Assign max fees
