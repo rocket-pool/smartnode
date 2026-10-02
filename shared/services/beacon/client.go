@@ -69,6 +69,7 @@ type BeaconBlock struct {
 type BeaconBlockHeader struct {
 	Slot          uint64
 	ProposerIndex string
+	StateRoot     common.Hash
 	// Root is the block root for this header. Used by RPIP-73 target-vote
 	// verification to resolve the canonical target root at an epoch boundary.
 	Root common.Hash
