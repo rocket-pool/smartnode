@@ -751,6 +751,7 @@ func (c *StandardHttpClient) GetBeaconBlockHeader(blockId string) (beacon.Beacon
 		Slot:          uint64(block.Data.Header.Message.Slot),
 		ProposerIndex: block.Data.Header.Message.ProposerIndex,
 		Root:          common.HexToHash(block.Data.Root),
+		StateRoot:     common.HexToHash(block.Data.Header.Message.StateRoot),
 	}
 	return beaconBlock, true, nil
 }

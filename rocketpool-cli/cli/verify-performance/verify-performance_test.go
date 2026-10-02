@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -110,5 +112,45 @@ func TestGroupChallengeable(t *testing.T) {
 				t.Errorf("GroupChallengeable() = %+v, want %+v", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestChallengeBatchBoundariesAndMinipoolOwners(t *testing.T) {
+	results := make([]api.VerifyPerformanceResult, 65)
+	for i := range results {
+		results[i] = api.VerifyPerformanceResult{
+			ValidatorId: uint32(i),
+			Performance: &api.VerifyPerformanceResponse{
+				StartEpoch:      100,
+				Challengeable:   true,
+				MissedEpochList: []uint64{100},
+				Participation:   []*big.Int{big.NewInt(1)},
+			},
+		}
+	}
+	groups := GroupChallengeable(results)
+	if len(groups) != 3 || len(groups[0].ValidatorIds) != 32 || len(groups[1].ValidatorIds) != 32 || len(groups[2].ValidatorIds) != 1 {
+		t.Fatalf("incorrect batching: %+v", groups)
+	}
+	for i := range results {
+		results[i].MinipoolAddress = common.BigToAddress(big.NewInt(int64(i + 1)))
+		results[i].NodeAddress = common.BigToAddress(big.NewInt(int64(i%2 + 1)))
+	}
+	groups = GroupChallengeable(results)
+	total := 0
+	for _, group := range groups {
+		if len(group.MinipoolAddresses) > 32 {
+			t.Fatal("oversized minipool batch")
+		}
+		ownerParity := group.MinipoolAddresses[0].Big().Int64() % 2
+		for _, addr := range group.MinipoolAddresses {
+			if addr.Big().Int64()%2 != ownerParity {
+				t.Fatal("mixed owners in one challenge")
+			}
+		}
+		total += len(group.MinipoolAddresses)
+	}
+	if len(groups) != 3 || total != 65 {
+		t.Fatalf("lost minipools: %d groups, %d members", len(groups), total)
 	}
 }

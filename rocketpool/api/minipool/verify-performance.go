@@ -52,13 +52,32 @@ func verifyPerformance(
 	// failures are recorded and excluded from the beacon batch.
 	pubkeys := make([]rptypes.ValidatorPubkey, len(addresses))
 	pubkeyErrs := make([]string, len(addresses))
+	owners := make([]common.Address, len(addresses))
 	for i, address := range addresses {
 		pubkey, err := minipool.GetMinipoolPubkey(rp, address, nil)
 		if err != nil {
 			pubkeyErrs[i] = fmt.Sprintf("error getting minipool %s pubkey: %s", address.Hex(), err.Error())
 			continue
 		}
+		mp, err := minipool.NewMinipool(rp, address, nil)
+		if err != nil {
+			pubkeyErrs[i] = err.Error()
+			continue
+		}
+		owners[i], err = mp.GetNodeAddress(nil)
+		if err != nil {
+			pubkeyErrs[i] = err.Error()
+			continue
+		}
 		pubkeys[i] = pubkey
+	}
+
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, err
+	}
+	if err := performance.ValidateMeasurementRange(head.Epoch, startEpoch, endEpoch); err != nil {
+		return nil, err
 	}
 
 	batch, err := performance.VerifyPerformanceBatch(rp, bc, pubkeys, startEpoch, endEpoch)
@@ -66,7 +85,7 @@ func verifyPerformance(
 		return nil, err
 	}
 
-	challengeable, err := performance.IsRangeChallengeable(rp, bc, startEpoch, endEpoch)
+	challengeParams, err := performance.GetChallengeParams(rp)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +94,10 @@ func verifyPerformance(
 		Results: make([]api.VerifyPerformanceResult, 0, len(addresses)),
 	}
 	for i, address := range addresses {
-		if !batch[i].Active {
+		if !batch[i].Active && pubkeyErrs[i] == "" && batch[i].Err == nil {
 			continue
 		}
-		result := api.VerifyPerformanceResult{MinipoolAddress: address}
+		result := api.VerifyPerformanceResult{MinipoolAddress: address, NodeAddress: owners[i]}
 		switch {
 		case pubkeyErrs[i] != "":
 			result.Error = pubkeyErrs[i]
@@ -86,7 +105,7 @@ func verifyPerformance(
 			result.Error = batch[i].Err.Error()
 		default:
 			result.Performance = batch[i].Response
-			result.Performance.Challengeable = challengeable && performance.ExceedsChallengeThreshold(result.Performance)
+			performance.SetChallengeability(result.Performance, challengeParams, head.Epoch)
 		}
 		response.Results = append(response.Results, result)
 	}

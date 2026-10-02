@@ -14,13 +14,12 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 func encodeValidatorBundleIfNeeded(rp *rocketpool.RocketPool, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof) (bool, []byte, error) {
 	useBundles, err := megapool.UsesProofBundles(rp, nil)
 	if err != nil {
-		return false, nil, fmt.Errorf("error checking beacon state verifier version: %w", err)
+		return false, nil, fmt.Errorf("error checking megapool manager proof format: %w", err)
 	}
 	if !useBundles {
 		return false, nil, nil
@@ -132,13 +131,24 @@ type MegapoolFinalBalanceProof struct {
 	slotProof       megapool.SlotProof
 }
 
-func BuildMegapoolFinalBalanceProof(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, slotHint uint64, validatorIndex uint64, validatorPubkey rptypes.ValidatorPubkey, w wallet.Wallet) (*MegapoolFinalBalanceProof, error) {
+func BuildMegapoolFinalBalanceProof(c *cli.Command, rp *rocketpool.RocketPool, slotHint uint64, validatorIndex uint64, validatorPubkey rptypes.ValidatorPubkey) (*MegapoolFinalBalanceProof, error) {
 	useBundles, err := megapool.UsesProofBundles(rp, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error checking beacon state verifier version: %w", err)
+		return nil, fmt.Errorf("error checking megapool manager proof format: %w", err)
+	}
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+	beaconState, slotTimestamp, err := GetHeadBeaconState(bc, rp.Client)
+	if err != nil {
+		return nil, err
+	}
+	if beaconState.GetSlot() == 0 {
+		return nil, fmt.Errorf("proof beacon state has no earlier slots for a withdrawal proof")
 	}
 	if useBundles {
-		proofVersion, proofData, slotTimestamp, err := GetFinalBalanceProofBundle(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+		proofVersion, proofData, err := GetFinalBalanceProofBundle(c, slotHint, validatorIndex, validatorPubkey, beaconState)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +159,7 @@ func BuildMegapoolFinalBalanceProof(c *cli.Command, rp *rocketpool.RocketPool, m
 			proofData:     proofData,
 		}, nil
 	}
-	withdrawalProof, validatorProof, slotProof, slotTimestamp, err := GetFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+	withdrawalProof, validatorProof, slotProof, err := GetFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}

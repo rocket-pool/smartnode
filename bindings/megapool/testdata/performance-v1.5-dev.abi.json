@@ -1,0 +1,722 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "megapoolAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32[]",
+        "name": "_validatorIds",
+        "type": "uint32[]"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "_startEpoch",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "_root",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_participation",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "MegapoolChallenged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nodeAddress",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "challengeId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address[]",
+        "name": "minipoolAddresses",
+        "type": "address[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "startEpoch",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "root",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "participation",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "MinipoolsChallenged",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_megapoolAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "_validatorIds",
+        "type": "uint32[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_startEpoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_participation",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "challengeMegapool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_minipoolAddresses",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_startEpoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_participation",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "challengeMinipools",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimChallengeReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "finaliseChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "releaseChallengeBond",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_validatorId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_offset",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_challengeLeaf",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_challengeWitness",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "withdrawalCredentials",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "uint64",
+                "name": "effectiveBalance",
+                "type": "uint64"
+              },
+              {
+                "internalType": "bool",
+                "name": "slashed",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEligibilityEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "exitEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "withdrawableEpoch",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct Validator",
+            "name": "validator",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ValidatorProof",
+        "name": "_validatorProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "participationSlot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "participationFlagsChunk",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ParticipationProof",
+        "name": "_participationProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "respondWithMegapoolParticipation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_validatorId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "withdrawalCredentials",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "uint64",
+                "name": "effectiveBalance",
+                "type": "uint64"
+              },
+              {
+                "internalType": "bool",
+                "name": "slashed",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEligibilityEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "exitEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "withdrawableEpoch",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct Validator",
+            "name": "validator",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ValidatorProof",
+        "name": "_validatorProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "respondWithMegapoolValidator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_minipoolAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_offset",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_challengeLeaf",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_challengeWitness",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "withdrawalCredentials",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "uint64",
+                "name": "effectiveBalance",
+                "type": "uint64"
+              },
+              {
+                "internalType": "bool",
+                "name": "slashed",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEligibilityEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "exitEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "withdrawableEpoch",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct Validator",
+            "name": "validator",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ValidatorProof",
+        "name": "_validatorProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "participationSlot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "participationFlagsChunk",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ParticipationProof",
+        "name": "_participationProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "respondWithMinipoolParticipation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengeId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_minipoolAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slotTimestamp",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint40",
+            "name": "validatorIndex",
+            "type": "uint40"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "withdrawalCredentials",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "uint64",
+                "name": "effectiveBalance",
+                "type": "uint64"
+              },
+              {
+                "internalType": "bool",
+                "name": "slashed",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEligibilityEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "activationEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "exitEpoch",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "withdrawableEpoch",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct Validator",
+            "name": "validator",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct ValidatorProof",
+        "name": "_validatorProof",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "slot",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "witnesses",
+            "type": "bytes32[]"
+          }
+        ],
+        "internalType": "struct SlotProof",
+        "name": "_slotProof",
+        "type": "tuple"
+      }
+    ],
+    "name": "respondWithMinipoolValidator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

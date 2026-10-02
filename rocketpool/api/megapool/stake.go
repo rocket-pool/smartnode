@@ -85,12 +85,12 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 		return &response, nil
 	}
 
-	eth2Config, err := bc.GetEth2Config()
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, rp.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(bc, types.ValidatorPubkey(validatorInfo.Pubkey), beaconState)
 	if err != nil {
 		if strings.Contains(err.Error(), "index not found") {
 			response.CanStake = false
@@ -162,12 +162,12 @@ func stake(c *cli.Command, validatorId uint64, t *snroute.TransactOpts) (*api.St
 		return nil, err
 	}
 
-	eth2Config, err := bc.GetEth2Config()
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, rp.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(bc, types.ValidatorPubkey(validatorInfo.Pubkey), beaconState)
 	if err != nil {
 		return nil, err
 	}

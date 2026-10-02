@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/client"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -90,11 +89,6 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking if there are megapool validators exiting...")
 
-	// Get the latest state
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-	}
-
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -148,11 +142,11 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 		return nil
 	}
 
-	beaconState, err := services.GetBeaconState(t.bc)
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(t.bc, t.rp.Client)
 	if err != nil {
 		return err
 	}
-	finalizedValidators := beaconState.GetValidators()
+	proofValidators := beaconState.GetValidators()
 
 	for validatorId, validatorDetails := range validatorDetailsToProve {
 		pubkey := types.ValidatorPubkey(validatorDetails.Pubkey)
@@ -160,7 +154,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 		// Log
 		t.log.Printlnf("The validator id %d needs an exit proof", validatorId)
 
-		// Check the exit is visible on the finalized state before proof generation
+		// Check the exit is visible on the selected state before proof generation
 		validatorIndexStr, err := t.bc.GetValidatorIndex(pubkey)
 		if err != nil {
 			t.log.Printlnf("Error getting beacon index for validator id %d: %w", validatorId, err)
@@ -171,17 +165,17 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 			t.log.Printlnf("Error parsing beacon index for validator id %d: %w", validatorId, err)
 			continue
 		}
-		if validatorIndex >= uint64(len(finalizedValidators)) {
-			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
+		if validatorIndex >= uint64(len(proofValidators)) {
+			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the selected beacon state. Will retry on next cycle.", validatorId, validatorIndex)
 			continue
 		}
-		if finalizedValidators[validatorIndex].WithdrawableEpoch >= FarFutureEpoch {
-			t.log.Printlnf("Validator id %d (beacon index %d) exit is not yet reflected in the finalized beacon state (withdrawable_epoch still FAR_FUTURE). Will retry on next cycle.", validatorId, validatorIndex)
+		if proofValidators[validatorIndex].WithdrawableEpoch >= FarFutureEpoch {
+			t.log.Printlnf("Validator id %d (beacon index %d) exit is not yet reflected in the selected beacon state (withdrawable_epoch still FAR_FUTURE). Will retry on next cycle.", validatorId, validatorIndex)
 			continue
 		}
 
 		// Call Notify Exit
-		err = t.createExitProof(t.rp, beaconState, mp, validatorId, state, pubkey, opts)
+		err = t.createExitProof(t.rp, beaconState, slotTimestamp, mp, validatorId, pubkey)
 		// dont return if there was an error, just log it so we can continue with the next validator
 		if err != nil {
 			t.log.Printlnf("Error creating exit proof for validator %d: %w", validatorId, err)
@@ -192,7 +186,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 
 }
 
-func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, slotTimestamp uint64, mp megapool.Megapool, validatorId uint32, validatorPubkey types.ValidatorPubkey) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -202,7 +196,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 
 	t.log.Printlnf("Crafting an exit proof.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validatorPubkey, beaconState)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, validatorPubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err

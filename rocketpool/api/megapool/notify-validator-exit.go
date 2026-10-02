@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
@@ -17,30 +18,37 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 )
 
-var errExitNotFinalized = errors.New("validator exit not yet finalized")
+var errExitNotReady = errors.New("validator exit not yet visible in the proof state")
 
-func ensureExitFinalized(bc beacon.Client, pubkey types.ValidatorPubkey) (eth2.BeaconState, error) {
-	beaconState, err := services.GetBeaconState(bc)
+func ensureExitReady(bc beacon.Client, ec rocketpool.ExecutionClient, pubkey types.ValidatorPubkey) (eth2.BeaconState, uint64, error) {
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, ec)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+	if err := checkExitProofState(bc, pubkey, beaconState); err != nil {
+		return nil, 0, err
+	}
+	return beaconState, slotTimestamp, nil
+}
+
+func checkExitProofState(bc beacon.Client, pubkey types.ValidatorPubkey, beaconState eth2.BeaconState) error {
 	validators := beaconState.GetValidators()
 
 	validatorIndexStr, err := bc.GetValidatorIndex(pubkey)
 	if err != nil {
-		return nil, fmt.Errorf("error getting beacon index: %w", err)
+		return fmt.Errorf("error getting beacon index: %w", err)
 	}
 	validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing beacon index %q: %w", validatorIndexStr, err)
+		return fmt.Errorf("error parsing beacon index %q: %w", validatorIndexStr, err)
 	}
 	if validatorIndex >= uint64(len(validators)) {
-		return nil, fmt.Errorf("%w: validator (beacon index %d) is not yet included in the finalized beacon state", errExitNotFinalized, validatorIndex)
+		return fmt.Errorf("%w: validator (beacon index %d) is not yet included in the selected beacon state", errExitNotReady, validatorIndex)
 	}
 	if validators[validatorIndex].WithdrawableEpoch >= farFutureEpoch {
-		return nil, fmt.Errorf("%w: validator (beacon index %d) withdrawable_epoch is still FAR_FUTURE on finalized state", errExitNotFinalized, validatorIndex)
+		return fmt.Errorf("%w: validator (beacon index %d) withdrawable_epoch is still FAR_FUTURE in the selected beacon state", errExitNotReady, validatorIndex)
 	}
-	return beaconState, nil
+	return nil
 }
 
 func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyValidatorExitResponse, error) {
@@ -106,23 +114,18 @@ func canNotifyValidatorExit(c *cli.Command, validatorId uint32) (*api.CanNotifyV
 
 	pubkey := types.ValidatorPubkey(validatorInfo.Pubkey)
 
-	// Proofs use finalized state — do not build/submit until the exit is there.
-	beaconState, err := ensureExitFinalized(bc, pubkey)
+	// Check the exit is visible in the state selected for the proof.
+	beaconState, slotTimestamp, err := ensureExitReady(bc, rp.Client, pubkey)
 	if err != nil {
-		if errors.Is(err, errExitNotFinalized) {
-			response.ExitNotFinalized = true
+		if errors.Is(err, errExitNotReady) {
+			response.ExitNotReady = true
 			response.CanExit = false
 			return &response, nil
 		}
 		return nil, err
 	}
 
-	eth2Config, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
-
-	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, pubkey, beaconState)
+	proof, slotProof, err := services.GetValidatorProofFromState(bc, pubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}
@@ -197,23 +200,18 @@ func notifyValidatorExit(c *cli.Command, validatorId uint32, t *snroute.Transact
 
 	pubkey := types.ValidatorPubkey(validatorInfo.Pubkey)
 
-	beaconState, err := ensureExitFinalized(bc, pubkey)
+	beaconState, slotTimestamp, err := ensureExitReady(bc, rp.Client, pubkey)
 	if err != nil {
 		return nil, err
 	}
 
-	eth2Config, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
-
-	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, pubkey, beaconState)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(bc, pubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}
 
 	// Notify the validator exit
-	tx, err := services.NotifyMegapoolExit(rp, megapoolAddress, validatorId, slotTimetamp, validatorProof, slotProof, opts)
+	tx, err := services.NotifyMegapoolExit(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

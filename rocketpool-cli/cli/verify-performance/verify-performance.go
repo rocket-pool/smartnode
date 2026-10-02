@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -32,6 +34,9 @@ func ResolveEpochRange(rp *rocketpool.Client, startEpoch, epochs uint64) (uint64
 		if epochs == 0 {
 			epochs = performance.DefaultPerformancePeriodEpochs
 		}
+	}
+	if epochs == 0 || startEpoch > ^uint64(0)-(epochs-1) {
+		return 0, 0, fmt.Errorf("epoch range overflows uint64")
 	}
 	endEpoch := startEpoch + epochs - 1
 	return startEpoch, endEpoch, nil
@@ -79,9 +84,9 @@ func PrintResult(resp api.VerifyPerformanceResponse, label string) {
 	fmt.Printf("  Performance:      %.2f%%\n", resp.PerformancePct)
 	fmt.Printf("  Threshold:        %.2f%%\n", resp.PerformanceThresholdPct)
 	if resp.PassesThreshold {
-		fmt.Println("  Result:           PASS (not exit-eligible under RPIP-73 with these parameters)")
+		fmt.Println("  Result:           PASS (measured target participation meets the threshold)")
 	} else {
-		fmt.Println("  Result:           FAIL (exit-eligible under RPIP-73 with these parameters)")
+		fmt.Println("  Result:           FAIL (measured target participation is below the threshold)")
 	}
 
 	if len(resp.MissedEpochList) > 0 {
@@ -135,7 +140,7 @@ func PrintBatchResults(resp api.VerifyPerformanceBatchResponse, labelFor func(ap
 	// List the validators that failed (and any that errored) at the very end so
 	// they are easy to spot without scrolling back through every result.
 	if len(failedLabels) > 0 {
-		fmt.Printf("\nFailed validators (exit-eligible under RPIP-73):\n")
+		fmt.Printf("\nValidators below the measured performance threshold:\n")
 		for _, label := range failedLabels {
 			fmt.Printf("  - %s\n", label)
 		}
@@ -149,12 +154,13 @@ func PrintBatchResults(resp api.VerifyPerformanceBatchResponse, labelFor func(ap
 }
 
 // ChallengeGroup is a set of validators sharing an identical missed-epoch
-// set, challengeable together in a single challengeMegapool call.
+// set, challengeable together in one megapool or minipool challenge.
 type ChallengeGroup struct {
-	ValidatorIds  []uint32
-	StartEpoch    uint64
-	Participation []*big.Int
-	MissedEpochs  []uint64
+	ValidatorIds      []uint32
+	MinipoolAddresses []common.Address
+	StartEpoch        uint64
+	Participation     []*big.Int
+	MissedEpochs      []uint64
 }
 
 // GroupChallengeable groups the challengeable validators of a batch result by
@@ -169,17 +175,25 @@ func GroupChallengeable(results []api.VerifyPerformanceResult) []ChallengeGroup 
 		if result.Error != "" || perf == nil || !perf.Challengeable || len(perf.MissedEpochList) == 0 {
 			continue
 		}
-		key := fmt.Sprint(perf.StartEpoch, perf.MissedEpochList)
-		if i, ok := groupIndexByKey[key]; ok {
+		key := fmt.Sprint(result.NodeAddress, perf.StartEpoch, perf.MissedEpochList)
+		if i, ok := groupIndexByKey[key]; ok && len(groups[i].ValidatorIds) < megapool.MaxPerformanceChallengeValidators {
 			groups[i].ValidatorIds = append(groups[i].ValidatorIds, result.ValidatorId)
+			if result.MinipoolAddress != (common.Address{}) {
+				groups[i].MinipoolAddresses = append(groups[i].MinipoolAddresses, result.MinipoolAddress)
+			}
 			continue
 		}
 		groupIndexByKey[key] = len(groups)
+		var addresses []common.Address
+		if result.MinipoolAddress != (common.Address{}) {
+			addresses = []common.Address{result.MinipoolAddress}
+		}
 		groups = append(groups, ChallengeGroup{
-			ValidatorIds:  []uint32{result.ValidatorId},
-			StartEpoch:    perf.StartEpoch,
-			Participation: perf.Participation,
-			MissedEpochs:  perf.MissedEpochList,
+			MinipoolAddresses: addresses,
+			ValidatorIds:      []uint32{result.ValidatorId},
+			StartEpoch:        perf.StartEpoch,
+			Participation:     perf.Participation,
+			MissedEpochs:      perf.MissedEpochList,
 		})
 	}
 	return groups

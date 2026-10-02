@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/client"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -92,11 +91,6 @@ func (t *notifyFinalBalance) run(state *state.NetworkStateIndex) error {
 	// Log
 	t.log.Println("Checking if there are megapool validators with a final balance withdrawn...")
 
-	// Get the latest state
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-	}
-
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -147,25 +141,24 @@ func (t *notifyFinalBalance) run(state *state.NetworkStateIndex) error {
 	if err != nil {
 		return fmt.Errorf("error getting beacon head: %w", err)
 	}
-	finalizedEpoch := head.FinalizedEpoch
 	candidatePubkeys := make([]types.ValidatorPubkey, len(candidates))
 	for i, candidate := range candidates {
 		candidatePubkeys[i] = candidate.pubkey
 	}
-	finalizedStatuses, err := t.bc.GetValidatorStatuses(candidatePubkeys, &beacon.ValidatorStatusOptions{Epoch: &finalizedEpoch})
+	statuses, err := t.bc.GetValidatorStatuses(candidatePubkeys, nil)
 	if err != nil {
-		return fmt.Errorf("error getting finalized validator statuses: %w", err)
+		return fmt.Errorf("error getting validator statuses at beacon head: %w", err)
 	}
 
 	for _, candidate := range candidates {
-		finalizedStatus := finalizedStatuses[candidate.pubkey]
-		if !beacon.HasFinalBalanceWithdrawal(finalizedStatus) {
-			t.log.Printlnf("Validator id %d is not ready for a final balance proof on the finalized beacon state (epoch %d): %s. Will retry on next cycle.", candidate.id, finalizedEpoch, finalBalancePendingReason(finalizedStatus, finalizedEpoch))
+		status := statuses[candidate.pubkey]
+		if !beacon.HasFinalBalanceWithdrawal(status) {
+			t.log.Printlnf("Validator id %d is not ready for a final balance proof at beacon head (epoch %d): %s. Will retry on next cycle.", candidate.id, head.Epoch, finalBalancePendingReason(status, head.Epoch))
 			continue
 		}
 
 		t.log.Printlnf("The validator id %d needs a final balance proof", candidate.id)
-		err := t.createFinalBalanceProof(t.rp, mp, state, candidate.id, finalizedStatus, opts)
+		err := t.createFinalBalanceProof(t.rp, mp, state, candidate.id, status)
 		if err != nil {
 			t.log.Printlnf("Error creating final balance proof for validator %d: %s", candidate.id, err)
 		}
@@ -176,7 +169,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkStateIndex) error {
 
 }
 
-func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, state *state.NetworkStateIndex, validatorId uint32, validatorDetails beacon.ValidatorStatus, callopts *bind.CallOpts) error {
+func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, state *state.NetworkStateIndex, validatorId uint32, validatorDetails beacon.ValidatorStatus) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -197,7 +190,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	}
 	slot := validatorDetails.WithdrawableEpoch * slotsPerEpoch
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(t.c, rp, mp.GetAddress(), slot, validatorIndex, validatorDetails.Pubkey, t.w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(t.c, rp, slot, validatorIndex, validatorDetails.Pubkey)
 	if err != nil {
 		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorDetails.Pubkey.String(), validatorIndex, err)
 	}
@@ -250,11 +243,11 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 
 func finalBalancePendingReason(status beacon.ValidatorStatus, currentEpoch uint64) string {
 	if !status.Exists {
-		return "validator not yet included in the finalized beacon state"
+		return "validator not yet included in the beacon head"
 	}
 	withdrawableEpoch := status.WithdrawableEpoch
 	if withdrawableEpoch == 0 || withdrawableEpoch == beacon.FarFutureEpoch {
-		return "withdrawable epoch not yet set on the finalized beacon state"
+		return "withdrawable epoch not yet set on the beacon head"
 	}
 	if currentEpoch < withdrawableEpoch {
 		return fmt.Sprintf("waiting for withdrawable_epoch %d", withdrawableEpoch)

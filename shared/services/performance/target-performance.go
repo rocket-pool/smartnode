@@ -8,7 +8,7 @@
 //  1. included in a block (which implies source-checkpoint matching), AND
 //  2. voting for the correct target root, i.e. data.target.root equals the
 //     canonical block root at the first slot of epoch E, AND
-//  3. included within SLOTS_PER_EPOCH slots of data.slot.
+//  3. included before the end of the following epoch (Deneb and later).
 package performance
 
 import (
@@ -64,6 +64,7 @@ type ChallengeParams struct {
 	ExitsEnabled      bool
 	PeriodEpochs      uint64
 	ProofBufferEpochs uint64
+	ThresholdWei      *big.Int
 }
 
 // GetChallengeParams fetches the pDAO performance-challenge settings.
@@ -87,7 +88,12 @@ func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
 	if err != nil {
 		return ChallengeParams{}, err
 	}
+	threshold, err := protocol.GetPerformanceThreshold(rp, nil)
+	if err != nil {
+		return ChallengeParams{}, err
+	}
 	return ChallengeParams{
+		ThresholdWei:      threshold,
 		ExitsEnabled:      exitsEnabled,
 		PeriodEpochs:      periodEpochs,
 		ProofBufferEpochs: proofBufferEpochs,
@@ -118,33 +124,129 @@ func IsRangeChallengeable(rp *rocketpool.RocketPool, bc challengeBeaconClient, s
 
 // ExceedsChallengeThreshold reports whether the validator missed enough
 // target votes for a challenge to succeed: the missed share of the checked
-// period must be higher than the allowed slack (100% - performance_threshold).
+// period must be at least the allowed slack (100% - performance_threshold).
 func ExceedsChallengeThreshold(resp *api.VerifyPerformanceResponse) bool {
 	if resp.TotalEpochs == 0 {
 		return false
 	}
-	missedPct := float64(resp.MissedEpochs) / float64(resp.TotalEpochs) * 100.0
-	return missedPct > 100.0-resp.PerformanceThresholdPct
+	// Decimal conversion avoids binary floating-point errors at an exact threshold.
+	threshold, ok := new(big.Rat).SetString(strconv.FormatFloat(resp.PerformanceThresholdPct, 'f', -1, 64))
+	if !ok {
+		return false
+	}
+	missed := new(big.Rat).SetInt(new(big.Int).SetUint64(resp.MissedEpochs))
+	required := new(big.Rat).Sub(big.NewRat(100, 1), threshold)
+	required.Mul(required, new(big.Rat).SetInt(new(big.Int).SetUint64(resp.TotalEpochs)))
+	missed.Mul(missed, big.NewRat(100, 1))
+	return missed.Cmp(required) >= 0
 }
 
 // IsChallengeable reports whether a performance check over the inclusive
 // range [startEpoch, endEpoch] could back an on-chain challenge: performance
-// exits must be enabled, the range must cover exactly one performance period,
+// exits must be enabled, the range must cover at most one performance period,
 // and it must be recent enough that the proof buffer has not elapsed
 // (startEpoch > currentEpoch - period - proofBuffer).
 func IsChallengeable(params ChallengeParams, currentEpoch, startEpoch, endEpoch uint64) bool {
-	if !params.ExitsEnabled {
+	if !params.ExitsEnabled || params.PeriodEpochs == 0 {
 		return false
 	}
-	if endEpoch != startEpoch+params.PeriodEpochs-1 {
+	if endEpoch < startEpoch || endEpoch >= currentEpoch {
 		return false
 	}
-	window := params.PeriodEpochs + params.ProofBufferEpochs
-	if currentEpoch <= window {
-		// The whole chain history is still within the challenge window.
-		return true
+	if endEpoch-startEpoch >= params.PeriodEpochs {
+		return false
 	}
-	return startEpoch > currentEpoch-window
+	// Avoid overflow when evaluating the contract's start + period + buffer bound.
+	age := new(big.Int).SetUint64(currentEpoch - startEpoch)
+	window := new(big.Int).Add(new(big.Int).SetUint64(params.PeriodEpochs), new(big.Int).SetUint64(params.ProofBufferEpochs))
+	return age.Cmp(window) < 0
+}
+
+// ValidateMeasurementRange requires the entire inclusion window to have closed.
+// Epoch E can still acquire a timely-target vote throughout epoch E+1.
+func ValidateMeasurementRange(currentEpoch, startEpoch, endEpoch uint64) error {
+	if endEpoch < startEpoch {
+		return fmt.Errorf("end epoch must not precede start epoch")
+	}
+	if currentEpoch < 2 || endEpoch > currentEpoch-2 {
+		return fmt.Errorf("target-vote measurement requires a completed following epoch; latest measurable epoch is two epochs before the beacon head")
+	}
+	return nil
+}
+
+// ValidateChallengeBitmap mirrors the contract's fixed-period bitmap, elapsed-epoch
+// padding and ceil(period * (1 - threshold)) minimum. currentEpoch is the epoch
+// of the actual slot proof, not a separately fetched beacon head.
+func ValidateChallengeBitmap(params ChallengeParams, currentEpoch, startEpoch uint64, words []*big.Int) error {
+	if !params.ExitsEnabled || params.PeriodEpochs == 0 || startEpoch >= currentEpoch {
+		return fmt.Errorf("performance exits disabled or invalid challenge start")
+	}
+	if !IsChallengeable(params, currentEpoch, startEpoch, startEpoch) {
+		return fmt.Errorf("challenge start is outside the proof buffer")
+	}
+	wordCount := params.PeriodEpochs / 256
+	if params.PeriodEpochs%256 != 0 {
+		wordCount++
+	}
+	if uint64(len(words)) != wordCount {
+		return fmt.Errorf("participation bitmap requires %d words", wordCount)
+	}
+	elapsed := currentEpoch - startEpoch
+	if elapsed > params.PeriodEpochs {
+		elapsed = params.PeriodEpochs
+	}
+	var missed uint64
+	for i, word := range words {
+		if word == nil || word.Sign() < 0 || word.BitLen() > 256 {
+			return fmt.Errorf("participation word %d is not a uint256", i)
+		}
+		for bit := 0; bit < word.BitLen(); bit++ {
+			if word.Bit(bit) == 0 {
+				continue
+			}
+			if uint64(i)*256+uint64(bit) >= elapsed {
+				return fmt.Errorf("participation bitmap contains future or padding bits")
+			}
+			missed++
+		}
+	}
+	base := big.NewInt(1e18)
+	if params.ThresholdWei == nil || params.ThresholdWei.Sign() < 0 || params.ThresholdWei.Cmp(base) > 0 {
+		return fmt.Errorf("invalid performance threshold")
+	}
+	required := new(big.Int).Sub(base, params.ThresholdWei)
+	required.Mul(required, new(big.Int).SetUint64(params.PeriodEpochs))
+	required.Add(required, new(big.Int).Sub(base, big.NewInt(1)))
+	required.Div(required, base)
+	if new(big.Int).SetUint64(missed).Cmp(required) < 0 {
+		return fmt.Errorf("challenge needs at least %s missed epochs", required)
+	}
+	return nil
+}
+
+// SetChallengeability pads partial measurement windows to the contract period.
+func SetChallengeability(resp *api.VerifyPerformanceResponse, params ChallengeParams, currentEpoch uint64) {
+	resp.Challengeable = false
+	if !IsChallengeable(params, currentEpoch, resp.StartEpoch, resp.EndEpoch) || resp.InactiveEpochs > 0 {
+		return
+	}
+	words := params.PeriodEpochs / 256
+	if params.PeriodEpochs%256 != 0 {
+		words++
+	}
+	// Settings are contract-bounded, but avoid an allocation from an invalid RPC response.
+	if words > 1<<20 {
+		return
+	}
+	bitmap := make([]*big.Int, int(words))
+	for i := range bitmap {
+		bitmap[i] = new(big.Int)
+		if i < len(resp.Participation) {
+			bitmap[i].Set(resp.Participation[i])
+		}
+	}
+	resp.Participation = bitmap
+	resp.Challengeable = ValidateChallengeBitmap(params, currentEpoch, resp.StartEpoch, bitmap) == nil
 }
 
 // farFutureEpoch is the spec's FAR_FUTURE_EPOCH sentinel (2^64-1).
@@ -607,9 +709,9 @@ func (c *epochCache) evaluateEpoch(indexStr string, indexU64 uint64, epoch uint6
 	}
 
 	// Scan the inclusion window for a matching attestation. The inclusion
-	// window for the target flag is up to SLOTS_PER_EPOCH slots after the duty
-	// slot. Return as soon as we find a match.
-	inclusionEndExclusive := duty.slot + 1 + c.cfg.SlotsPerEpoch
+	// window for the target flag extends through the following epoch under
+	// Deneb/EIP-7045. Return as soon as we find a match.
+	inclusionEndExclusive := (epoch + 2) * c.cfg.SlotsPerEpoch
 	for slot := duty.slot + 1; slot < inclusionEndExclusive; slot++ {
 		block, exists, err := c.block(slot)
 		if err != nil {

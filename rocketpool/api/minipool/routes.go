@@ -7,11 +7,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/performance"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 )
 
 // RegisterRoutes registers the minipool module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router) {
+	snroute.Read("/api/minipool/can-challenge-performance", performance.CanChallengeHandler(true)).RegisterTo(router)
+	snroute.Write("/api/minipool/challenge-performance", performance.ChallengeHandler(true)).RegisterTo(router)
 	snroute.Read("/api/minipool/status", statusHandler).RegisterTo(router)
 	snroute.Read("/api/minipool/can-refund", canRefundHandler).RegisterTo(router)
 	snroute.Write("/api/minipool/refund", refundHandler).RegisterTo(router)

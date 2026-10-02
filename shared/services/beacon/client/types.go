@@ -124,6 +124,7 @@ type BeaconBlockHeaderResponse struct {
 			Message struct {
 				Slot          uinteger `json:"slot"`
 				ProposerIndex string   `json:"proposer_index"`
+				StateRoot     string   `json:"state_root"`
 			} `json:"message"`
 		} `json:"header"`
 	} `json:"data"`
