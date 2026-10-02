@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"slices"
 	"sync"
 	"time"
 
@@ -240,7 +241,7 @@ func GetLatestMegapoolExitSubmission(rp *rocketpool.RocketPool, megapoolAddress 
 }
 
 // Get MinipoolExitRequested events emitted during the given block range
-func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MinipoolExitRequest, error) {
+func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, rocketNetworkExitAddresses []common.Address, opts *bind.CallOpts) ([]MinipoolExitRequest, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
 	if err != nil {
 		return nil, err
@@ -251,7 +252,7 @@ func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 		return nil, fmt.Errorf("MinipoolExitRequested event not found in rocketNetworkExit ABI")
 	}
 
-	addressFilter := []common.Address{*rocketNetworkExit.Address}
+	addressFilter := getRocketNetworkExitAddresses(rocketNetworkExit, rocketNetworkExitAddresses)
 	topicFilter := [][]common.Hash{{minipoolExitRequestedEvent.ID}}
 
 	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
@@ -303,7 +304,7 @@ func GetMinipoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 }
 
 // Get MegapoolExitRequested events emitted during the given block range
-func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, opts *bind.CallOpts) ([]MegapoolExitRequest, error) {
+func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, fromBlock *big.Int, toBlock *big.Int, rocketNetworkExitAddresses []common.Address, opts *bind.CallOpts) ([]MegapoolExitRequest, error) {
 	rocketNetworkExit, err := getRocketNetworkExit(rp, opts)
 	if err != nil {
 		return nil, err
@@ -314,7 +315,7 @@ func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 		return nil, fmt.Errorf("MegapoolExitRequested event not found in rocketNetworkExit ABI")
 	}
 
-	addressFilter := []common.Address{*rocketNetworkExit.Address}
+	addressFilter := getRocketNetworkExitAddresses(rocketNetworkExit, rocketNetworkExitAddresses)
 	topicFilter := [][]common.Hash{{megapoolExitRequestedEvent.ID}}
 
 	logs, err := logs.GetLogs(rp, addressFilter, topicFilter, intervalSize, fromBlock, toBlock, nil)
@@ -364,6 +365,19 @@ func GetMegapoolExitRequests(rp *rocketpool.RocketPool, intervalSize *big.Int, f
 	}
 
 	return requests, nil
+}
+
+func getRocketNetworkExitAddresses(contract *rocketpool.Contract, previousAddresses []common.Address) []common.Address {
+	addresses := make([]common.Address, 0, len(previousAddresses)+1)
+	for _, address := range previousAddresses {
+		if !slices.Contains(addresses, address) {
+			addresses = append(addresses, address)
+		}
+	}
+	if !slices.Contains(addresses, *contract.Address) {
+		addresses = append(addresses, *contract.Address)
+	}
+	return addresses
 }
 
 // Get contracts

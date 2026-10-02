@@ -166,7 +166,8 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 	}
 	toBlock := big.NewInt(int64(state.ElBlockNumber))
 
-	exitRequests, err := network.GetMinipoolExitRequests(t.rp, t.intervalSize, fromBlock, toBlock, opts)
+	exitAddresses := t.cfg.Smartnode.GetPreviousRocketNetworkExitAddresses()
+	exitRequests, err := network.GetMinipoolExitRequests(t.rp, t.intervalSize, fromBlock, toBlock, exitAddresses, opts)
 	if err != nil {
 		return err
 	}
