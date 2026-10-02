@@ -105,6 +105,36 @@ func (c *Client) ChallengeMegapoolPerformance(megapoolAddress common.Address, va
 	return response, nil
 }
 
+// MegapoolDeficit returns the deficit and the first eligible validators needed
+// to bring it below the exit threshold, accounting for pending exits.
+func (c *Client) MegapoolDeficit(megapoolAddress common.Address) (api.MegapoolDeficitResponse, error) {
+	return c.callAPI[api.MegapoolDeficitResponse]("GET", "/api/megapool/deficit", url.Values{
+		"megapoolAddress": {megapoolAddress.Hex()},
+	}, "Could not get megapool deficit")
+}
+
+// CanExitMegapoolDeficit estimates a caller-funded deficit exit. validatorIds
+// is a comma-separated list of internal megapool validator IDs.
+func (c *Client) CanExitMegapoolDeficit(megapoolAddress common.Address, validatorIds string) (api.CanExitMegapoolDeficitResponse, error) {
+	return c.callAPI[api.CanExitMegapoolDeficitResponse]("GET", "/api/megapool/can-exit-deficit", url.Values{
+		"megapoolAddress": {megapoolAddress.Hex()},
+		"validatorIds":    {validatorIds},
+	}, "Could not estimate megapool deficit exit")
+}
+
+// ExitMegapoolDeficit submits a deficit exit, capped at the total EIP-7002 fee
+// approved during preflight. Transaction gas is configured separately.
+func (c *Client) ExitMegapoolDeficit(megapoolAddress common.Address, validatorIds string, maxExitFee *big.Int) (api.ExitMegapoolDeficitResponse, error) {
+	if maxExitFee == nil || maxExitFee.Sign() < 0 {
+		return api.ExitMegapoolDeficitResponse{}, fmt.Errorf("a non-negative maximum exit fee is required")
+	}
+	return c.callAPI[api.ExitMegapoolDeficitResponse]("POST", "/api/megapool/exit-deficit", url.Values{
+		"megapoolAddress": {megapoolAddress.Hex()},
+		"validatorIds":    {validatorIds},
+		"maxExitFee":      {maxExitFee.String()},
+	}, "Could not submit megapool deficit exit")
+}
+
 // Get megapool status
 func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {
 	finalizedStr := "false"
