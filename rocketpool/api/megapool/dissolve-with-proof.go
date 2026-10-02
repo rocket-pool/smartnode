@@ -69,12 +69,12 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 		return nil, err
 	}
 
-	eth2Config, err := bc.GetEth2Config()
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, rp.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	proof, slotProof, err := services.GetValidatorProofFromState(bc, types.ValidatorPubkey(validatorInfo.Pubkey), beaconState)
 	if err != nil {
 		return nil, err
 	}
@@ -158,12 +158,12 @@ func dissolveWithProof(c *cli.Command, validatorId uint32, t *snroute.TransactOp
 		return nil, err
 	}
 
-	eth2Config, err := bc.GetEth2Config()
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, rp.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(bc, types.ValidatorPubkey(validatorInfo.Pubkey), beaconState)
 	if err != nil {
 		return nil, err
 	}

@@ -155,13 +155,13 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 		return
 	}
 
-	eth2Config, err := t.bc.GetEth2Config()
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(t.bc, t.rp.Client)
 	if err != nil {
-		t.log.Printlnf("error getting the eth2 config: %v", err)
+		t.log.Printlnf("error getting the head beacon state: %v", err)
 		return
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, types.ValidatorPubkey(validator.Pubkey), nil)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, types.ValidatorPubkey(validator.Pubkey), beaconState)
 	if err != nil {
 		t.log.Printlnf("error getting validator proof: %v", err)
 		return
