@@ -675,6 +675,10 @@ func (cfg *SmartnodeConfig) GetPreviousRocketDAOProtocolVerifierAddresses() []co
 	return hexAddresses(cfg.networkInfo().Addresses.PreviousDAOVerifiers)
 }
 
+func (cfg *SmartnodeConfig) GetPreviousRocketNetworkExitAddresses() []common.Address {
+	return hexAddresses(cfg.networkInfo().Addresses.PreviousNetworkExits)
+}
+
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.networkInfo().Addresses.OptimismPriceMessenger
 }
