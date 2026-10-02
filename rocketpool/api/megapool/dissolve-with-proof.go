@@ -101,7 +101,7 @@ func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, err
 	}
-	gasLimits, err := services.EstimateMegapoolDissolveWithProofGas(c, rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
+	gasLimits, err := services.EstimateMegapoolDissolveWithProofGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func dissolveWithProof(c *cli.Command, validatorId uint32, t *snroute.TransactOp
 	}
 
 	// Dissolve
-	tx, err := services.DissolveMegapoolWithProof(c, rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
+	tx, err := services.DissolveMegapoolWithProof(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

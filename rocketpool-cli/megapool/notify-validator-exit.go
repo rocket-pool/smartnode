@@ -21,8 +21,8 @@ func getExitedValidator() (uint64, bool, error) {
 		return 0, false, err
 	}
 	defer rp.Close()
-	fmt.Println("Loading megapool validators at the finalized beacon state...")
-	status, err := rp.MegapoolStatus(true)
+	fmt.Println("Loading megapool validators at the beacon head...")
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return 0, false, err
 	}
@@ -61,7 +61,7 @@ func getExitedValidator() (uint64, bool, error) {
 		return uint64(activeValidators[selected].ValidatorId), true, nil
 	}
 	fmt.Println("No validators are ready to notify exit.")
-	fmt.Println("A validator is only listed once its exit_epoch is set on the *finalized* beacon state")
+	fmt.Println("A validator is listed once its exit_epoch and withdrawable_epoch are set at the beacon head.")
 	return 0, false, nil
 }
 
@@ -92,8 +92,8 @@ func notifyValidatorExit(validatorId uint64, yes bool) error {
 		if response.AlreadyExited {
 			fmt.Println("  The validator has already been fully exited on the megapool.")
 		}
-		if response.ExitNotFinalized {
-			fmt.Println("  The validator exit is not yet reflected in the finalized beacon state.")
+		if response.ExitNotReady {
+			fmt.Println("  The validator exit is not yet visible in the beacon state available for the proof.")
 		}
 		return fmt.Errorf("cannot notify exit of validator id %d", validatorId)
 	}

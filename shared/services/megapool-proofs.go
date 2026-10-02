@@ -14,31 +14,12 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/transactions/gaslimit"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
-// usesProofBundles selects the transaction proof format from Gloas activation.
-func usesProofBundles(bc beacon.Client) (bool, error) {
-	eth2Config, err := bc.GetEth2Config()
+func encodeValidatorBundleIfNeeded(rp *rocketpool.RocketPool, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof) (bool, []byte, error) {
+	useBundles, err := megapool.UsesProofBundles(rp, nil)
 	if err != nil {
-		return false, fmt.Errorf("error getting beacon config: %w", err)
-	}
-	head, err := bc.GetBeaconHead()
-	if err != nil {
-		return false, fmt.Errorf("error getting beacon head: %w", err)
-	}
-	return eth2Config.GloasForkEpoch != beacon.FarFutureEpoch && head.Epoch >= eth2Config.GloasForkEpoch, nil
-}
-
-func encodeValidatorBundleIfNeeded(c *cli.Command, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof) (bool, []byte, error) {
-	bc, err := GetBeaconClient(c)
-	if err != nil {
-		return false, nil, err
-	}
-	useBundles, err := usesProofBundles(bc)
-	if err != nil {
-		return false, nil, err
+		return false, nil, fmt.Errorf("error checking megapool manager proof format: %w", err)
 	}
 	if !useBundles {
 		return false, nil, nil
@@ -50,8 +31,8 @@ func encodeValidatorBundleIfNeeded(c *cli.Command, validatorProof megapool.Valid
 	return true, proofData, nil
 }
 
-func EstimateMegapoolStakeGas(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func EstimateMegapoolStakeGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
@@ -61,8 +42,8 @@ func EstimateMegapoolStakeGas(c *cli.Command, rp *rocketpool.RocketPool, megapoo
 	return megapool140.EstimateStakeGas(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func StakeMegapool(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func StakeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +53,8 @@ func StakeMegapool(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress co
 	return megapool140.Stake(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func EstimateMegapoolNotifyExitGas(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func EstimateMegapoolNotifyExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
@@ -83,8 +64,8 @@ func EstimateMegapoolNotifyExitGas(c *cli.Command, rp *rocketpool.RocketPool, me
 	return megapool140.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func NotifyMegapoolExit(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func NotifyMegapoolExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +75,8 @@ func NotifyMegapoolExit(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddre
 	return megapool140.NotifyExit(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func EstimateMegapoolNotifyNotExitGas(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func EstimateMegapoolNotifyNotExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
@@ -105,8 +86,8 @@ func EstimateMegapoolNotifyNotExitGas(c *cli.Command, rp *rocketpool.RocketPool,
 	return megapool140.EstimateNotifyNotExitGas(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func NotifyMegapoolNotExit(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func NotifyMegapoolNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +97,8 @@ func NotifyMegapoolNotExit(c *cli.Command, rp *rocketpool.RocketPool, megapoolAd
 	return megapool140.NotifyNotExit(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func EstimateMegapoolDissolveWithProofGas(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func EstimateMegapoolDissolveWithProofGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
@@ -127,8 +108,8 @@ func EstimateMegapoolDissolveWithProofGas(c *cli.Command, rp *rocketpool.RocketP
 	return megapool140.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-func DissolveMegapoolWithProof(c *cli.Command, rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
-	useBundles, proofData, err := encodeValidatorBundleIfNeeded(c, validatorProof, slotProof)
+func DissolveMegapoolWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, validatorProof megapool.ValidatorProof, slotProof megapool.SlotProof, opts *bind.TransactOpts) (*ethtypes.Transaction, error) {
+	useBundles, proofData, err := encodeValidatorBundleIfNeeded(rp, validatorProof, slotProof)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +119,7 @@ func DissolveMegapoolWithProof(c *cli.Command, rp *rocketpool.RocketPool, megapo
 	return megapool140.DissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof, opts)
 }
 
-// MegapoolFinalBalanceProof is a fork-selected payload for notifyFinalBalance.
+// MegapoolFinalBalanceProof is a version-selected payload for notifyFinalBalance.
 // Build it once with BuildMegapoolFinalBalanceProof and reuse for gas estimate and submit.
 type MegapoolFinalBalanceProof struct {
 	useBundles      bool
@@ -150,17 +131,24 @@ type MegapoolFinalBalanceProof struct {
 	slotProof       megapool.SlotProof
 }
 
-func BuildMegapoolFinalBalanceProof(c *cli.Command, megapoolAddress common.Address, slotHint uint64, validatorIndex uint64, validatorPubkey rptypes.ValidatorPubkey, w wallet.Wallet) (*MegapoolFinalBalanceProof, error) {
+func BuildMegapoolFinalBalanceProof(c *cli.Command, rp *rocketpool.RocketPool, slotHint uint64, validatorIndex uint64, validatorPubkey rptypes.ValidatorPubkey) (*MegapoolFinalBalanceProof, error) {
+	useBundles, err := megapool.UsesProofBundles(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking megapool manager proof format: %w", err)
+	}
 	bc, err := GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
-	useBundles, err := usesProofBundles(bc)
+	beaconState, slotTimestamp, err := GetHeadBeaconState(bc, rp.Client)
 	if err != nil {
 		return nil, err
 	}
+	if beaconState.GetSlot() == 0 {
+		return nil, fmt.Errorf("proof beacon state has no earlier slots for a withdrawal proof")
+	}
 	if useBundles {
-		proofVersion, proofData, slotTimestamp, err := GetFinalBalanceProofBundle(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+		proofVersion, proofData, err := GetFinalBalanceProofBundle(c, slotHint, validatorIndex, validatorPubkey, beaconState)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +159,7 @@ func BuildMegapoolFinalBalanceProof(c *cli.Command, megapoolAddress common.Addre
 			proofData:     proofData,
 		}, nil
 	}
-	withdrawalProof, validatorProof, slotProof, slotTimestamp, err := GetFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, megapoolAddress, w)
+	withdrawalProof, validatorProof, slotProof, err := GetFinalBalanceProofs(c, slotHint, validatorIndex, validatorPubkey, beaconState)
 	if err != nil {
 		return nil, err
 	}

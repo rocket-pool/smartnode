@@ -737,12 +737,12 @@ type ExitValidatorResponse struct {
 
 type CanNotifyValidatorExitResponse struct {
 	APIResponse
-	CanExit          bool            `json:"canExit"`
-	InvalidStatus    bool            `json:"invalidStatus"`
-	AlreadyExiting   bool            `json:"alreadyExiting"`
-	AlreadyExited    bool            `json:"alreadyExited"`
-	ExitNotFinalized bool            `json:"exitNotFinalized"`
-	GasLimits        gaslimit.Limits `json:"gasLimits"`
+	CanExit        bool            `json:"canExit"`
+	InvalidStatus  bool            `json:"invalidStatus"`
+	AlreadyExiting bool            `json:"alreadyExiting"`
+	AlreadyExited  bool            `json:"alreadyExited"`
+	ExitNotReady   bool            `json:"exitNotReady"`
+	GasLimits      gaslimit.Limits `json:"gasLimits"`
 }
 type NotifyValidatorExitResponse struct {
 	APIResponse

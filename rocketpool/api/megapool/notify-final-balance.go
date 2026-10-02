@@ -68,7 +68,11 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 	}
 	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
 	if withdrawalSlot == 0 {
-		withdrawalSlot = validatorStatus.WithdrawableEpoch * 32
+		eth2Config, err := bc.GetEth2Config()
+		if err != nil {
+			return nil, err
+		}
+		withdrawalSlot = validatorStatus.WithdrawableEpoch * eth2Config.SlotsPerEpoch
 	}
 
 	opts, err := w.GetNodeAccountTransactor()
@@ -76,7 +80,7 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 		return nil, err
 	}
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(c, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(c, rp, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -154,10 +158,14 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 	}
 	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
 	if withdrawalSlot == 0 {
-		withdrawalSlot = validatorStatus.WithdrawableEpoch * 32
+		eth2Config, err := bc.GetEth2Config()
+		if err != nil {
+			return nil, err
+		}
+		withdrawalSlot = validatorStatus.WithdrawableEpoch * eth2Config.SlotsPerEpoch
 	}
 
-	proof, err := services.BuildMegapoolFinalBalanceProof(c, megapoolAddress, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey), w)
+	proof, err := services.BuildMegapoolFinalBalanceProof(c, rp, withdrawalSlot, validatorIndex, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
