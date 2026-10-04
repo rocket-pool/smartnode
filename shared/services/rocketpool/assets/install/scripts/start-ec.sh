@@ -220,6 +220,22 @@ if [ "$CLIENT" = "nethermind" ]; then
         fi
     fi
 
+    NETHERMIND_LOCALIP_FLAGS=""
+    if [ "$ENABLE_IPV6" != "true" ] &&
+        [ -z "$NETHERMIND_NETWORKCONFIG_LOCALIP" ] &&
+        ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(network\.localip|network-localip)(=|[[:space:]])'; then
+        NETHERMIND_LOCALIP_FLAGS="--Network.LocalIp 0.0.0.0"
+    fi
+
+    # A flat archive synced from genesis cannot snap-resync. Ignore a RocksDB auto-repair
+    # instead of wiping flat state and attempting one.
+    NETHERMIND_REPAIR_FLAGS=""
+    if [ "$EC_PRUNING_MODE" = "archive" ] &&
+        [ -z "$NETHERMIND_FLATDBCONFIG_ONREPAIR" ] &&
+        ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eiq -- '(^|[[:space:]])--(flatdb\.onrepair|flatdb-onrepair)(=|[[:space:]])'; then
+        NETHERMIND_REPAIR_FLAGS="--FlatDb.OnRepair Ignore"
+    fi
+
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
         --config $RP_NETHERMIND_NETWORK \
         --data-dir /ethclient/nethermind \
@@ -232,6 +248,8 @@ if [ "$CLIENT" = "nethermind" ]; then
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
         $NETHERMIND_LAYOUT_FLAGS \
+        $NETHERMIND_LOCALIP_FLAGS \
+        $NETHERMIND_REPAIR_FLAGS \
         $EC_ADDITIONAL_FLAGS"
 
     # TODO(Hegota): Drop automatic state pruning; FlatDB does not use it.
