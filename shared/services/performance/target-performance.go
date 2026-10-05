@@ -286,7 +286,7 @@ type PerformanceSummary struct {
 type PerformanceBeaconClient interface {
 	GetEth2Config() (beacon.Eth2Config, error)
 	GetHistoricalCommitteesForEpoch(epoch uint64) (beacon.Committees, error)
-	GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error)
+	GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error)
 	GetBeaconBlockHeader(blockId string) (beacon.BeaconBlockHeader, bool, error)
 	GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error)
 }
@@ -377,7 +377,7 @@ func isActiveValidatorState(state beacon.ValidatorState) bool {
 // VerifyPerformanceBatch verifies the RPIP-73 target-vote performance of many
 // validators over the same inclusive epoch range in a single pass. All
 // per-epoch beacon data (target roots, committee assignments, inclusion-window
-// blocks) is fetched once via a shared epochCache and reused for every
+// attestations) is fetched once via a shared epochCache and reused for every
 // validator, and the validators' indices and statuses are resolved in a single
 // batched beacon call.
 //
@@ -588,11 +588,11 @@ type attestationDuty struct {
 	committeeSizesAtDay map[uint64]int // committee_index -> validator count, for all committees at duty.slot
 }
 
-// cachedBlock memoizes a single GetBeaconBlock lookup, including the "missing"
+// cachedAttestations memoizes a single GetAttestations lookup, including the "missing"
 // (skipped slot) case.
-type cachedBlock struct {
-	block  beacon.BeaconBlock
-	exists bool
+type cachedAttestations struct {
+	attestations []beacon.AttestationInfo
+	exists       bool
 }
 
 // rootResult memoizes a target-root resolution, including its error.
@@ -609,10 +609,10 @@ type epochCache struct {
 	cfg      beacon.Eth2Config
 	indexSet map[string]struct{}
 
-	targetRoots map[uint64]rootResult                 // epoch -> target root
-	epochDuties map[uint64]map[string]attestationDuty // epoch -> validator index string -> duty
-	blocks      map[uint64]cachedBlock                // slot -> block
-	statuses    map[string]beacon.ValidatorStatus     // validator index string -> status
+	targetRoots  map[uint64]rootResult                 // epoch -> target root
+	epochDuties  map[uint64]map[string]attestationDuty // epoch -> validator index string -> duty
+	attestations map[uint64]cachedAttestations         // slot -> attestations
+	statuses     map[string]beacon.ValidatorStatus     // validator index string -> status
 }
 
 // newEpochCache creates a cache that tracks the supplied validator index set.
@@ -629,13 +629,13 @@ func newEpochCache(
 		statuses = map[string]beacon.ValidatorStatus{}
 	}
 	return &epochCache{
-		bc:          bc,
-		cfg:         cfg,
-		indexSet:    indexSet,
-		targetRoots: map[uint64]rootResult{},
-		epochDuties: map[uint64]map[string]attestationDuty{},
-		blocks:      map[uint64]cachedBlock{},
-		statuses:    statuses,
+		bc:           bc,
+		cfg:          cfg,
+		indexSet:     indexSet,
+		targetRoots:  map[uint64]rootResult{},
+		epochDuties:  map[uint64]map[string]attestationDuty{},
+		attestations: map[uint64]cachedAttestations{},
+		statuses:     statuses,
 	}
 }
 
@@ -713,14 +713,14 @@ func (c *epochCache) evaluateEpoch(indexStr string, indexU64 uint64, epoch uint6
 	// Deneb/EIP-7045. Return as soon as we find a match.
 	inclusionEndExclusive := (epoch + 2) * c.cfg.SlotsPerEpoch
 	for slot := duty.slot + 1; slot < inclusionEndExclusive; slot++ {
-		block, exists, err := c.block(slot)
+		attestations, exists, err := c.attestationsForSlot(slot)
 		if err != nil {
-			return epochResultMissed, fmt.Errorf("error getting block at slot %d: %w", slot, err)
+			return epochResultMissed, fmt.Errorf("error getting attestations at slot %d: %w", slot, err)
 		}
 		if !exists {
 			continue
 		}
-		if matchesDuty(block.Attestations, duty, epoch, targetRoot) {
+		if matchesDuty(attestations, duty, epoch, targetRoot) {
 			return epochResultTimely, nil
 		}
 	}
@@ -738,19 +738,18 @@ func (c *epochCache) targetRoot(epoch uint64) (common.Hash, error) {
 	return root, err
 }
 
-// block returns the beacon block at the given slot, memoized per slot. The
-// returned bool reports whether a block exists at that slot (false for a
-// skipped slot).
-func (c *epochCache) block(slot uint64) (beacon.BeaconBlock, bool, error) {
-	if b, ok := c.blocks[slot]; ok {
-		return b.block, b.exists, nil
+// attestationsForSlot fetches only attestations, avoiding execution payloads.
+// Results are shared across validators, including slots without a block.
+func (c *epochCache) attestationsForSlot(slot uint64) ([]beacon.AttestationInfo, bool, error) {
+	if cached, ok := c.attestations[slot]; ok {
+		return cached.attestations, cached.exists, nil
 	}
-	block, exists, err := c.bc.GetBeaconBlock(strconv.FormatUint(slot, 10))
+	attestations, exists, err := c.bc.GetAttestations(strconv.FormatUint(slot, 10))
 	if err != nil {
-		return beacon.BeaconBlock{}, false, err
+		return nil, false, err
 	}
-	c.blocks[slot] = cachedBlock{block: block, exists: exists}
-	return block, exists, nil
+	c.attestations[slot] = cachedAttestations{attestations: attestations, exists: exists}
+	return attestations, exists, nil
 }
 
 // status returns the validator status for the given index string, memoized and
