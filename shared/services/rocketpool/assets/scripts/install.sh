@@ -333,7 +333,7 @@ else
                 echo -e "${COLOR_RED}**ERROR**"
                 echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, the Smart Node requires this package because the legacy docker-compose script is no longer supported."
                 echo "Since automatic dependency installation for the $PLATFORM operating system is not supported, you will need to install it manually."
-                echo "Please install docker-compose-plugin manually, then try running `rocketpool service install -d` again to finish updating."
+                echo "Please install docker-compose-plugin manually, then try running 'rocketpool service install -d' again to finish updating."
                 echo -e "${COLOR_RESET}"
                 exit 1
             fi
