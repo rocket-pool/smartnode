@@ -13,7 +13,7 @@ COLOR_RESET='\033[0m'
 # Print a failure message to stderr and exit
 fail() {
     MESSAGE=$1
-    >&2 echo -e "\n${COLOR_RED}**ERROR**\n$MESSAGE${COLOR_RESET}"
+    >&2 echo -e "\n${COLOR_RED}**ERROR**\n${MESSAGE}${COLOR_RESET}"
     exit 1
 }
 
@@ -245,14 +245,13 @@ case "$PLATFORM" in
 
     # Unsupported OS
     *)
-        RED='\033[0;31m'
         echo ""
-        echo -e "${RED}**ERROR**"
+        echo -e "${COLOR_RED}**ERROR**"
         echo "Automatic dependency installation for the $PLATFORM operating system is not supported."
         echo "Please install docker and docker-compose-plugin manually, then try again with the '-d' flag to skip OS dependency installation."
         echo "Be sure to add yourself to the docker group with '$SUDO_CMD usermod -aG docker $USER' after installing docker."
         echo "Log out and back in, or restart your system after you run this command."
-        echo -e "${RESET}"
+        echo -e "${COLOR_RESET}"
         exit 1
     ;;
 
@@ -327,16 +326,15 @@ else
         *)
             # Check for existing docker-compose-plugin installation
             progress 3 "Checking if docker-compose-plugin is installed..."
-            if docker compose 2>/dev/null 1>/dev/null ; then
+            if docker compose version 2>/dev/null 1>/dev/null ; then
                 echo "Already installed."
             else
-                RED='\033[0;31m'
                 echo ""
-                echo -e "${RED}**ERROR**"
+                echo -e "${COLOR_RED}**ERROR**"
                 echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, the Smart Node requires this package because the legacy docker-compose script is no longer supported."
                 echo "Since automatic dependency installation for the $PLATFORM operating system is not supported, you will need to install it manually."
-                echo "Please install docker-compose-plugin manually, then try running `rocketpool service install -d` again to finish updating."
-                echo -e "${RESET}"
+                echo "Please install docker-compose-plugin manually, then try running 'rocketpool service install -d' again to finish updating."
+                echo -e "${COLOR_RESET}"
                 exit 1
             fi
 
