@@ -245,14 +245,13 @@ case "$PLATFORM" in
 
     # Unsupported OS
     *)
-        RED='\033[0;31m'
         echo ""
-        echo -e "${RED}**ERROR**"
+        echo -e "${COLOR_RED}**ERROR**"
         echo "Automatic dependency installation for the $PLATFORM operating system is not supported."
         echo "Please install docker and docker-compose-plugin manually, then try again with the '-d' flag to skip OS dependency installation."
         echo "Be sure to add yourself to the docker group with '$SUDO_CMD usermod -aG docker $USER' after installing docker."
         echo "Log out and back in, or restart your system after you run this command."
-        echo -e "${RESET}"
+        echo -e "${COLOR_RESET}"
         exit 1
     ;;
 
