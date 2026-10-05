@@ -326,7 +326,7 @@ else
         *)
             # Check for existing docker-compose-plugin installation
             progress 3 "Checking if docker-compose-plugin is installed..."
-            if (docker compose version 2>/dev/null 1>/dev/null) ; then
+            if docker compose version 2>/dev/null 1>/dev/null ; then
                 echo "Already installed."
             else
                 echo ""
