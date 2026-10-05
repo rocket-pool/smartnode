@@ -314,7 +314,8 @@ if [ "$CC_CLIENT" = "teku" ]; then
             if [ ! -z "$EXTERNAL_IP" ]; then
                 CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP,$EXTERNAL_IP6 --p2p-advertised-port-ipv6=$BN_IPV6_P2P_PORT"
             else
-                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP6 --p2p-advertised-port-ipv6=$BN_IPV6_P2P_PORT"
+                # Teku uses the ordinary advertised ports when only one IP is advertised.
+                CMD="$CMD --p2p-advertised-ips $EXTERNAL_IP6 --p2p-advertised-port=$BN_IPV6_P2P_PORT --p2p-advertised-udp-port=$BN_IPV6_P2P_PORT --p2p-advertised-quic-port=$BN_IPV6_QUIC_P2P_PORT"
             fi
         fi
     fi
