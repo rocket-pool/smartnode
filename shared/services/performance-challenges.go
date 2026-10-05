@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -177,15 +178,7 @@ func PreparePerformanceChallenge(c *cli.Command, request PerformanceChallengeReq
 	if err != nil {
 		return nil, nil, err
 	}
-	cfg, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, nil, err
-	}
-	w, err := GetWallet(c)
-	if err != nil {
-		return nil, nil, err
-	}
-	_, timestamp, slot, err := GetValidatorProof(c, 0, w, cfg, pubkey, nil)
+	timestamp, slot, err := buildPerformanceChallengeSlotProof(bc, rp.Client, pubkey)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,6 +205,17 @@ func PreparePerformanceChallenge(c *cli.Command, request PerformanceChallengeReq
 		Slot:          slot,
 	}
 	return result, prepared, nil
+}
+
+// Use a root already published by the execution head, so recently measured
+// epochs do not become future bitmap bits relative to an older finalized state.
+func buildPerformanceChallengeSlotProof(bc beacon.Client, ec rocketpool.ExecutionClient, pubkey types.ValidatorPubkey) (uint64, megapool.SlotProof, error) {
+	beaconState, timestamp, err := GetHeadBeaconState(bc, ec)
+	if err != nil {
+		return 0, megapool.SlotProof{}, err
+	}
+	_, slot, err := GetValidatorProofFromState(bc, pubkey, beaconState)
+	return timestamp, slot, err
 }
 
 func SubmitPerformanceChallenge(rp *rocketpool.RocketPool, challenge *PreparedPerformanceChallenge, opts *bind.TransactOpts) (common.Hash, error) {

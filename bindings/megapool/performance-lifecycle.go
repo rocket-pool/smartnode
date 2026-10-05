@@ -117,6 +117,10 @@ func GetPerformanceChallenges(rp *rocketpool.RocketPool, challengeId, interval, 
 	if !ok {
 		return nil, fmt.Errorf("MinipoolsChallenged event missing")
 	}
+	fromBlock, toBlock, err = performanceChallengeScanRange(rp, fromBlock, toBlock, opts)
+	if err != nil || fromBlock == nil {
+		return nil, err
+	}
 	addresses, err := participationContractAddresses(rp, rocketNetworkParticipation, interval, fromBlock, toBlock, opts)
 	if err != nil {
 		return nil, err

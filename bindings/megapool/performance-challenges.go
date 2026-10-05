@@ -44,7 +44,7 @@ func (s PerformanceChallengeStatus) CanClaimReward(caller common.Address) bool {
 
 // GetMegapoolPerformanceChallenges reads challenge events, including events from
 // previous deployments of rocketNetworkParticipation. A nil fromBlock scans
-// from Rocket Pool's deployment, so overdue unresolved challenges are included.
+// from the first challenge, so overdue unresolved challenges are included.
 func GetMegapoolPerformanceChallenges(rp *rocketpool.RocketPool, address common.Address, interval, fromBlock, toBlock *big.Int, opts *bind.CallOpts) ([]PerformanceChallenge, error) {
 	contract, err := getRocketNetworkParticipation(rp, opts)
 	if err != nil {
@@ -54,10 +54,15 @@ func GetMegapoolPerformanceChallenges(rp *rocketpool.RocketPool, address common.
 	if !ok {
 		return nil, fmt.Errorf("MegapoolChallenged event not found in rocketNetworkParticipation ABI")
 	}
+	fromBlock, toBlock, err = performanceChallengeScanRange(rp, fromBlock, toBlock, opts)
+	if err != nil || fromBlock == nil {
+		return nil, err
+	}
 	addresses, err := participationContractAddresses(rp, contract, interval, fromBlock, toBlock, opts)
 	if err != nil {
 		return nil, err
 	}
+
 	entries, err := logs.GetLogs(rp, addresses, [][]common.Hash{
 		{event.ID}, {common.BytesToHash(address.Bytes())},
 	}, interval, fromBlock, toBlock, nil)

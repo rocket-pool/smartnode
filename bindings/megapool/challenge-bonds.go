@@ -18,10 +18,6 @@ func GetChallengeBondCandidates(rp *rocketpool.RocketPool, node common.Address, 
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := participationContractAddresses(rp, contract, interval, fromBlock, toBlock, opts)
-	if err != nil {
-		return nil, err
-	}
 	locked, ok := contract.ABI.Events["ChallengeBondLocked"]
 	if !ok {
 		return nil, fmt.Errorf("ChallengeBondLocked event missing from participation ABI")
@@ -33,6 +29,14 @@ func GetChallengeBondCandidates(rp *rocketpool.RocketPool, node common.Address, 
 	minipoolDefeated, ok := contract.ABI.Events["MinipoolChallengeDefeated"]
 	if !ok {
 		return nil, fmt.Errorf("MinipoolChallengeDefeated event missing from participation ABI")
+	}
+	fromBlock, toBlock, err = performanceChallengeScanRange(rp, fromBlock, toBlock, opts)
+	if err != nil || fromBlock == nil {
+		return nil, err
+	}
+	addresses, err := participationContractAddresses(rp, contract, interval, fromBlock, toBlock, opts)
+	if err != nil {
+		return nil, err
 	}
 	lockedLogs, err := logs.GetLogs(rp, addresses, [][]common.Hash{{locked.ID}, nil, {common.BytesToHash(node.Bytes())}}, interval, fromBlock, toBlock, nil)
 	if err != nil {
