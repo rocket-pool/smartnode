@@ -15,7 +15,7 @@ services:
     stop_grace_period: 15m
     {{- $p2p := (or .ExecutionCommon.P2pPort.Value "30303")}}
     {{- $torrent := (or .Erigon.TorrentPort.Value "42069")}}
-    ports: [ "{{if .IsIPv6Enabled}}[::]:{{end}}{{$p2p}}:{{$p2p}}/udp", "{{if .IsIPv6Enabled}}[::]:{{end}}{{$p2p}}:{{$p2p}}/tcp"{{if eq .ExecutionClient.String "erigon"}}, "{{$torrent}}:{{$torrent}}/udp", "{{$torrent}}:{{$torrent}}/tcp"{{end}}{{.GetECOpenAPIPorts}} ]
+    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{if eq .ExecutionClient.String "erigon"}}, "{{$torrent}}:{{$torrent}}/udp", "{{$torrent}}:{{$torrent}}/tcp"{{end}}{{.GetECOpenAPIPorts}} ]
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro

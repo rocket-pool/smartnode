@@ -543,8 +543,11 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --max-inbound-peers=$RETH_MAX_INBOUND_PEERS"
     fi
 
-    if [ ! -z "$EC_P2P_PORT" ]; then
-        CMD="$CMD --port $EC_P2P_PORT"
+    RETH_P2P_PORT=${EC_P2P_PORT:-30303}
+    CMD="$CMD --port $RETH_P2P_PORT --discovery.port $RETH_P2P_PORT --discovery.v5.port $RETH_P2P_PORT"
+
+    if [ "$ENABLE_IPV6" = "true" ]; then
+        CMD="$CMD --addr :: --discovery.v5.port.ipv6 $RETH_P2P_PORT"
     fi
 
     exec ${CMD}
