@@ -71,6 +71,13 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Command) error {
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+	if err := cfg.ValidateNetworkForStart(); err != nil {
+		return err
+	}
 
 	// Configure
 	configureHTTP()
@@ -115,10 +122,6 @@ func run(c *cli.Command) error {
 	}
 
 	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return err

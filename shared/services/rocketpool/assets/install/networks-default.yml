@@ -7,6 +7,8 @@
 # appended and appear in `rocketpool service config`.
 # Extra networks may omit addresses to run execution/consensus clients on a
 # chain that has no Rocket Pool contracts.
+# Retain replaced exit contracts under addresses.previousRocketNetworkExit so
+# their outstanding requests remain discoverable after an upgrade.
 version: 1
 networks:
   - name: mainnet
@@ -67,6 +69,7 @@ networks:
         - "0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"
       previousRocketDAOProtocolVerifier:
         - "0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"
+      previousRocketNetworkExit: []
       optimismPriceMessenger: "0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F"
       polygonPriceMessenger: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511"
       arbitrumPriceMessenger: "0x05330300f829AD3fC8f33838BC88CFC4093baD53"
@@ -118,6 +121,7 @@ networks:
       reth: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1"
       previousRewardsPools:
         - "0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"
+      previousRocketNetworkExit: []
       rplTwapPool: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454"
       multicall: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7"
       balancebatcher: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce"
@@ -149,9 +153,34 @@ networks:
       titanRegional: https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz
     addresses:
       storage: "0xb4B46bdAA835F8E4b4d8e208B6559cD267851051"
-      rocketSignerRegistry: "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
+      rocketSignerRegistry: "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
       rplToken: "0x2b45cD38B213Bbd3A1A848bf2467927c976877Cb"
       reth: "0x80741a37E3644612F0465145C9709a90B6D77Ee3"
-      rplTwapPool: "0xdF321a81D594c6eD056E0DC3CB74AAEE4DcD91Fb"
-      multicall: "0x2f06c1dA6987BfD39A0539c03F9274fFb1F5fa19"
-      balancebatcher: "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
+      previousRocketNetworkExit: []
+      rplTwapPool: "0xdC9B41F5aCEc76f842A1d31CDeC3EE528a0aD57c"
+      multicall: "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
+      balancebatcher: "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
+
+  # Named-network presets only: Nethermind >=2.0.0 (>=2.1.0 for archive),
+  # Lodestar >=1.47.0, Nimbus >=26.8.0, Teku >=26.9.0.
+  # Current mainnet.env pins meet these requirements; no custom-chain directory.
+  - name: plataberget
+    label: Platåberget Testnet
+    description: |
+      Ethereum's Glamsterdam testnet (glamsterdam-devnet-8), using test ETH.
+      Supported clients: Nethermind with Lodestar, Nimbus, or Teku.
+      Rocket Pool contract addresses are pending; configuration is available but service startup is disabled until deployment.
+    chainID: 7091047534
+    beaconNetwork: plataberget
+    beaconExplorerUrl: https://dora.plataberget.ethpandaops.io
+    checkpointSyncUrl: https://checkpoint-sync.plataberget.ethpandaops.io
+    clientTagSet: test
+    executionClients: [nethermind]
+    consensusClients: [lodestar, nimbus, teku]
+    contractsPending: true
+    supportsMevBoost: false
+    allowNonBlsWithdrawalCredentials: false
+    isProduction: false
+    nethermindPruneThresholdMb: 51200
+    # Add the verified Rocket Pool/helper deployments here before enabling startup.
+    addresses: {}

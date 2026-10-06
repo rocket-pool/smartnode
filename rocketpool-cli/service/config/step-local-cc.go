@@ -86,7 +86,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.modeModal.show()
 	}
 
-	return newChoiceStep(
+	step := newChoiceStep(
 		wiz,
 		currentStep,
 		totalSteps,
@@ -101,6 +101,8 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		back,
 		localCcStepID,
 	)
+	step.rebuild = func() *choiceWizardStep { return createLocalCcStep(wiz, currentStep, totalSteps) }
+	return step
 
 }
 

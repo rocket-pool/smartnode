@@ -14,7 +14,7 @@ func TestLoadEmbeddedOfficialNetworks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, name := range []config.Network{"mainnet", "testnet", "devnet"} {
+	for _, name := range []config.Network{"mainnet", "testnet", "devnet", "plataberget"} {
 		if networks.GetNetwork(name) == nil {
 			t.Fatalf("missing official network %s", name)
 		}

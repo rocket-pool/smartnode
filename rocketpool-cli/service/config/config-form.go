@@ -155,20 +155,20 @@ func createParameterizedStringField(param *cfgtypes.Parameter) *parameterizedFor
 func createParameterizedDropDown(param *cfgtypes.Parameter, descriptionBox *tview.TextView) *parameterizedFormItem {
 	// Create the list of options
 	options := []string{}
-	descriptions := []string{}
-	values := []interface{}{}
 	for _, option := range param.Options {
 		options = append(options, option.Name)
-		descriptions = append(descriptions, option.Description)
-		values = append(values, option.Value)
 	}
 	item := NewDropDown().
 		SetLabel(param.Name).
 		SetOptions(options, func(text string, index int) {
-			param.Value = values[index]
+			if index >= 0 && index < len(param.Options) {
+				param.Value = param.Options[index].Value
+			}
 		}).
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			descriptionBox.SetText(descriptions[index])
+			if index >= 0 && index < len(param.Options) {
+				descriptionBox.SetText(param.Options[index].Description)
+			}
 		})
 	item.SetTextOptions(" ", " ", "", "", "")
 	list := item.GetList()

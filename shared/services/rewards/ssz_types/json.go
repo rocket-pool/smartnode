@@ -11,8 +11,9 @@ import (
 )
 
 var networkMap = map[string]Network{
-	"mainnet": 1,
-	"testnet": 560048,
+	"mainnet":     1,
+	"testnet":     560048,
+	"plataberget": 7091047534,
 }
 
 // internal use only

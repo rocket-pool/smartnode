@@ -132,6 +132,22 @@ func (layout *standardLayout) refresh() {
 			formItem.(*tview.InputField).SetText(fmt.Sprint(param.Value))
 
 		case cfgtypes.ParameterType_Choice:
+			dropDown := formItem.(*DropDown)
+			optionsChanged := len(dropDown.options) != len(param.Options)
+			for i, option := range param.Options {
+				if i >= len(dropDown.options) || dropDown.options[i].Text != option.Name {
+					optionsChanged = true
+					break
+				}
+			}
+			if optionsChanged {
+				names := make([]string, len(param.Options))
+				for i, option := range param.Options {
+					names[i] = option.Name
+				}
+				dropDown.SetOptions(names, dropDown.selected)
+				dropDown.currentOption = -1
+			}
 			for i := 0; i < len(param.Options); i++ {
 				if param.Options[i].Value == param.Value {
 					formItem.(*DropDown).SetCurrentOption(i)

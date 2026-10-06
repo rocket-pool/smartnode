@@ -48,7 +48,7 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		wiz.modeModal.show()
 	}
 
-	return newChoiceStep(
+	step := newChoiceStep(
 		wiz,
 		currentStep,
 		totalSteps,
@@ -63,5 +63,7 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		back,
 		"step-external-cc",
 	)
+	step.rebuild = func() *choiceWizardStep { return createExternalCcStep(wiz, currentStep, totalSteps) }
+	return step
 
 }

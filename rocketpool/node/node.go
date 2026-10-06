@@ -79,8 +79,16 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Command) error {
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+	if err := cfg.ValidateNetworkForStart(); err != nil {
+		return err
+	}
+
 	// Handle the initial fee recipient file deployment
-	err := deployDefaultFeeRecipientFile(c)
+	err = deployDefaultFeeRecipientFile(c)
 	if err != nil {
 		return err
 	}
@@ -93,13 +101,6 @@ func run(c *cli.Command) error {
 
 	// Configure
 	configureHTTP()
-
-	// Load config early so we can start the HTTP API server before blocking
-	// on wallet/service readiness.
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
 
 	// Print the current mode
 	if cfg.IsNativeMode {

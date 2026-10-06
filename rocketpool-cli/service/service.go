@@ -228,6 +228,22 @@ func configureServiceHeadless(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	if err := updateConfigFromCliArgs(c, cfg); err != nil {
+		return err
+	}
+	return rp.SaveConfig(cfg)
+}
+
+func updateConfigFromCliArgs(c *cli.Command, cfg *config.RocketPoolConfig) error {
+	// The selected network determines valid client choices and their defaults.
+	// Apply it before client arguments, independently of subconfig map order.
+	if c.IsSet("smartnode-network") {
+		network := cfgtypes.Network(c.String("smartnode-network"))
+		if cfg.LoadedNetworks().GetNetwork(network) == nil {
+			return fmt.Errorf("unknown network %q", network)
+		}
+		cfg.ChangeNetwork(network)
+	}
 
 	// Root params
 	for _, param := range cfg.GetParameters() {
@@ -247,7 +263,7 @@ func configureServiceHeadless(c *cli.Command) error {
 		}
 	}
 
-	return rp.SaveConfig(cfg)
+	return cfg.ValidateNetworkClients()
 }
 
 // Configure the service
@@ -285,6 +301,10 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 			return fmt.Errorf("error saving config: %w", err)
 		}
 		fmt.Println("Your changes have been saved!")
+		if err := md.Config.ValidateNetworkForStart(); err != nil {
+			fmt.Println(err)
+			return nil
+		}
 
 		// Exit immediately if we're in native mode
 		if isNative {
@@ -295,8 +315,10 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 		// Handle network changes
 		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
-			// Remove the checkpoint sync provider
-			md.Config.ConsensusCommon.CheckpointSyncProvider.Value = ""
+			// Use a checkpoint provider for the new network, never the old chain.
+			if err := md.Config.ConsensusCommon.CheckpointSyncProvider.SetToDefault(md.Config.GetNetwork()); err != nil {
+				return err
+			}
 			err = rp.SaveConfig(md.Config)
 			if err != nil {
 				return fmt.Errorf("error saving config: %w", err)
@@ -304,7 +326,7 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 
 			color.YellowPrintln("WARNING: You have requested to change networks.")
 			fmt.Println()
-			color.YellowPrintln("All of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.")
+			color.YellowPrintln("All of your existing chain data, your node wallet, and your validator keys will be removed. Your Checkpoint Sync URL will be reset to the new network's default.")
 			fmt.Println()
 			color.YellowPrintln("Please confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.")
 			fmt.Println()
@@ -631,6 +653,9 @@ func startService(params startServiceParams) error {
 
 	if isNew {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smart Node before running it.")
+	}
+	if err := cfg.ValidateNetworkForStart(); err != nil {
+		return err
 	}
 
 	// Warn if IPv6 is enabled but no public IPv6 address is available

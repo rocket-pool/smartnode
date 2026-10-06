@@ -67,9 +67,10 @@ type RocketPoolConfig struct {
 	// IsCLI is true when this config was loaded by the rocketpool CLI (or TUI) not by the node daemon.
 	IsCLI bool `yaml:"-"`
 
-	networks        *NetworksConfig                  `yaml:"-"`
-	imagesMainnet   *ImageCatalog                    `yaml:"-"`
-	imagesByNetwork map[config.Network]*ImageCatalog `yaml:"-"`
+	networks        *NetworksConfig                                `yaml:"-"`
+	imagesMainnet   *ImageCatalog                                  `yaml:"-"`
+	imagesByNetwork map[config.Network]*ImageCatalog               `yaml:"-"`
+	clientOptions   map[*config.Parameter][]config.ParameterOption `yaml:"-"`
 
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
@@ -624,6 +625,7 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 	// Addons
 	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter(mainnet.Must(ImageGWW))
 	cfg.RescueNode = addons.NewRescueNode()
+	cfg.initializeNetworkClientDefaults()
 
 	// Apply the default values for the default network from YAML
 	cfg.Smartnode.Network.Value = cfg.networks.DefaultNetwork()
@@ -631,6 +633,7 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 	if err != nil {
 		return nil, fmt.Errorf("error applying default settings: %w", err)
 	}
+	cfg.refreshNetworkClientOptions(false)
 
 	return cfg, nil
 }
@@ -682,6 +685,7 @@ func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 		}
 	}
 
+	newConfig.refreshNetworkClientOptions(false)
 	return newConfig
 }
 
@@ -774,6 +778,11 @@ func (cfg *RocketPoolConfig) ChangeNetwork(newNetwork config.Network) {
 		for _, param := range subconfig.GetParameters() {
 			param.ChangeNetwork(oldNetwork, newNetwork)
 		}
+	}
+	cfg.refreshNetworkClientOptions(true)
+	if !cfg.SupportsMevBoost() {
+		cfg.EnableMevBoost.Value = false
+		cfg.EnableCommitBoost.Value = false
 	}
 
 }
@@ -991,6 +1000,8 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 			}
 		}
 	}
+	// Keep explicitly saved unsupported selections so validation can report them.
+	cfg.refreshNetworkClientOptions(false)
 
 	return nil
 }
@@ -1796,6 +1807,9 @@ func (cfg *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string
 // Checks to see if the current configuration is valid; if not, returns a list of errors
 func (cfg *RocketPoolConfig) Validate() []string {
 	errors := []string{}
+	if err := cfg.ValidateNetworkClients(); err != nil {
+		errors = append(errors, err.Error())
+	}
 
 	if cfg.GetNetworkInfo() == nil {
 		errors = append(errors, fmt.Sprintf("Unknown network %q. Add it to networks-extra.yml or pick an official network.", cfg.GetNetwork()))

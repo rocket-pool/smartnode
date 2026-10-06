@@ -470,6 +470,15 @@ func (c *Client) InstallUpdateTracker(verbose bool) error {
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
+	cfg, isNew, err := c.LoadConfig()
+	if err != nil {
+		return err
+	}
+	if !isNew {
+		if err := cfg.ValidateNetworkForStart(); err != nil {
+			return err
+		}
+	}
 
 	// Start all of the containers
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
