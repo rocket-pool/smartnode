@@ -70,23 +70,23 @@ func getStatus() error {
 	claimableBonds := claimableBondsResponse.ClaimableBonds
 
 	// Signalling Status
-	color.GreenPrintln("=== Signalling on Snapshot ===")
+	color.GreenPrintln("=== Signalling on RocketDash ===")
 	blankAddress := common.Address{}
 	if response.SignallingAddress == blankAddress {
-		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
+		fmt.Printf("The node does not currently have an offchain signalling address set.\nTo learn more about offchain signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Printf("The node has a signalling address of %s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", color.LightBlue(response.SignallingAddressFormatted))
+		fmt.Printf("The node has a signalling address of %s which can represent it when voting on Rocket Pool governance proposals on RocketDash.\n", color.LightBlue(response.SignallingAddressFormatted))
 	}
 
 	if response.SnapshotResponse.Error != "" {
-		fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", response.SnapshotResponse.Error)
+		fmt.Printf("Unable to fetch latest voting information from rocketdash.net: %s\n", response.SnapshotResponse.Error)
 	} else {
 		voteCount := response.SnapshotResponse.VoteCount()
 
 		if len(response.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-			fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
+			fmt.Print("Rocket Pool has no RocketDash governance proposals being voted on.\n")
 		} else {
-			fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(response.SnapshotResponse.ActiveSnapshotProposals), voteCount)
+			fmt.Printf("Rocket Pool has %d RocketDash governance proposal(s) being voted on. You or your delegate have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(response.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 		}
 		fmt.Println("")
 	}

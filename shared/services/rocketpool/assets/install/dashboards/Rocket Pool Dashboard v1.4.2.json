@@ -4385,7 +4385,7 @@
       "type": "stat"
     },
     {
-      "description": "The node voting power on Snapshot.",
+      "description": "The node voting power on RocketDash.",
       "fieldConfig": {
         "defaults": {
           "color": {

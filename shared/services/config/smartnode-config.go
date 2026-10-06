@@ -15,7 +15,6 @@ const (
 	smartnodeTagPrefix string = "rocketpool/smartnode:v"
 	NetworkID          string = "network"
 	ProjectNameID      string = "projectName"
-	SnapshotID         string = "rocketpool-dao.eth"
 
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
@@ -498,20 +497,10 @@ func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTagPrefix + shared.RocketPoolVersion()
 }
 
-func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {
-	return cfg.networkInfo().SnapshotApiDomain
-}
-
-func (cfg *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
-	// So the contract wants a Keccak'd hash of the voting ID, but Snapshot's service wants ASCII so it can display the ID in plain text; we have to do this to make it play nicely with Snapshot
-	buffer := [32]byte{}
-	idBytes := []byte(SnapshotID)
-	copy(buffer[0:], idBytes)
-	return buffer
-}
-
-func (cfg *SmartnodeConfig) GetSnapshotID() string {
-	return SnapshotID
+// GetRocketDashURL returns an optional per-network API origin override.
+// The governance client supplies the public default for older network files.
+func (cfg *SmartnodeConfig) GetRocketDashURL() string {
+	return cfg.networkInfo().RocketDashURL
 }
 
 // The title for the config

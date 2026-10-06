@@ -17,7 +17,7 @@ networks:
     txWatchUrl: https://etherscan.io/tx
     nodeManagerUrl: https://node.rocketpool.net
     beaconExplorerUrl: https://beaconcha.in
-    snapshotApiDomain: hub.snapshot.org
+    rocketDashUrl: https://rocketdash.net
     flashbotsProtectUrl: https://rpc.flashbots.net/
     flashbotsRelayUrl: https://relay.flashbots.net
     beaconNetwork: mainnet
@@ -88,7 +88,7 @@ networks:
     txWatchUrl: https://hoodi.etherscan.io/tx
     nodeManagerUrl: https://testnet.node.rocketpool.net
     beaconExplorerUrl: https://hoodi.beaconcha.in
-    snapshotApiDomain: hub.snapshot.org
+    rocketDashUrl: https://rocketdash.net
     flashbotsProtectUrl: https://rpc-hoodi.flashbots.net/
     beaconNetwork: hoodi
     commitBoostChainName: Hoodi
@@ -126,7 +126,6 @@ networks:
     label: Devnet
     description: Rocket Pool development network. This is a local network that is used for development and testing. It uses free fake ETH and free fake RPL to make fake validators.
     chainID: 3151908
-    snapshotApiDomain: hub.snapshot.org
     beaconNetwork: hoodi
     commitBoostChainName: Hoodi
     clientTagSet: test

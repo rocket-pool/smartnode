@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v3"
@@ -38,10 +36,6 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 		return err
 	}
 	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return err
-	}
-	reg, err := services.GetRocketSignerRegistry(c)
 	if err != nil {
 		return err
 	}
@@ -87,17 +81,9 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	registry.MustRegister(governanceCollector)
 	registry.MustRegister(versionUpdateCollector)
 
-	// Set up snapshot checking if enabled
-	if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
-		signallingAddress, err := reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
-		if err != nil {
-			logger.Printlnf("Error getting the signalling address: %w", err)
-			// Set signallingAddress to blank address instead of erroring out of the task loop.
-			signallingAddress = common.Address{}
-		}
-		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, ec, bc, reg, nodeAccount.Address, signallingAddress)
-		registry.MustRegister(snapshotCollector)
-
+	// RocketDash supports Ethereum mainnet and Hoodi.
+	if chainID := cfg.Smartnode.GetChainID(); chainID == 1 || chainID == 560048 {
+		registry.MustRegister(collectors.NewRocketDashCollector(rp, cfg, ec, bc, nodeAccount.Address))
 	}
 
 	// Start the HTTP server

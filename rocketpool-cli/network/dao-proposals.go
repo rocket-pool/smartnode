@@ -2,7 +2,6 @@ package network
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -35,126 +34,93 @@ func getActiveDAOProposals() error {
 	}
 
 	// Get active DAO proposals
-	snapshotProposalsResponse, err := rp.GetActiveDAOProposals()
+	proposalsResponse, err := rp.GetActiveDAOProposals()
 	if err != nil {
 		return err
 	}
 
 	// Voting status
-	color.GreenPrintln("=== Snapshot Voting ===")
+	color.GreenPrintln("=== RocketDash Voting ===")
 	blankAddress := common.Address{}
-	if snapshotProposalsResponse.SignallingAddress == blankAddress {
-		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
+	if proposalsResponse.SignallingAddress == blankAddress {
+		fmt.Printf("The node does not currently have an offchain signalling address set.\nTo learn more about offchain signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Println("The node has a signalling address of", color.LightBlue(snapshotProposalsResponse.SignallingAddressFormatted), "which can represent it when voting on Rocket Pool Snapshot governance proposals.")
+		fmt.Println("The node has a signalling address of", color.LightBlue(proposalsResponse.SignallingAddressFormatted), "which can represent it when voting on Rocket Pool governance proposals on RocketDash.")
 	}
 
-	voteCount := snapshotProposalsResponse.SnapshotResponse.VoteCount()
-
-	if len(snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-		fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
+	if proposalsResponse.SnapshotResponse.Error != "" {
+		fmt.Printf("Unable to fetch latest voting information from rocketdash.net: %s\n", proposalsResponse.SnapshotResponse.Error)
 	} else {
-		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those.\n", len(snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals), voteCount)
-	}
+		voteCount := proposalsResponse.SnapshotResponse.VoteCount()
 
-	for _, proposal := range snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals {
-		fmt.Printf("\nTitle: %s\n", proposal.Title)
-		currentTimestamp := time.Now().Unix()
-		if currentTimestamp < proposal.Start {
-			fmt.Printf("Start: %s (in %s)\n", cliutils.GetDateTimeString(uint64(proposal.Start)), time.Until(time.Unix(proposal.Start, 0)).Round(time.Second))
+		if len(proposalsResponse.SnapshotResponse.ActiveSnapshotProposals) == 0 {
+			fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
 		} else {
-			fmt.Printf("End: %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), time.Until(time.Unix(proposal.End, 0)).Round(time.Second))
-			scoresBuilder := strings.Builder{}
-			for i, score := range proposal.Scores {
-				_, err = fmt.Fprintf(&scoresBuilder, "[%s = %.2f] ", proposal.Choices[i], score)
-				if err != nil {
-					return fmt.Errorf("error writing scores: %w", err)
-				}
-			}
-			fmt.Printf("Scores: %s\n", scoresBuilder.String())
-			quorumResult := ""
-			if proposal.ScoresTotal > proposal.Quorum {
-				quorumResult += "✓"
-			}
-			fmt.Printf("Quorum: %.2f of %.2f needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
-			voted := false
-			for _, proposalVote := range snapshotProposalsResponse.SnapshotResponse.ProposalVotes {
-				if proposalVote.Proposal.Id == proposal.Id {
-					voter := "Your DELEGATE"
-					if proposalVote.Voter == snapshotProposalsResponse.AccountAddress {
-						voter = "YOU"
-					}
-					votedChoices := ""
-					switch proposalVote.Choice.(type) {
-					case float64:
-						choiceFloat := proposalVote.Choice.(float64)
-						choice := int(choiceFloat) - 1
-						if choice < len(proposal.Choices) && choice >= 0 {
-							votedChoices = proposal.Choices[choice]
-						} else {
-							votedChoices = fmt.Sprintf("Unknown (%d is out of bounds)", choice)
-						}
-
-					case []interface{}:
-						choicesArray := proposalVote.Choice.([]interface{})
-						choices := []string{}
-						for i := 0; i < len(choicesArray); i++ {
-							choice := int(choicesArray[i].(float64))
-							if choice < len(proposal.Choices) && choice >= 0 {
-								choices = append(choices, proposal.Choices[choice])
-							} else {
-								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
-							}
-						}
-						votedChoices = strings.Join(choices, ", ")
-
-					case map[string]interface{}:
-						choiceMap := proposalVote.Choice.(map[string]interface{})
-						choices := []string{}
-						for choice, weight := range choiceMap {
-							// choice here is 1-based
-							choiceInt, _ := strconv.Atoi(choice)
-							// here it is zero based, hence the -1
-							choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choiceInt-1], weight))
-						}
-						votedChoices = strings.Join(choices, ", ")
-
-					default:
-						votedChoices = fmt.Sprintf("%v", proposalVote.Choice)
-					}
-
-					color.GreenPrintf("%s voted [%s] on this proposal\n", voter, votedChoices)
-					voted = true
-				}
-			}
-			if !voted {
-				color.YellowPrintln("You have NOT voted on this proposal yet")
-			}
+			fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You or your delegate have voted on %d of those.\n", len(proposalsResponse.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 		}
 
+		for _, proposal := range proposalsResponse.SnapshotResponse.ActiveSnapshotProposals {
+			fmt.Printf("\nTitle: %s\nVote: %s\n", proposal.Title, proposal.Link)
+			currentTimestamp := time.Now().Unix()
+			if currentTimestamp < proposal.Start {
+				fmt.Printf("Start: %s (in %s)\n", cliutils.GetDateTimeString(uint64(proposal.Start)), time.Until(time.Unix(proposal.Start, 0)).Round(time.Second))
+			} else {
+				fmt.Printf("End: %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), time.Until(time.Unix(proposal.End, 0)).Round(time.Second))
+				scoresBuilder := strings.Builder{}
+				for i, score := range proposal.Scores {
+					_, err = fmt.Fprintf(&scoresBuilder, "[%s = %.2f] ", proposal.Choices[i], score)
+					if err != nil {
+						return fmt.Errorf("error writing scores: %w", err)
+					}
+				}
+				fmt.Printf("Scores: %s\n", scoresBuilder.String())
+				quorumResult := ""
+				if proposal.ScoresTotal >= proposal.Quorum {
+					quorumResult += "✓"
+				}
+				fmt.Printf("Quorum: %.2f of %.2f needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
+				voted := false
+				for _, proposalVote := range proposalsResponse.SnapshotResponse.ProposalVotes {
+					if proposalVote.Proposal.Id == proposal.Id {
+						voter := "Your DELEGATE"
+						if proposalVote.Voter == proposalsResponse.AccountAddress {
+							voter = "YOU"
+						}
+						votedChoices := formatOffchainVote(proposalVote.Choice, proposal.Choices)
+
+						color.GreenPrintf("%s voted [%s] on this proposal\n", voter, votedChoices)
+						voted = true
+					}
+				}
+				if !voted {
+					color.YellowPrintln("You have NOT voted on this proposal yet")
+				}
+			}
+
+		}
 	}
 	fmt.Println()
 
 	// Onchain Voting Status
 	color.GreenPrintln("=== Onchain Voting ===")
 
-	switch snapshotProposalsResponse.OnchainVotingDelegate {
+	switch proposalsResponse.OnchainVotingDelegate {
 	case blankAddress:
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
-	case snapshotProposalsResponse.AccountAddress:
+	case proposalsResponse.AccountAddress:
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 	default:
-		fmt.Println("The node has a voting delegate of", color.LightBlue(snapshotProposalsResponse.OnchainVotingDelegateFormatted), "which can represent it when voting on Rocket Pool onchain governance proposals.")
+		fmt.Println("The node has a voting delegate of", color.LightBlue(proposalsResponse.OnchainVotingDelegateFormatted), "which can represent it when voting on Rocket Pool onchain governance proposals.")
 	}
-	fmt.Printf("The node's local voting power: %.10f\n", math.WeiToEth(snapshotProposalsResponse.VotingPower))
+	fmt.Printf("The node's local voting power: %.10f\n", math.WeiToEth(proposalsResponse.VotingPower))
 
-	if snapshotProposalsResponse.IsNodeRegistered {
-		fmt.Printf("Total voting power delegated to the node: %.10f\n", math.WeiToEth(snapshotProposalsResponse.TotalDelegatedVp))
+	if proposalsResponse.IsNodeRegistered {
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", math.WeiToEth(proposalsResponse.TotalDelegatedVp))
 	} else {
 		fmt.Println("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.")
 	}
 
-	fmt.Printf("Network total initialized voting power: %.4f\n", math.WeiToEth(snapshotProposalsResponse.SumVotingPower))
+	fmt.Printf("Network total initialized voting power: %.4f\n", math.WeiToEth(proposalsResponse.SumVotingPower))
 	fmt.Println()
 
 	return nil
