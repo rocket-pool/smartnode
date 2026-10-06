@@ -52,7 +52,9 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, result 
 	if err != nil {
 		return fmt.Errorf("RocketDash %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("RocketDash %s returned HTTP %d", path, resp.StatusCode)
 	}
