@@ -168,14 +168,14 @@ func TestDenebTargetInclusionWindow(t *testing.T) {
 		c.epochDuties[10] = map[string]attestationDuty{"1": duty}
 		c.targetRoots[10] = rootResult{root: root}
 		for slot := uint64(321); slot <= 384; slot++ {
-			c.blocks[slot] = cachedBlock{}
+			c.attestations[slot] = cachedAttestations{}
 		}
 		bits := bitfield.NewBitlist(1)
 		bits.SetBitAt(0, true)
 		att := beacon.AttestationInfo{SlotIndex: 320, TargetEpoch: 10, TargetRoot: root, AggregationBits: bits}
 		att.Committees = bitfield.NewBitvector64()
 		att.Committees.SetBitAt(0, true)
-		c.blocks[inclusion] = cachedBlock{exists: true, block: beacon.BeaconBlock{Attestations: []beacon.AttestationInfo{att}}}
+		c.attestations[inclusion] = cachedAttestations{exists: true, attestations: []beacon.AttestationInfo{att}}
 		got, err := c.evaluateEpoch("1", 1, 10)
 		if err != nil {
 			t.Fatal(err)
