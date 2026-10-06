@@ -20,7 +20,7 @@ type NetworkInfo struct {
 	TxWatchUrl          string `yaml:"txWatchUrl"`
 	NodeManagerUrl      string `yaml:"nodeManagerUrl"`
 	BeaconExplorerUrl   string `yaml:"beaconExplorerUrl"`
-	SnapshotApiDomain   string `yaml:"snapshotApiDomain"`
+	RocketDashURL       string `yaml:"rocketDashUrl"`
 	FlashbotsProtectUrl string `yaml:"flashbotsProtectUrl"`
 	FlashbotsRelayUrl   string `yaml:"flashbotsRelayUrl"`
 

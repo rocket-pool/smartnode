@@ -288,7 +288,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get active and past votes from Snapshot, but treat errors as non-Fatal
+	// Get RocketDash proposals and votes, but treat errors as non-fatal
 	if reg != nil {
 		wg.Go(func() error {
 			var err error
@@ -303,19 +303,11 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 				if response.SignallingAddress != blankAddress {
 					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
 				}
-				votedProposals, err := pdao.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
-				if err != nil {
-					r.Error = err.Error()
-					return nil
-				}
-				r.ProposalVotes = votedProposals.Data.Votes
 			}
-			snapshotResponse, err := pdao.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+			*r, err = pdao.GetOffchainVotingStatus(cfg, rp, nodeAccount.Address, "active")
 			if err != nil {
 				r.Error = err.Error()
-				return nil
 			}
-			r.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
 			return nil
 		})
 	}

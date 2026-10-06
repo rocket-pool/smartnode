@@ -2,13 +2,8 @@ package pdao
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -124,7 +119,7 @@ func getStatus(c *cli.Command) (*api.PDAOStatusResponse, error) {
 		return err
 	})
 
-	// Get active and past votes from Snapshot, but treat errors as non-Fatal
+	// Get RocketDash proposals and votes, but treat errors as non-fatal
 	if reg != nil {
 		wg.Go(func() error {
 			var err error
@@ -139,19 +134,11 @@ func getStatus(c *cli.Command) (*api.PDAOStatusResponse, error) {
 				if response.SignallingAddress != blankAddress {
 					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
 				}
-				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
-				if err != nil {
-					r.Error = err.Error()
-					return nil
-				}
-				r.ProposalVotes = votedProposals.Data.Votes
 			}
-			snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+			*r, err = GetOffchainVotingStatus(cfg, rp, nodeAccount.Address, "active")
 			if err != nil {
 				r.Error = err.Error()
-				return nil
 			}
-			r.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
 			return nil
 		})
 	}
@@ -204,145 +191,6 @@ func formatResolvedAddress(c *cli.Command, address common.Address) string {
 		return address.Hex()
 	}
 	return fmt.Sprintf("%s (%s)", name, address.Hex())
-}
-
-func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
-	client := getHttpClientWithTimeout()
-	query := fmt.Sprintf(`query Votes{
-		votes(
-		  where: {
-			space: "%s",
-			voter_in: ["%s", "%s"],
-			created_gte: 1727694646
-		  },
-		  orderBy: "created",
-		  orderDirection: desc
-		) {
-		  choice
-		  voter
-		  proposal {id, state}
-		}
-	  }`, space, nodeAddress, delegate)
-	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	// Check the response code
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
-	}
-
-	// Get response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var votedProposals api.SnapshotVotedProposals
-	if err := json.Unmarshal(body, &votedProposals); err != nil {
-		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
-
-	}
-
-	return &votedProposals, nil
-}
-
-func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
-	client := getHttpClientWithTimeout()
-	stateFilter := ""
-	if state != "" {
-		stateFilter = fmt.Sprintf(`, state: "%s"`, state)
-	}
-	query := fmt.Sprintf(`query Proposals {
-	proposals(where: {space: "%s"%s, start_gte: 1727694646}, orderBy: "created", orderDirection: desc) {
-	    id
-	    title
-	    choices
-	    start
-	    end
-	    snapshot
-	    state
-	    author
-		scores
-		scores_total
-		scores_updated
-		quorum
-		link
-	  }
-    }`, space, stateFilter)
-
-	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	// Check the response code
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
-	}
-
-	// Get response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var snapshotResponse api.SnapshotResponse
-	if err := json.Unmarshal(body, &snapshotResponse); err != nil {
-		return nil, fmt.Errorf("Could not decode snapshot response: %w", err)
-
-	}
-
-	return &snapshotResponse, nil
-}
-
-func getHttpClientWithTimeout() *http.Client {
-	return &http.Client{
-		Timeout: time.Second * 5,
-	}
-}
-
-func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.Address) (*api.SnapshotVotingPower, error) {
-	client := getHttpClientWithTimeout()
-	query := fmt.Sprintf(`query Vp{
-		vp(
-			space: "%s",
-			voter: "%s",
-		) {
-			vp
-		}
-	}
-	`, space, nodeAddress)
-	url := fmt.Sprintf("https://%s/graphql?operationName=Vp&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	// Check the response code
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
-	}
-
-	// Get response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var votingPower api.SnapshotVotingPower
-	if err := json.Unmarshal(body, &votingPower); err != nil {
-		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
-
-	}
-
-	return &votingPower, nil
 }
 
 func statusHandler(ctx snroute.Context) {

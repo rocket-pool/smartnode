@@ -70,32 +70,28 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
-	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
-	FeeRecipientInfo            feerecipient.Details      `json:"feeRecipientInfo"`
-	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
-	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
-	SnapshotResponse            struct {
-		Error                   string                 `json:"error"`
-		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
-		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
-	} `json:"snapshotResponse"`
-	SignallingAddress            common.Address    `json:"signallingAddress"`
-	SignallingAddressFormatted   string            `json:"signallingAddressFormatted"`
-	Minipools                    []MinipoolDetails `json:"minipools"`
-	LatestDelegate               common.Address    `json:"latestDelegate"`
-	MegapoolDeployed             bool              `json:"megapoolDeployed"`
-	MegapoolAddress              common.Address    `json:"megapoolAddress"`
-	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
-	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
-	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
-	ExpressTicketCount           uint64            `json:"expressTicketCount"`
-	ExpressTicketsProvisioned    bool              `json:"expressTicketsProvisioned"`
-	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
-	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
-	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
-	LatestBlockTime              time.Time         `json:"latestBlockTime"`
-	UnclaimedRewards             *big.Int          `json:"unclaimedRewards"`
-	ReducedBond                  *big.Int          `json:"reducedBond"`
+	IsFeeDistributorInitialized  bool                      `json:"isFeeDistributorInitialized"`
+	FeeRecipientInfo             feerecipient.Details      `json:"feeRecipientInfo"`
+	FeeDistributorBalance        *big.Int                  `json:"feeDistributorBalance"`
+	PenalizedMinipools           map[common.Address]uint64 `json:"penalizedMinipools"`
+	SnapshotResponse             SnapshotResponseStruct    `json:"snapshotResponse"`
+	SignallingAddress            common.Address            `json:"signallingAddress"`
+	SignallingAddressFormatted   string                    `json:"signallingAddressFormatted"`
+	Minipools                    []MinipoolDetails         `json:"minipools"`
+	LatestDelegate               common.Address            `json:"latestDelegate"`
+	MegapoolDeployed             bool                      `json:"megapoolDeployed"`
+	MegapoolAddress              common.Address            `json:"megapoolAddress"`
+	MegapoolActiveValidatorCount uint16                    `json:"megapoolActiveValidatorCount"`
+	MegapoolNodeDebt             *big.Int                  `json:"megapoolNodeDebt"`
+	MegapoolRefundValue          *big.Int                  `json:"megapoolRefundValue"`
+	ExpressTicketCount           uint64                    `json:"expressTicketCount"`
+	ExpressTicketsProvisioned    bool                      `json:"expressTicketsProvisioned"`
+	UnstakingRPL                 *big.Int                  `json:"unstakingRPL"`
+	LastRPLUnstakeTime           time.Time                 `json:"lastRPLUnstakeTime"`
+	UnstakingPeriodDuration      time.Duration             `json:"unstakingPeriodDuration"`
+	LatestBlockTime              time.Time                 `json:"latestBlockTime"`
+	UnclaimedRewards             *big.Int                  `json:"unclaimedRewards"`
+	ReducedBond                  *big.Int                  `json:"reducedBond"`
 }
 
 type NodeAlert struct {

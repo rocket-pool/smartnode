@@ -71,6 +71,8 @@ type NetworkGenerateRewardsTreeResponse struct {
 	APIResponse
 }
 
+// SnapshotResponseStruct carries RocketDash offchain voting data. The legacy
+// names and JSON keys remain stable for existing API consumers.
 type SnapshotResponseStruct struct {
 	Error                   string                 `json:"error"`
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`

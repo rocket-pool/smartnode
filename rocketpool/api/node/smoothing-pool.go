@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -116,6 +117,11 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 
 func setSmoothingPoolStatus(c *cli.Command, status bool, t *snroute.TransactOpts) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
 	opts := t.Opts()
+	// A masqueraded transaction cannot be submitted. Reject it before changing
+	// local fee recipients or restarting the validator.
+	if opts.NoSend {
+		return nil, wallet.ErrIsMasquerading
+	}
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -135,6 +141,9 @@ func setSmoothingPoolStatus(c *cli.Command, status bool, t *snroute.TransactOpts
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
+	}
+	if w.IsNodeMasquerading() {
+		return nil, wallet.ErrIsMasquerading
 	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {

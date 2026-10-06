@@ -74,7 +74,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			{
 				Name:      "set-signalling-address",
 				Aliases:   []string{"ssa"},
-				Usage:     "Set the address you want to use to represent your node on Snapshot",
+				Usage:     "Set the address you want to use to represent your node on off-chain voting platforms",
 				UsageText: "rocketpool pdao set-signalling-address signalling-address signature",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
@@ -89,7 +89,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					snapshotAddress, err := cliutils.ValidateAddress("signalling-address", c.Args().Get(0))
+					signallingAddress, err := cliutils.ValidateAddress("signalling-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -99,7 +99,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					return setSignallingAddress(snapshotAddress, signature, c.Bool("yes"))
+					return setSignallingAddress(signallingAddress, signature, c.Bool("yes"))
 
 				},
 			},

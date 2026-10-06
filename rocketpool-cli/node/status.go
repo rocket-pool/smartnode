@@ -164,31 +164,23 @@ func getStatus() error {
 		}
 
 		// Signalling Status
-		color.GreenPrintln("=== Signalling on Snapshot ===")
+		color.GreenPrintln("=== Signalling on RocketDash ===")
 		blankAddress := common.Address{}
 		if status.SignallingAddress == blankAddress {
-			fmt.Println("The node does not currently have a snapshot signalling address set.")
-			fmt.Printf("To learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
+			fmt.Println("The node does not currently have an offchain signalling address set.")
+			fmt.Printf("To learn more about offchain signalling, please visit %s.\n", signallingAddressLink)
 		} else {
-			fmt.Println("The node has a signalling address of", color.LightBlue(status.SignallingAddressFormatted), "which can represent it when voting on Rocket Pool Snapshot governance proposals.")
+			fmt.Println("The node has a signalling address of", color.LightBlue(status.SignallingAddressFormatted), "which can represent it when voting on Rocket Pool governance proposals on RocketDash.")
 		}
 
 		if status.SnapshotResponse.Error != "" {
-			fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", status.SnapshotResponse.Error)
+			fmt.Printf("Unable to fetch latest voting information from rocketdash.net: %s\n", status.SnapshotResponse.Error)
 		} else {
-			voteCount := 0
-			for _, activeProposal := range status.SnapshotResponse.ActiveSnapshotProposals {
-				for _, votedProposal := range status.SnapshotResponse.ProposalVotes {
-					if votedProposal.Proposal.Id == activeProposal.Id {
-						voteCount++
-						break
-					}
-				}
-			}
+			voteCount := status.SnapshotResponse.VoteCount()
 			if len(status.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-				fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
+				fmt.Print("Rocket Pool has no RocketDash governance proposals being voted on.\n")
 			} else {
-				fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.SnapshotResponse.ActiveSnapshotProposals), voteCount)
+				fmt.Printf("Rocket Pool has %d RocketDash governance proposal(s) being voted on. You or your delegate have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 			}
 			fmt.Println("")
 		}
