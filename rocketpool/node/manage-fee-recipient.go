@@ -30,7 +30,7 @@ type manageFeeRecipient struct {
 	rp           *rocketpool.RocketPool
 	d            *client.Client
 	bc           beacon.Client
-	stateManager *state.NetworkStateManager
+	stateManager state.NetworkStateProvider
 }
 
 // Create manage fee recipient task
@@ -75,6 +75,11 @@ func newManageFeeRecipient(c *cli.Command, logger log.ColorLogger) (*manageFeeRe
 
 // Manage fee recipient
 func (m *manageFeeRecipient) run(state *state.NetworkStateIndex) error {
+	// Fee recipient writes must never use a masqueraded wallet, even if one is
+	// accidentally passed to this task in the future.
+	if m.w.IsNodeMasquerading() {
+		return wallet.ErrIsMasquerading
+	}
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(m.c, true); err != nil {

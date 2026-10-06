@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 // Settings
@@ -229,16 +230,26 @@ func WaitRocketStorage(ctx context.Context, c *cli.Command, verbose bool) error 
 	}
 }
 
-// This check makes calls to GetHdWallet instead of GetWallet as it's used in node and watchtower
+// WaitNodeRegistered always checks the real HD wallet, including while masquerading.
 func WaitNodeRegistered(ctx context.Context, c *cli.Command, verbose bool) error {
 	if err := WaitNodeHdWallet(ctx, c, verbose); err != nil {
 		return err
 	}
+	w, err := GetHdWallet(c)
+	if err != nil {
+		return err
+	}
+	return WaitNodeRegisteredWithWallet(ctx, c, w, verbose)
+}
+
+// WaitNodeRegisteredWithWallet checks the wallet selected by the daemon at startup.
+// The caller must first wait for wallet readiness.
+func WaitNodeRegisteredWithWallet(ctx context.Context, c *cli.Command, w wallet.Wallet, verbose bool) error {
 	if err := WaitRocketStorage(ctx, c, verbose); err != nil {
 		return err
 	}
 	for {
-		nodeRegistered, err := getHdNodeRegistered(c)
+		nodeRegistered, err := getNodeRegisteredWithWallet(c, w)
 		if err != nil {
 			return err
 		}
@@ -322,26 +333,10 @@ func getNodeRegistered(c *cli.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return false, err
-	}
-	if IsStaticStateMode(c) {
-		return isNodeRegisteredInStaticState(c, nodeAccount.Address)
-	}
-	rp, err := GetRocketPool(c)
-	if err != nil {
-		return false, err
-	}
-	return node.GetNodeExists(rp, nodeAccount.Address, nil)
+	return getNodeRegisteredWithWallet(c, w)
 }
 
-// Check if node wallet stored on disk is registered
-func getHdNodeRegistered(c *cli.Command) (bool, error) {
-	w, err := GetHdWallet(c)
-	if err != nil {
-		return false, err
-	}
+func getNodeRegisteredWithWallet(c *cli.Command, w wallet.Wallet) (bool, error) {
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return false, err

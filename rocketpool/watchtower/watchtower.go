@@ -109,8 +109,8 @@ func run(c *cli.Command) error {
 		break
 	}
 
-	// Wait until the node wallet stored on disk is registered
-	if err := services.WaitNodeRegistered(ctx, c, true); err != nil {
+	// Wait for the real wallet before selecting the daemon's effective identity.
+	if err := services.WaitNodeHdWallet(ctx, c, true); err != nil {
 		return err
 	}
 
@@ -131,6 +131,10 @@ func run(c *cli.Command) error {
 		w, err = services.GetHdWallet(c)
 	}
 	if err != nil {
+		return err
+	}
+	// In observe mode, registration applies to the observed node, not the real wallet.
+	if err := services.WaitNodeRegisteredWithWallet(ctx, c, w, true); err != nil {
 		return err
 	}
 	bc, err := services.GetBeaconClient(c)
