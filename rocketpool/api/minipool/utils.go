@@ -28,7 +28,7 @@ import (
 // Settings
 const MinipoolDetailsBatchSize = 10
 const MinipoolPubkeyBatchSize = 50
-const MinipoolQueuePositionBatchSize = 700
+const MinipoolQueuePositionBatchSize = 600
 
 // Validate that a minipool belongs to a node
 func validateMinipoolOwner(mp minipool.Minipool, nodeAddress common.Address) error {
