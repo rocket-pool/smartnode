@@ -60,27 +60,31 @@ func getSyncProgress() error {
 		return err
 	}
 
-	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rp.DepositContractInfo()
-	if err != nil {
-		return err
+	if cfg.HasRocketPoolContracts() {
+		// Make sure ETH2 is on the correct chain using Rocket Pool's deposit contract.
+		depositContractInfo, err := rp.DepositContractInfo()
+		if err != nil {
+			return err
+		}
+		if !depositContractInfo.SufficientSync {
+			color.YellowPrintln("Your execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.")
+			color.YellowPrintln("To run this safety check, try again later when the execution client has made more sync progress.")
+			fmt.Println()
+			return nil
+		}
+		if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+			depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+			cliutils.PrintDepositMismatchError(
+				depositContractInfo.RPNetwork,
+				depositContractInfo.BeaconNetwork,
+				depositContractInfo.RPDepositContract,
+				depositContractInfo.BeaconDepositContract)
+			return nil
+		}
+		fmt.Println("Your consensus client is on the correct network.")
+	} else {
+		fmt.Println("Rocket Pool contracts are not configured; skipping the deposit contract network check.")
 	}
-	if !depositContractInfo.SufficientSync {
-		color.YellowPrintln("Your execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.")
-		color.YellowPrintln("To run this safety check, try again later when the execution client has made more sync progress.")
-		fmt.Println()
-		return nil
-	}
-	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		cliutils.PrintDepositMismatchError(
-			depositContractInfo.RPNetwork,
-			depositContractInfo.BeaconNetwork,
-			depositContractInfo.RPDepositContract,
-			depositContractInfo.BeaconDepositContract)
-		return nil
-	}
-	fmt.Println("Your consensus client is on the correct network.")
 	fmt.Println()
 
 	// Get node status

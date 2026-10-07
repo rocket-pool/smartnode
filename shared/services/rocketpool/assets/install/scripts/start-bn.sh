@@ -35,12 +35,6 @@ if [ ! -s "/secrets/jwtsecret" ]; then
     exit 1
 fi
 
-# Report a missing fee recipient file
-if [ ! -f "/validators/$FEE_RECIPIENT_FILE" ]; then
-    echo "Fee recipient file not found, please wait for the rocketpool_node process to create one."
-    exit 1
-fi
-
 # Lighthouse startup
 if [ "$CC_CLIENT" = "lighthouse" ]; then
 
@@ -276,9 +270,12 @@ if [ "$CC_CLIENT" = "teku" ]; then
         --log-destination=CONSOLE \
         --ee-jwt-secret-file=/secrets/jwtsecret \
         --beacon-liveness-tracking-enabled \
-        --validators-proposer-default-fee-recipient=$RETH_ADDRESS \
         --validators-graffiti-client-append-format=DISABLED \
         $BN_ADDITIONAL_FLAGS"
+
+    if [ -n "$RETH_ADDRESS" ]; then
+        CMD="$CMD --validators-proposer-default-fee-recipient=$RETH_ADDRESS"
+    fi
 
     if [ ! -z "$BN_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --validators-builder-registration-default-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"

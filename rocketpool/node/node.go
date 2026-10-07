@@ -87,16 +87,18 @@ func run(c *cli.Command) error {
 		return err
 	}
 
-	// Handle the initial fee recipient file deployment
-	err = deployDefaultFeeRecipientFile(c)
-	if err != nil {
-		return err
-	}
+	if cfg.HasRocketPoolContracts() {
+		// Handle the initial fee recipient file deployment
+		err = deployDefaultFeeRecipientFile(c)
+		if err != nil {
+			return err
+		}
 
-	// Clean up old fee recipient files
-	err = removeLegacyFeeRecipientFiles(c)
-	if err != nil {
-		return err
+		// Clean up old fee recipient files
+		err = removeLegacyFeeRecipientFiles(c)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Configure
@@ -117,6 +119,12 @@ func run(c *cli.Command) error {
 	// Start the HTTP API server immediately so the CLI can reach it while
 	// the daemon waits for the wallet and services to become ready.
 	startHTTP(ctx, c, cfg)
+
+	if !cfg.HasRocketPoolContracts() {
+		fmt.Println("Rocket Pool contracts are not configured; running the HTTP API without node background tasks.")
+		<-ctx.Done()
+		return ctx.Err()
+	}
 
 	for {
 		// Exit if the process received SIGINT/SIGTERM

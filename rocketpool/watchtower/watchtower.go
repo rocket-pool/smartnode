@@ -78,6 +78,9 @@ func run(c *cli.Command) error {
 	if err := cfg.ValidateNetworkForStart(); err != nil {
 		return err
 	}
+	if err := cfg.RequireRocketPoolContracts(); err != nil {
+		return err
+	}
 
 	// Configure
 	configureHTTP()

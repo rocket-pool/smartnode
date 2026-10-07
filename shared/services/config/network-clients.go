@@ -121,25 +121,25 @@ func (cfg *RocketPoolConfig) ValidateNetworkClients() error {
 	return errors.Join(problems...)
 }
 
+// HasRocketPoolContracts reports whether contract-dependent services can run.
+func (cfg *RocketPoolConfig) HasRocketPoolContracts() bool {
+	network := cfg.GetNetworkInfo()
+	return network != nil && !network.ContractsPending && network.Addresses.Storage != ""
+}
+
 // RequireRocketPoolContracts prevents accidentally using the zero storage address.
 func (cfg *RocketPoolConfig) RequireRocketPoolContracts() error {
 	network := cfg.GetNetworkInfo()
 	if network == nil {
 		return fmt.Errorf("unknown network %q", cfg.GetNetwork())
 	}
-	if network.ContractsPending || network.Addresses.Storage == "" {
-		return fmt.Errorf("Rocket Pool contracts are not configured for %s; supply the deployment addresses and set contractsPending to false in the network definition before starting Rocket Pool", network.Label)
+	if !cfg.HasRocketPoolContracts() {
+		return fmt.Errorf("Rocket Pool contracts are not configured for %s; supply the deployment addresses and set contractsPending to false in the network definition before using contract-dependent services", network.Label)
 	}
 	return nil
 }
 
-// ValidateNetworkForStart allows pending networks to be saved, but not started.
+// ValidateNetworkForStart permits client startup before Rocket Pool is deployed.
 func (cfg *RocketPoolConfig) ValidateNetworkForStart() error {
-	if err := cfg.ValidateNetworkClients(); err != nil {
-		return err
-	}
-	if cfg.GetNetworkInfo().ContractsPending {
-		return cfg.RequireRocketPoolContracts()
-	}
-	return nil
+	return cfg.ValidateNetworkClients()
 }

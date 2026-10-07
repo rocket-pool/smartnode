@@ -1335,11 +1335,10 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	// These containers always run
-	toDeploy := []string{
-		config.NodeContainerName,
-		config.WatchtowerContainerName,
-		config.ValidatorContainerName,
+	// Keep the HTTP API available for client status and service management.
+	toDeploy := []string{config.NodeContainerName}
+	if cfg.HasRocketPoolContracts() {
+		toDeploy = append(toDeploy, config.WatchtowerContainerName, config.ValidatorContainerName)
 	}
 
 	// Check if we are running the Execution Layer locally

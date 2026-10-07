@@ -242,7 +242,15 @@ func updateConfigFromCliArgs(c *cli.Command, cfg *config.RocketPoolConfig) error
 		if cfg.LoadedNetworks().GetNetwork(network) == nil {
 			return fmt.Errorf("unknown network %q", network)
 		}
+		// Match the TUI: a checkpoint URL from the previous chain must not be
+		// kept. Flags are applied after this, so an explicit URL still wins.
+		changed := cfg.GetNetwork() != network
 		cfg.ChangeNetwork(network)
+		if changed {
+			if err := cfg.ConsensusCommon.CheckpointSyncProvider.SetToDefault(network); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Root params
@@ -716,7 +724,9 @@ func startService(params startServiceParams) error {
 		return nil
 	}
 
-	if !params.ignoreSlashTimer {
+	if !cfg.HasRocketPoolContracts() {
+		fmt.Println("Rocket Pool contracts are not configured. Starting configured services; validator and watchtower services are disabled.")
+	} else if !params.ignoreSlashTimer {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
@@ -770,7 +780,7 @@ func startService(params startServiceParams) error {
 		color.YellowPrintf("Couldn't check if you have Doppelganger Protection enabled: %s\n", err.Error())
 		color.YellowPrintln("If you do, your validator will miss up to 3 attestations when it starts.")
 		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")
-	} else if doppelgangerEnabled {
+	} else if cfg.HasRocketPoolContracts() && doppelgangerEnabled {
 		color.YellowPrintln("NOTE: You currently have Doppelganger Protection enabled.")
 		color.YellowPrintln("Your validator will miss up to 3 attestations when it starts.")
 		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")

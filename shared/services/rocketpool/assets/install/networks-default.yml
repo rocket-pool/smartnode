@@ -169,7 +169,6 @@ networks:
     description: |
       Ethereum's Glamsterdam testnet (glamsterdam-devnet-8), using test ETH.
       Supported clients: Nethermind with Lodestar, Nimbus, or Teku.
-      Rocket Pool contract addresses are pending; configuration is available but service startup is disabled until deployment.
     chainID: 7091047534
     beaconNetwork: plataberget
     beaconExplorerUrl: https://dora.plataberget.ethpandaops.io
@@ -177,10 +176,14 @@ networks:
     clientTagSet: test
     executionClients: [nethermind]
     consensusClients: [lodestar, nimbus, teku]
-    contractsPending: true
+    contractsPending: false
     supportsMevBoost: false
     allowNonBlsWithdrawalCredentials: false
     isProduction: false
     nethermindPruneThresholdMb: 51200
-    # Add the verified Rocket Pool/helper deployments here before enabling startup.
-    addresses: {}
+    addresses:
+      storage: "0xd4E96eF8eee8678dBFf4d535E033Ed1a4F7605b7"
+      rplToken: "0x762e79b27feE0C0975f9caBEa9E9976006A7aD98"
+      reth: "0x4640b8610f3eFdeb8d44834ADb3228d0E79eaa09"
+      multicall: "0xCe085c899295aCaE769b8dbB525B5f0Ff7F2E128"
+      balancebatcher: "0xA6f1DeC523211141Ff633665f951a890ed653fea"
