@@ -17,6 +17,7 @@ import (
 
 const (
 	githubLatestReleaseURL = "https://api.github.com/repos/rocket-pool/smartnode/releases/latest"
+	versionCheckInterval   = time.Hour
 	versionCheckTimeout    = 15 * time.Second
 )
 
@@ -31,6 +32,7 @@ type VersionUpdateCollector struct {
 	mu              sync.Mutex
 	updateAvailable float64
 	latestVersion   string
+	lastChecked     time.Time
 }
 
 type githubReleaseResponse struct {
@@ -75,6 +77,11 @@ func (collector *VersionUpdateCollector) Collect(channel chan<- prometheus.Metri
 func (collector *VersionUpdateCollector) checkIfDue(ctx context.Context) {
 	collector.mu.Lock()
 	defer collector.mu.Unlock()
+
+	if time.Since(collector.lastChecked) < versionCheckInterval {
+		return
+	}
+	collector.lastChecked = time.Now()
 
 	updateAvailable, latestVersion, err := collector.checkForUpdate(ctx)
 	if err != nil {

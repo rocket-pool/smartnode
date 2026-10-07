@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestIsNewerVersion(t *testing.T) {
@@ -74,5 +75,71 @@ func TestCheckIfDueCachesLatestVersion(t *testing.T) {
 	}
 	if collector.latestVersion != "v1.20.3" {
 		t.Fatalf("latestVersion = %q, want %q", collector.latestVersion, "v1.20.3")
+	}
+}
+
+func TestCheckIfDueHitsGitHubAtMostHourly(t *testing.T) {
+	var hits int
+	tag := "v1.20.3"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		_, err := w.Write([]byte(`{"tag_name":"` + tag + `"}`))
+		if err != nil {
+			t.Errorf("error writing response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	collector := NewVersionUpdateCollector(nil)
+	collector.current = "1.20.2"
+	collector.latestURL = server.URL
+	collector.client = server.Client()
+
+	collector.checkIfDue(context.Background())
+	collector.checkIfDue(context.Background())
+	if hits != 1 {
+		t.Fatalf("hits = %d, want 1", hits)
+	}
+	if collector.latestVersion != "v1.20.3" {
+		t.Fatalf("latestVersion = %q, want %q", collector.latestVersion, "v1.20.3")
+	}
+
+	tag = "v1.20.4"
+	collector.lastChecked = time.Now().Add(-versionCheckInterval - time.Second)
+	collector.checkIfDue(context.Background())
+	if hits != 2 {
+		t.Fatalf("hits = %d, want 2", hits)
+	}
+	if collector.latestVersion != "v1.20.4" {
+		t.Fatalf("latestVersion = %q, want %q", collector.latestVersion, "v1.20.4")
+	}
+	if collector.updateAvailable != 1 {
+		t.Fatalf("updateAvailable = %f, want 1", collector.updateAvailable)
+	}
+}
+
+func TestCheckIfDueBacksOffAfterGitHubError(t *testing.T) {
+	var hits int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	collector := NewVersionUpdateCollector(nil)
+	collector.current = "1.20.2"
+	collector.latestURL = server.URL
+	collector.client = server.Client()
+
+	collector.checkIfDue(context.Background())
+	collector.checkIfDue(context.Background())
+	if hits != 1 {
+		t.Fatalf("hits = %d, want 1", hits)
+	}
+	if collector.latestVersion != "" {
+		t.Fatalf("latestVersion = %q, want empty", collector.latestVersion)
+	}
+	if collector.updateAvailable != 0 {
+		t.Fatalf("updateAvailable = %f, want 0", collector.updateAvailable)
 	}
 }
