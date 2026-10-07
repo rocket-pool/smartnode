@@ -60,7 +60,21 @@ func getSyncProgress() error {
 		return err
 	}
 
+	// Report progress before checking contracts. The deposit-contract endpoint
+	// requires a synced EC and can wait behind the daemon's background sync loop.
+	status, err := rp.NodeSync()
+	if err != nil {
+		return err
+	}
+	printSyncProgress(&status.EcStatus, "execution")
+	printSyncProgress(&status.BcStatus, "consensus")
+	fmt.Println()
+
 	if cfg.HasRocketPoolContracts() {
+		if !hasSyncedExecutionClient(&status.EcStatus) {
+			color.YellowPrintln("The deposit contract network check is unavailable until an execution client is synced and ready.")
+			return nil
+		}
 		// Make sure ETH2 is on the correct chain using Rocket Pool's deposit contract.
 		depositContractInfo, err := rp.DepositContractInfo()
 		if err != nil {
@@ -87,19 +101,14 @@ func getSyncProgress() error {
 	}
 	fmt.Println()
 
-	// Get node status
-	status, err := rp.NodeSync()
-	if err != nil {
-		return err
-	}
-
-	// Print EC status
-	printSyncProgress(&status.EcStatus, "execution")
-
-	// Print CC status
-	printSyncProgress(&status.BcStatus, "consensus")
-
 	// Return
 	return nil
 
+}
+
+func hasSyncedExecutionClient(status *api.ClientManagerStatus) bool {
+	ready := func(client api.ClientStatus) bool {
+		return client.IsWorking && client.IsSynced && client.Error == ""
+	}
+	return ready(status.PrimaryClientStatus) || (status.FallbackEnabled && ready(status.FallbackClientStatus))
 }
