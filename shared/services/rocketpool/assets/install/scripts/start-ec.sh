@@ -107,6 +107,12 @@ if [ "$CLIENT" = "geth" ]; then
             --pprof \
             $EC_ADDITIONAL_FLAGS"
 
+        # Refresh the public IP via STUN without predicting the advertised discovery port.
+        # Preserve an explicit NAT setting supplied in Additional Flags.
+        if ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eq -- '(^|[[:space:]])--nat(=|[[:space:]]|$)'; then
+            CMD="$CMD --nat stun"
+        fi
+
         if [ -n "$CUSTOM_CHAIN_DIR" ]; then\
             CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
         fi
