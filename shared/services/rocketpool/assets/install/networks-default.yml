@@ -161,20 +161,21 @@ networks:
       multicall: "0x1a0E9eF9Cc41f4CcD377979C0e6DC8dBe4E2858C"
       balancebatcher: "0x8f22b1Cd26efe83ADf8Da87789fB66EeD917FCAa"
 
-  # Named-network presets only: Nethermind >=2.0.0 (>=2.1.0 for archive),
+  # Geth uses the packaged genesis/bootnodes and the plataberget.env image pin.
+  # Named-network presets: Nethermind >=2.0.0 (>=2.1.0 for archive),
   # Lodestar >=1.47.0, Nimbus >=26.8.0, Teku >=26.9.0.
-  # Current mainnet.env pins meet these requirements; no custom-chain directory.
+  # Consensus clients continue to use their named-network presets.
   - name: plataberget
     label: Platåberget Testnet
     description: |
       Ethereum's Glamsterdam testnet (glamsterdam-devnet-8), using test ETH.
-      Supported clients: Nethermind with Lodestar, Nimbus, or Teku.
+      Supported clients: Geth or Nethermind with Lodestar, Nimbus, or Teku.
     chainID: 7091047534
     beaconNetwork: plataberget
     beaconExplorerUrl: https://dora.plataberget.ethpandaops.io
     checkpointSyncUrl: https://checkpoint-sync.plataberget.ethpandaops.io
     clientTagSet: test
-    executionClients: [nethermind]
+    executionClients: [geth, nethermind]
     consensusClients: [lodestar, nimbus, teku]
     contractsPending: false
     supportsMevBoost: false

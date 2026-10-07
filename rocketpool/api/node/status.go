@@ -31,7 +31,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
@@ -65,9 +64,6 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 	reg, err := services.GetRocketSignerRegistry(c)
 	if err != nil {
 		return nil, err
-	}
-	if reg == nil {
-		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 
 	// Response
@@ -288,7 +284,7 @@ func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get RocketDash proposals and votes, but treat errors as non-fatal
+	// Get RocketDash proposals and votes when a signer registry is configured, but treat errors as non-fatal
 	if reg != nil {
 		wg.Go(func() error {
 			var err error

@@ -1233,7 +1233,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 func ensureImageEnvFiles(dir string) error {
-	official := []string{config.ImagesMainnetFile, config.ImagesTestnetFile, config.ImagesDevnetFile}
+	official := []string{config.ImagesMainnetFile, config.ImagesTestnetFile, config.ImagesDevnetFile, config.ImagesPlatabergetFile}
 	for _, name := range official {
 		data, ok := assets.EmbeddedNetworkEnv(name)
 		if !ok && name == config.ImagesMainnetFile {
