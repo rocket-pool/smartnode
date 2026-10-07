@@ -54,6 +54,21 @@ fi
 # Geth startup
 if [ "$CLIENT" = "geth" ]; then
 
+    # Geth has no --plataberget preset. Keep this EL-only config separate from
+    # CUSTOM_CHAIN_DIR so consensus clients can still use their named presets.
+    if [ "$BEACON_NETWORK" = "plataberget" ]; then
+        if [ ! -s /network-config/genesis.json ] || [ ! -s /network-config/el_enrs.txt ]; then
+            echo "Plataberget Geth network files are missing; run rocketpool service install to install them"
+            exit 1
+        fi
+        GETH_NETWORK="--networkid 7091047534 --override.genesis /network-config/genesis.json"
+        GETH_BOOTNODES=$(tr -d '\r' < /network-config/el_enrs.txt | awk 'NF { printf "%s%s", sep, $0; sep="," }')
+        if [ -z "$GETH_BOOTNODES" ]; then
+            echo "Plataberget Geth bootnodes are empty"
+            exit 1
+        fi
+    fi
+
     # Performance tuning for ARM systems
     UNAME_VAL=$(uname -m)
     if [ "$UNAME_VAL" = "arm64" ] || [ "$UNAME_VAL" = "aarch64" ]; then
@@ -111,6 +126,10 @@ if [ "$CLIENT" = "geth" ]; then
         # Preserve an explicit NAT setting supplied in Additional Flags.
         if ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eq -- '(^|[[:space:]])--nat(=|[[:space:]]|$)'; then
             CMD="$CMD --nat stun"
+        fi
+
+        if [ "$BEACON_NETWORK" = "plataberget" ]; then
+            CMD="$CMD --bootnodes $GETH_BOOTNODES --discovery.v4=false --discovery.v5=true"
         fi
 
         if [ -n "$CUSTOM_CHAIN_DIR" ]; then\
