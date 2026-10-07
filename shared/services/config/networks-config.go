@@ -176,7 +176,10 @@ func validateNetworks(networks []*config.NetworkInfo, source string, requireStor
 		if n.Addresses.Storage != "" && !common.IsHexAddress(n.Addresses.Storage) {
 			return fmt.Errorf("%s: network %q has invalid storage address %q", source, n.Name, n.Addresses.Storage)
 		}
-		if requireStorage && n.Addresses.Storage == "" {
+		if n.ContractsPending && n.IsProduction {
+			return fmt.Errorf("%s: production network %q cannot have contractsPending", source, n.Name)
+		}
+		if requireStorage && n.Addresses.Storage == "" && !n.ContractsPending {
 			return fmt.Errorf("%s: network %q is missing a valid storage address", source, n.Name)
 		}
 		if n.Label == "" || n.Description == "" {
@@ -193,6 +196,9 @@ func validateNetworks(networks []*config.NetworkInfo, source string, requireStor
 		}
 		if err := validateMevRelays(n.MevRelays, source, n.Name); err != nil {
 			return err
+		}
+		if err := validateNetworkClients(n); err != nil {
+			return fmt.Errorf("%s: network %q: %w", source, n.Name, err)
 		}
 		if n.Default {
 			defaults++

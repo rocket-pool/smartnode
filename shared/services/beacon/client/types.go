@@ -42,6 +42,7 @@ type SyncStatusResponse struct {
 type Eth2ConfigResponse struct {
 	Data struct {
 		SecondsPerSlot               uinteger  `json:"SECONDS_PER_SLOT"`
+		SlotDurationMs               uinteger  `json:"SLOT_DURATION_MS"`
 		SlotsPerEpoch                uinteger  `json:"SLOTS_PER_EPOCH"`
 		CapellaForkVersion           byteArray `json:"CAPELLA_FORK_VERSION"`
 		CapellaForkEpoch             *uinteger `json:"CAPELLA_FORK_EPOCH"`

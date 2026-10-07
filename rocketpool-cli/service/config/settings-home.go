@@ -231,11 +231,11 @@ func (home *settingsHome) refresh() {
 	}
 
 	if home.ecPage != nil {
-		home.ecPage.layout.refresh()
+		home.ecPage.handleLayoutChanged()
 	}
 
 	if home.ccPage != nil {
-		home.ccPage.layout.refresh()
+		home.ccPage.handleLayoutChanged()
 	}
 
 	if home.fallbackPage != nil {

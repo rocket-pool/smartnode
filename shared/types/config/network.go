@@ -28,6 +28,13 @@ type NetworkInfo struct {
 	CommitBoostChainName string       `yaml:"commitBoostChainName"`
 	ClientTagSet         ClientTagSet `yaml:"clientTagSet"`
 	CustomChainConfigDir string       `yaml:"customChainConfigDir"`
+	CheckpointSyncUrl    string       `yaml:"checkpointSyncUrl"`
+
+	// Empty client lists preserve the unrestricted choices on existing networks.
+	ExecutionClients []ExecutionClient `yaml:"executionClients"`
+	ConsensusClients []ConsensusClient `yaml:"consensusClients"`
+	// ContractsPending allows a test network to be configured before its Rocket Pool deployment.
+	ContractsPending bool `yaml:"contractsPending"`
 
 	SupportsMevBoost                 bool `yaml:"supportsMevBoost"`
 	AllowNonBlsWithdrawalCredentials bool `yaml:"allowNonBlsWithdrawalCredentials"`

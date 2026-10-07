@@ -19,6 +19,9 @@ services:
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      {{- if and (eq .ExecutionClient.String "geth") (eq .Smartnode.GetBeaconNetwork "plataberget")}}
+      - {{.RocketPoolDirectory}}/plataberget:/network-config:ro
+      {{- end}}
       {{- if .Smartnode.GetCustomChainConfigDir}}
       - {{.RocketPoolDirectory}}/{{.Smartnode.GetCustomChainConfigDir}}:/custom-chain:ro
       {{- end}}

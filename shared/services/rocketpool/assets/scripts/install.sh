@@ -409,9 +409,11 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_PATH" || fail "Could not copy templates folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/alerting" "$RP_PATH" || fail "Could not copy alerting folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/devnet" "$RP_PATH" || fail "Could not copy devnet folder to the Rocket Pool user data directory."; } >&2
+{ cp -r "$PACKAGE_FILES_PATH/plataberget" "$RP_PATH" || fail "Could not copy Plataberget network files to the Rocket Pool user data directory."; } >&2
 { cp "$PACKAGE_FILES_PATH/mainnet.env" "$RP_PATH/mainnet.env" || fail "Could not copy mainnet.env to the Rocket Pool user data directory."; } >&2
 { cp "$PACKAGE_FILES_PATH/testnet.env" "$RP_PATH/testnet.env" || fail "Could not copy testnet.env to the Rocket Pool user data directory."; } >&2
 { cp "$PACKAGE_FILES_PATH/devnet.env" "$RP_PATH/devnet.env" || fail "Could not copy devnet.env to the Rocket Pool user data directory."; } >&2
+{ cp "$PACKAGE_FILES_PATH/plataberget.env" "$RP_PATH/plataberget.env" || fail "Could not copy plataberget.env to the Rocket Pool user data directory."; } >&2
 { cp	\
 	"$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" \
 	"$PACKAGE_FILES_PATH/prometheus.tmpl" \

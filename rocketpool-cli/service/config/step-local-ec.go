@@ -79,7 +79,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.modeModal.show()
 	}
 
-	return newChoiceStep(
+	step := newChoiceStep(
 		wiz,
 		currentStep,
 		totalSteps,
@@ -94,6 +94,8 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		back,
 		"step-ec-local",
 	)
+	step.rebuild = func() *choiceWizardStep { return createLocalEcStep(wiz, currentStep, totalSteps) }
+	return step
 }
 
 // Get a random execution client

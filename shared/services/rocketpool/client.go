@@ -470,6 +470,15 @@ func (c *Client) InstallUpdateTracker(verbose bool) error {
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
+	cfg, isNew, err := c.LoadConfig()
+	if err != nil {
+		return err
+	}
+	if !isNew {
+		if err := cfg.ValidateNetworkForStart(); err != nil {
+			return err
+		}
+	}
 
 	// Start all of the containers
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
@@ -1224,7 +1233,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 func ensureImageEnvFiles(dir string) error {
-	official := []string{config.ImagesMainnetFile, config.ImagesTestnetFile, config.ImagesDevnetFile}
+	official := []string{config.ImagesMainnetFile, config.ImagesTestnetFile, config.ImagesDevnetFile, config.ImagesPlatabergetFile}
 	for _, name := range official {
 		data, ok := assets.EmbeddedNetworkEnv(name)
 		if !ok && name == config.ImagesMainnetFile {
@@ -1326,11 +1335,10 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	// These containers always run
-	toDeploy := []string{
-		config.NodeContainerName,
-		config.WatchtowerContainerName,
-		config.ValidatorContainerName,
+	// Keep the HTTP API available for client status and service management.
+	toDeploy := []string{config.NodeContainerName}
+	if cfg.HasRocketPoolContracts() {
+		toDeploy = append(toDeploy, config.WatchtowerContainerName, config.ValidatorContainerName)
 	}
 
 	// Check if we are running the Execution Layer locally

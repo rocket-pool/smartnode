@@ -838,6 +838,15 @@ func (c *StandardHttpClient) getEth2Config() (Eth2ConfigResponse, error) {
 	if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
 		return Eth2ConfigResponse{}, fmt.Errorf("Could not decode eth2 config: %w", err)
 	}
+	// Glamsterdam clients may expose SLOT_DURATION_MS instead of SECONDS_PER_SLOT.
+	// Internal slot arithmetic uses whole seconds; never silently round a duration.
+	if eth2Config.Data.SecondsPerSlot == 0 {
+		milliseconds := eth2Config.Data.SlotDurationMs
+		if milliseconds == 0 || milliseconds%1000 != 0 {
+			return Eth2ConfigResponse{}, fmt.Errorf("unsupported beacon slot duration: SECONDS_PER_SLOT=%d, SLOT_DURATION_MS=%d", eth2Config.Data.SecondsPerSlot, milliseconds)
+		}
+		eth2Config.Data.SecondsPerSlot = milliseconds / 1000
+	}
 	return eth2Config, nil
 }
 

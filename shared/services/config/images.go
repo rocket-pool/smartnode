@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	ImagesMainnetFile   = "mainnet.env"
-	ImagesTestnetFile   = "testnet.env"
-	ImagesDevnetFile    = "devnet.env"
-	ComposeMainFile     = "compose.yml"
-	ComposeImageEnvFile = "image-tags.env"
+	ImagesMainnetFile     = "mainnet.env"
+	ImagesTestnetFile     = "testnet.env"
+	ImagesDevnetFile      = "devnet.env"
+	ImagesPlatabergetFile = "plataberget.env"
+	ComposeMainFile       = "compose.yml"
+	ComposeImageEnvFile   = "image-tags.env"
 
 	ImageSmartnode = "RP_IMAGE_SMARTNODE"
 

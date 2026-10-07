@@ -119,6 +119,9 @@ func GetRocketPool(c *cli.Command) (*rocketpool.RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := cfg.RequireRocketPoolContracts(); err != nil {
+		return nil, err
+	}
 	var ec rocketpool.ExecutionClient
 	if IsStaticStateMode(c) {
 		ec, err = getStaticExecutionClient(c, cfg)
@@ -326,6 +329,9 @@ func getStaticExecutionClient(c *cli.Command, cfg *config.RocketPoolConfig) (*st
 }
 
 func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*rocketpool.RocketPool, error) {
+	if err := cfg.RequireRocketPoolContracts(); err != nil {
+		return nil, err
+	}
 	var err error
 	initRocketPool.Do(func() {
 		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))

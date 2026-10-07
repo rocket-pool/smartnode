@@ -93,13 +93,14 @@ services:
       - CHECKPOINT_SYNC_URL={{.ConsensusCommon.CheckpointSyncProvider}}
       - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
       - BN_ADDITIONAL_FLAGS={{.GetBNAdditionalFlags}}
-      - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
       - ENABLE_BITFLY_NODE_METRICS={{.EnableBitflyNodeMetrics}}
       - BITFLY_NODE_METRICS_SECRET={{.BitflyNodeMetrics.Secret}}
       - BITFLY_NODE_METRICS_ENDPOINT={{.BitflyNodeMetrics.Endpoint}}
       - BITFLY_NODE_METRICS_MACHINE_NAME={{.BitflyNodeMetrics.MachineName}}
       - PBS_URL={{.PbsUrl}}
+      {{- if .HasRocketPoolContracts}}
       - RETH_ADDRESS={{.Smartnode.GetRethAddress.Hex}}
+      {{- end}}
       - GRAFFITI={{.Graffiti}}
       - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
       {{- /* Client-specific values */}}

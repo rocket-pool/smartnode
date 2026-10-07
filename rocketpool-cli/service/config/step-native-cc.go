@@ -41,7 +41,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		wiz.nativeEcModal.show()
 	}
 
-	return newChoiceStep(
+	step := newChoiceStep(
 		wiz,
 		currentStep,
 		totalSteps,
@@ -56,5 +56,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		back,
 		"step-native-cc",
 	)
+	step.rebuild = func() *choiceWizardStep { return createNativeCcStep(wiz, currentStep, totalSteps) }
+	return step
 
 }

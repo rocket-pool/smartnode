@@ -6,6 +6,7 @@ type choiceWizardStep struct {
 	wiz      *wizard
 	modal    *choiceModalLayout
 	showImpl func(*choiceModalLayout)
+	rebuild  func() *choiceWizardStep
 }
 
 func newChoiceStep(wiz *wizard, currentStep int, totalSteps int, helperText string, names []string, descriptions []string, width int, title string, direction int, showImpl func(*choiceModalLayout), done func(int, string), back func(), pageID string) *choiceWizardStep {
@@ -40,5 +41,9 @@ func newChoiceStep(wiz *wizard, currentStep int, totalSteps int, helperText stri
 }
 
 func (step *choiceWizardStep) show() {
+	// Client choices depend on the network selected since the wizard was built.
+	if step.rebuild != nil {
+		*step = *step.rebuild()
+	}
 	step.showImpl(step.modal)
 }

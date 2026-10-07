@@ -12,6 +12,9 @@ services:
     restart: unless-stopped
     tty: true
     ports: [{{.GetNodeOpenPorts}}]
+    # Recreate the daemon when a network gains its contract deployment.
+    environment:
+      - ROCKET_POOL_CONTRACTS_CONFIGURED={{.HasRocketPoolContracts}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - {{.RocketPoolDirectory}}:/.rocketpool
