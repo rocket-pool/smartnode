@@ -141,7 +141,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	}
 
 	// Load the beacon state
-	beaconState, err := services.GetBeaconState(t.bc)
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(t.bc, t.rp.Client)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 		// Log
 		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
 
-		// Check if the validator is included in the finalized beacon state before attempting proof generation
+		// Check if the validator is included in the selected beacon state before attempting proof generation
 		validatorIndexStr, err := t.bc.GetValidatorIndex(validatorPubkey)
 		if err != nil {
 			return err
@@ -167,14 +167,14 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 			return err
 		}
 		if validatorIndex >= uint64(len(beaconState.GetValidators())) {
-			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
+			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the selected beacon state. Will retry on next cycle.", validatorId, validatorIndex)
 			continue
 		}
 
 		// Call Stake
-		err = t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
+		err = t.stakeValidator(t.rp, beaconState, slotTimestamp, mp, validatorId, validatorPubkey)
 		if err != nil {
-			t.log.Printlnf("Error staking validator %d: %w", validatorId, err)
+			t.log.Printlnf("Error staking validator %d: %v", validatorId, err)
 			break
 		}
 		stakedValidators++
@@ -190,7 +190,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 	return nil
 }
 
-func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, slotTimestamp uint64, mp megapool.Megapool, validatorId uint32, validatorPubkey types.ValidatorPubkey) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -200,9 +200,9 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 
 	t.log.Printlnf("Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validatorPubkey, beaconState)
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, validatorPubkey, beaconState)
 	if err != nil {
-		t.log.Printlnf("There was an error during the proof creation process: %w", err)
+		t.log.Printlnf("There was an error during the proof creation process: %v", err)
 		return err
 	}
 
@@ -211,7 +211,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 	// Get the gas limit
 	gasLimits, err := services.EstimateMegapoolStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		t.log.Printlnf("Could not estimate the gas required to stake megapool validator %d: %w", validatorId, err)
+		t.log.Printlnf("Could not estimate the gas required to stake megapool validator %d: %v", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasLimits.Safe))

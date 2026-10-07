@@ -24,9 +24,9 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 		return 0, 0, false, err
 	}
 	defer rp.Close()
-	// Get Megapool status (finalized beacon state — required for final balance proofs)
-	fmt.Println("Loading megapool validators at the finalized beacon state...")
-	status, err := rp.MegapoolStatus(true)
+	// Get megapool status at the beacon head
+	fmt.Println("Loading megapool validators at the beacon head...")
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return 0, 0, false, err
 	}
@@ -48,7 +48,7 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 			}
 			continue
 		}
-		// Exit is visible on the finalized beacon state but not yet recorded on the megapool.
+		// Exit is visible on the beacon head but not yet recorded on the megapool.
 		if validator.Activated &&
 			validator.BeaconStatus.Exists &&
 			validator.BeaconStatus.ExitEpoch != 0 &&
@@ -75,17 +75,14 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 }
 
 func printPendingFinalBalanceValidators(pending, needsExitNotify []api.MegapoolValidatorDetails, status api.MegapoolStatusResponse) {
-	currentEpoch := status.BeaconHead.FinalizedEpoch
-	if currentEpoch == 0 {
-		currentEpoch = status.BeaconHead.Epoch
-	}
+	currentEpoch := status.BeaconHead.Epoch
 	secondsPerEpoch := status.SecondsPerEpoch
 	if secondsPerEpoch == 0 {
 		secondsPerEpoch = 384
 	}
 
 	if len(pending) == 0 && len(needsExitNotify) == 0 {
-		fmt.Println("There are also no megapool validators currently exiting on the finalized beacon state.")
+		fmt.Println("There are also no megapool validators currently exiting on the beacon head.")
 		fmt.Println("A final balance proof can only be submitted after:")
 		fmt.Println("  1. the validator has exited on the beacon chain")
 		fmt.Println("  2. notify-validator-exit has been run")
@@ -95,7 +92,7 @@ func printPendingFinalBalanceValidators(pending, needsExitNotify []api.MegapoolV
 
 	if len(needsExitNotify) > 0 {
 		sort.Sort(ByIndex(needsExitNotify))
-		fmt.Printf("The following %d validator(s) have an exit visible on the finalized beacon state but still need notify-validator-exit first:\n", len(needsExitNotify))
+		fmt.Printf("The following %d validator(s) have an exit visible on the beacon head but still need notify-validator-exit first:\n", len(needsExitNotify))
 		fmt.Println()
 		for _, v := range needsExitNotify {
 			printPendingFinalBalanceValidator(v, currentEpoch, secondsPerEpoch)
@@ -106,7 +103,7 @@ func printPendingFinalBalanceValidators(pending, needsExitNotify []api.MegapoolV
 
 	if len(pending) > 0 {
 		sort.Sort(ByIndex(pending))
-		fmt.Printf("The following %d validator(s) are exiting on the megapool but not yet fully withdrawn (finalized epoch %d):\n", len(pending), currentEpoch)
+		fmt.Printf("The following %d validator(s) are exiting on the megapool but not yet fully withdrawn (head epoch %d):\n", len(pending), currentEpoch)
 		fmt.Println()
 		for _, v := range pending {
 			printPendingFinalBalanceValidator(v, currentEpoch, secondsPerEpoch)
@@ -133,7 +130,7 @@ func printPendingFinalBalanceValidator(v api.MegapoolValidatorDetails, currentEp
 	if exitEpoch != 0 && exitEpoch != FarFutureEpoch {
 		fmt.Printf("    exit_epoch:          %d%s\n", exitEpoch, epochTimingSuffix(exitEpoch, currentEpoch, secondsPerEpoch))
 	} else {
-		fmt.Printf("    exit_epoch:          not yet set on finalized state\n")
+		fmt.Printf("    exit_epoch:          not yet set on beacon head\n")
 	}
 
 	if withdrawableEpoch != 0 && withdrawableEpoch != FarFutureEpoch {
@@ -142,7 +139,7 @@ func printPendingFinalBalanceValidator(v api.MegapoolValidatorDetails, currentEp
 			fmt.Printf("    note:                %s\n", beacon.FinalBalanceSweepNote(bs))
 		}
 	} else {
-		fmt.Printf("    withdrawable_epoch:  not yet set on finalized state\n")
+		fmt.Printf("    withdrawable_epoch:  not yet set on beacon head\n")
 	}
 	fmt.Println()
 }

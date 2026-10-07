@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -27,6 +28,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 )
+
+const megapoolExitRetryInterval = 24 * time.Hour
 
 // Check megapool exit requests task
 type checkMegapoolExitRequests struct {
@@ -156,7 +159,8 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 	}
 	toBlock := big.NewInt(int64(state.ElBlockNumber))
 
-	exitRequests, err := network.GetMegapoolExitRequests(t.rp, t.intervalSize, fromBlock, toBlock, opts)
+	exitAddresses := t.cfg.Smartnode.GetPreviousRocketNetworkExitAddresses()
+	exitRequests, err := network.GetMegapoolExitRequests(t.rp, t.intervalSize, fromBlock, toBlock, exitAddresses, opts)
 	if err != nil {
 		return err
 	}
@@ -205,25 +209,75 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
+		// Enforcing other operators' exit requests is an opt-in duty.
+		if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+			continue
+		}
+
 		mp, err := megapool.NewMegapool(t.rp, request.MegapoolAddress, opts)
 		if err != nil {
 			t.log.Printlnf("Error creating a binding for megapool %s: %s", request.MegapoolAddress.Hex(), err.Error())
 			continue
 		}
 
-		// Skip requests still within the cooperative exit phase
-		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
-		if time.Now().Before(deadline) {
+		if mp.GetVersion() < 2 {
 			continue
 		}
 
-		// Megapools from version 2 support a forced exit request
-		if mp.GetVersion() >= 2 {
-			t.log.Printlnf("Megapool %s (validator %d) uses version %d; submitting ForceExit", request.MegapoolAddress.Hex(), validatorIndex, mp.GetVersion())
-			err := t.forceExitMegapoolValidator(request)
-			if err != nil {
-				t.log.Printlnf("Error force-exiting megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
+		validatorInfo, err := mp.GetValidatorInfo(request.ValidatorId, nil)
+		if err != nil {
+			t.log.Printlnf("Error getting megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
+			continue
+		}
+		if !validatorInfo.Staked || validatorInfo.Exited || validatorInfo.Dissolved {
+			continue
+		}
+
+		// Use the current chain time and state when deciding whether to submit an exit.
+		header, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			t.log.Printlnf("Error getting the latest execution block: %s", err.Error())
+			continue
+		}
+		now := time.Unix(int64(header.Time), 0)
+		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
+		if now.Before(deadline) {
+			continue
+		}
+
+		// Consensus ignores exit requests for validators that have not been active long enough.
+		head, err := t.bc.GetBeaconHead()
+		if err != nil {
+			t.log.Printlnf("Error getting the beacon head: %s", err.Error())
+			continue
+		}
+		if status.ActivationEpoch > head.Epoch || head.Epoch-status.ActivationEpoch < state.BeaconConfig.ShardCommitteePeriod {
+			t.log.Printlnf("Validator %d has not been active long enough to exit; skipping EL exit submission.", validatorIndex)
+			continue
+		}
+
+		action := "ForceExit"
+		if validatorInfo.Exiting {
+			// An exit submission from any enforcer will delay retries
+			lookback := uint64(megapoolExitRetryInterval / (time.Duration(state.BeaconConfig.SecondsPerSlot) * time.Second))
+			from := new(big.Int).Sub(header.Number, new(big.Int).SetUint64(lookback))
+			if from.Sign() < 0 {
+				from.SetUint64(0)
 			}
+			lastSubmission, err := network.GetLatestMegapoolExitSubmission(t.rp, request.MegapoolAddress, request.ValidatorId, t.intervalSize, from, header.Number)
+			if err != nil {
+				t.log.Printlnf("Error checking megapool %s validator %d exit submissions: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
+				continue
+			}
+			if !lastSubmission.IsZero() && now.Before(lastSubmission.Add(megapoolExitRetryInterval)) {
+				t.log.Printlnf("Megapool %s validator %d exit request is still within the retry interval; skipping.", request.MegapoolAddress.Hex(), request.ValidatorId)
+				continue
+			}
+			action = "RetryExit"
+		}
+		t.log.Printlnf("Megapool %s (validator %d) uses version %d; submitting %s", request.MegapoolAddress.Hex(), validatorIndex, mp.GetVersion(), action)
+		if err := t.submitMegapoolExit(request, validatorInfo.Exiting); err != nil {
+			t.log.Printlnf("Error submitting %s for megapool %s validator %d: %s", action, request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
 			continue
 		}
 	}
@@ -281,7 +335,15 @@ func (t *checkMegapoolExitRequests) exitOwnMegapoolValidator(state *state.Networ
 	return nil
 }
 
-func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(request network.MegapoolExitRequest) error {
+func (t *checkMegapoolExitRequests) submitMegapoolExit(request network.MegapoolExitRequest, retry bool) error {
+	estimate := network.EstimateForceMegapoolExitGas
+	submit := network.ForceMegapoolExit
+	action := "ForceExit"
+	if retry {
+		estimate = network.EstimateRetryMegapoolExitGas
+		submit = network.RetryMegapoolExit
+		action = "RetryExit"
+	}
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -297,9 +359,9 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(request network.M
 	opts.Value = exitFee
 
 	// Get the gas limit
-	gasInfo, err := network.EstimateForceMegapoolExitGas(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
+	gasInfo, err := estimate(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to force exit megapool %s validator %d: %w", request.MegapoolAddress.Hex(), request.ValidatorId, err)
+		return fmt.Errorf("could not estimate the gas required for %s on megapool %s validator %d: %w", action, request.MegapoolAddress.Hex(), request.ValidatorId, err)
 	}
 	var gas *big.Int
 	if t.gasLimit != 0 {
@@ -326,8 +388,8 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(request network.M
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Force exit the validator via the megapool contract
-	hash, err := network.ForceMegapoolExit(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
+	// Submit the EL exit request via the network exit contract
+	hash, err := submit(t.rp, request.MegapoolAddress, request.ValidatorId, opts)
 	if err != nil {
 		return err
 	}
@@ -339,7 +401,7 @@ func (t *checkMegapoolExitRequests) forceExitMegapoolValidator(request network.M
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted ForceExit for megapool %s validator %d.", request.MegapoolAddress.Hex(), request.ValidatorId)
+	t.log.Printlnf("Successfully submitted %s for megapool %s validator %d.", action, request.MegapoolAddress.Hex(), request.ValidatorId)
 
 	// Return
 	return nil

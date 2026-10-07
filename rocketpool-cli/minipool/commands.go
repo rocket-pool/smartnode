@@ -331,7 +331,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 				Aliases:     []string{"vp"},
 				Usage:       "Verify the RPIP-73 target-vote attestation performance of one or more minipools over a range of epochs.",
 				UsageText:   "rocketpool minipool verify-performance minipools [options]",
-				Description: "minipools is either a single minipool address, a comma-separated list of minipool addresses, or 'all' to check every minipool owned by the node.",
+				Description: "minipools is either a single minipool address, a comma-separated list of minipool addresses, or 'all' to check every minipool owned by the node. Eligible results are offered as challenges, grouped into lists of at most 32 minipools with the same owner and missed epochs.",
 				Flags: []cli.Flag{
 					&cli.Uint64Flag{
 						Name:    "start-epoch",
@@ -346,7 +346,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					&cli.BoolFlag{
 						Name:    "yes",
 						Aliases: []string{"y"},
-						Usage:   "Skip the warning prompt when --epochs is large.",
+						Usage:   "Automatically confirm verification prompts and eligible challenge transactions that lock staked RPL.",
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {

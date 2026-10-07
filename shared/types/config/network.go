@@ -100,6 +100,7 @@ type NetworkAddresses struct {
 	V1_2_0_NetworkBalances   string   `yaml:"v1_2_0_NetworkBalances"`
 	PreviousRewardsPools     []string `yaml:"previousRewardsPools"`
 	PreviousDAOVerifiers     []string `yaml:"previousRocketDAOProtocolVerifier"`
+	PreviousNetworkExits     []string `yaml:"previousRocketNetworkExit"`
 	OptimismPriceMessenger   string   `yaml:"optimismPriceMessenger"`
 	PolygonPriceMessenger    string   `yaml:"polygonPriceMessenger"`
 	ArbitrumPriceMessenger   string   `yaml:"arbitrumPriceMessenger"`

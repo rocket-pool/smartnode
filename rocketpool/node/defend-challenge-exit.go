@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/docker/docker/client"
@@ -135,7 +136,7 @@ func (t *defendChallengeExit) run(state *state.NetworkStateIndex) error {
 				t.log.Printlnf("The validator %d was incorrectly challenged and needs a not-exiting proof", validatorInfo[i].ValidatorId)
 			}
 
-			err := t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
+			err := t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting)
 			if err != nil {
 				t.log.Printlnf("error defending the challenge: %v", err)
 			}
@@ -148,7 +149,7 @@ func (t *defendChallengeExit) run(state *state.NetworkStateIndex) error {
 
 }
 
-func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkStateIndex, validatorPubkey types.ValidatorPubkey, exiting bool, callopts *bind.CallOpts) error {
+func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, validatorPubkey types.ValidatorPubkey, exiting bool) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -158,10 +159,20 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 
 	t.log.Printlnf("Crafting a validator proof.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, validatorPubkey, nil)
+	beaconState, slotTimestamp, err := services.GetHeadBeaconState(t.bc, rp.Client)
+	if err != nil {
+		return err
+	}
+	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, validatorPubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
+	}
+	if exiting && validatorProof.Validator.WithdrawableEpoch >= FarFutureEpoch {
+		return fmt.Errorf("validator %d exit is not yet visible in the selected beacon state; will retry on next cycle", validatorId)
+	}
+	if !exiting && validatorProof.Validator.WithdrawableEpoch != FarFutureEpoch {
+		return fmt.Errorf("validator %d is exiting in the selected beacon state; will retry on next cycle", validatorId)
 	}
 
 	t.log.Printlnf("The beacon state proof has been successfully created.")

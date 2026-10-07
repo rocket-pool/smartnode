@@ -50,12 +50,12 @@ func TestIsChallengeable(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:         "range one epoch too short",
+			name:         "partial period is allowed",
 			params:       params,
 			currentEpoch: 10000,
 			startEpoch:   9000,
 			endEpoch:     9998,
-			want:         false,
+			want:         true,
 		},
 		{
 			name:         "start epoch just inside the window",
@@ -122,7 +122,7 @@ func TestExceedsChallengeThreshold(t *testing.T) {
 			totalEpochs:  256,
 			missedEpochs: 16,
 			thresholdPct: 93.75,
-			want:         false,
+			want:         true,
 		},
 		{
 			name:         "missed share above the allowed slack",

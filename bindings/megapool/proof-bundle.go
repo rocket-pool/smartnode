@@ -5,6 +5,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 // Proof versions accepted by BeaconStateVerifier on v1.4.1-dev.
@@ -31,6 +34,27 @@ type FinalBalanceProofBundleV2 struct {
 	SlotProof                        SlotProof                `json:"slotProof"`
 	PreviousNextWithdrawalIndexProof NextWithdrawalIndexProof `json:"previousNextWithdrawalIndexProof"`
 	ValidatorBalanceProof            ValidatorBalanceProof    `json:"validatorBalanceProof"`
+}
+
+// UsesProofBundles selects the transaction format from the deployed manager version.
+// The consensus fork determines the proof witnesses independently.
+func UsesProofBundles(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	manager, err := getRocketMegapoolManager(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	version, err := rocketpool.GetContractVersion(rp, *manager.Address, opts)
+	if err != nil {
+		return false, err
+	}
+	switch version {
+	case 1:
+		return false, nil
+	case 2:
+		return true, nil
+	default:
+		return false, fmt.Errorf("unsupported rocketMegapoolManager version: %d", version)
+	}
 }
 
 var (

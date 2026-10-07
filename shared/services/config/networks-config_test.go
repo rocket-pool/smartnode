@@ -3,10 +3,43 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
+
+func TestPreviousNetworkExitAddressesFromExtraNetwork(t *testing.T) {
+	dir := t.TempDir()
+	extra := []byte(`
+version: 1
+networks:
+  - name: devnet
+    label: Devnet
+    description: Local exit upgrade test
+    chainID: 3151908
+    beaconNetwork: hoodi
+    addresses:
+      storage: "0x1111111111111111111111111111111111111111"
+      previousRocketNetworkExit:
+        - "0x2222222222222222222222222222222222222222"
+        - "0x3333333333333333333333333333333333333333"
+`)
+	if err := os.WriteFile(filepath.Join(dir, extraNetworksConfigPath), extra, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := mustNewRocketPoolConfig(t, dir, true)
+	cfg.ChangeNetwork(config.Network("devnet"))
+	want := []common.Address{
+		common.HexToAddress("0x2222222222222222222222222222222222222222"),
+		common.HexToAddress("0x3333333333333333333333333333333333333333"),
+	}
+	if got := cfg.Smartnode.GetPreviousRocketNetworkExitAddresses(); !slices.Equal(got, want) {
+		t.Fatalf("previous exit addresses %v, want %v", got, want)
+	}
+}
 
 func TestLoadEmbeddedOfficialNetworks(t *testing.T) {
 	networks, err := LoadNetworks("")

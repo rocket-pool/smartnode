@@ -232,7 +232,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		EnableEnforcerTasks: config.Parameter{
 			ID:                 "enableEnforcerTasks",
 			Name:               "Enable Enforcer tasks",
-			Description:        "Check this box to opt into Enforcer duties. Your node will enforce other operators' minipool exit requests after the cooperative exit phase by submitting forced exits or proofs that legacy minipools did not exit. These tasks spend ETH from your node wallet on transaction fees and may require CPU and memory intensive proof generation.\n\nYour own validators will continue to exit voluntarily in response to exit requests when this is disabled.",
+			Description:        "Check this box to opt into Enforcer duties. Your node will enforce other operators' minipool and megapool exit requests after the cooperative exit phase by submitting forced exits or proofs that legacy minipools did not exit. It will also defend and finalise performance challenges for other operators. These tasks spend ETH from your node wallet on transaction and exit request fees and may require CPU and memory intensive proof generation.\n\nYour own validators will continue to exit voluntarily in response to exit requests when this is disabled.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
@@ -662,6 +662,10 @@ func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
 
 func (cfg *SmartnodeConfig) GetPreviousRocketDAOProtocolVerifierAddresses() []common.Address {
 	return hexAddresses(cfg.networkInfo().Addresses.PreviousDAOVerifiers)
+}
+
+func (cfg *SmartnodeConfig) GetPreviousRocketNetworkExitAddresses() []common.Address {
+	return hexAddresses(cfg.networkInfo().Addresses.PreviousNetworkExits)
 }
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {

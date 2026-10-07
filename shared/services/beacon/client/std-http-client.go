@@ -44,7 +44,7 @@ const (
 	RequestValidatorsPath                  = "/eth/v1/beacon/states/%s/validators"
 	RequestValidatorBalancesPath           = "/eth/v1/beacon/states/%s/validator_balances"
 	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
-	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
+	RequestAttestationsPath                = "/eth/v2/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
 	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
 	RequestBeaconStatePath                 = "/eth/v2/debug/beacon/states/%d"
@@ -751,6 +751,7 @@ func (c *StandardHttpClient) GetBeaconBlockHeader(blockId string) (beacon.Beacon
 		Slot:          uint64(block.Data.Header.Message.Slot),
 		ProposerIndex: block.Data.Header.Message.ProposerIndex,
 		Root:          common.HexToHash(block.Data.Root),
+		StateRoot:     common.HexToHash(block.Data.Header.Message.StateRoot),
 	}
 	return beaconBlock, true, nil
 }
