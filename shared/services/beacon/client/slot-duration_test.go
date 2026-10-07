@@ -22,10 +22,14 @@ func TestBeaconSlotDuration(t *testing.T) {
 			eth2ConfigCache.Store(nil)
 			t.Cleanup(func() { eth2ConfigCache.Store(nil) })
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
 				if r.URL.Path == RequestEth2ConfigPath {
-					fmt.Fprintf(w, `{"data":{%s,"SLOTS_PER_EPOCH":"32","GLOAS_FORK_EPOCH":"1536"}}`, tc.fields)
+					_, err = fmt.Fprintf(w, `{"data":{%s,"SLOTS_PER_EPOCH":"32","GLOAS_FORK_EPOCH":"1536"}}`, tc.fields)
 				} else {
-					fmt.Fprint(w, `{"data":{"genesis_time":"1786622400","genesis_fork_version":"0x10733183","genesis_validators_root":"0xbb4a1a9e3f7f4e10edcd734e4acc3b5ffd4f830efe0af2748fa458cfee5d2658"}}`)
+					_, err = fmt.Fprint(w, `{"data":{"genesis_time":"1786622400","genesis_fork_version":"0x10733183","genesis_validators_root":"0xbb4a1a9e3f7f4e10edcd734e4acc3b5ffd4f830efe0af2748fa458cfee5d2658"}}`)
+				}
+				if err != nil {
+					t.Errorf("write beacon response: %v", err)
 				}
 			}))
 			defer server.Close()
