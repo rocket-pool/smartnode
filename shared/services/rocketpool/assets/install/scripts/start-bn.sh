@@ -121,15 +121,8 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CMD="$CMD --metrics --metrics.address 0.0.0.0 --metrics.port $BN_METRICS_PORT"
     fi
 
-    if [ ! -z "$EXTERNAL_IP" ]; then
-        CMD="$CMD --enr.ip $EXTERNAL_IP --nat"
-    fi
-
     if [ "$ENABLE_IPV6" = "true" ]; then
         CMD="$CMD --listenAddress 0.0.0.0 --listenAddress6 :: --port6 $BN_P2P_PORT --quicPort6 ${BN_P2P_QUIC_PORT:-8001}"
-        if [ ! -z "$EXTERNAL_IP6" ]; then
-            CMD="$CMD --enr.ip6 $EXTERNAL_IP6"
-        fi
     fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then

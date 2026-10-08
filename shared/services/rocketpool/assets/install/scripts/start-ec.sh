@@ -302,7 +302,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
     fi
 
-    if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+    if [ "$EC_PRUNING_MODE" = "historyExpiry" ] && [ "$BEACON_NETWORK" = "mainnet" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
         CMD="$CMD --History.Pruning=UseAncientBarriers"
     fi
@@ -513,12 +513,12 @@ if [ "$CLIENT" = "reth" ]; then
         --http.addr 0.0.0.0 \
         --http.port ${EC_HTTP_PORT:-8545} \
         --http.api eth,net,web3 \
-        --http.corsdomain="*" \
+        --http.corsdomain=* \
         --ws \
         --ws.addr 0.0.0.0 \
         --ws.port ${EC_WS_PORT:-8546} \
         --ws.api eth,net,web3 \
-        --ws.origins '*' \
+        --ws.origins=* \
         --authrpc.addr 0.0.0.0 \
         --authrpc.port ${EC_ENGINE_PORT:-8551} \
         --authrpc.jwtsecret /secrets/jwtsecret \

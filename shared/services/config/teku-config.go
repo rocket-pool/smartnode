@@ -66,7 +66,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Description:        "The max amount of RAM, in MB, that Teku's JVM should limit itself to. Setting this lower will cause Teku to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_All: getTekuHeapSize()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
