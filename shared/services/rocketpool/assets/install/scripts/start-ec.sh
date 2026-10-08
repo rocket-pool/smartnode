@@ -629,8 +629,10 @@ if [ "$CLIENT" = "erigon" ]; then
         CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
     fi
 
-    if [ ! -z "$EXTERNAL_IP" ]; then
-        CMD="$CMD --nat extip:$EXTERNAL_IP"
+    # Let Erigon refresh the public IP via STUN as it changes.
+    # Preserve an explicit NAT setting supplied in Additional Flags.
+    if ! printf '%s\n' "$EC_ADDITIONAL_FLAGS" | grep -Eq -- '(^|[[:space:]])--nat(=|[[:space:]]|$)'; then
+        CMD="$CMD --nat stun"
     fi
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
