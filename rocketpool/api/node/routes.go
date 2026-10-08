@@ -14,6 +14,11 @@ import (
 // RegisterRoutes registers the node module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/node/performance-challenges", performanceChallengesHandler).RegisterTo(router)
+	snroute.Read("/api/node/performance-watcher/status", performanceWatcherStatusHandler).RegisterTo(router)
+	snroute.Read("/api/node/performance-watcher/candidates", performanceWatcherCandidatesHandler).RegisterTo(router)
+	snroute.Read("/api/node/performance-watcher/candidate", performanceWatcherCandidateHandler).RegisterTo(router)
+	snroute.Read("/api/node/performance-watcher/validator", performanceWatcherValidatorHandler).RegisterTo(router)
+	snroute.Read("/api/node/performance-watcher/validators", performanceWatcherNodeValidatorsHandler).RegisterTo(router)
 	snroute.Read("/api/node/can-defend-performance-challenge", canActOnPerformanceChallengeHandler(true)).RegisterTo(router)
 	snroute.Write("/api/node/defend-performance-challenge", actOnPerformanceChallengeHandler(true)).RegisterTo(router)
 	snroute.Read("/api/node/can-finalise-performance-challenge", canActOnPerformanceChallengeHandler(false)).RegisterTo(router)
