@@ -225,7 +225,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     if [ "$ENABLE_METRICS" = "true" ]; then
         CMD="$CMD --monitoring-host 0.0.0.0 --monitoring-port $VC_METRICS_PORT"
     else
-        CMD="$CMD --disable-account-metrics"
+        CMD="$CMD --disable-monitoring --disable-account-metrics"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
