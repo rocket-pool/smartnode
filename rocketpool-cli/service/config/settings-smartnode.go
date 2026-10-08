@@ -50,7 +50,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	layout.form.SetInputCapture(layout.getInputCapture(configPage.home.md, configPage.home.homePage))
 
 	// Set up the form items
-	params := append(masterConfig.Smartnode.GetParameters(), &masterConfig.EnableIPv6, &masterConfig.Alertmanager.ShowAlertsOnCLI)
+	params := append(smartnodeSettingsParameters(masterConfig.Smartnode), &masterConfig.EnableIPv6, &masterConfig.Alertmanager.ShowAlertsOnCLI)
 	formItems := createParameterizedFormItems(params, layout)
 	for _, formItem := range formItems {
 		layout.form.AddFormItem(formItem.item)

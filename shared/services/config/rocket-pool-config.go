@@ -1824,6 +1824,9 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	if _, err := cfg.Epbs.GetBuilderUrls(); err != nil {
 		errors = append(errors, err.Error())
 	}
+	if cfg.Smartnode.PerformanceWatcherBootstrapRetentionDays.Value == uint64(0) {
+		errors = append(errors, "Pre-Saturn 2 Retention Days must be positive.")
+	}
 	if err := cfg.ValidateNetworkClients(); err != nil {
 		errors = append(errors, err.Error())
 	}

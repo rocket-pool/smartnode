@@ -19,6 +19,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node",
 		Commands: []*cli.Command{
+			performanceWatcherCommand(),
 			{
 				Name:      "performance-challenges",
 				Usage:     "List unresolved performance challenges and unsettled bonds, or inspect a challenge by ID",

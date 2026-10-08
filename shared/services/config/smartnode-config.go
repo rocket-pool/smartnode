@@ -115,7 +115,10 @@ type SmartnodeConfig struct {
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
 	// The toggle for opting into Enforcer duties
-	EnableEnforcerTasks config.Parameter `yaml:"enableEnforcerTasks,omitempty"`
+	EnableEnforcerTasks                      config.Parameter `yaml:"enableEnforcerTasks,omitempty"`
+	RunPerformanceWatcher                    config.Parameter `yaml:"runPerformanceWatcher,omitempty"`
+	PerformanceWatcherBackfill               config.Parameter `yaml:"performanceWatcherBackfill,omitempty"`
+	PerformanceWatcherBootstrapRetentionDays config.Parameter `yaml:"performanceWatcherBootstrapRetentionDays,omitempty"`
 
 	// Delay for automatic queue assignment
 	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
@@ -241,6 +244,31 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		RunPerformanceWatcher: config.Parameter{
+			ID:                "runPerformanceWatcher",
+			Name:              "Run Performance Watcher",
+			Description:       "Collect finalized Rocket Pool validator attestation performance, including before Saturn 2. Collects live data only unless Backfill Performance History is enabled. Requires recent finalized committees from your configured beacon clients. This watcher does not submit transactions.",
+			Type:              config.ParameterType_Bool,
+			Default:           map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers: []config.ContainerID{config.ContainerID_Node},
+		},
+		PerformanceWatcherBackfill: config.Parameter{
+			ID:                "performanceWatcherBackfill",
+			Name:              "Backfill Performance History",
+			Description:       "When Run Performance Watcher is enabled, also collect older missing epochs within the retention period. Leave unchecked to collect only the latest measurable finalized epoch; gaps from downtime remain unknown. Backfill can make beacon clients replay historical states and interfere with validator duties. Existing collected history is retained in either mode.",
+			Type:              config.ParameterType_Bool,
+			Default:           map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers: []config.ContainerID{config.ContainerID_Node},
+		},
+		PerformanceWatcherBootstrapRetentionDays: config.Parameter{
+			ID:                "performanceWatcherBootstrapRetentionDays",
+			Name:              "Pre-Saturn 2 Retention Days",
+			Description:       "Positive number of days of finalized attestation history to retain before Saturn 2. Finalized on-chain challenge parameters replace this limit after deployment.",
+			Type:              config.ParameterType_Uint,
+			Default:           map[config.Network]interface{}{config.Network_All: uint64(201)},
+			AffectsContainers: []config.ContainerID{config.ContainerID_Node},
+		},
+
 		AutoAssignmentDelay: config.Parameter{
 			ID:                 "autoAssignmentDelay",
 			Name:               "Automatic queue assignment delay",
@@ -342,6 +370,9 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
 		&cfg.EnableEnforcerTasks,
+		&cfg.RunPerformanceWatcher,
+		&cfg.PerformanceWatcherBackfill,
+		&cfg.PerformanceWatcherBootstrapRetentionDays,
 		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,

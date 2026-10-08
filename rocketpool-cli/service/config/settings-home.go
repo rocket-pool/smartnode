@@ -21,6 +21,7 @@ type settingsHome struct {
 	ccPage           *ConsensusConfigPage
 	epbsPage         *EpbsPage
 	metricsPage      *MetricsConfigPage
+	performancePage  *PerformanceConfigPage
 	alertingPage     *AlertingConfigPage
 	addonsPage       *AddonsPage
 	categoryList     *tview.List
@@ -48,6 +49,7 @@ func newSettingsHome(md *MainDisplay) *settingsHome {
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.epbsPage = NewEpbsPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
+	home.performancePage = NewPerformanceConfigPage(home)
 	home.alertingPage = NewAlertingConfigPage(home)
 	home.addonsPage = NewAddonsPage(home)
 	settingsSubpages := []settingsPage{
@@ -58,6 +60,7 @@ func newSettingsHome(md *MainDisplay) *settingsHome {
 		home.fallbackPage,
 		home.epbsPage,
 		home.metricsPage,
+		home.performancePage,
 		home.alertingPage,
 		home.addonsPage,
 	}
@@ -249,6 +252,9 @@ func (home *settingsHome) refresh() {
 
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
+	}
+	if home.performancePage != nil {
+		home.performancePage.handleLayoutChanged()
 	}
 
 	if home.alertingPage != nil {
