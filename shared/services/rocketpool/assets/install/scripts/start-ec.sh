@@ -302,7 +302,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
     fi
 
-    if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+    if [ "$EC_PRUNING_MODE" = "historyExpiry" ] && [ "$BEACON_NETWORK" = "mainnet" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
         CMD="$CMD --History.Pruning=UseAncientBarriers"
     fi
