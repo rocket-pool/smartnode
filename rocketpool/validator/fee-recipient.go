@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -53,14 +52,14 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 		}
 
 		// Get all containers
-		containers, err := d.ContainerList(context.Background(), container.ListOptions{All: true})
+		containers, err := d.ContainerList(context.Background(), client.ContainerListOptions{All: true})
 		if err != nil {
 			return fmt.Errorf("Could not get docker containers: %w", err)
 		}
 
 		// Get validator container ID
 		var validatorContainerId string
-		for _, container := range containers {
+		for _, container := range containers.Items {
 			if container.Names[0] == "/"+containerName {
 				validatorContainerId = container.ID
 				break
@@ -72,7 +71,7 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 
 		// Restart validator container
 		timeout := int(validatorRestartTimeout.Seconds())
-		if err := d.ContainerRestart(context.Background(), validatorContainerId, container.StopOptions{Timeout: &timeout}); err != nil {
+		if _, err := d.ContainerRestart(context.Background(), validatorContainerId, client.ContainerRestartOptions{Timeout: &timeout}); err != nil {
 			return fmt.Errorf("Could not restart validator container: %w", err)
 		}
 
@@ -135,14 +134,14 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		}
 
 		// Get all containers
-		containers, err := d.ContainerList(context.Background(), container.ListOptions{All: true})
+		containers, err := d.ContainerList(context.Background(), client.ContainerListOptions{All: true})
 		if err != nil {
 			return fmt.Errorf("Could not get docker containers: %w", err)
 		}
 
 		// Get validator container ID
 		var validatorContainerId string
-		for _, container := range containers {
+		for _, container := range containers.Items {
 			if container.Names[0] == "/"+containerName {
 				validatorContainerId = container.ID
 				break
@@ -154,7 +153,7 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		}
 
 		// Stop validator container
-		if err := d.ContainerPause(context.Background(), validatorContainerId); err != nil {
+		if _, err := d.ContainerPause(context.Background(), validatorContainerId, client.ContainerPauseOptions{}); err != nil {
 			if strings.Contains(err.Error(), "is not running") {
 				// Handle situations where the container is already stopped
 				if log != nil {
