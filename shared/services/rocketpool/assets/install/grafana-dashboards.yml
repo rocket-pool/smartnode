@@ -6,7 +6,7 @@ providers:
     orgId: 1
     type: file
     allowUiUpdates: false
+    updateIntervalSeconds: 300
     options:
       path: /etc/grafana/default_dashboards/
-      updateIntervalSeconds: 300
 
