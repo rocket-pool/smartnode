@@ -3,7 +3,7 @@ module github.com/rocket-pool/smartnode
 go 1.27.2
 
 require (
-	github.com/ProtonMail/go-crypto v1.1.6
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/alessio/shellescape v1.4.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/btcsuite/btcd v0.24.2
