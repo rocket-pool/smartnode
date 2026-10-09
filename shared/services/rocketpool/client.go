@@ -947,7 +947,7 @@ func (c *Client) resolvedImage(key, fallback string) string {
 
 // Creates a marker file on the execution client volume (used for prune and DB migrations).
 func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.21.3")), marker)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.24.2")), marker)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
