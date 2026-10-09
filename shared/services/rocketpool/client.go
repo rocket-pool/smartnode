@@ -947,7 +947,7 @@ func (c *Client) resolvedImage(key, fallback string) string {
 
 // Creates a marker file on the execution client volume (used for prune and DB migrations).
 func (c *Client) TouchEthclientMarker(container, volume, marker string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.21.3")), marker)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s sh -c 'touch /ethclient/%s'", container, volume, shellescape.Quote(c.resolvedImage(config.ImageAlpine, "alpine:3.24.2")), marker)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -986,7 +986,7 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 
 	for i := 0; i < retryCount; i++ {
 		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
-		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.13.0")), command)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.22.0")), command)
 
 		if i != 0 {
 			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)

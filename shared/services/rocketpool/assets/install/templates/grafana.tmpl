@@ -13,6 +13,8 @@ services:
     restart: unless-stopped
     environment:
       - GF_SERVER_HTTP_PORT={{$port}}
+      # The bundled dashboards use built-in plugins; avoid unpinned startup downloads.
+      - GF_PLUGINS_PREINSTALL_DISABLED=true
     ports: [{{.GetGrafanaOpenPorts}}]
     volumes:
       - "{{.RocketPoolDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"

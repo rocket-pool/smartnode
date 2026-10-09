@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/moby/moby/client"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -161,7 +161,7 @@ func GetBeaconClient(c *cli.Command) (*BeaconClientManager, error) {
 func GetDocker(c *cli.Command) (*client.Client, error) {
 	var err error
 	initDocker.Do(func() {
-		docker, err = client.NewClientWithOpts(client.WithVersion(dockerAPIVersion))
+		docker, err = client.New(client.WithAPIVersion(dockerAPIVersion))
 	})
 	return docker, err
 }
