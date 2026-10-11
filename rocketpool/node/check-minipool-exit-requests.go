@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/moby/moby/client"
 	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 

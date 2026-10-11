@@ -6,6 +6,7 @@ deleteDatasources:
 
 datasources:
   - name: Prometheus
+    uid: PBFA97CFB590B2093
     type: prometheus
     access: proxy
     orgId: 1
