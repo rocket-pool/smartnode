@@ -507,6 +507,7 @@ func EstimateDefeatProposalGas(rp *rocketpool.RocketPool, proposalId uint64, ind
 }
 
 // DefeatProposal defeats a proposal that failed to respond to a challenge within the challenge window.
+// The index identifies the tree node whose challenge was not answered.
 func DefeatProposal(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
