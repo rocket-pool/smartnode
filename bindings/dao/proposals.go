@@ -450,7 +450,7 @@ func GetProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 	return (*proposalCount).Uint64(), nil
 }
 
-// Proposal details
+// GetProposalDAO returns the DAO name associated with a proposal.
 func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
 	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {

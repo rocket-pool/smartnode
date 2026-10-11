@@ -186,7 +186,7 @@ func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (
 	return *memberAddress, nil
 }
 
-// Member details
+// GetMemberExists reports whether the address is a security DAO member.
 func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
 	rocketDAOSecurity, err := getRocketDAOSecurity(rp, opts)
 	if err != nil {

@@ -103,7 +103,7 @@ func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, in
 	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), node, witness)
 }
 
-// Challenge a proposal at a specific tree node index, providing a Merkle proof of the node as well
+// CreateChallenge challenges a proposal at a tree node index with a Merkle proof for that node.
 func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
@@ -506,7 +506,7 @@ func EstimateDefeatProposalGas(rp *rocketpool.RocketPool, proposalId uint64, ind
 	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "defeatProposal", big.NewInt(int64(proposalId)), big.NewInt(int64(index)))
 }
 
-// Defeat a proposal if it fails to respond to a challenge within the challenge window, providing the node index that wasn't responded to
+// DefeatProposal defeats a proposal that failed to respond to a challenge within the challenge window.
 func DefeatProposal(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
