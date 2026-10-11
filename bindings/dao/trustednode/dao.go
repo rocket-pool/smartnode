@@ -218,7 +218,7 @@ func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (
 	return *memberAddress, nil
 }
 
-// Member details
+// GetMemberExists reports whether the address is a trusted node DAO member.
 func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
 	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {

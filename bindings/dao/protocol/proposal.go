@@ -651,7 +651,7 @@ func EstimateFinalizeGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "finalise", big.NewInt(int64(proposalId)))
 }
 
-// Finalizes a vetoed proposal by burning the proposer's bond
+// Finalize burns the proposer's bond for a vetoed proposal.
 func Finalize(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {

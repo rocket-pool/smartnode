@@ -123,7 +123,7 @@ func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opt
 	return rocketDAOSecurityProposals.GetTransactionGasInfo(opts, "cancel", big.NewInt(int64(proposalId)))
 }
 
-// Cancel a submitted proposal
+// CancelProposal cancels a submitted security DAO proposal.
 func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
 	if err != nil {

@@ -244,7 +244,7 @@ func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opt
 	return rocketDAONodeTrustedProposals.GetTransactionGasInfo(opts, "cancel", big.NewInt(int64(proposalId)))
 }
 
-// Cancel a submitted proposal
+// CancelProposal cancels a submitted trusted node DAO proposal.
 func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
