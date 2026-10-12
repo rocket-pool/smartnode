@@ -18,11 +18,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fatih/color"
 
 	"github.com/rocket-pool/smartnode/bindings/contracts"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/flashbots"
 )
 
 const exitChallengeTestABI = `[{"type":"function","name":"challengeExit","inputs":[{"name":"challenges","type":"tuple[]","components":[{"name":"megapool","type":"address"},{"name":"validatorIds","type":"uint32[]"}]}],"outputs":[],"stateMutability":"nonpayable"}]`
@@ -33,6 +36,8 @@ type exitChallengeLocalClient struct {
 	encodedABI string
 	manager    common.Address
 	sent       int
+	allowSend  bool
+	received   *types.Transaction
 }
 
 func (c *exitChallengeLocalClient) CallContract(_ context.Context, msg ethereum.CallMsg, _ *big.Int) ([]byte, error) {
@@ -54,57 +59,67 @@ func (c *exitChallengeLocalClient) PendingNonceAt(context.Context, common.Addres
 	return 7, nil
 }
 
-func (c *exitChallengeLocalClient) SendTransaction(context.Context, *types.Transaction) error {
+func (c *exitChallengeLocalClient) SendTransaction(_ context.Context, tx *types.Transaction) error {
 	c.sent++
-	return errors.New("transaction leaked to local execution client")
+	if !c.allowSend {
+		return errors.New("transaction leaked to local execution client")
+	}
+	c.received = tx
+	return nil
 }
 
-type exitChallengeProtectedRPC struct {
-	chainID  int64
-	chainErr error
+func (c *exitChallengeLocalClient) BlockNumber(context.Context) (uint64, error) {
+	return 100, nil
+}
+
+func (c *exitChallengeLocalClient) TransactionReceipt(_ context.Context, hash common.Hash) (*types.Receipt, error) {
+	return &types.Receipt{TxHash: hash, Status: types.ReceiptStatusSuccessful}, nil
+}
+
+type exitChallengeRelay struct {
 	sendErr  error
 	received chan *types.Transaction
 }
 
-func (r *exitChallengeProtectedRPC) ChainId() (*hexutil.Big, error) {
-	return (*hexutil.Big)(big.NewInt(r.chainID)), r.chainErr
-}
-
-func (r *exitChallengeProtectedRPC) SendRawTransaction(raw hexutil.Bytes) (common.Hash, error) {
+func (r *exitChallengeRelay) SendBundle(args struct{ Txs []hexutil.Bytes }) (map[string]string, error) {
+	if len(args.Txs) != 1 {
+		return nil, fmt.Errorf("expected one transaction, got %d", len(args.Txs))
+	}
 	tx := new(types.Transaction)
-	if err := tx.UnmarshalBinary(raw); err != nil {
-		return common.Hash{}, err
+	if err := tx.UnmarshalBinary(args.Txs[0]); err != nil {
+		return nil, err
 	}
 	r.received <- tx
-	return tx.Hash(), r.sendErr
+	return map[string]string{"bundleHash": tx.Hash().Hex()}, r.sendErr
 }
 
-func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
+func (r *exitChallengeRelay) CancelBundle(_ struct{ ReplacementUUID string }) (bool, error) {
+	return true, nil
+}
+
+func TestSubmitExitChallengesBundle(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		chainID    int64
-		chainErr   error
-		sendErr    error
-		missingURL bool
-		invalidURL bool
-		noSend     bool
-		noSigner   bool
-		wantError  string
-		wantSent   bool
+		name        string
+		sendErr     error
+		missingURL  bool
+		invalidURL  bool
+		noSend      bool
+		noSigner    bool
+		wantError   string
+		wantBundles int
+		wantLocal   bool
 	}{
-		{name: "protected only", chainID: 1, wantSent: true},
-		{name: "rejected without public fallback", chainID: 1, sendErr: errors.New("private submission rejected"), wantError: "private submission rejected", wantSent: true},
-		{name: "wrong chain", chainID: 2, wantError: "does not match"},
-		{name: "chain lookup failed", chainErr: errors.New("chain lookup failed"), wantError: "chain lookup failed"},
-		{name: "missing endpoint", missingURL: true, wantError: "flashbotsProtectUrl is not configured"},
-		{name: "invalid endpoint", invalidURL: true, wantError: "error connecting to protected RPC"},
+		{name: "protected only", wantBundles: int(flashbots.DefaultBundleBlockCount)},
+		{name: "rejected without public fallback", sendErr: errors.New("private submission rejected"), wantError: "private submission rejected", wantBundles: 1},
+		{name: "missing endpoint", missingURL: true, wantLocal: true},
+		{name: "invalid endpoint", invalidURL: true, wantError: "error submitting exit challenge bundle"},
 		{name: "submission disabled", noSend: true, wantError: "transaction submission disabled"},
-		{name: "signing failed", chainID: 1, noSigner: true, wantError: "no signer"},
+		{name: "signing failed", noSigner: true, wantError: "no signer"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			protected := &exitChallengeProtectedRPC{
-				chainID: test.chainID, chainErr: test.chainErr, sendErr: test.sendErr,
-				received: make(chan *types.Transaction, 1),
+			protected := &exitChallengeRelay{
+				sendErr:  test.sendErr,
+				received: make(chan *types.Transaction, flashbots.DefaultBundleBlockCount),
 			}
 			rpcServer := rpc.NewServer()
 			if err := rpcServer.RegisterName("eth", protected); err != nil {
@@ -118,12 +133,12 @@ func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			cfg.GetNetworkInfo().FlashbotsProtectUrl = server.URL
+			cfg.GetNetworkInfo().FlashbotsRelayUrl = server.URL
 			if test.missingURL {
-				cfg.GetNetworkInfo().FlashbotsProtectUrl = ""
+				cfg.GetNetworkInfo().FlashbotsRelayUrl = ""
 			}
 			if test.invalidURL {
-				cfg.GetNetworkInfo().FlashbotsProtectUrl = "://invalid"
+				cfg.GetNetworkInfo().FlashbotsRelayUrl = "://invalid"
 			}
 
 			storageABI, err := abi.JSON(strings.NewReader(contracts.RocketStorageABI))
@@ -134,7 +149,7 @@ func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			local := &exitChallengeLocalClient{storageABI: storageABI, encodedABI: encodedABI, manager: common.Address{1}}
+			local := &exitChallengeLocalClient{storageABI: storageABI, encodedABI: encodedABI, manager: common.Address{1}, allowSend: test.wantLocal}
 			rp, err := rocketpool.NewRocketPool(local, common.Address{2})
 			if err != nil {
 				t.Fatal(err)
@@ -159,8 +174,8 @@ func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
 				{Megapool: common.Address{3}, ValidatorIds: []uint32{0, 10}},
 				{Megapool: common.Address{4}, ValidatorIds: []uint32{20}},
 			}
-			task := &challengeValidatorsExiting{cfg: cfg, rp: rp, ec: local}
-			tx, err := task.submitExitChallenges(batch, opts)
+			task := &challengeValidatorsExiting{log: log.NewColorLogger(color.FgYellow), cfg: cfg, rp: rp, ec: local}
+			tx, bundled, err := task.submitExitChallenges(batch, opts)
 			if test.wantError == "" {
 				if err != nil {
 					t.Fatal(err)
@@ -168,21 +183,32 @@ func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
 			} else if err == nil || !strings.Contains(err.Error(), test.wantError) {
 				t.Fatalf("got error %v, want %q", err, test.wantError)
 			}
-			if local.sent != 0 {
+			if !test.wantLocal && local.sent != 0 {
 				t.Fatalf("broadcast %d transactions to local execution client", local.sent)
+			}
+			if test.wantLocal && local.sent != 1 {
+				t.Fatalf("local execution client received %d transactions, want 1", local.sent)
+			}
+			if err == nil && bundled == test.wantLocal {
+				t.Fatalf("bundled = %t, want %t", bundled, !test.wantLocal)
 			}
 			if opts.NoSend != test.noSend || opts.Context != originalContext {
 				t.Fatal("modified caller's transaction options")
 			}
-			if (len(protected.received) != 0) != test.wantSent {
-				t.Fatalf("protected RPC received %d transactions, wantSent=%t", len(protected.received), test.wantSent)
+			if len(protected.received) != test.wantBundles {
+				t.Fatalf("relay received %d bundles, want %d", len(protected.received), test.wantBundles)
 			}
-			if !test.wantSent {
+			var got *types.Transaction
+			switch {
+			case test.wantBundles > 0:
+				got = <-protected.received
+			case test.wantLocal:
+				got = local.received
+			default:
 				return
 			}
-			got := <-protected.received
 			if err == nil && got.Hash() != tx.Hash() {
-				t.Fatal("protected RPC received a different transaction")
+				t.Fatal("submission received a different transaction")
 			}
 			sender, err := types.Sender(types.LatestSignerForChainID(big.NewInt(1)), got)
 			if err != nil || sender != opts.From {
@@ -200,7 +226,7 @@ func TestSubmitExitChallengesProtectedRPC(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(got.Data(), wantData) {
-				t.Fatal("protected RPC received different exit challenge batch calldata")
+				t.Fatal("submission received different exit challenge batch calldata")
 			}
 		})
 	}
