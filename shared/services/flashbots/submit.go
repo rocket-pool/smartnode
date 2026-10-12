@@ -9,12 +9,15 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// Defaults for bundle submission: retry the bundle over the next 4 blocks (~48s on mainnet)
+// Defaults for bundle submission: retry the bundle over the next 5 blocks (~60s on mainnet)
 // and give inclusion polling a bit of margin on top of that.
 const (
 	DefaultBundleBlockCount  uint64 = 5
 	DefaultSubmissionTimeout        = 70 * time.Second
 )
+
+// ErrRelayUnavailable identifies a DNS error during bundle submission.
+var ErrRelayUnavailable = errors.New("bundle relay DNS lookup failed")
 
 // SubmitBundleAndWait bundles the given signed transactions, targets the next block, submits
 // the bundle with redundancy across the next nBlocks blocks and waits for inclusion
@@ -27,6 +30,7 @@ func SubmitBundleAndWait(ctx context.Context, logger *slog.Logger, ethRpc EthRpc
 	if err != nil {
 		return false, errors.Join(errors.New("error creating flashbots client"), err)
 	}
+	client.requestContext = ctx
 
 	bundle := NewBundleWithTransactions(txs)
 

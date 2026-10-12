@@ -1,9 +1,13 @@
 package watchtower
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -16,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/math"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/flashbots"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 )
@@ -155,15 +160,14 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 		opts.GasTipCap = math.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasLimits.Safe
 
-		// Challenge
-		tx, err := megapool.ChallengeExit(t.rp, exitChallenges, opts)
+		// Prefer a private bundle, with public fallback only when no relay is available.
+		tx, bundled, err := t.submitExitChallenges(exitChallenges, opts)
 		if err != nil {
 			return err
 		}
-
-		// Print TX info and wait for it to be included in a block
-		err = transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
-		if err != nil {
+		if bundled {
+			t.log.Printlnf("Exit challenge bundle included: %s", tx.Hash())
+		} else if err := transactions.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.ec, &t.log); err != nil {
 			return err
 		}
 
@@ -172,4 +176,62 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 	}
 
 	return nil
+}
+
+// submitExitChallenges signs locally and submits a one-transaction bundle.
+// The second result is true once the bundle has been included. A missing relay
+// or DNS failure during submission permits a local public fallback.
+func (t *challengeValidatorsExiting) submitExitChallenges(exitChallenges []megapool.ExitChallenge, opts *bind.TransactOpts) (*gethtypes.Transaction, bool, error) {
+	if opts.NoSend {
+		return nil, false, fmt.Errorf("cannot submit exit challenges with transaction submission disabled")
+	}
+	parent := opts.Context
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, flashbots.DefaultSubmissionTimeout)
+	defer cancel()
+
+	// Build and sign without broadcasting through the contract client.
+	privateOpts := *opts
+	privateOpts.NoSend = true
+	privateOpts.Context = ctx
+	tx, err := megapool.ChallengeExit(t.rp, exitChallenges, &privateOpts)
+	if err != nil {
+		return nil, false, err
+	}
+	submitLocally := func(reason string) (*gethtypes.Transaction, bool, error) {
+		t.log.Printlnf("%s; submitting the exit challenge through the local execution client", reason)
+		if err := t.ec.SendTransaction(parent, tx); err != nil {
+			return nil, false, err
+		}
+		return tx, false, nil
+	}
+
+	relayURL := t.cfg.Smartnode.GetFlashbotsRelayUrl()
+	if relayURL == "" {
+		return submitLocally(fmt.Sprintf("flashbotsRelayUrl is not configured for network %s", t.cfg.GetNetwork()))
+	}
+
+	t.log.Printlnf("Submitting exit challenge transaction %s as a private bundle...", tx.Hash())
+	included, err := flashbots.SubmitBundleAndWait(ctx, nil, t.ec, relayURL, []*gethtypes.Transaction{tx}, flashbots.DefaultBundleBlockCount)
+	if err != nil {
+		if errors.Is(err, flashbots.ErrRelayUnavailable) {
+			return submitLocally(flashbots.ErrRelayUnavailable.Error())
+		}
+		return nil, false, fmt.Errorf("error submitting exit challenge bundle: %w", err)
+	}
+	if !included {
+		return nil, false, fmt.Errorf("exit challenge bundle for transaction %s was not included", tx.Hash())
+	}
+
+	// Bundle inclusion checks receipt availability; also require successful execution.
+	receipt, err := t.ec.TransactionReceipt(ctx, tx.Hash())
+	if err != nil {
+		return nil, false, fmt.Errorf("error checking exit challenge receipt: %w", err)
+	}
+	if receipt == nil || receipt.Status != gethtypes.ReceiptStatusSuccessful {
+		return nil, false, fmt.Errorf("exit challenge transaction %s failed", tx.Hash())
+	}
+	return tx, true, nil
 }

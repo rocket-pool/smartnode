@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"math/big"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -108,6 +109,7 @@ type SimulationResultBundle struct {
 }
 
 type FlashbotsClient struct {
+	requestContext     context.Context
 	url                string
 	logger             *slog.Logger
 	client             http.Client
@@ -178,6 +180,7 @@ func NewClient(logger *slog.Logger, ethRpc EthRpc, relayUrl string, searcherSecr
 	searcherAddress := crypto.PubkeyToAddress(*searcherPublicKeyECDSA)
 
 	fbClient := FlashbotsClient{
+		requestContext:     context.Background(),
 		url:                url,
 		logger:             logger,
 		client:             client,
@@ -208,7 +211,7 @@ func (client *FlashbotsClient) CallWithAdditionalHeaders(method string, headers 
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", client.url, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(client.requestContext, "POST", client.url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +248,9 @@ func (client *FlashbotsClient) CallWithAdditionalHeaders(method string, headers 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, errors.Join(errors.New("error reading response body"), err)
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("flashbots API returned HTTP %d: %s", response.StatusCode, bytes.TrimSpace(data))
 	}
 
 	resp := new(Response)
@@ -299,6 +305,10 @@ func (client *FlashbotsClient) SendBundle(bundle *Bundle) (common.Hash, bool, er
 
 	res, err := client.Call("eth_sendBundle", params)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			err = errors.Join(ErrRelayUnavailable, err)
+		}
 		return common.Hash{}, false, errors.Join(errors.New("error calling flashbots"), err)
 	}
 
