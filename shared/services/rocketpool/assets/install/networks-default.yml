@@ -93,6 +93,7 @@ networks:
     beaconExplorerUrl: https://hoodi.beaconcha.in
     rocketDashUrl: https://rocketdash.net
     flashbotsProtectUrl: https://rpc-hoodi.flashbots.net/
+    flashbotsRelayUrl: https://builder-rpc-us-hoodi.ultrasound.money
     beaconNetwork: hoodi
     commitBoostChainName: Hoodi
     clientTagSet: test
