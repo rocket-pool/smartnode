@@ -9,6 +9,11 @@ services:
   node-exporter:
     image: ${EXPORTER_IMAGE_TAG_OVERRIDE:-${EXPORTER_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_exporter
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     cap_drop:
       - ALL
     user: "65534:65534"

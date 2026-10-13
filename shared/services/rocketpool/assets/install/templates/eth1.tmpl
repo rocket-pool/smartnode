@@ -10,6 +10,11 @@ services:
     image: ${EC_IMAGE_TAG_OVERRIDE:-${EC_IMAGE_TAG_DEFAULT}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_eth1
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     restart: unless-stopped
     stop_signal: {{.GetECStopSignal}}
     stop_grace_period: 15m

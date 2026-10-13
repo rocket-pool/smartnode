@@ -9,6 +9,11 @@ services:
   alertmanager:
     image: ${ALERTMANAGER_IMAGE_TAG_OVERRIDE:-${ALERTMANAGER_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_alertmanager
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     restart: unless-stopped
     command:
       # https://prometheus.io/docs/alerting/latest/configuration/
