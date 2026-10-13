@@ -9,6 +9,11 @@ services:
   commit-boost:
     image: ${COMMIT_BOOST_IMAGE_TAG_OVERRIDE:-${COMMIT_BOOST_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_commit-boost
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     restart: unless-stopped
     ports: [{{.GetCommitBoostOpenPorts}}]
     volumes:

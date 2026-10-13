@@ -10,6 +10,11 @@ services:
     image: ${GWW_IMAGE_TAG_OVERRIDE:-${GWW_IMAGE_TAG_DEFAULT}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_addon_gww
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     restart: unless-stopped
     volumes:
       - {{.RocketPoolDirectory}}/addons/gww:/gww

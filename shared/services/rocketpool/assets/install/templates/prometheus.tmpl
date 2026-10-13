@@ -9,6 +9,11 @@ services:
   prometheus:
     image: ${PROMETHEUS_IMAGE_TAG_OVERRIDE:-${PROMETHEUS_IMAGE_TAG_DEFAULT}}
     container_name: {{.Smartnode.ProjectName}}_prometheus
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
     restart: unless-stopped
     command:
       - "--web.listen-address=:{{or .Prometheus.Port.Value "9091"}}"
