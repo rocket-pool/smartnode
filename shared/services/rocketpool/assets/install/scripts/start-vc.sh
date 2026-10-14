@@ -132,6 +132,21 @@ if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
         CMD="$CMD --monitoring.endpoint $BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
     fi
 
+    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        CMD="$CMD --builder.urls $EPBS_BUILDER_URLS"
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder.minBid $EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder.maxExecutionPayment $EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+        # Compare as text: a uint64 Gwei amount can exceed shell integer limits.
+        if [ "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" != "0" ]; then
+            CMD="$CMD --allowDangerousTrustedPayments"
+        fi
+    fi
+
     exec ${CMD} --graffiti "$GRAFFITI"
 
 fi

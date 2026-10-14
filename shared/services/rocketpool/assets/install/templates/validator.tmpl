@@ -56,6 +56,9 @@ services:
       - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
       - PBS_URL={{.PbsUrl}}
       - ENABLE_PBS={{.IsPbsEnabled}}
+      - EPBS_BUILDER_URLS={{.Epbs.GetBuilderUrlString}}
+      - EPBS_MIN_BID_GWEI={{.Epbs.GetMinBidGwei}}
+      - EPBS_MAX_EXECUTION_PAYMENT_GWEI={{.Epbs.GetMaxExecutionPaymentGwei}}
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_USE_SLASHING_PROTECTION={{.Teku.UseSlashingProtection}}
       {{- end}}

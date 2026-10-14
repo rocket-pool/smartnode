@@ -13,8 +13,6 @@ import (
 var builderAmountPattern = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?$`)
 
 // EpbsConfig stores builder settings shared by all consensus clients.
-// Client startup integration is separate; saving these settings does not yet
-// require restarting any containers.
 type EpbsConfig struct {
 	Title string `yaml:"-"`
 
@@ -44,6 +42,7 @@ func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 			Description:        "The minimum payment to accept from an ePBS builder, in ETH. For example, enter 0.05 for 0.05 ETH. Leave blank to use the consensus client's default.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -53,6 +52,7 @@ func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 			Description:        "The maximum execution-layer payment to count toward an ePBS builder bid, in ETH. These payments rely on the builder's promise and are not backed by staked collateral. Set to 0 to count only trustless payments. For example, enter 0.05 to count up to 0.05 ETH of promised execution-layer payments.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: "0"},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -68,6 +68,7 @@ func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 				Description:        fmt.Sprintf("Select %s for the ePBS builder list. You can select multiple operators.\n\nUses this operator's existing relay endpoint for the selected network. ePBS availability at that endpoint has not yet been verified.", relay.Name),
 				Type:               config.ParameterType_Bool,
 				Default:            map[config.Network]interface{}{config.Network_All: false},
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 				CanBeBlank:         false,
 				OverwriteOnUpgrade: false,
 			}
@@ -150,6 +151,15 @@ func (cfg *EpbsConfig) GetBuilderUrls() ([]string, error) {
 		}
 	}
 	return urls, nil
+}
+
+// GetBuilderUrlString formats the selected endpoints for client CLI arguments.
+func (cfg *EpbsConfig) GetBuilderUrlString() (string, error) {
+	urls, err := cfg.GetBuilderUrls()
+	if err != nil {
+		return "", err
+	}
+	return strings.Join(urls, ","), nil
 }
 
 // GetMinBidGwei converts the ETH setting exactly, without floating point or
