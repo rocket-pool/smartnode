@@ -243,6 +243,16 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CMD="$CMD --disable-monitoring --disable-account-metrics"
     fi
 
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        CMD="$CMD --builder-urls=$EPBS_BUILDER_URLS"
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+    fi
+
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
         echo "ordered:\n  - $GRAFFITI" > $GWW_GRAFFITI_FILE # Default graffiti value for Prysm
         exec ${CMD} --graffiti-file=$GWW_GRAFFITI_FILE
