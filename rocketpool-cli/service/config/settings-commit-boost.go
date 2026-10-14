@@ -9,7 +9,7 @@ import (
 
 // The page wrapper for the Commit-boost config
 type CommitBoostConfigPage struct {
-	home                  *settingsHome
+	epbsPage              *EpbsPage
 	page                  *page
 	layout                *standardLayout
 	masterConfig          *config.RocketPoolConfig
@@ -26,16 +26,16 @@ type CommitBoostConfigPage struct {
 }
 
 // Creates a new page for the Commit-Boost settings
-func NewCommitBoostConfigPage(home *settingsHome) *CommitBoostConfigPage {
+func NewCommitBoostConfigPage(epbsPage *EpbsPage) *CommitBoostConfigPage {
 
 	configPage := &CommitBoostConfigPage{
-		home:         home,
-		masterConfig: home.md.Config,
+		epbsPage:     epbsPage,
+		masterConfig: epbsPage.home.md.Config,
 	}
 	configPage.createContent()
 
 	configPage.page = newPage(
-		home.homePage,
+		epbsPage.page,
 		"settings-commit-boost",
 		"Commit-Boost",
 		"Select this to configure the settings for the Commit-Boost PBS client, the source of blocks with MEV rewards for your validators.\n\nCommit-Boost is a powerful PBS client that offers detailed reporting and transparency around block building, very low latency, and a responsive development team.\n\n",
@@ -57,7 +57,7 @@ func (configPage *CommitBoostConfigPage) createContent() {
 	// Create the layout
 	configPage.layout = newStandardLayout()
 	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Commit-Boost Settings")
-	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.epbsPage.home.md, configPage.epbsPage.page)
 
 	// Set up the form items
 	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.EnableCommitBoost)

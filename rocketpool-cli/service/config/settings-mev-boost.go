@@ -9,7 +9,7 @@ import (
 
 // The page wrapper for the MEV-boost config
 type MevBoostConfigPage struct {
-	home                  *settingsHome
+	epbsPage              *EpbsPage
 	page                  *page
 	layout                *standardLayout
 	masterConfig          *config.RocketPoolConfig
@@ -31,16 +31,16 @@ type MevBoostConfigPage struct {
 }
 
 // Creates a new page for the MEV-Boost settings
-func NewMevBoostConfigPage(home *settingsHome) *MevBoostConfigPage {
+func NewMevBoostConfigPage(epbsPage *EpbsPage) *MevBoostConfigPage {
 
 	configPage := &MevBoostConfigPage{
-		home:         home,
-		masterConfig: home.md.Config,
+		epbsPage:     epbsPage,
+		masterConfig: epbsPage.home.md.Config,
 	}
 	configPage.createContent()
 
 	configPage.page = newPage(
-		home.homePage,
+		epbsPage.page,
 		"settings-mev-boost",
 		"MEV-Boost",
 		"Select this to configure the settings for the Flashbots MEV-Boost client, the source of blocks with MEV rewards for your minipools.\n\nFor more information on Flashbots, MEV, and MEV-Boost, please see https://writings.flashbots.net/writings/why-run-mevboost/",
@@ -62,7 +62,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 	// Create the layout
 	configPage.layout = newStandardLayout()
 	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "MEV-Boost Settings")
-	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.epbsPage.home.md, configPage.epbsPage.page)
 
 	// Set up the form items
 	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMevBoost)

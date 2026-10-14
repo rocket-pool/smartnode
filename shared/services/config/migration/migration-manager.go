@@ -53,6 +53,11 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 	if err != nil {
 		return err
 	}
+	// Include development configs saved by this release before ePBS was added.
+	v1245, err := parseVersion("1.24.5")
+	if err != nil {
+		return err
+	}
 
 	// Create the collection of upgraders
 	upgraders := []ConfigUpgrader{
@@ -85,6 +90,10 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 			Version:     v1210,
 			UpgradeFunc: upgradeFromV1210,
 		},
+		{
+			Version:     v1245,
+			UpgradeFunc: upgradeFromV1245,
+		},
 	}
 
 	// Find the index of the provided config's version
@@ -92,6 +101,7 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 	for i, upgrader := range upgraders {
 		if configVersion.LessThanOrEqual(upgrader.Version) {
 			targetIndex = i
+			break
 		}
 	}
 
