@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -62,13 +63,24 @@ func TestWriteSettingToBatchJSON_ReplaceDuplicate(t *testing.T) {
 	}
 }
 
-func TestWriteSettingToBatchJSON_RejectsAddressList(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "batch.json")
-
-	err := writeSettingToBatchJSON(path, protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, "0x1")
-	if err == nil {
-		t.Fatal("expected error for address list setting")
+func TestWriteSettingToBatchJSON_RejectsUnsupportedSettings(t *testing.T) {
+	for _, tt := range []struct {
+		name, contract, setting, value string
+		wantErr                        error
+	}{
+		{"address list", protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, "0x1", protocol.ErrUnsupportedBatchSetting},
+		{"removed prestake period", protocol.MegapoolSettingsContractName, "prestake.challenge.period", "36", protocol.ErrUnknownPDAOSetting},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "batch.json")
+			err := writeSettingToBatchJSON(path, tt.contract, tt.setting, tt.value)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("got %v, want %v", err, tt.wantErr)
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatalf("rejected setting created an output file: %v", err)
+			}
+		})
 	}
 }
 
