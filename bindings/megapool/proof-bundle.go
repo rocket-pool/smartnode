@@ -50,7 +50,7 @@ func UsesProofBundles(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, err
 	switch version {
 	case 1:
 		return false, nil
-	case 2:
+	case 2, 3: // v1.4.1 and v1.5 use the same versioned proof-bundle interface.
 		return true, nil
 	default:
 		return false, fmt.Errorf("unsupported rocketMegapoolManager version: %d", version)
