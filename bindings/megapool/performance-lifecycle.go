@@ -22,7 +22,11 @@ func EstimateChallengeMinipoolsGas(rp *rocketpool.RocketPool, minipoolAddresses 
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMinipools", minipoolAddresses, startEpoch, participation, slotTimestamp, slotProof)
+	proofData, err := EncodeSlotProofBundleV1(slotProof)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMinipools", minipoolAddresses, startEpoch, participation, slotTimestamp, SlotProofVersion1, proofData)
 }
 
 // ChallengeMinipools challenges the target-vote performance of a minipool list.
@@ -31,7 +35,11 @@ func ChallengeMinipools(rp *rocketpool.RocketPool, minipoolAddresses []common.Ad
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMinipools", minipoolAddresses, startEpoch, participation, slotTimestamp, slotProof)
+	proofData, err := EncodeSlotProofBundleV1(slotProof)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMinipools", minipoolAddresses, startEpoch, participation, slotTimestamp, SlotProofVersion1, proofData)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error challenging minipools: %w", err)
 	}
@@ -54,7 +62,7 @@ type PerformanceChallengeDefense struct {
 	ChallengeWitness []common.Hash
 }
 
-func (d PerformanceChallengeDefense) call() (string, []interface{}) {
+func (d PerformanceChallengeDefense) call() (string, []interface{}, error) {
 	validatorMethod := "respondWithMegapoolValidator"
 	participationMethod := "respondWithMegapoolParticipation"
 	var member interface{} = d.ValidatorId
@@ -64,12 +72,20 @@ func (d PerformanceChallengeDefense) call() (string, []interface{}) {
 		member = d.MinipoolAddress
 	}
 	if d.Participation != nil {
+		proofData, err := EncodeParticipationProofBundleV1(d.Validator, *d.Participation, d.Slot)
+		if err != nil {
+			return "", nil, err
+		}
 		return participationMethod, []interface{}{
 			d.ChallengeId, member, d.Offset, d.ChallengeLeaf, d.ChallengeWitness,
-			d.SlotTimestamp, d.Validator, *d.Participation, d.Slot,
-		}
+			d.SlotTimestamp, ParticipationProofVersion1, proofData,
+		}, nil
 	}
-	return validatorMethod, []interface{}{d.ChallengeId, member, d.SlotTimestamp, d.Validator, d.Slot}
+	proofData, err := EncodeValidatorProofBundleV1(d.Validator, d.Slot)
+	if err != nil {
+		return "", nil, err
+	}
+	return validatorMethod, []interface{}{d.ChallengeId, member, d.SlotTimestamp, ValidatorProofVersion1, proofData}, nil
 }
 
 func (d PerformanceChallengeDefense) EstimateGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
@@ -77,7 +93,10 @@ func (d PerformanceChallengeDefense) EstimateGas(rp *rocketpool.RocketPool, opts
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	method, args := d.call()
+	method, args, err := d.call()
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
 	return rocketNetworkParticipation.GetTransactionGasInfo(opts, method, args...)
 }
 
@@ -86,7 +105,10 @@ func (d PerformanceChallengeDefense) Submit(rp *rocketpool.RocketPool, opts *bin
 	if err != nil {
 		return common.Hash{}, err
 	}
-	method, args := d.call()
+	method, args, err := d.call()
+	if err != nil {
+		return common.Hash{}, err
+	}
 	tx, err := rocketNetworkParticipation.Transact(opts, method, args...)
 	if err != nil {
 		return common.Hash{}, err
