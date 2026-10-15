@@ -35,6 +35,9 @@ func canProposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, cus
 	if err != nil {
 		return nil, err
 	}
+	if err := requireSaturn2ForSettings(rp, settings...); err != nil {
+		return nil, err
+	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
@@ -128,6 +131,9 @@ func proposeSettingMulti(c *cli.Command, settings []api.PDAOBatchSetting, custom
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireSaturn2ForSettings(rp, settings...); err != nil {
 		return nil, err
 	}
 	bc, err := services.GetBeaconClient(c)

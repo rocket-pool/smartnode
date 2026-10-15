@@ -1,15 +1,56 @@
 package pdao
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+func TestExitDeficitCommandToBatchJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name, command, value, want string
+		raw                        bool
+	}{
+		{"ETH", "exit-deficit", "0.2", "200000000000000000", false},
+		{"wei", "exit-deficit", "200000000000000001", "200000000000000001", true},
+		{"alias", "ed", "1", "1", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "batch.json")
+			app := &cli.Command{Name: "rocketpool"}
+			RegisterCommands(app, "pdao", nil)
+			args := []string{"rocketpool", "pdao", "propose", "setting", "megapool", tt.command, "--yes", "--to-json", path}
+			if tt.raw {
+				args = append(args, "--raw")
+			}
+			args = append(args, tt.value)
+			if err := app.Run(context.Background(), args); err != nil {
+				t.Fatal(err)
+			}
+			settings, err := readBatchSettingsFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := api.PDAOBatchSetting{
+				Contract: protocol.MegapoolSettingsContractName,
+				Setting:  protocol.MegapoolExitDeficitPath,
+				Type:     protocol.ProposalSettingTypeNameUint256,
+				Value:    tt.want,
+			}
+			if len(settings) != 1 || settings[0] != want {
+				t.Fatalf("got %+v, want %+v", settings, want)
+			}
+		})
+	}
+}
 
 func TestWriteSettingToBatchJSON_CreateAndAppend(t *testing.T) {
 	dir := t.TempDir()

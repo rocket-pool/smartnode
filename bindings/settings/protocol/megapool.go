@@ -25,6 +25,7 @@ const (
 	MegapoolUserDistributeDelayPath          string = "user.distribute.delay"
 	MegapoolUserDistributeDelayShortfallPath string = "user.distribute.delay.shortfall"
 	MegapoolPenaltyThreshold                 string = "megapool.penalty.threshold"
+	MegapoolExitDeficitPath                  string = "megapool.exit.deficit"
 )
 
 // Get the deficit threshold in wei for permissionless megapool exits (Saturn 2).
@@ -38,6 +39,13 @@ func GetMegapoolExitDeficit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 		return nil, fmt.Errorf("error getting megapool exit deficit: %w", err)
 	}
 	return *value, nil
+}
+
+func ProposeMegapoolExitDeficit(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolExitDeficitPath), MegapoolSettingsContractName, MegapoolExitDeficitPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeMegapoolExitDeficitGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolExitDeficitPath), MegapoolSettingsContractName, MegapoolExitDeficitPath, value, blockNumber, treeNodes, opts)
 }
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
