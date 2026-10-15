@@ -1069,16 +1069,6 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PenaltyThreshold: %w", err)
 			}
-		// PrestakeChallengePeriod
-		case protocol.MegapoolPrestakeChallengePeriodPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasLimits, err = protocol.EstimateProposePrestakeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing PrestakeChallengePeriod: %w", err)
-			}
 		}
 
 	}
@@ -2076,17 +2066,6 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
 			}
-		// PrestakeChallengePeriod
-		case protocol.MegapoolPrestakeChallengePeriodPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = protocol.ProposePrestakeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing PrestakeChallengePeriod: %w", err)
-			}
-
 		}
 
 	}

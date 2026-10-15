@@ -1236,19 +1236,29 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 		return nil, nil, err
 	}
 
-	withdrawalStateResponse, err := bc.GetBeaconStateSSZ(withdrawalSlot)
+	validators := proofState.GetValidators()
+	if validatorIndex >= uint64(len(validators)) {
+		return nil, nil, fmt.Errorf("validator index %d is outside validators length %d", validatorIndex, len(validators))
+	}
+	withdrawableEpoch := validators[validatorIndex].WithdrawableEpoch
+	if eth2Config.SlotsPerEpoch == 0 || withdrawableEpoch > math.MaxUint64/eth2Config.SlotsPerEpoch {
+		return nil, nil, fmt.Errorf("invalid withdrawable epoch or slots per epoch")
+	}
+	firstProofSlot := max(eth2Config.GloasActivationSlot(), withdrawableEpoch*eth2Config.SlotsPerEpoch)
+	if withdrawalSlot > MAX_WITHDRAWAL_SLOT_DISTANCE {
+		firstProofSlot = max(firstProofSlot, withdrawalSlot-MAX_WITHDRAWAL_SLOT_DISTANCE)
+	}
+	// Empty Gloas payloads can carry payload_expected_withdrawals forward.
+	// The EL delivery slot can therefore be later than the beacon state that
+	// first prepared the list. Prove that original state and its preceding index.
+	withdrawalSlot, gloasWithdrawalState, previousState, err := freshGloasWithdrawalState(withdrawalSlot, firstProofSlot, indexInWithdrawalsArray, withdrawal, func(slot uint64) (eth2.BeaconState, error) {
+		response, err := bc.GetBeaconStateSSZ(slot)
+		if err != nil {
+			return nil, err
+		}
+		return eth2.NewBeaconState(response.Data, response.Size, response.Fork)
+	})
 	if err != nil {
-		return nil, nil, err
-	}
-	withdrawalState, err := eth2.NewBeaconState(withdrawalStateResponse.Data, withdrawalStateResponse.Size, withdrawalStateResponse.Fork)
-	if err != nil {
-		return nil, nil, err
-	}
-	gloasWithdrawalState, ok := withdrawalState.(*gloas.BeaconState)
-	if !ok {
-		return nil, nil, fmt.Errorf("withdrawal slot %d is in the %s fork; version 2 final balance proofs require Gloas", withdrawalSlot, withdrawalStateResponse.Fork)
-	}
-	if err := verifyExpectedWithdrawal(gloasWithdrawalState, indexInWithdrawalsArray, withdrawal); err != nil {
 		return nil, nil, err
 	}
 	if uint64(len(gloasWithdrawalState.Balances)) <= validatorIndex {
@@ -1281,14 +1291,6 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 	}
 
 	previousSlot := withdrawalSlot - 1
-	previousStateResponse, err := bc.GetBeaconStateSSZ(previousSlot)
-	if err != nil {
-		return nil, nil, err
-	}
-	previousState, err := eth2.NewBeaconState(previousStateResponse.Data, previousStateResponse.Size, previousStateResponse.Fork)
-	if err != nil {
-		return nil, nil, err
-	}
 	nextWithdrawalIndex, nextWithdrawalIndexLeafProof, err := proveNextWithdrawalIndex(previousState)
 	if err != nil {
 		return nil, nil, err
@@ -1320,10 +1322,6 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 	}
 
 	withdrawalEpoch := withdrawalSlot / eth2Config.SlotsPerEpoch
-	validators := proofState.GetValidators()
-	if validatorIndex >= uint64(len(validators)) {
-		return nil, nil, fmt.Errorf("validator index %d is outside validators length %d", validatorIndex, len(validators))
-	}
 	if withdrawalEpoch < validators[validatorIndex].WithdrawableEpoch {
 		return nil, nil, fmt.Errorf("withdrawal epoch %d is earlier than validator withdrawable epoch %d", withdrawalEpoch, validators[validatorIndex].WithdrawableEpoch)
 	}
@@ -1355,6 +1353,64 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 		return nil, nil, err
 	}
 	return megapool.FinalBalanceProofVersion2, encoded, nil
+}
+
+// freshGloasWithdrawalState requires the exact EL withdrawal at every candidate
+// state. It only walks across a carried-forward list with an already-advanced
+// index, and never before the first eligible full-withdrawal slot.
+func freshGloasWithdrawalState(slot, firstSlot uint64, position int, withdrawal *generic.Withdrawal, load func(uint64) (eth2.BeaconState, error)) (uint64, *gloas.BeaconState, eth2.BeaconState, error) {
+	if slot == 0 || slot < firstSlot || position < 0 || withdrawal.Index < uint64(position) {
+		return 0, nil, nil, fmt.Errorf("invalid Gloas withdrawal slot or position")
+	}
+	current, err := load(slot)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	expectedIndex := withdrawal.Index - uint64(position)
+	for {
+		state, ok := current.(*gloas.BeaconState)
+		if !ok {
+			return 0, nil, nil, fmt.Errorf("version 2 final balance proofs require a Gloas withdrawal state at slot %d", slot)
+		}
+		if state.Slot != slot {
+			return 0, nil, nil, fmt.Errorf("beacon state slot %d differs from requested slot %d", state.Slot, slot)
+		}
+		if err := verifyExpectedWithdrawal(state, position, withdrawal); err != nil {
+			return 0, nil, nil, err
+		}
+		previous, err := load(slot - 1)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		if previous.GetSlot() != slot-1 {
+			return 0, nil, nil, fmt.Errorf("preceding beacon state slot does not match requested slot %d", slot-1)
+		}
+		index, err := nextWithdrawalIndex(previous)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		if index == expectedIndex {
+			return slot, state, previous, nil
+		}
+		if index < expectedIndex || slot <= max(firstSlot, uint64(1)) {
+			return 0, nil, nil, fmt.Errorf("withdrawal index %d is inconsistent with preceding next_withdrawal_index %d and withdrawal number %d at slot %d", withdrawal.Index, index, position, slot)
+		}
+		slot--
+		current = previous
+	}
+}
+
+func nextWithdrawalIndex(state eth2.BeaconState) (uint64, error) {
+	switch s := state.(type) {
+	case *gloas.BeaconState:
+		return s.NextWithdrawalIndex, nil
+	case *fulu.BeaconState:
+		return s.NextWithdrawalIndex, nil
+	case *electra.BeaconState:
+		return s.NextWithdrawalIndex, nil
+	default:
+		return 0, fmt.Errorf("unsupported beacon state type %T for next_withdrawal_index", state)
+	}
 }
 
 func concatProofs(parts ...[][]byte) [][]byte {

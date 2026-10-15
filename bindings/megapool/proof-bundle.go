@@ -10,16 +10,28 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
-// Proof versions accepted by BeaconStateVerifier on v1.4.1-dev.
+// Proof versions accepted by BeaconStateVerifier
 var (
-	ValidatorProofVersion1    = big.NewInt(1)
-	FinalBalanceProofVersion1 = big.NewInt(1)
-	FinalBalanceProofVersion2 = big.NewInt(2)
+	ValidatorProofVersion1     = big.NewInt(1)
+	SlotProofVersion1          = big.NewInt(1)
+	ParticipationProofVersion1 = big.NewInt(1)
+	FinalBalanceProofVersion1  = big.NewInt(1)
+	FinalBalanceProofVersion2  = big.NewInt(2)
 )
 
 type ValidatorProofBundleV1 struct {
 	ValidatorProof ValidatorProof `json:"validatorProof"`
 	SlotProof      SlotProof      `json:"slotProof"`
+}
+
+type SlotProofBundleV1 struct {
+	SlotProof SlotProof `json:"slotProof"`
+}
+
+type ParticipationProofBundleV1 struct {
+	ValidatorProof     ValidatorProof     `json:"validatorProof"`
+	ParticipationProof ParticipationProof `json:"participationProof"`
+	SlotProof          SlotProof          `json:"slotProof"`
 }
 
 type FinalBalanceProofBundleV1 struct {
@@ -50,7 +62,7 @@ func UsesProofBundles(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, err
 	switch version {
 	case 1:
 		return false, nil
-	case 2:
+	case 2, 3: // v1.4.1 and v1.5 use the same versioned proof-bundle interface.
 		return true, nil
 	default:
 		return false, fmt.Errorf("unsupported rocketMegapoolManager version: %d", version)
@@ -75,6 +87,12 @@ var (
 	}
 	slotProofComponents = []abi.ArgumentMarshaling{
 		{Name: "slot", Type: "uint64"},
+		{Name: "witnesses", Type: "bytes32[]"},
+	}
+	participationProofComponents = []abi.ArgumentMarshaling{
+		{Name: "participationSlot", Type: "uint64"},
+		{Name: "validatorIndex", Type: "uint40"},
+		{Name: "participationFlagsChunk", Type: "bytes32"},
 		{Name: "witnesses", Type: "bytes32[]"},
 	}
 	withdrawalComponents = []abi.ArgumentMarshaling{
@@ -107,6 +125,20 @@ func EncodeValidatorProofBundleV1(validatorProof ValidatorProof, slotProof SlotP
 		ValidatorProof: validatorProof,
 		SlotProof:      slotProof,
 	})
+}
+
+func EncodeSlotProofBundleV1(slotProof SlotProof) ([]byte, error) {
+	return encodeTuple([]abi.ArgumentMarshaling{
+		{Name: "slotProof", Type: "tuple", Components: slotProofComponents},
+	}, SlotProofBundleV1{SlotProof: slotProof})
+}
+
+func EncodeParticipationProofBundleV1(validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof) ([]byte, error) {
+	return encodeTuple([]abi.ArgumentMarshaling{
+		{Name: "validatorProof", Type: "tuple", Components: validatorProofComponents},
+		{Name: "participationProof", Type: "tuple", Components: participationProofComponents},
+		{Name: "slotProof", Type: "tuple", Components: slotProofComponents},
+	}, ParticipationProofBundleV1{ValidatorProof: validatorProof, ParticipationProof: participationProof, SlotProof: slotProof})
 }
 
 func EncodeFinalBalanceProofBundleV1(withdrawalProof WithdrawalProof, validatorProof ValidatorProof, slotProof SlotProof) ([]byte, error) {

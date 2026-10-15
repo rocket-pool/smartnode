@@ -365,11 +365,6 @@ func proposeSettingPenaltyThreshold(value *big.Int, yes bool, toJson string) err
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue, yes, toJson)
 }
 
-func proposeSettingMegapoolPrestakeChallengePeriod(value uint64, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(value)
-	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPrestakeChallengePeriodPath, trueValue, yes, toJson)
-}
-
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes, toJson)

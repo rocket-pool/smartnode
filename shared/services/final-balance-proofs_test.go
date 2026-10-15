@@ -2,11 +2,16 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"slices"
 	"testing"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/gloas"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 func TestFinalBalanceProofVersionWithdrawalBoundary(t *testing.T) {
@@ -32,6 +37,58 @@ func TestFinalBalanceProofVersionWithdrawalBoundary(t *testing.T) {
 			}
 			if errors.Is(err, ErrGloasBoundaryReached) != tt.wantBoundary {
 				t.Fatalf("error = %v, want Gloas fallback = %t", err, tt.wantBoundary)
+			}
+		})
+	}
+}
+
+func TestGloasFinalBalanceFindsOriginalWithdrawalState(t *testing.T) {
+	w := generic.Withdrawal{Index: 101, ValidatorIndex: 7, Amount: 32_000_000_000}
+	state := func(slot, index uint64, include bool) *gloas.BeaconState {
+		s := &gloas.BeaconState{Slot: slot, NextWithdrawalIndex: index}
+		if include {
+			s.PayloadExpectedWithdrawals = []*generic.Withdrawal{{Index: 100}, &w}
+		}
+		return s
+	}
+	for _, tt := range []struct {
+		name      string
+		first     uint64
+		states    map[uint64]eth2.BeaconState
+		wantSlot  uint64
+		wantError bool
+	}{
+		{"fresh at delivery slot", 100, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: state(102, 100, false)}, 103, false},
+		{"carried over two empty slots", 100, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: state(102, 102, true), 101: state(101, 102, true), 100: state(100, 100, false)}, 101, false},
+		{"must not pass withdrawable boundary", 102, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: state(102, 102, true), 101: state(101, 102, true)}, 0, true},
+		{"mismatching earlier list", 100, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: state(102, 102, false)}, 0, true},
+		{"index gap is invalid", 100, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: state(102, 99, false)}, 0, true},
+		{"missing state is not skipped", 100, map[uint64]eth2.BeaconState{103: state(103, 102, true)}, 0, true},
+		{"fork boundary preceding Fulu state", 103, map[uint64]eth2.BeaconState{103: state(103, 102, true), 102: &fulu.BeaconState{Slot: 102, NextWithdrawalIndex: 100}}, 103, false},
+		{"wrong state slot", 100, map[uint64]eth2.BeaconState{103: state(102, 102, true)}, 0, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, withdrawal, previous, err := freshGloasWithdrawalState(103, tt.first, 1, &w, func(slot uint64) (eth2.BeaconState, error) {
+				if slot < tt.first-1 {
+					t.Fatal("read before full-withdrawal bound")
+				}
+				s, ok := tt.states[slot]
+				if !ok {
+					return nil, fmt.Errorf("state unavailable")
+				}
+				return s, nil
+			})
+			if (err != nil) != tt.wantError {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err == nil {
+				if got != tt.wantSlot || withdrawal.Slot != got || previous.GetSlot() != got-1 {
+					t.Fatalf("incorrect origin: %d", got)
+				}
+				index, err := nextWithdrawalIndex(previous)
+				if err != nil || index+1 != w.Index {
+					t.Fatalf("freshness check not preserved: %v", err)
+				}
 			}
 		})
 	}

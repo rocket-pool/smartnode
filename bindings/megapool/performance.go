@@ -17,7 +17,11 @@ func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress com
 	if err != nil {
 		return gaslimit.Limits{}, err
 	}
-	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof)
+	proofData, err := EncodeSlotProofBundleV1(slotProof)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, SlotProofVersion1, proofData)
 }
 
 // Challenge the megapool
@@ -26,7 +30,11 @@ func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof)
+	proofData, err := EncodeSlotProofBundleV1(slotProof)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkParticipation.Transact(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, SlotProofVersion1, proofData)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error challenging megapool: %w", err)
 	}
@@ -35,48 +43,24 @@ func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address
 
 // Estimate the gas to call RespondWithParticipation
 func EstimateRespondWithParticipationGas(rp *rocketpool.RocketPool, challengeId *big.Int, validatorId uint32, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "respondWithMegapoolParticipation", challengeId, validatorId, offset, challengeLeaf, challengeWitness, slotTimestamp, validatorProof, participationProof, slotProof)
+	return (PerformanceChallengeDefense{ChallengeId: challengeId, ValidatorId: validatorId, SlotTimestamp: slotTimestamp, Validator: validatorProof, Slot: slotProof, Participation: &participationProof, Offset: offset, ChallengeLeaf: challengeLeaf, ChallengeWitness: challengeWitness}).EstimateGas(rp, opts)
 }
 
 // Respond to a performance challenge with a proof that the validator did
 // participate in one of the challenged epochs
 func RespondWithParticipation(rp *rocketpool.RocketPool, challengeId *big.Int, validatorId uint32, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkParticipation.Transact(opts, "respondWithMegapoolParticipation", challengeId, validatorId, offset, challengeLeaf, challengeWitness, slotTimestamp, validatorProof, participationProof, slotProof)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error responding to challenge: %w", err)
-	}
-	return tx.Hash(), nil
+	return (PerformanceChallengeDefense{ChallengeId: challengeId, ValidatorId: validatorId, SlotTimestamp: slotTimestamp, Validator: validatorProof, Slot: slotProof, Participation: &participationProof, Offset: offset, ChallengeLeaf: challengeLeaf, ChallengeWitness: challengeWitness}).Submit(rp, opts)
 }
 
 // Estimate the gas to call RespondWithValidator
 func EstimateRespondWithValidatorGas(rp *rocketpool.RocketPool, challengeId *big.Int, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (gaslimit.Limits, error) {
-	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
-	if err != nil {
-		return gaslimit.Limits{}, err
-	}
-	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "respondWithMegapoolValidator", challengeId, validatorId, slotTimestamp, validatorProof, slotProof)
+	return (PerformanceChallengeDefense{ChallengeId: challengeId, ValidatorId: validatorId, SlotTimestamp: slotTimestamp, Validator: validatorProof, Slot: slotProof}).EstimateGas(rp, opts)
 }
 
 // Respond to a performance challenge with proof that a listed validator
 // activated after the challenge's start epoch.
 func RespondWithValidator(rp *rocketpool.RocketPool, challengeId *big.Int, validatorId uint32, slotTimestamp uint64, validatorProof ValidatorProof, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkParticipation.Transact(opts, "respondWithMegapoolValidator", challengeId, validatorId, slotTimestamp, validatorProof, slotProof)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error responding to challenge: %w", err)
-	}
-	return tx.Hash(), nil
+	return (PerformanceChallengeDefense{ChallengeId: challengeId, ValidatorId: validatorId, SlotTimestamp: slotTimestamp, Validator: validatorProof, Slot: slotProof}).Submit(rp, opts)
 }
 
 // Estimate the gas to call FinaliseChallenge
