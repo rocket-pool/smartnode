@@ -162,9 +162,6 @@ func getSettings() error {
 	fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
 	fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
 	fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", math.WeiToEth(response.Megapool.PenaltyThreshold)*100)
-	if response.Saturn2Deployed {
-		fmt.Printf("\tPrestake Challenge Period:              %.0f Hours\n", response.Megapool.PrestakeChallengePeriod.Hours())
-	}
 
 	return nil
 }
