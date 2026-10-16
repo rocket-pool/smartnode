@@ -22,6 +22,8 @@ func IsSaturn2OnlySetting(contract, setting string) bool {
 			return true
 		}
 		return false
+	case protocol.MegapoolSettingsContractName:
+		return setting == protocol.MegapoolExitDeficitPath
 	default:
 		return false
 	}

@@ -138,6 +138,7 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MegapoolUserDistributeDelayPath:          settingKindUint256,
 		MegapoolUserDistributeDelayShortfallPath: settingKindUint256,
 		MegapoolPenaltyThreshold:                 settingKindUint256,
+		MegapoolExitDeficitPath:                  settingKindUint256,
 	},
 }
 

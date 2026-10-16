@@ -23,14 +23,20 @@ func TestDecodeBatchSettings(t *testing.T) {
 			Setting:  protocol.MinimumDepositSettingPath,
 			Value:    "1000000000000000000",
 		},
+		{
+			Contract: protocol.MegapoolSettingsContractName,
+			Setting:  protocol.MegapoolExitDeficitPath,
+			Type:     protocol.ProposalSettingTypeNameUint256,
+			Value:    "200000000000000001",
+		},
 	}
 
 	decoded, err := decodeBatchSettings(entries, "")
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(decoded.values) != 2 {
-		t.Fatalf("got %d values, want 2", len(decoded.values))
+	if len(decoded.values) != 3 {
+		t.Fatalf("got %d values, want 3", len(decoded.values))
 	}
 	if decoded.settingTypes[0] != types.ProposalSettingType_Bool {
 		t.Fatalf("first type = %v", decoded.settingTypes[0])
@@ -42,7 +48,11 @@ func TestDecodeBatchSettings(t *testing.T) {
 	if !ok || amount.String() != "1000000000000000000" {
 		t.Fatalf("second value = %v", decoded.values[1])
 	}
-	if decoded.message != "set auction.lot.create.enabled, deposit.minimum" {
+	deficit, ok := decoded.values[2].(*big.Int)
+	if !ok || deficit.String() != "200000000000000001" || decoded.settingTypes[2] != types.ProposalSettingType_Uint256 {
+		t.Fatalf("exit deficit not preserved as uint256 wei: %v (type %v)", decoded.values[2], decoded.settingTypes[2])
+	}
+	if decoded.message != "set auction.lot.create.enabled, deposit.minimum, megapool.exit.deficit" {
 		t.Fatalf("message = %q", decoded.message)
 	}
 }

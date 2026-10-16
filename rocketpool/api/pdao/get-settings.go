@@ -192,6 +192,14 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	if response.Saturn2Deployed {
+		wg.Go(func() error {
+			var err error
+			response.Megapool.ExitDeficit, err = protocol.GetMegapoolExitDeficit(rp, nil)
+			return err
+		})
+	}
+
 	// === Performance ===
 
 	if response.Saturn2Deployed {

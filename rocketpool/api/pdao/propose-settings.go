@@ -10,13 +10,32 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/cli"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+func requireSaturn2ForSettings(rp *rocketpool.RocketPool, settings ...api.PDAOBatchSetting) error {
+	for _, setting := range settings {
+		if !cliutils.IsSaturn2OnlySetting(setting.Contract, setting.Setting) {
+			continue
+		}
+		deployed, err := state.IsSaturn2Deployed(rp, nil)
+		if err != nil {
+			return fmt.Errorf("error checking if Saturn 2 is deployed: %w", err)
+		}
+		if !deployed {
+			return fmt.Errorf("setting %s is not available until Saturn 2 is deployed", setting.Setting)
+		}
+		return nil
+	}
+	return nil
+}
 
 func canProposeSetting(c *cli.Command, contractName string, settingName string, value string) (*api.CanProposePDAOSettingResponse, error) {
 
@@ -37,6 +56,9 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireSaturn2ForSettings(rp, api.PDAOBatchSetting{Contract: contractName, Setting: settingName}); err != nil {
 		return nil, err
 	}
 	bc, err := services.GetBeaconClient(c)
@@ -1069,6 +1091,16 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PenaltyThreshold: %w", err)
 			}
+		// ExitDeficit
+		case protocol.MegapoolExitDeficitPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeMegapoolExitDeficitGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing ExitDeficit: %w", err)
+			}
 		}
 
 	}
@@ -1099,6 +1131,9 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireSaturn2ForSettings(rp, api.PDAOBatchSetting{Contract: contractName, Setting: settingName}); err != nil {
 		return nil, err
 	}
 	bc, err := services.GetBeaconClient(c)
@@ -2065,6 +2100,16 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposePenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
+			}
+		// ExitDeficit
+		case protocol.MegapoolExitDeficitPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMegapoolExitDeficit(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing ExitDeficit: %w", err)
 			}
 		}
 
