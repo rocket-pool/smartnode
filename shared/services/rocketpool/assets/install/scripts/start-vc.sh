@@ -187,6 +187,14 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         CMD="$CMD --metrics --metrics-address=0.0.0.0 --metrics-port=$VC_METRICS_PORT"
     fi
 
+    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+    fi
+
     # Graffiti breaks if it's in the CMD string instead of here because of spaces
     exec ${CMD} --graffiti="$GRAFFITI"
 
