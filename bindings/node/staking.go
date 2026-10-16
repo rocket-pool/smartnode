@@ -47,7 +47,7 @@ func GetTotalMegapoolStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	return *totalRplStake, nil
 }
 
-// Get the total RPL staked in the network on megapools
+// Get the total legacy RPL staked in the network
 func GetTotalLegacyStakedRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
