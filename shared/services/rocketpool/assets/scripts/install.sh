@@ -347,40 +347,6 @@ fi
 # Check for existing installation
 progress 5 "Checking for existing installation..."
 if [ -d $RP_PATH ]; then 
-    # Check for legacy files - key on the old config.yml
-    if [ -f "$RP_PATH/config.yml" ]; then
-        progress 5 "Old installation detected, backing it up and migrating to new config system..."
-        OLD_CONFIG_BACKUP_PATH="$RP_PATH/old_config_backup"
-        { mkdir -p $OLD_CONFIG_BACKUP_PATH || fail "Could not create old config backup folder."; } >&2
-
-        if [ -f "$RP_PATH/config.yml" ]; then 
-            { mv "$RP_PATH/config.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move config.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/settings.yml" ]; then 
-            { mv "$RP_PATH/settings.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move settings.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/docker-compose.yml" ]; then 
-            { mv "$RP_PATH/docker-compose.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move docker-compose.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/docker-compose-metrics.yml" ]; then 
-            { mv "$RP_PATH/docker-compose-metrics.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move docker-compose-metrics.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/docker-compose-fallback.yml" ]; then 
-            { mv "$RP_PATH/docker-compose-fallback.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move docker-compose-fallback.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/prometheus.tmpl" ]; then 
-            { mv "$RP_PATH/prometheus.tmpl" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move prometheus.tmpl to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/grafana-prometheus-datasource.yml" ]; then 
-            { mv "$RP_PATH/grafana-prometheus-datasource.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move grafana-prometheus-datasource.yml to backup folder."; } >&2
-        fi
-        if [ -f "$RP_PATH/grafana-dashboards.yml" ]; then 
-            { mv "$RP_PATH/grafana-dashboards.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move grafana-dashboards.yml to backup folder."; } >&2
-        fi
-        if [ -d "$RP_PATH/chains" ]; then 
-            { mv "$RP_PATH/chains" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move chains directory to backup folder."; } >&2
-        fi
-    fi
 
     # Back up existing config file
     if [ -f "$RP_PATH/user-settings.yml" ]; then
@@ -427,6 +393,7 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 progress 8 "Cleaning up obsolete files from previous installs..."
 { rm -rf "$DATA_PATH/fr-default" || echo "NOTE: Could not remove '$DATA_PATH/fr-default' which is no longer needed."; } >&2
 { rm -f "$RP_PATH/images.env" || true; } >&2
+{ rm -rf "$RP_PATH/old_config_backup" || true; } >&2
 
 # Install shell completion for rocketpool CLI 
 progress 9 "Installing shell completion for rocketpool CLI..."
