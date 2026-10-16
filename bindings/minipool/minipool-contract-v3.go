@@ -46,7 +46,7 @@ type minipool_v3 struct {
 	RocketPool *rocketpool.RocketPool
 }
 
-// The decoded ABI for v2 minipools
+// The decoded ABI for v3 minipools
 var minipoolV3Abi *abi.ABI
 
 // Create new minipool contract
