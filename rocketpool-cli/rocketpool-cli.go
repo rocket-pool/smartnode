@@ -32,8 +32,7 @@ const (
 	maxAlertItems int = 3
 )
 
-// Run
-func main() {
+func newApp() *cli.Command {
 
 	app := &cli.Command{
 		Name:                  "rocketpool",
@@ -179,8 +178,9 @@ func main() {
 	}
 
 	app.After = func(ctx context.Context, c *cli.Command) error {
-		// Skip alert display when no subcommand was actually invoked (e.g. --help, --version).
-		if !c.Args().Present() {
+		// Completion scripts must not fetch or display alerts. Also skip when no
+		// subcommand was actually invoked (e.g. --help, --version).
+		if !c.Args().Present() || c.Args().First() == "completion" {
 			return nil
 		}
 
@@ -203,21 +203,29 @@ func main() {
 		}
 
 		if len(response.Alerts) > 0 {
-			fmt.Println()
-			color.YellowPrintln("=== Alerts ===")
+			// Keep informational alerts out of piped or captured command output.
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, color.Yellow("=== Alerts ==="))
 			for i, alert := range response.Alerts {
-				fmt.Println(alert.ColorString())
+				fmt.Fprintln(os.Stderr, alert.ColorString())
 				if i == maxAlertItems-1 {
 					break
 				}
 			}
 			if len(response.Alerts) > maxAlertItems {
-				fmt.Printf("... and %d more.\n", len(response.Alerts)-maxAlertItems)
+				fmt.Fprintf(os.Stderr, "... and %d more.\n", len(response.Alerts)-maxAlertItems)
 			}
 		}
 
 		return nil
 	}
+
+	return app
+}
+
+// Run
+func main() {
+	app := newApp()
 
 	// Disable urfav's built-in usage error handling since it
 	//  1) prints full usage which is extremely verbose
