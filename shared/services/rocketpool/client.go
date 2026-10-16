@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"math"
 	"math/big"
 	"net/http"
@@ -346,47 +345,7 @@ func (c *Client) runScript(script assets.ScriptWithContext, verbose bool, flags 
 	scriptFile.Close()
 
 	// Copy the context to the tmpdir
-	// If we upgrade to go 1.23+ we can probably use os.CopyFS() instead
-	err = fs.WalkDir(script.Context, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		dstpath := filepath.Join(tmpdir, path)
-		if d.IsDir() {
-			// If d is a directory, create it.
-			if verbose {
-				fmt.Printf("Creating directory: %s\n", path)
-			}
-			err = os.MkdirAll(dstpath, 0755)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-
-		// d is a file, copy it.
-		if verbose {
-			fmt.Printf("Copying file: %s\n", path)
-		}
-		scriptFile, err := os.Create(dstpath)
-		if err != nil {
-			return err
-		}
-		content, err := fs.ReadFile(script.Context, path)
-		if err != nil {
-			return err
-		}
-		_, err = scriptFile.Write(content)
-		if err != nil {
-			return err
-		}
-		err = scriptFile.Close()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
+	if err := os.CopyFS(tmpdir, script.Context); err != nil {
 		return fmt.Errorf("error copying script files: %w", err)
 	}
 
