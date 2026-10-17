@@ -538,3 +538,22 @@ func (c *Client) ClaimUnclaimedRewards(nodeAddress common.Address) (api.ClaimUnc
 func (c *Client) GetBondRequirement(numValidators uint64) (api.GetBondRequirementResponse, error) {
 	return c.callAPI[api.GetBondRequirementResponse]("GET", "/api/node/get-bond-requirement", url.Values{"numValidators": {strconv.FormatUint(numValidators, 10)}}, "Could not get get-bond-requirement response")
 }
+
+// Get pending transactions for the node
+func (c *Client) NodePendingTransactions() (api.NodePendingTransactionsResponse, error) {
+	return c.callAPI[api.NodePendingTransactionsResponse]("GET", "/api/node/pending-transactions", nil, "Could not get pending transactions")
+}
+
+// Check if a pending transaction can be cancelled
+func (c *Client) CanCancelNodeTransaction(nonce uint64) (api.CanCancelNodeTransactionResponse, error) {
+	return c.callAPI[api.CanCancelNodeTransactionResponse]("GET", "/api/node/can-cancel-transaction", url.Values{
+		"nonce": {strconv.FormatUint(nonce, 10)},
+	}, "Could not get can-cancel-transaction response")
+}
+
+// Cancel a pending transaction by sending a replacement 0-ETH transaction
+func (c *Client) CancelNodeTransaction(nonce uint64) (api.CancelNodeTransactionResponse, error) {
+	return c.callAPI[api.CancelNodeTransactionResponse]("POST", "/api/node/cancel-transaction", url.Values{
+		"nonce": {strconv.FormatUint(nonce, 10)},
+	}, "Could not cancel transaction")
+}
