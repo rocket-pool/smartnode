@@ -156,7 +156,7 @@ func (m *BeaconClientManager) GetEth2Config() (beacon.Eth2Config, error) {
 	return result.(beacon.Eth2Config), nil
 }
 
-// Get the Beacon configuration
+// Get the eth2 deposit contract info
 func (m *BeaconClientManager) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
 		return client.GetEth2DepositContract()

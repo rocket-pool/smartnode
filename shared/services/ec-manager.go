@@ -442,7 +442,7 @@ func (p *ExecutionClientManager) LatestBlockTime(ctx context.Context) (time.Time
 	return result.(time.Time), err
 }
 
-// BlockNumber returns the most recent block number
+// ChainID returns the chain ID of the execution client
 func (p *ExecutionClientManager) ChainID(ctx context.Context) (*big.Int, error) {
 	if p.static != nil {
 		return p.static.ChainID(ctx)
