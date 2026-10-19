@@ -20,7 +20,8 @@ import (
 const ValidatorContainerSuffix = "_validator"
 const BeaconContainerSuffix = "_eth2"
 
-var validatorRestartTimeout, _ = time.ParseDuration("5s")
+// Allow Prysm's duty-aware shutdown (up to 8s) to finish before Docker forces a stop.
+var validatorRestartTimeout, _ = time.ParseDuration("10s")
 
 // Restart validator process
 func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.ColorLogger, d *client.Client) error {
