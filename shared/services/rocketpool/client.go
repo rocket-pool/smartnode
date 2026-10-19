@@ -565,7 +565,7 @@ func (c *Client) GetDockerImage(container string) (string, error) {
 
 }
 
-// Get the current Docker image used by the given container
+// Get the current Docker status of the given container
 func (c *Client) GetDockerStatus(container string) (string, error) {
 
 	cmd := fmt.Sprintf("docker container inspect --format={{.State.Status}} %s", container)
@@ -714,7 +714,7 @@ func (c *Client) RemoveContainer(container string) (string, error) {
 
 }
 
-// Deletes a container
+// Deletes a docker volume
 func (c *Client) DeleteVolume(volume string) (string, error) {
 
 	cmd := fmt.Sprintf("docker volume rm %s", volume)
