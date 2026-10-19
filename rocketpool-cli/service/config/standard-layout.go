@@ -239,7 +239,7 @@ func (layout *standardLayout) createSettingFooter() {
 		panic(fmt.Errorf("error writing nav string 1: %w", err))
 	}
 
-	navString2 := "Esc: Go Back to Categories (saves changes)"
+	navString2 := "Esc: Go Back (saves changes)"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).

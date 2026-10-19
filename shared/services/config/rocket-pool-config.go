@@ -142,6 +142,9 @@ type RocketPoolConfig struct {
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
 
+	// Builder settings shared by consensus clients
+	Epbs *EpbsConfig `yaml:"epbs,omitempty"`
+
 	// MEV-Boost
 	EnableMevBoost config.Parameter `yaml:"enableMevBoost,omitempty"`
 	MevBoost       *MevBoostConfig  `yaml:"mevBoost,omitempty"`
@@ -620,6 +623,7 @@ func newRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConf
 	cfg.Exporter = NewExporterConfig(cfg)
 	cfg.BitflyNodeMetrics = NewBitflyNodeMetricsConfig(cfg)
 	cfg.Native = NewNativeConfig(cfg)
+	cfg.Epbs = NewEpbsConfig(cfg)
 	cfg.MevBoost = NewMevBoostConfig(cfg)
 	cfg.CommitBoost = NewCommitBoostConfig(cfg)
 	// Addons
@@ -746,6 +750,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"exporter":           cfg.Exporter,
 		"bitflyNodeMetrics":  cfg.BitflyNodeMetrics,
 		"native":             cfg.Native,
+		"epbs":               cfg.Epbs,
 		"mevBoost":           cfg.MevBoost,
 		"commitBoostConfig":  cfg.CommitBoost,
 		"addons-gww":         cfg.GraffitiWallWriter.GetConfig(),
@@ -1807,6 +1812,15 @@ func (cfg *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string
 // Checks to see if the current configuration is valid; if not, returns a list of errors
 func (cfg *RocketPoolConfig) Validate() []string {
 	errors := []string{}
+	if _, err := cfg.Epbs.GetMinBidGwei(); err != nil {
+		errors = append(errors, err.Error())
+	}
+	if _, err := cfg.Epbs.GetMaxExecutionPaymentGwei(); err != nil {
+		errors = append(errors, err.Error())
+	}
+	if _, err := cfg.Epbs.GetBuilderUrls(); err != nil {
+		errors = append(errors, err.Error())
+	}
 	if err := cfg.ValidateNetworkClients(); err != nil {
 		errors = append(errors, err.Error())
 	}

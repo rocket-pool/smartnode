@@ -19,8 +19,7 @@ type settingsHome struct {
 	ecPage           *ExecutionConfigPage
 	fallbackPage     *FallbackConfigPage
 	ccPage           *ConsensusConfigPage
-	mevBoostPage     *MevBoostConfigPage
-	commitBoostPage  *CommitBoostConfigPage
+	epbsPage         *EpbsPage
 	metricsPage      *MetricsConfigPage
 	alertingPage     *AlertingConfigPage
 	addonsPage       *AddonsPage
@@ -47,8 +46,7 @@ func newSettingsHome(md *MainDisplay) *settingsHome {
 	home.ecPage = NewExecutionConfigPage(home)
 	home.ccPage = NewConsensusConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
-	home.mevBoostPage = NewMevBoostConfigPage(home)
-	home.commitBoostPage = NewCommitBoostConfigPage(home)
+	home.epbsPage = NewEpbsPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
 	home.alertingPage = NewAlertingConfigPage(home)
 	home.addonsPage = NewAddonsPage(home)
@@ -58,8 +56,7 @@ func newSettingsHome(md *MainDisplay) *settingsHome {
 		home.ecPage,
 		home.ccPage,
 		home.fallbackPage,
-		home.mevBoostPage,
-		home.commitBoostPage,
+		home.epbsPage,
 		home.metricsPage,
 		home.alertingPage,
 		home.addonsPage,
@@ -246,12 +243,8 @@ func (home *settingsHome) refresh() {
 		home.fallbackPage.layout.refresh()
 	}
 
-	if home.mevBoostPage != nil {
-		home.mevBoostPage.layout.refresh()
-	}
-
-	if home.commitBoostPage != nil {
-		home.commitBoostPage.layout.refresh()
+	if home.epbsPage != nil {
+		home.epbsPage.handleLayoutChanged()
 	}
 
 	if home.metricsPage != nil {

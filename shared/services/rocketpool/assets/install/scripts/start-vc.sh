@@ -132,6 +132,21 @@ if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
         CMD="$CMD --monitoring.endpoint $BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
     fi
 
+    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        CMD="$CMD --builder.urls $EPBS_BUILDER_URLS"
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder.minBid $EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder.maxExecutionPayment $EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+        # Compare as text: a uint64 Gwei amount can exceed shell integer limits.
+        if [ "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" != "0" ]; then
+            CMD="$CMD --allowDangerousTrustedPayments"
+        fi
+    fi
+
     exec ${CMD} --graffiti "$GRAFFITI"
 
 fi
@@ -164,12 +179,29 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --block-monitor-type=event \
         $VC_ADDITIONAL_FLAGS"
 
-    if [ "$ENABLE_PBS" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ] || [ ! -z "$EPBS_BUILDER_URLS" ]; then
         CMD="$CMD --payload-builder"
     fi
 
     if [ "$ENABLE_METRICS" = "true" ]; then
         CMD="$CMD --metrics --metrics-address=0.0.0.0 --metrics-port=$VC_METRICS_PORT"
+    fi
+
+    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        BUILDER_URLS=$(printf '%s' "$EPBS_BUILDER_URLS" | tr ',' ' ')
+        for BUILDER_URL in $BUILDER_URLS; do
+            CMD="$CMD --payload-builder-url=$BUILDER_URL"
+        done
+        case "$EPBS_BUILDER_URLS" in
+            *,*) echo "WARNING: Nimbus v26.10.1 uses only the last --payload-builder-url when multiple builders are configured." ;;
+        esac
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
     fi
 
     # Graffiti breaks if it's in the CMD string instead of here because of spaces
@@ -226,6 +258,16 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CMD="$CMD --monitoring-host 0.0.0.0 --monitoring-port $VC_METRICS_PORT"
     else
         CMD="$CMD --disable-monitoring --disable-account-metrics"
+    fi
+
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        CMD="$CMD --builder-urls=$EPBS_BUILDER_URLS"
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
@@ -292,6 +334,17 @@ if [ "$CC_CLIENT" = "teku" ]; then
 
     if [ "$ENABLE_BITFLY_NODE_METRICS" = "true" ]; then
         CMD="$CMD --metrics-publish-endpoint=$BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
+    fi
+
+    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        CMD="$CMD --Xbuilder-urls=$EPBS_BUILDER_URLS"
+    fi
+    if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+        CMD="$CMD --Xbuilder-min-bid=$EPBS_MIN_BID_GWEI"
+    fi
+    if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+        CMD="$CMD --Xbuilder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
