@@ -179,7 +179,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --block-monitor-type=event \
         $VC_ADDITIONAL_FLAGS"
 
-    if [ "$ENABLE_PBS" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ] || [ ! -z "$EPBS_BUILDER_URLS" ]; then
         CMD="$CMD --payload-builder"
     fi
 
@@ -188,6 +188,15 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
     fi
 
     # Set up the ePBS builder flags (amounts are in integer Gwei)
+    if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+        BUILDER_URLS=$(printf '%s' "$EPBS_BUILDER_URLS" | tr ',' ' ')
+        for BUILDER_URL in $BUILDER_URLS; do
+            CMD="$CMD --payload-builder-url=$BUILDER_URL"
+        done
+        case "$EPBS_BUILDER_URLS" in
+            *,*) echo "WARNING: Nimbus v26.10.1 uses only the last --payload-builder-url when multiple builders are configured." ;;
+        esac
+    fi
     if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
         CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
     fi
