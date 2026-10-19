@@ -189,7 +189,7 @@ func builderAmountToGwei(value, name string) (string, error) {
 	whole, fraction, _ := strings.Cut(value, ".")
 	fraction = strings.TrimRight(fraction, "0")
 	if len(fraction) > 9 {
-		return "", fmt.Errorf("ePBS %s", name)
+		return "", fmt.Errorf("ePBS %s must not have more than 9 decimal places", name)
 	}
 	gwei, err := strconv.ParseUint(whole+fraction+strings.Repeat("0", 9-len(fraction)), 10, 64)
 	if err != nil {
