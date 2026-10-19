@@ -123,9 +123,10 @@ func (cfg *EpbsConfig) GetAvailableRelayParameters() []*config.Parameter {
 	return params
 }
 
-// GetBuilderUrls returns the selected network's endpoints in catalog order.
-// These are seeded from the relay catalog, not verified ePBS endpoints. Relay
-// signing pubkeys in URL userinfo are not builder authentication credentials.
+// GetBuilderUrls returns the selected network's endpoints in catalog order as
+// scheme://host. These are seeded from the relay catalog, not verified ePBS
+// endpoints. Relay userinfo and query strings are MEV-Boost metadata, not
+// ePBS builder credentials or paths.
 func (cfg *EpbsConfig) GetBuilderUrls() ([]string, error) {
 	urls := []string{}
 	seen := map[string]bool{}
@@ -142,8 +143,10 @@ func (cfg *EpbsConfig) GetBuilderUrls() ([]string, error) {
 			if err != nil || (endpoint.Scheme != "https" && endpoint.Scheme != "http") || endpoint.Hostname() == "" {
 				return nil, fmt.Errorf("ePBS builder endpoint for %s must be an HTTP or HTTPS URL", relay.Name)
 			}
-			endpoint.User = nil
-			builderURL := endpoint.String()
+			builderURL := (&url.URL{
+				Scheme: endpoint.Scheme,
+				Host:   endpoint.Host,
+			}).String()
 			if !seen[builderURL] {
 				urls = append(urls, builderURL)
 				seen[builderURL] = true
