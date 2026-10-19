@@ -71,6 +71,20 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --monitoring-endpoint $BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
     fi
 
+    # Set up the Hoodi ePBS builder flags (amounts are in integer Gwei)
+    if [ "$BEACON_NETWORK" = "hoodi" ]; then
+        if [ ! -z "$EPBS_BUILDER_URLS" ]; then
+            CMD="$CMD --builder-urls $EPBS_BUILDER_URLS"
+            # Lighthouse requires builder URLs when setting the execution payment cap.
+            if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
+                CMD="$CMD --builder-max-execution-payment $EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+            fi
+        fi
+        if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
+            CMD="$CMD --builder-min-bid $EPBS_MIN_BID_GWEI"
+        fi
+    fi
+
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
         echo "default: $GRAFFITI" > $GWW_GRAFFITI_FILE # Default graffiti value for Lighthouse
         exec ${CMD} --graffiti-file $GWW_GRAFFITI_FILE
