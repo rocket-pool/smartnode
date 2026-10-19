@@ -16,26 +16,22 @@ var builderAmountPattern = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?$`)
 type EpbsConfig struct {
 	Title string `yaml:"-"`
 
-	MinBid                  config.Parameter `yaml:"minBid,omitempty"`
-	MaxExecutionPayment     config.Parameter `yaml:"maxExecutionPayment,omitempty"`
-	FlashbotsRelay          config.Parameter `yaml:"flashbotsEnabled,omitempty"`
-	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
-	UltrasoundRelay         config.Parameter `yaml:"ultrasoundEnabled,omitempty"`
-	UltrasoundFilteredRelay config.Parameter `yaml:"ultrasoundFilteredEnabled,omitempty"`
-	AestusRelay             config.Parameter `yaml:"aestusEnabled,omitempty"`
-	TitanGlobalRelay        config.Parameter `yaml:"titanGlobalEnabled,omitempty"`
-	TitanRegionalRelay      config.Parameter `yaml:"titanRegionalEnabled,omitempty"`
-	BtcsOfacRelay           config.Parameter `yaml:"btcsOfacEnabled,omitempty"`
+	MinBid              config.Parameter `yaml:"minBid,omitempty"`
+	MaxExecutionPayment config.Parameter `yaml:"maxExecutionPayment,omitempty"`
+	Aestus              config.Parameter `yaml:"aestusEnabled,omitempty"`
+	Flashbots           config.Parameter `yaml:"flashbotsEnabled,omitempty"`
+	Nflaig              config.Parameter `yaml:"nflaigEnabled,omitempty"`
+	Titan               config.Parameter `yaml:"titanEnabled,omitempty"`
+	Ultrasound          config.Parameter `yaml:"ultrasoundEnabled,omitempty"`
+	Pk910               config.Parameter `yaml:"pk910Enabled,omitempty"`
 
 	parentConfig *RocketPoolConfig `yaml:"-"`
-	relays       []config.MevRelay `yaml:"-"`
 }
 
 func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 	epbs := &EpbsConfig{
 		Title:        "Builder Settings",
 		parentConfig: cfg,
-		relays:       createDefaultRelays(cfg.networks),
 		MinBid: config.Parameter{
 			ID:                 "minBid",
 			Name:               "Minimum Bid (ETH)",
@@ -57,48 +53,42 @@ func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 			OverwriteOnUpgrade: false,
 		},
 	}
-	for _, option := range epbs.relayOptions() {
-		for _, relay := range epbs.relays {
-			if relay.ID != option.id {
-				continue
-			}
-			*option.parameter = config.Parameter{
-				ID:                 option.parameterID,
-				Name:               fmt.Sprintf("Enable %s", relay.Name),
-				Description:        fmt.Sprintf("Select %s for the ePBS builder list. You can select multiple operators.\n\nUses this operator's existing relay endpoint for the selected network. ePBS availability at that endpoint has not yet been verified.", relay.Name),
-				Type:               config.ParameterType_Bool,
-				Default:            map[config.Network]interface{}{config.Network_All: false},
-				AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
-				CanBeBlank:         false,
-				OverwriteOnUpgrade: false,
-			}
+	for _, option := range epbs.builderOptions() {
+		*option.parameter = config.Parameter{
+			ID:                 option.id,
+			Name:               fmt.Sprintf("Enable %s", option.name),
+			Description:        fmt.Sprintf("Select %s for the ePBS builder list. You can select multiple operators.\n\n%s", option.name, option.url),
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		}
 	}
 	return epbs
 }
 
-type epbsRelayOption struct {
-	id          config.MevRelayID
-	parameterID string
-	parameter   *config.Parameter
+type epbsBuilderOption struct {
+	id        string
+	name      string
+	url       string
+	parameter *config.Parameter
 }
 
-func (cfg *EpbsConfig) relayOptions() []epbsRelayOption {
-	return []epbsRelayOption{
-		{config.MevRelayID_Flashbots, "flashbotsEnabled", &cfg.FlashbotsRelay},
-		{config.MevRelayID_BloxrouteRegulated, "bloxRouteRegulatedEnabled", &cfg.BloxRouteRegulatedRelay},
-		{config.MevRelayID_Ultrasound, "ultrasoundEnabled", &cfg.UltrasoundRelay},
-		{config.MevRelayID_UltrasoundFiltered, "ultrasoundFilteredEnabled", &cfg.UltrasoundFilteredRelay},
-		{config.MevRelayID_Aestus, "aestusEnabled", &cfg.AestusRelay},
-		{config.MevRelayID_TitanGlobal, "titanGlobalEnabled", &cfg.TitanGlobalRelay},
-		{config.MevRelayID_TitanRegional, "titanRegionalEnabled", &cfg.TitanRegionalRelay},
-		{config.MevRelayID_BTCSOfac, "btcsOfacEnabled", &cfg.BtcsOfacRelay},
+func (cfg *EpbsConfig) builderOptions() []epbsBuilderOption {
+	return []epbsBuilderOption{
+		{"aestusEnabled", "Aestus", "https://hoodi.aestus.live", &cfg.Aestus},
+		{"flashbotsEnabled", "Flashbots", "https://boost-relay-hoodi.flashbots.net", &cfg.Flashbots},
+		{"nflaigEnabled", "nflaig", "https://builder-hoodi.nflaig.dev", &cfg.Nflaig},
+		{"titanEnabled", "Titan", "https://hoodi.titanrelay.xyz", &cfg.Titan},
+		{"ultrasoundEnabled", "Ultra Sound", "https://relay-hoodi.ultrasound.money", &cfg.Ultrasound},
+		{"pk910Enabled", "pk910", "https://builder-hoodi.pk910.de", &cfg.Pk910},
 	}
 }
 
 func (cfg *EpbsConfig) GetParameters() []*config.Parameter {
 	params := []*config.Parameter{&cfg.MinBid, &cfg.MaxExecutionPayment}
-	for _, option := range cfg.relayOptions() {
+	for _, option := range cfg.builderOptions() {
 		params = append(params, option.parameter)
 	}
 	return params
@@ -108,49 +98,45 @@ func (cfg *EpbsConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// GetAvailableRelayParameters uses the same operator catalog and network
-// availability as MEV-Boost, with independent selections for ePBS.
-func (cfg *EpbsConfig) GetAvailableRelayParameters() []*config.Parameter {
+func (cfg *EpbsConfig) hoodiBuildersAvailable() bool {
+	info := cfg.parentConfig.GetNetworkInfo()
+	return info != nil && info.BeaconNetwork == "hoodi"
+}
+
+// GetAvailableBuilderParameters returns the Hoodi ePBS builder catalog.
+func (cfg *EpbsConfig) GetAvailableBuilderParameters() []*config.Parameter {
+	if !cfg.hoodiBuildersAvailable() {
+		return nil
+	}
 	params := []*config.Parameter{}
-	network := cfg.parentConfig.GetNetwork()
-	for _, option := range cfg.relayOptions() {
-		for _, relay := range cfg.relays {
-			if relay.ID == option.id && relay.Urls.UrlExists(network) {
-				params = append(params, option.parameter)
-			}
-		}
+	for _, option := range cfg.builderOptions() {
+		params = append(params, option.parameter)
 	}
 	return params
 }
 
-// GetBuilderUrls returns the selected network's endpoints in catalog order as
-// scheme://host. These are seeded from the relay catalog, not verified ePBS
-// endpoints. Relay userinfo and query strings are MEV-Boost metadata, not
-// ePBS builder credentials or paths.
+// GetBuilderUrls returns the selected endpoints in catalog order as scheme://host.
 func (cfg *EpbsConfig) GetBuilderUrls() ([]string, error) {
+	if !cfg.hoodiBuildersAvailable() {
+		return nil, nil
+	}
 	urls := []string{}
 	seen := map[string]bool{}
-	network := cfg.parentConfig.GetNetwork()
-	for _, option := range cfg.relayOptions() {
+	for _, option := range cfg.builderOptions() {
 		if option.parameter.Value != true {
 			continue
 		}
-		for _, relay := range cfg.relays {
-			if relay.ID != option.id || !relay.Urls.UrlExists(network) {
-				continue
-			}
-			endpoint, err := url.Parse(relay.Urls[network])
-			if err != nil || (endpoint.Scheme != "https" && endpoint.Scheme != "http") || endpoint.Hostname() == "" {
-				return nil, fmt.Errorf("ePBS builder endpoint for %s must be an HTTP or HTTPS URL", relay.Name)
-			}
-			builderURL := (&url.URL{
-				Scheme: endpoint.Scheme,
-				Host:   endpoint.Host,
-			}).String()
-			if !seen[builderURL] {
-				urls = append(urls, builderURL)
-				seen[builderURL] = true
-			}
+		endpoint, err := url.Parse(option.url)
+		if err != nil || (endpoint.Scheme != "https" && endpoint.Scheme != "http") || endpoint.Hostname() == "" {
+			return nil, fmt.Errorf("ePBS builder endpoint for %s must be an HTTP or HTTPS URL", option.name)
+		}
+		builderURL := (&url.URL{
+			Scheme: endpoint.Scheme,
+			Host:   endpoint.Host,
+		}).String()
+		if !seen[builderURL] {
+			urls = append(urls, builderURL)
+			seen[builderURL] = true
 		}
 	}
 	return urls, nil

@@ -2,21 +2,20 @@ package migration
 
 import "strconv"
 
-// Preserve the relay catalog and profile membership at the time ePBS settings
-// were introduced, independently of future changes to the service defaults.
-var epbsRelayMigrations = []struct {
-	builderKey     string
-	mevProfileKey  string
-	commitBoostKey string
+// Preserve overlapping MEV-Boost / Commit-Boost operator selections at the time
+// ePBS settings were introduced.
+var epbsBuilderMigrations = []struct {
+	builderKey      string
+	mevRelayKeys    []string
+	mevProfileKeys  []string
+	commitBoostKeys []string
 }{
-	{"flashbotsEnabled", "enableRegulatedAllMev", "cbFlashbotsEnabled"},
-	{"bloxRouteRegulatedEnabled", "enableRegulatedAllMev", "cbBloxRouteRegulatedEnabled"},
-	{"ultrasoundEnabled", "enableUnregulatedAllMev", ""},
-	{"ultrasoundFilteredEnabled", "enableRegulatedAllMev", "cbUltrasoundFilteredEnabled"},
-	{"aestusEnabled", "enableUnregulatedAllMev", ""},
-	{"titanGlobalEnabled", "enableUnregulatedAllMev", ""},
-	{"titanRegionalEnabled", "enableRegulatedAllMev", "cbTitanRegionalEnabled"},
-	{"btcsOfacEnabled", "enableRegulatedAllMev", "cbBtcsOfacEnabled"},
+	{"aestusEnabled", []string{"aestusEnabled"}, []string{"enableUnregulatedAllMev"}, nil},
+	{"flashbotsEnabled", []string{"flashbotsEnabled"}, []string{"enableRegulatedAllMev"}, []string{"cbFlashbotsEnabled"}},
+	{"nflaigEnabled", nil, nil, nil},
+	{"titanEnabled", []string{"titanGlobalEnabled", "titanRegionalEnabled"}, []string{"enableRegulatedAllMev", "enableUnregulatedAllMev"}, []string{"cbTitanRegionalEnabled"}},
+	{"ultrasoundEnabled", []string{"ultrasoundEnabled"}, []string{"enableUnregulatedAllMev"}, nil},
+	{"pk910Enabled", nil, nil, nil},
 }
 
 func upgradeFromV1245(serializedConfig map[string]map[string]string) error {
@@ -42,26 +41,32 @@ func upgradeFromV1245(serializedConfig map[string]map[string]string) error {
 	// trustless payments. External service URLs and custom relays remain in their
 	// original sections; they are not entries in the built-in builder catalog.
 	epbs := map[string]string{"minBid": "", "maxExecutionPayment": "0"}
-	for _, relay := range epbsRelayMigrations {
+	for _, builder := range epbsBuilderMigrations {
 		enabled := false
 		if useMev {
 			switch mev["selectionMode"] {
 			case "", "profile":
-				enabled = isTrue(mev[relay.mevProfileKey])
+				for _, key := range builder.mevProfileKeys {
+					enabled = enabled || isTrue(mev[key])
+				}
 			case "relay":
-				enabled = isTrue(mev[relay.builderKey])
+				for _, key := range builder.mevRelayKeys {
+					enabled = enabled || isTrue(mev[key])
+				}
 			}
-		} else if useCb && relay.commitBoostKey != "" {
+		} else if useCb && len(builder.commitBoostKeys) > 0 {
 			switch cb["relaySelectionMode"] {
 			case "", "all":
 				enabled = true
 			case "manual":
-				enabled = isTrue(cb[relay.commitBoostKey])
+				for _, key := range builder.commitBoostKeys {
+					enabled = enabled || isTrue(cb[key])
+				}
 			}
 		}
-		// Keep selections across networks, just as manual relay selection does.
-		// The ePBS config filters unavailable endpoints for the active network.
-		epbs[relay.builderKey] = strconv.FormatBool(enabled)
+		// Keep selections across networks. The ePBS config only exposes Hoodi
+		// endpoints for the active network.
+		epbs[builder.builderKey] = strconv.FormatBool(enabled)
 	}
 	serializedConfig["epbs"] = epbs
 	return nil
