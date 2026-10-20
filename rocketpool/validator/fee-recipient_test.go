@@ -62,7 +62,7 @@ func TestValidatorDockerRequests(t *testing.T) {
 			}
 			operation, query := "pause", ""
 			if tt.restart {
-				operation, query = "restart", "t=5"
+				operation, query = "restart", "t=10"
 			}
 			requests := 0
 			transport := validatorTestTransport(func(req *http.Request) (*http.Response, error) {
