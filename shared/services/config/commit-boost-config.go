@@ -41,6 +41,12 @@ type CommitBoostConfig struct {
 	// bloXroute regulated relay
 	BloxRouteRegulatedRelay config.Parameter `yaml:"cbBloxRouteRegulatedEnabled,omitempty"`
 
+	// Aestus relay
+	AestusRelay config.Parameter `yaml:"cbAestusEnabled,omitempty"`
+
+	// Titan global relay
+	TitanGlobalRelay config.Parameter `yaml:"cbTitanGlobalEnabled,omitempty"`
+
 	// Titan regional relay
 	TitanRegionalRelay config.Parameter `yaml:"cbTitanRegionalEnabled,omitempty"`
 
@@ -113,7 +119,7 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 		RelaySelectionMode: config.Parameter{
 			ID:                 "relaySelectionMode",
 			Name:               "Relay Selection Mode",
-			Description:        "Select how the TUI shows you the options for which PBS relays to enable.\n\nNote that all of the built-in relays support regional sanction lists (such as the US OFAC list) and are compliant with regulations.",
+			Description:        "Select how the TUI shows you the options for which PBS relays to enable.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: PbsRelaySelectionMode_All},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_CommitBoost},
@@ -121,7 +127,7 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Use All Relays",
-				Description: "Use this if you simply want to enable all of the built-in relays without needing to read about each individual relay. If new relays get added, you'll automatically start using those too.\n\nNote that all of the built-in relays support regional sanction lists (such as the US OFAC list) and are compliant with regulations.",
+				Description: "Use this if you simply want to enable all of the built-in relays without needing to read about each individual relay. If new relays get added, you'll automatically start using those too.",
 				Value:       PbsRelaySelectionMode_All,
 			}, {
 				Name:        "Manual Mode",
@@ -132,6 +138,8 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 
 		FlashbotsRelay:          generateCbRelayParameter("cbFlashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
 		BloxRouteRegulatedRelay: generateCbRelayParameter("cbBloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
+		AestusRelay:             generateCbRelayParameter("cbAestusEnabled", relayMap[config.MevRelayID_Aestus]),
+		TitanGlobalRelay:        generateCbRelayParameter("cbTitanGlobalEnabled", relayMap[config.MevRelayID_TitanGlobal]),
 		TitanRegionalRelay:      generateCbRelayParameter("cbTitanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
 		UltrasoundFilteredRelay: generateCbRelayParameter("cbUltrasoundFilteredEnabled", relayMap[config.MevRelayID_UltrasoundFiltered]),
 		BtcsOfacRelay:           generateCbRelayParameter("cbBtcsOfacEnabled", relayMap[config.MevRelayID_BTCSOfac]),
@@ -203,6 +211,8 @@ func (cfg *CommitBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.RelaySelectionMode,
 		&cfg.FlashbotsRelay,
 		&cfg.BloxRouteRegulatedRelay,
+		&cfg.AestusRelay,
+		&cfg.TitanGlobalRelay,
 		&cfg.TitanRegionalRelay,
 		&cfg.UltrasoundFilteredRelay,
 		&cfg.BtcsOfacRelay,
@@ -290,6 +300,8 @@ func (cfg *CommitBoostConfig) getEnabledRelays() []config.MevRelay {
 	case PbsRelaySelectionMode_Manual:
 		relays = cfg.maybeAddRelay(relays, cfg.FlashbotsRelay, config.MevRelayID_Flashbots, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.AestusRelay, config.MevRelayID_Aestus, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.TitanGlobalRelay, config.MevRelayID_TitanGlobal, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.TitanRegionalRelay, config.MevRelayID_TitanRegional, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundFilteredRelay, config.MevRelayID_UltrasoundFiltered, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BtcsOfacRelay, config.MevRelayID_BTCSOfac, currentNetwork)
@@ -349,6 +361,17 @@ func (cfg *CommitBoostConfig) GetContainerTag() string {
 
 // Create the default Commit-Boost PBS relays. URLs come from the loaded network YAML.
 func createCommitBoostRelays(networks *NetworksConfig) []config.MevRelay {
+	// Keep the production relay catalog unchanged while adding Hoodi's relays.
+	hoodiRelayUrls := func(id config.MevRelayID) config.UrlMap {
+		urls := relayUrlMap(networks, id)
+		for network := range urls {
+			if networks.GetNetwork(network).BeaconNetwork != "hoodi" {
+				delete(urls, network)
+			}
+		}
+		return urls
+	}
+
 	return []config.MevRelay{
 		{
 			ID:          config.MevRelayID_Flashbots,
@@ -363,6 +386,20 @@ func createCommitBoostRelays(networks *NetworksConfig) []config.MevRelay {
 			Description: "Select this to enable the \"regulated\" relay from bloXroute.",
 			Urls:        relayUrlMap(networks, config.MevRelayID_BloxrouteRegulated),
 			Regulated:   true,
+		},
+		{
+			ID:          config.MevRelayID_Aestus,
+			Name:        "Aestus",
+			Description: "The Aestus MEV-Boost Relay is an independent and non-censoring relay. It is committed to neutrality and the development of a healthy MEV-Boost ecosystem.",
+			Urls:        hoodiRelayUrls(config.MevRelayID_Aestus),
+			Regulated:   false,
+		},
+		{
+			ID:          config.MevRelayID_TitanGlobal,
+			Name:        "Titan Global (non-filtering)",
+			Description: "Titan Relay is a neutral, Rust-based PBS Relay optimized for low latency throughput, geographical distribution, and robustness. This is the non-filtering version.",
+			Urls:        hoodiRelayUrls(config.MevRelayID_TitanGlobal),
+			Regulated:   false,
 		},
 		{
 			ID:          config.MevRelayID_TitanRegional,
@@ -391,7 +428,9 @@ func createCommitBoostRelays(networks *NetworksConfig) []config.MevRelay {
 // Generate one of the relay parameters for Commit-Boost
 func generateCbRelayParameter(id string, relay config.MevRelay) config.Parameter {
 	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\n[white]%s\n\n", relay.Description)
-	description += "Complies with Regulations: YES\n"
+	if relay.Regulated {
+		description += "Complies with Regulations: YES\n"
+	}
 
 	return config.Parameter{
 		ID:                 id,

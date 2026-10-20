@@ -20,6 +20,8 @@ type CommitBoostConfigPage struct {
 	externalItems         []*parameterizedFormItem
 	flashbotsBox          *parameterizedFormItem
 	bloxrouteRegulatedBox *parameterizedFormItem
+	aestusBox             *parameterizedFormItem
+	titanGlobalBox        *parameterizedFormItem
 	titanRegionalBox      *parameterizedFormItem
 	ultrasoundFilteredBox *parameterizedFormItem
 	btcsOfacBox           *parameterizedFormItem
@@ -78,13 +80,15 @@ func (configPage *CommitBoostConfigPage) createContent() {
 	// Relay checkboxes - using CommitBoost's own relay parameters
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.FlashbotsRelay)
 	configPage.bloxrouteRegulatedBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.BloxRouteRegulatedRelay)
+	configPage.aestusBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.AestusRelay)
+	configPage.titanGlobalBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.TitanGlobalRelay)
 	configPage.titanRegionalBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.TitanRegionalRelay)
 	configPage.ultrasoundFilteredBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.UltrasoundFilteredRelay)
 	configPage.btcsOfacBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.BtcsOfacRelay)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteRegulatedBox, configPage.titanRegionalBox, configPage.ultrasoundFilteredBox, configPage.btcsOfacBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteRegulatedBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox, configPage.ultrasoundFilteredBox, configPage.btcsOfacBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -177,6 +181,10 @@ func (configPage *CommitBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.flashbotsBox.item)
 			case cfgtypes.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
+			case cfgtypes.MevRelayID_Aestus:
+				configPage.layout.form.AddFormItem(configPage.aestusBox.item)
+			case cfgtypes.MevRelayID_TitanGlobal:
+				configPage.layout.form.AddFormItem(configPage.titanGlobalBox.item)
 			case cfgtypes.MevRelayID_TitanRegional:
 				configPage.layout.form.AddFormItem(configPage.titanRegionalBox.item)
 			case cfgtypes.MevRelayID_UltrasoundFiltered:
