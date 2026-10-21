@@ -53,8 +53,7 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 	if err != nil {
 		return err
 	}
-	// Include development configs saved by this release before ePBS was added.
-	v1245, err := parseVersion("1.24.5")
+	v1244, err := parseVersion("1.24.4")
 	if err != nil {
 		return err
 	}
@@ -91,8 +90,8 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 			UpgradeFunc: upgradeFromV1210,
 		},
 		{
-			Version:     v1245,
-			UpgradeFunc: upgradeFromV1245,
+			Version:     v1244,
+			UpgradeFunc: upgradeFromV1244,
 		},
 	}
 

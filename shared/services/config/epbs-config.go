@@ -18,6 +18,7 @@ type EpbsConfig struct {
 
 	MinBid              config.Parameter `yaml:"minBid,omitempty"`
 	MaxExecutionPayment config.Parameter `yaml:"maxExecutionPayment,omitempty"`
+	BuilderBoostFactor  config.Parameter `yaml:"builderBoostFactor,omitempty"`
 	Aestus              config.Parameter `yaml:"aestusEnabled,omitempty"`
 	Flashbots           config.Parameter `yaml:"flashbotsEnabled,omitempty"`
 	Nflaig              config.Parameter `yaml:"nflaigEnabled,omitempty"`
@@ -49,6 +50,16 @@ func NewEpbsConfig(cfg *RocketPoolConfig) *EpbsConfig {
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: "0"},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+		BuilderBoostFactor: config.Parameter{
+			ID:                 "builderBoostFactor",
+			Name:               "Builder Boost Factor",
+			Description:        "The percentage applied to a builder bid when comparing it with a locally built payload. 100 compares them equally. A value below 100 favors the local payload, and 0 uses the local payload whenever it is available. For example, 90 selects a builder bid only when it is about 11% higher than the local payload.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: uint64(100)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -87,7 +98,7 @@ func (cfg *EpbsConfig) builderOptions() []epbsBuilderOption {
 }
 
 func (cfg *EpbsConfig) GetParameters() []*config.Parameter {
-	params := []*config.Parameter{&cfg.MinBid, &cfg.MaxExecutionPayment}
+	params := []*config.Parameter{&cfg.MinBid, &cfg.MaxExecutionPayment, &cfg.BuilderBoostFactor}
 	for _, option := range cfg.builderOptions() {
 		params = append(params, option.parameter)
 	}
@@ -165,6 +176,16 @@ func (cfg *EpbsConfig) GetMaxExecutionPaymentGwei() (string, error) {
 		return "0", nil
 	}
 	return gwei, err
+}
+
+// GetBuilderBoostFactor returns the percentage applied to a builder bid.
+// 100 compares a builder bid and a local payload equally.
+func (cfg *EpbsConfig) GetBuilderBoostFactor() (string, error) {
+	value, ok := cfg.BuilderBoostFactor.Value.(uint64)
+	if !ok {
+		return "", fmt.Errorf("ePBS builder boost factor must be a whole number from 0 to 18446744073709551615")
+	}
+	return strconv.FormatUint(value, 10), nil
 }
 
 func builderAmountToGwei(value, name string) (string, error) {

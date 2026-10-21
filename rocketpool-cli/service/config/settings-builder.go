@@ -29,7 +29,7 @@ func NewBuilderConfigPage(epbsPage *EpbsPage) *BuilderConfigPage {
 		epbsPage.page,
 		"settings-builder",
 		"Builder Settings",
-		"Set the minimum bid and maximum execution payment in ETH, and select builders for the ePBS builder list. These settings are shared by all consensus clients.",
+		"Set the minimum bid, maximum execution payment, and builder boost factor, and select builders for the ePBS builder list. These settings are shared by all consensus clients.",
 		configPage.layout.grid,
 	)
 	configPage.handleLayoutChanged()
@@ -45,6 +45,7 @@ func (configPage *BuilderConfigPage) handleLayoutChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.items[&cfg.MinBid].item)
 	configPage.layout.form.AddFormItem(configPage.items[&cfg.MaxExecutionPayment].item)
+	configPage.layout.form.AddFormItem(configPage.items[&cfg.BuilderBoostFactor].item)
 	for _, param := range cfg.GetAvailableBuilderParameters() {
 		configPage.layout.form.AddFormItem(configPage.items[param].item)
 	}
