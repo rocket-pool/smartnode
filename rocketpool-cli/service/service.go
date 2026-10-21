@@ -183,7 +183,30 @@ func serviceStatus(composeFiles []string) error {
 	}
 
 	// Print service status
-	return rp.PrintServiceStatus(composeFiles)
+	err = rp.PrintServiceStatus(composeFiles)
+	if err != nil {
+		return err
+	}
+
+	// Print volume sizes
+	sizes, err := rp.GetVolumeSizes(cfg.Smartnode.ProjectName.Value.(string))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get volume sizes: %s\n", err.Error())
+		return nil
+	}
+	if len(sizes) == 0 {
+		return nil
+	}
+	width := 0
+	for _, v := range sizes {
+		width = max(width, len(v.Name))
+	}
+	fmt.Println()
+	fmt.Println("Volume sizes:")
+	for _, v := range sizes {
+		fmt.Printf("%-*s  %s\n", width, v.Name, v.Size)
+	}
+	return nil
 
 }
 
