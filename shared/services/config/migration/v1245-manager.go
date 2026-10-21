@@ -18,7 +18,7 @@ var epbsBuilderMigrations = []struct {
 	{"pk910Enabled", nil, nil, nil},
 }
 
-func upgradeFromV1245(serializedConfig map[string]map[string]string) error {
+func upgradeFromV1244(serializedConfig map[string]map[string]string) error {
 	// An existing section belongs to the user, including blank bids and disabled
 	// builders. Never re-seed it from settings they may have since changed.
 	if serializedConfig["epbs"] != nil {
@@ -40,7 +40,8 @@ func upgradeFromV1245(serializedConfig map[string]map[string]string) error {
 	// There were no shared bid limits to migrate. Default to counting only
 	// trustless payments. External service URLs and custom relays remain in their
 	// original sections; they are not entries in the built-in builder catalog.
-	epbs := map[string]string{"minBid": "", "maxExecutionPayment": "0"}
+	// 100 compares a builder bid and a local payload equally.
+	epbs := map[string]string{"minBid": "", "maxExecutionPayment": "0", "builderBoostFactor": "100"}
 	for _, builder := range epbsBuilderMigrations {
 		enabled := false
 		if useMev {

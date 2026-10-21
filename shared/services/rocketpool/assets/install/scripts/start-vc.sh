@@ -60,7 +60,16 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     fi
 
     if [ "$ENABLE_PBS" = "true" ]; then
-        CMD="$CMD --builder-proposals --prefer-builder-proposals"
+        CMD="$CMD --builder-proposals"
+        if [ "$BEACON_NETWORK" != "hoodi" ]; then
+            if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+                CMD="$CMD --builder-boost-factor $EPBS_BUILDER_BOOST_FACTOR"
+            else
+                CMD="$CMD --prefer-builder-proposals"
+            fi
+        elif [ -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+            CMD="$CMD --prefer-builder-proposals"
+        fi
     fi
 
     if [ "$ENABLE_METRICS" = "true" ]; then
@@ -82,6 +91,9 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         fi
         if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
             CMD="$CMD --builder-min-bid $EPBS_MIN_BID_GWEI"
+        fi
+        if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+            CMD="$CMD --builder-boost-factor $EPBS_BUILDER_BOOST_FACTOR"
         fi
     fi
 
@@ -160,6 +172,9 @@ if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --allowDangerousTrustedPayments"
         fi
     fi
+    if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+        CMD="$CMD --builder.selection maxprofit --builder.boostFactor $EPBS_BUILDER_BOOST_FACTOR"
+    fi
 
     exec ${CMD} --graffiti "$GRAFFITI"
 
@@ -216,6 +231,9 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
     fi
     if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
         CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+    fi
+    if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+        CMD="$CMD --builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
     fi
 
     # Graffiti breaks if it's in the CMD string instead of here because of spaces
@@ -282,6 +300,9 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     fi
     if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
         CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+    fi
+    if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+        CMD="$CMD --builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
@@ -359,6 +380,9 @@ if [ "$CC_CLIENT" = "teku" ]; then
     fi
     if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
         CMD="$CMD --Xbuilder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+    fi
+    if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
+        CMD="$CMD --Xbuilder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then

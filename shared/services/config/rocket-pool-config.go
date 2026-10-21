@@ -1818,6 +1818,9 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	if _, err := cfg.Epbs.GetMaxExecutionPaymentGwei(); err != nil {
 		errors = append(errors, err.Error())
 	}
+	if _, err := cfg.Epbs.GetBuilderBoostFactor(); err != nil {
+		errors = append(errors, err.Error())
+	}
 	if _, err := cfg.Epbs.GetBuilderUrls(); err != nil {
 		errors = append(errors, err.Error())
 	}
