@@ -45,7 +45,6 @@ type FinalBalanceProofBundleV2 struct {
 	ValidatorProof                   ValidatorProof           `json:"validatorProof"`
 	SlotProof                        SlotProof                `json:"slotProof"`
 	PreviousNextWithdrawalIndexProof NextWithdrawalIndexProof `json:"previousNextWithdrawalIndexProof"`
-	ValidatorBalanceProof            ValidatorBalanceProof    `json:"validatorBalanceProof"`
 }
 
 // UsesProofBundles selects the transaction format from the deployed manager version.
@@ -158,7 +157,6 @@ func EncodeFinalBalanceProofBundleV2(
 	validatorProof ValidatorProof,
 	slotProof SlotProof,
 	previousNextWithdrawalIndexProof NextWithdrawalIndexProof,
-	validatorBalanceProof ValidatorBalanceProof,
 ) ([]byte, error) {
 	return encodeTuple([]abi.ArgumentMarshaling{
 		{Name: "withdrawalProof", Type: "tuple", Components: withdrawalProofComponents},
@@ -171,7 +169,6 @@ func EncodeFinalBalanceProofBundleV2(
 		ValidatorProof:                   validatorProof,
 		SlotProof:                        slotProof,
 		PreviousNextWithdrawalIndexProof: previousNextWithdrawalIndexProof,
-		ValidatorBalanceProof:            validatorBalanceProof,
 	})
 }
 
