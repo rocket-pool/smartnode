@@ -892,15 +892,44 @@ func (c *Client) GetClientVolumeName(container string, volumeTarget string) (str
 	return strings.TrimSpace(string(output)), nil
 }
 
-// Gets the disk usage of the given volume
-func (c *Client) GetVolumeSize(volumeName string) (string, error) {
+// A docker volume and its disk usage
+type VolumeSize struct{ Name, Size string }
 
-	cmd := fmt.Sprintf("docker system df -v --format='{{range .Volumes}}{{if eq \"%s\" .Name}}{{.Size}}{{end}}{{end}}'", volumeName)
+// Gets the disk usage of the volumes of a compose project, sorted by name
+func (c *Client) GetVolumeSizes(projectName string) ([]VolumeSize, error) {
+
+	cmd := `docker system df -v --format '{{range .Volumes}}{{.Name}}\t{{.Label "com.docker.compose.project"}}\t{{.Size}}\n{{end}}'`
 	output, err := c.readOutput(cmd)
 	if err != nil {
-		return "", err
+		if exitErr, isExitErr := err.(*exec.ExitError); isExitErr {
+			if msg := strings.TrimSpace(string(exitErr.Stderr)); msg != "" {
+				return nil, errors.New(msg)
+			}
+		}
+		return nil, err
 	}
-	return strings.TrimSpace(string(output)), nil
+	return parseVolumeSizes(string(output), projectName)
+}
+
+// Parses the volume list printed by docker system df for the given compose project
+func parseVolumeSizes(output, projectName string) ([]VolumeSize, error) {
+	var sizes []VolumeSize
+	for line := range strings.SplitSeq(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) != 3 {
+			return nil, fmt.Errorf("unexpected volume line from docker: %q", line)
+		}
+		if fields[1] != projectName {
+			continue
+		}
+		sizes = append(sizes, VolumeSize{Name: fields[0], Size: fields[2]})
+	}
+	slices.SortFunc(sizes, func(a, b VolumeSize) int { return strings.Compare(a.Name, b.Name) })
+	return sizes, nil
 }
 
 // Runs the prune provisioner
