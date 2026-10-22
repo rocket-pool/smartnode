@@ -72,10 +72,6 @@ func TestEncodeFinalBalanceProofBundleV2(t *testing.T) {
 			NextWithdrawalIndex: 9,
 			Witnesses:           [][32]byte{{0x66}},
 		},
-		ValidatorBalanceProof{
-			BalanceChunk: [32]byte{0x77},
-			Witnesses:    [][32]byte{{0x88}},
-		},
 	)
 	if err != nil {
 		t.Fatalf("encode: %v", err)

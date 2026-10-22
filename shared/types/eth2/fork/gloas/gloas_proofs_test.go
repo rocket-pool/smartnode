@@ -405,38 +405,6 @@ func TestProveNextWithdrawalIndex(t *testing.T) {
 	}
 }
 
-func TestProveValidatorBalanceChunk(t *testing.T) {
-	state := minimalBeaconState()
-	state.Balances = []uint64{1, 0, 3, 4, 5}
-
-	_, chunk, err := state.ProveValidatorBalanceChunk(1)
-	if err != nil {
-		t.Fatalf("ProveValidatorBalanceChunk: %v", err)
-	}
-	if !IsZeroValidatorBalance(chunk, 1) {
-		t.Fatal("expected validator 1 lane to be zero")
-	}
-	if IsZeroValidatorBalance(chunk, 0) {
-		t.Fatal("expected validator 0 lane to be non-zero")
-	}
-
-	stateTree, err := generic.SSZ.GetTree(state)
-	if err != nil {
-		t.Fatalf("GetTree: %v", err)
-	}
-	direct, err := stateTree.Prove(int(GetGeneralizedIndexForBalanceChunk(1)))
-	if err != nil {
-		t.Fatalf("direct Prove: %v", err)
-	}
-	if ok, err := treeproof.VerifyProof(stateTree.Hash(), direct); err != nil || !ok {
-		t.Fatalf("verify balance chunk: ok=%v err=%v", ok, err)
-	}
-
-	if _, _, err := state.ProveValidatorBalanceChunk(uint64(len(state.Balances))); err == nil {
-		t.Fatal("expected out-of-bounds error")
-	}
-}
-
 func TestHistoricalBoundarySplit(t *testing.T) {
 	const w uint64 = 100
 	proofSlot := w + generic.SlotsPerHistoricalRoot

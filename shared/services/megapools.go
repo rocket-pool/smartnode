@@ -1282,13 +1282,6 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 	if err != nil {
 		return nil, nil, err
 	}
-	balanceLeafProof, balanceChunk, err := gloasWithdrawalState.ProveValidatorBalanceChunk(validatorIndex)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !gloas.IsZeroValidatorBalance(balanceChunk, validatorIndex) {
-		return nil, nil, fmt.Errorf("validator %d balance chunk is not zero at withdrawal slot %d", validatorIndex, withdrawalSlot)
-	}
 
 	previousSlot := withdrawalSlot - 1
 	nextWithdrawalIndex, nextWithdrawalIndexLeafProof, err := proveNextWithdrawalIndex(previousState)
@@ -1343,10 +1336,6 @@ func getGloasFinalBalanceProofBundle(bc beacon.Client, ec withdrawalExecutionCli
 		megapool.NextWithdrawalIndexProof{
 			NextWithdrawalIndex: nextWithdrawalIndex,
 			Witnesses:           ConvertToFixedSize(concatProofs(nextWithdrawalIndexLeafProof, previousPastRoot, blockHeaderProof)),
-		},
-		megapool.ValidatorBalanceProof{
-			BalanceChunk: balanceChunk,
-			Witnesses:    ConvertToFixedSize(concatProofs(balanceLeafProof, withdrawalPastRoot, blockHeaderProof)),
 		},
 	)
 	if err != nil {
