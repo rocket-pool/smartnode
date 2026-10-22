@@ -1387,7 +1387,7 @@ func terminateService(yes bool, composeFiles []string, configPath string) error 
 }
 
 // View the Rocket Pool service logs
-func serviceLogs(tail string, composeFiles []string, aliasedNames ...string) error {
+func serviceLogs(tail, since, until string, composeFiles []string, aliasedNames ...string) error {
 
 	// Handle name aliasing
 	serviceNames := []string{}
@@ -1409,7 +1409,7 @@ func serviceLogs(tail string, composeFiles []string, aliasedNames ...string) err
 	defer rp.Close()
 
 	// Print service logs
-	return rp.PrintServiceLogs(composeFiles, tail, serviceNames...)
+	return rp.PrintServiceLogs(composeFiles, tail, since, until, serviceNames...)
 
 }
 

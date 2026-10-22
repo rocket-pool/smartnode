@@ -506,16 +506,31 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 }
 
 // Print the Rocket Pool service logs
-func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
-	sanitizedStrings := make([]string, len(serviceNames))
-	for i, serviceName := range serviceNames {
-		sanitizedStrings[i] = shellescape.Quote(serviceName)
-	}
-	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
+func (c *Client) PrintServiceLogs(composeFiles []string, tail, since, until string, serviceNames ...string) error {
+	cmd, err := c.compose(composeFiles, serviceLogsArgs(tail, since, until, serviceNames))
 	if err != nil {
 		return err
 	}
 	return c.printOutput(cmd)
+}
+
+// Build the docker compose arguments for the service logs command
+func serviceLogsArgs(tail, since, until string, serviceNames []string) string {
+	parts := []string{"logs"}
+	if until == "" {
+		parts = append(parts, "-f")
+	}
+	parts = append(parts, "--tail", shellescape.Quote(tail))
+	if since != "" {
+		parts = append(parts, "--since", shellescape.Quote(since))
+	}
+	if until != "" {
+		parts = append(parts, "--until", shellescape.Quote(until))
+	}
+	for _, serviceName := range serviceNames {
+		parts = append(parts, shellescape.Quote(serviceName))
+	}
+	return strings.Join(parts, " ")
 }
 
 // Print the Rocket Pool service compose config

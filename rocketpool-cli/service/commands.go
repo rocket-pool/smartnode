@@ -355,11 +355,27 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Usage:   "The number of lines to show from the end of the logs (number or \"all\")",
 						Value:   "100",
 					},
+					&cli.StringFlag{
+						Name:  "since",
+						Usage: "Show logs since timestamp (e.g. 2013-01-02T13:23:37Z) or relative (e.g. 42m for 42 minutes)",
+					},
+					&cli.StringFlag{
+						Name:  "until",
+						Usage: "Show logs before a timestamp (e.g. 2013-01-02T13:23:37Z) or relative (e.g. 42m for 42 minutes)",
+					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 
+					// Show the whole time window unless the tail was set explicitly
+					tail := c.String("tail")
+					since := c.String("since")
+					until := c.String("until")
+					if !c.IsSet("tail") && (since != "" || until != "") {
+						tail = "all"
+					}
+
 					// Run command
-					return serviceLogs(c.String("tail"), getComposeFiles(c), c.Args().Slice()...)
+					return serviceLogs(tail, since, until, getComposeFiles(c), c.Args().Slice()...)
 
 				},
 			},
