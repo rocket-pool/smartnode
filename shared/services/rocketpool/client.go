@@ -989,7 +989,7 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 
 	for i := 0; i < retryCount; i++ {
 		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
-		cmdText := fmt.Sprintf(`docker run --quiet --rm --log-driver json-file --log-opt max-size=100m --log-opt max-file=3 --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.22.0")), command)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm --log-driver json-file --log-opt max-size=100m --log-opt max-file=3 --name curl%s --network container:%s %s -Ss %s`, pruneStarterContainerSuffix, executionContainerName, shellescape.Quote(c.resolvedImage(config.ImageCurl, "curlimages/curl:8.23.0")), command)
 
 		if i != 0 {
 			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
