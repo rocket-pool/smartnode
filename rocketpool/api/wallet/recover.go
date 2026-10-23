@@ -276,8 +276,9 @@ func recoverNodeKeys(c *cli.Command, rp *rocketpool.RocketPool, bc beacon.Client
 		}
 	}
 
+	pubkeys = filteredPubkeys
 	pubkeyMap := map[types.ValidatorPubkey]bool{}
-	for _, pubkey := range pubkeys {
+	for _, pubkey := range filteredPubkeys {
 		pubkeyMap[pubkey] = true
 	}
 
