@@ -132,7 +132,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
-		if validatorDetails.WithdrawableEpoch < FarFutureEpoch && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting {
+		if validatorDetails.WithdrawableEpoch < FarFutureEpoch && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting && !validatorInfo.ValidatorInfo.Locked {
 			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
 		}
 	}
