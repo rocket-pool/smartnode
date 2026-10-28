@@ -157,12 +157,12 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 		// Check the exit is visible on the selected state before proof generation
 		validatorIndexStr, err := t.bc.GetValidatorIndex(pubkey)
 		if err != nil {
-			t.log.Printlnf("Error getting beacon index for validator id %d: %w", validatorId, err)
+			t.log.Printlnf("Error getting beacon index for validator id %d: %v", validatorId, err)
 			continue
 		}
 		validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
 		if err != nil {
-			t.log.Printlnf("Error parsing beacon index for validator id %d: %w", validatorId, err)
+			t.log.Printlnf("Error parsing beacon index for validator id %d: %v", validatorId, err)
 			continue
 		}
 		if validatorIndex >= uint64(len(proofValidators)) {
@@ -178,7 +178,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkStateIndex) error {
 		err = t.createExitProof(t.rp, beaconState, slotTimestamp, mp, validatorId, pubkey)
 		// dont return if there was an error, just log it so we can continue with the next validator
 		if err != nil {
-			t.log.Printlnf("Error creating exit proof for validator %d: %w", validatorId, err)
+			t.log.Printlnf("Error creating exit proof for validator %d: %v", validatorId, err)
 		}
 	}
 	// Return
@@ -198,7 +198,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 
 	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, validatorPubkey, beaconState)
 	if err != nil {
-		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
+		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %v", err)
 		return err
 	}
 
@@ -207,7 +207,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 	// Get the gas limit
 	gasLimits, err := services.EstimateMegapoolNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		t.log.Printlnf("Could not estimate the gas required to notify exit on megapool validator %d: %w", validatorId, err)
+		t.log.Printlnf("Could not estimate the gas required to notify exit on megapool validator %d: %v", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasLimits.Safe))
