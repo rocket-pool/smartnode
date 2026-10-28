@@ -2,19 +2,18 @@ package pdao
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/api/response"
 	"github.com/rocket-pool/smartnode/rocketpool/api/snroute"
-
-	"github.com/urfave/cli/v3"
-
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -82,67 +81,24 @@ func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, erro
 		return nil, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 	intervalSize := big.NewInt(int64(cfg.Geth.EventLogInterval))
+	verifierAddresses := cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
 
-	// Get the lists of proposals / challenge indices to check the state for
-	propInfos := map[uint64]*proposalInfo{}
-	proposalIDsForStates := []uint64{}
-	challengedIndicesForStates := []uint64{}
-	for i, prop := range props {
-		shouldProcess := false
-		isProposer := false
-
-		if prop.ProposerAddress == nodeAccount.Address {
-			isProposer = true
-			if prop.State >= types.ProtocolDaoProposalState_QuorumNotMet {
-				shouldProcess = true
-			}
-		} else {
-			if prop.State != types.ProtocolDaoProposalState_Pending {
-				shouldProcess = true
-			}
+	// Newest proposals are scanned first. An unreadable window is skipped so
+	// the remaining proposals are still checked.
+	propInfos, proposalIDsForStates, challengedIndicesForStates, scanErr := collectProposalChallenges(
+		props,
+		nodeAccount.Address,
+		beaconCfg.SecondsPerSlot,
+		func(prop *protocol.ProtocolDaoProposalDetails, startBlock, endBlock *big.Int) ([]protocol.ChallengeSubmitted, error) {
+			return protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, verifierAddresses, nil)
+		},
+	)
+	if len(proposalIDsForStates) == 0 {
+		if scanErr != nil {
+			return nil, scanErr
 		}
-
-		if shouldProcess {
-			// Add it to the map
-			propInfo := &proposalInfo{
-				ProtocolDaoProposalDetails: &props[i],
-				IsProposer:                 isProposer,
-				Challenges:                 map[uint64]*challengeInfo{},
-			}
-			propInfos[prop.ID] = propInfo
-
-			// Get the events for all challenges against this proposal
-			startBlock := big.NewInt(int64(prop.TargetBlock))                              // Target block is a good start for the event window
-			blockSpan := uint64(prop.ChallengeWindow.Seconds()) / beaconCfg.SecondsPerSlot // The max possible number of blocks in the challenge window
-			endBlockUint := uint64(prop.TargetBlock) + blockSpan
-			endBlock := big.NewInt(int64(endBlockUint))
-
-			// Get the RocketRewardsPool addresses
-			verifierAddresses := cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
-			challengeEvents, err := protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, verifierAddresses, nil)
-			if err != nil {
-				return nil, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
-			}
-
-			// Add an explicit challenge event to the root to see if the proposal bond is refundable
-			proposalIDsForStates = append(proposalIDsForStates, prop.ID)
-			challengedIndicesForStates = append(challengedIndicesForStates, 1)
-			propInfo.Challenges[1] = &challengeInfo{
-				Challenger: common.Address{},
-				State:      0,
-			}
-
-			// Add each event to the list to get the states for
-			for _, event := range challengeEvents {
-				challengedIndex := event.Index.Uint64()
-				proposalIDsForStates = append(proposalIDsForStates, prop.ID)
-				challengedIndicesForStates = append(challengedIndicesForStates, challengedIndex)
-				propInfo.Challenges[challengedIndex] = &challengeInfo{
-					Challenger: event.Challenger,
-					State:      0,
-				}
-			}
-		}
+		response.ClaimableBonds = []api.BondClaimResult{}
+		return &response, nil
 	}
 
 	// Get the states of each prop / challenged index
@@ -214,8 +170,10 @@ func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, erro
 					// Only refund responded challenges if the proposal was destroyed
 					continue
 				}
-				if challengeInfo.State == types.ChallengeState_Challenged && propInfo.State < types.ProtocolDaoProposalState_QuorumNotMet {
-					// Unresponded challenges may be claimed after the proposal is finished
+				if challengeInfo.State == types.ChallengeState_Challenged && !unrespondedChallengeRefundable(propInfo.State) {
+					// Unresponded challenges may be claimed once the proposal is finished.
+					// Destroyed and Vetoed sort before QuorumNotMet, so a numeric comparison
+					// hides bonds on proposals defeated during the challenge phase.
 					continue
 				}
 
@@ -270,6 +228,88 @@ func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, erro
 	// Update the response and return
 	response.ClaimableBonds = claimableBonds
 	return &response, nil
+}
+
+func collectProposalChallenges(
+	props []protocol.ProtocolDaoProposalDetails,
+	nodeAccount common.Address,
+	secondsPerSlot uint64,
+	scan func(prop *protocol.ProtocolDaoProposalDetails, startBlock, endBlock *big.Int) ([]protocol.ChallengeSubmitted, error),
+) (map[uint64]*proposalInfo, []uint64, []uint64, error) {
+	propInfos := map[uint64]*proposalInfo{}
+	proposalIDsForStates := []uint64{}
+	challengedIndicesForStates := []uint64{}
+	var scanErr error
+
+	for i := len(props) - 1; i >= 0; i-- {
+		prop := &props[i]
+		isProposer := prop.ProposerAddress == nodeAccount
+		if !proposalHasClaimableChallenges(prop, isProposer) {
+			continue
+		}
+
+		startBlock := big.NewInt(int64(prop.TargetBlock))
+		blockSpan := uint64(prop.ChallengeWindow.Seconds()) / secondsPerSlot
+		endBlock := big.NewInt(int64(uint64(prop.TargetBlock) + blockSpan))
+
+		challengeEvents, err := scan(prop, startBlock, endBlock)
+		if err != nil {
+			log.Printf("PDAO claimable bonds: skipping proposal %d because its challenge events could not be read: %v", prop.ID, err)
+			if scanErr == nil {
+				scanErr = fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
+			}
+			// The root bond does not depend on challenge events.
+			if isProposer {
+				propInfo := newProposalInfo(prop, true)
+				propInfos[prop.ID] = propInfo
+				appendRootChallenge(propInfo, &proposalIDsForStates, &challengedIndicesForStates)
+			}
+			continue
+		}
+
+		propInfo := newProposalInfo(prop, isProposer)
+		propInfos[prop.ID] = propInfo
+		appendRootChallenge(propInfo, &proposalIDsForStates, &challengedIndicesForStates)
+		for _, event := range challengeEvents {
+			challengedIndex := event.Index.Uint64()
+			proposalIDsForStates = append(proposalIDsForStates, prop.ID)
+			challengedIndicesForStates = append(challengedIndicesForStates, challengedIndex)
+			propInfo.Challenges[challengedIndex] = &challengeInfo{
+				Challenger: event.Challenger,
+			}
+		}
+	}
+
+	return propInfos, proposalIDsForStates, challengedIndicesForStates, scanErr
+}
+
+// unrespondedChallengeRefundable reports whether a Challenged (not yet
+// responded) bond can be claimed.
+func unrespondedChallengeRefundable(state types.ProtocolDaoProposalState) bool {
+	return state == types.ProtocolDaoProposalState_Destroyed ||
+		state == types.ProtocolDaoProposalState_Vetoed ||
+		state >= types.ProtocolDaoProposalState_QuorumNotMet
+}
+
+func proposalHasClaimableChallenges(prop *protocol.ProtocolDaoProposalDetails, isProposer bool) bool {
+	if isProposer {
+		return prop.State >= types.ProtocolDaoProposalState_QuorumNotMet
+	}
+	return prop.State != types.ProtocolDaoProposalState_Pending
+}
+
+func newProposalInfo(prop *protocol.ProtocolDaoProposalDetails, isProposer bool) *proposalInfo {
+	return &proposalInfo{
+		ProtocolDaoProposalDetails: prop,
+		IsProposer:                 isProposer,
+		Challenges:                 map[uint64]*challengeInfo{},
+	}
+}
+
+func appendRootChallenge(propInfo *proposalInfo, proposalIDs *[]uint64, challengedIndices *[]uint64) {
+	*proposalIDs = append(*proposalIDs, propInfo.ID)
+	*challengedIndices = append(*challengedIndices, 1)
+	propInfo.Challenges[1] = &challengeInfo{}
 }
 
 // Check if a node was part of a proposal's defeat path
