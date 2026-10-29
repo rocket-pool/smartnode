@@ -160,7 +160,7 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 	// Get the gas limit
 	gasLimits, err := deposit.EstimateAssignDepositsGas(t.rp, big.NewInt(1), opts)
 	if err != nil {
-		t.log.Printlnf("error estimating assignment %w", err)
+		t.log.Printlnf("error estimating assignment %v", err)
 		return err
 	}
 	gas := big.NewInt(int64(gasLimits.Safe))

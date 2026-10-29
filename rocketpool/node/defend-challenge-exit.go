@@ -165,7 +165,7 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 	}
 	validatorProof, slotProof, err := services.GetValidatorProofFromState(t.bc, validatorPubkey, beaconState)
 	if err != nil {
-		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
+		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %v", err)
 		return err
 	}
 	if exiting && validatorProof.Validator.WithdrawableEpoch >= FarFutureEpoch {
