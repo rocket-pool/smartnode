@@ -96,6 +96,7 @@ func getStatus() error {
 		totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(8))
 		rpBond := new(big.Int).Sub(totalBond, status.Megapool.NodeBond)
 		fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(math.WeiToEth(status.Megapool.NodeBond), 6))
+		fmt.Printf("The megapool has %6f node queued bond ETH.\n", math.RoundDown(math.WeiToEth(status.Megapool.NodeQueuedBond), 6))
 		fmt.Printf("The megapool has %6f of protocol bonded ETH for a total of %6f of ETH capital.\n", math.RoundDown(math.WeiToEth(rpBond), 6), math.RoundDown(math.WeiToEth(totalBond), 6))
 		fmt.Printf("Megapool balance (EL): %6f ETH\n", math.RoundDown(math.WeiToEth(status.Megapool.Balances.ETH), 6))
 		if status.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
