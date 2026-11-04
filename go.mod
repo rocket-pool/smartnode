@@ -9,7 +9,7 @@ require (
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.17.8
+	github.com/ethereum/go-ethereum v1.17.10
 	github.com/fatih/color v1.19.0
 	github.com/felixge/fgprof v0.9.5
 	github.com/ferranbt/fastssz v0.1.4
@@ -32,7 +32,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/moby/client v0.6.2
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
-	github.com/pk910/dynamic-ssz v1.3.2
+	github.com/pk910/dynamic-ssz v1.4.0
 	github.com/princjef/gomarkdoc v0.4.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20240328144219-a1caa50c3a1e
@@ -48,8 +48,8 @@ require (
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.4.1
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	golang.org/x/sync v0.24.0
-	golang.org/x/term v0.46.0
-	golang.org/x/text v0.42.0
+	golang.org/x/term v0.47.0
+	golang.org/x/text v0.43.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -65,7 +65,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
-	github.com/casbin/govaluate v1.10.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.0.8 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
@@ -146,7 +145,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
-	github.com/pk910/hashtree-bindings v0.2.2 // indirect
+	github.com/pk910/hashtree-bindings v0.2.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/polydawn/refmt v0.89.1-0.20231129105047-37766d95467a // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
@@ -186,11 +185,11 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.83.2 // indirect
