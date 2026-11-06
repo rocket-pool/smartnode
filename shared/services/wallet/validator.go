@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -88,6 +89,8 @@ func (w *hdWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 	// Update keystores
 	err = w.StoreValidatorKey(key, path)
 	if err != nil {
+		pubkey := types.BytesToValidatorPubkey(key.PublicKey().Marshal())
+		_ = w.DeleteValidatorKey(pubkey)
 		return nil, err
 	}
 
@@ -132,6 +135,31 @@ func (w *hdWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BL
 	}
 	// If there were no errors, the key just didn't exist
 	return nil, fmt.Errorf("couldn't find the key for validator %s in any of the wallet's keystores", pubkey.Hex())
+
+}
+
+// Deletes a single validator key from all of the wallet's keystores
+func (w *hdWallet) DeleteValidatorKey(pubkey types.ValidatorPubkey) error {
+
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return errors.New("Wallet is not initialized")
+	}
+
+	names := make([]string, 0, len(w.keystores))
+	for name := range w.keystores {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var errs []error
+	for _, name := range names {
+		if err := w.keystores[name].DeleteValidatorKey(pubkey); err != nil {
+			errs = append(errs, fmt.Errorf("error deleting validator key %s for %s: %w", pubkey.Hex(), name, err))
+		}
+	}
+
+	return errors.Join(errs...)
 
 }
 

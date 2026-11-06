@@ -3,11 +3,14 @@ package node
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -28,7 +31,9 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/validator"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 const (
@@ -298,6 +303,11 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, t *snroute.TransactOpts) (*api.NodeDepositsResponse, error) {
 	opts := t.Opts()
 
+	// Ensure count is valid
+	if count == 0 {
+		return nil, fmt.Errorf("count must be greater than 0")
+	}
+
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -384,52 +394,155 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 		opts.Value = amountWei
 	}
 
+	validatorPubkeys, tx, err := executeDepositBatch(
+		depositBatchDeps{
+			wallet:             w,
+			eth2Config:         eth2Config,
+			withdrawalCreds:    withdrawalCredentials,
+			activeValidators:   status.ActiveValidatorCount,
+			nodeBond:           status.NodeBond,
+			nodeQueuedBond:     status.NodeQueuedBond,
+			expressTicketCount: expressTicketCount,
+			getBondRequirement: func(validatorCount *big.Int) (*big.Int, error) {
+				return node.GetBondRequirement(rp, validatorCount, nil)
+			},
+			getDepositData: validator.GetDepositData,
+			getValidatorStatus: func(pubKey rptypes.ValidatorPubkey) (beacon.ValidatorStatus, error) {
+				return bc.GetValidatorStatus(pubKey, nil)
+			},
+			validateDeposit: validateDepositInfo,
+			submitDeposits: func(deposits node.Deposits, txOpts *bind.TransactOpts) (*ethtypes.Transaction, error) {
+				return node.DepositMulti(rp, deposits, txOpts)
+			},
+		},
+		count,
+		expressTicketsRequested,
+		submit,
+		opts,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	response.ValidatorPubkeys = validatorPubkeys
+	response.TxHash = tx.Hash()
+
+	// Return response
+	return &response, nil
+
+}
+
+type depositBatchDeps struct {
+	wallet             wallet.Wallet
+	eth2Config         beacon.Eth2Config
+	withdrawalCreds    common.Hash
+	activeValidators   uint32
+	nodeBond           *big.Int
+	nodeQueuedBond     *big.Int
+	expressTicketCount uint64
+	getBondRequirement func(validatorCount *big.Int) (*big.Int, error)
+	getDepositData     func(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config, depositAmount uint64) (generic.DepositData, common.Hash, error)
+	getValidatorStatus func(pubkey rptypes.ValidatorPubkey) (beacon.ValidatorStatus, error)
+	validateDeposit    func(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error
+	submitDeposits     func(deposits node.Deposits, opts *bind.TransactOpts) (*ethtypes.Transaction, error)
+}
+
+func executeDepositBatch(
+	deps depositBatchDeps,
+	count uint64,
+	expressTicketsRequested int64,
+	submit bool,
+	opts *bind.TransactOpts,
+) (validatorPubkeys []rptypes.ValidatorPubkey, tx *ethtypes.Transaction, retErr error) {
+
+	if count == 0 {
+		return nil, nil, fmt.Errorf("count must be greater than 0")
+	}
+
+	initialKeyCount, err := deps.wallet.GetValidatorKeyCount()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	createdPubkeys := make([]rptypes.ValidatorPubkey, 0, count)
+	depositSucceeded := false
+	defer func() {
+		if depositSucceeded {
+			return
+		}
+
+		var cleanupErrs []error
+		for _, pk := range createdPubkeys {
+			if err := deps.wallet.DeleteValidatorKey(pk); err != nil {
+				cleanupErrs = append(cleanupErrs, err)
+			}
+		}
+
+		// Persist next_account without decrementing when live submission fails so
+		// burned derivation indices cannot collide with ambiguous/retried deposits (#379).
+		if submit {
+			currentKeyCount, countErr := deps.wallet.GetValidatorKeyCount()
+			if countErr != nil {
+				cleanupErrs = append(cleanupErrs, countErr)
+			} else if len(createdPubkeys) > 0 || currentKeyCount > initialKeyCount {
+				if saveErr := deps.wallet.Save(); saveErr != nil {
+					cleanupErrs = append(cleanupErrs, saveErr)
+				}
+			}
+		}
+
+		if len(cleanupErrs) > 0 {
+			retErr = errors.Join(retErr, errors.Join(cleanupErrs...))
+		}
+	}()
+
 	// Create validator keys and deposit data for all deposits
 	depositAmount := uint64(1e9) // 1 ETH in gwei
-	deposits := make([]node.NodeDeposit, count)
-	response.ValidatorPubkeys = make([]rptypes.ValidatorPubkey, count)
+	deposits := make(node.Deposits, count)
+	validatorPubkeys = make([]rptypes.ValidatorPubkey, count)
 
-	expressTicketsRequested = min(expressTicketsRequested, int64(expressTicketCount))
+	expressTicketsRequested = min(expressTicketsRequested, int64(deps.expressTicketCount))
 	lastBondAdded := big.NewInt(0)
-	bondedEth := status.NodeBond
-	if bondedEth == nil {
-		bondedEth = big.NewInt(0)
+	bondedEth := new(big.Int)
+	if deps.nodeBond != nil {
+		bondedEth.Set(deps.nodeBond)
 	}
-	queuedBondEth := status.NodeQueuedBond
-	if queuedBondEth == nil {
-		queuedBondEth = big.NewInt(0)
+	if deps.nodeQueuedBond != nil {
+		bondedEth.Add(bondedEth, deps.nodeQueuedBond)
 	}
-	bondedEth = bondedEth.Add(bondedEth, queuedBondEth)
 	for i := uint64(0); i < count; i++ {
 		bondedEth = bondedEth.Add(bondedEth, lastBondAdded)
 		// Get the bond requirement for each validator
-		bondRequirement, err := node.GetBondRequirement(rp, big.NewInt(int64(uint64(status.ActiveValidatorCount)+i+1)), nil)
+		bondRequirement, err := deps.getBondRequirement(big.NewInt(int64(uint64(deps.activeValidators) + i + 1)))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		lastBondAdded = bondRequirement
 		// Find the bond requirement for the next validator
 		nextBondRequirement := bondRequirement.Sub(bondRequirement, bondedEth)
 
-		validatorKey, err := w.CreateValidatorKey()
+		validatorKey, err := deps.wallet.CreateValidatorKey()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		derivedPubkey := rptypes.BytesToValidatorPubkey(validatorKey.PublicKey().Marshal())
+		createdPubkeys = append(createdPubkeys, derivedPubkey)
+
 		// Get validator deposit data and associated parameters
-		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+		depositData, depositDataRoot, err := deps.getDepositData(validatorKey, deps.withdrawalCreds, deps.eth2Config, depositAmount)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
 		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
 
 		// Make sure a validator with this pubkey doesn't already exist
-		status, err := bc.GetValidatorStatus(pubKey, nil)
+		status, err := deps.getValidatorStatus(pubKey)
 		if err != nil {
-			return nil, fmt.Errorf("Error checking for existing validator status for deposit %d/%d: %w\nYour funds have not been deposited for your own safety.", i+1, count, err)
+			return nil, nil, fmt.Errorf("Error checking for existing validator status for deposit %d/%d: %w\nYour funds have not been deposited for your own safety.", i+1, count, err)
 		}
 		if status.Exists {
-			return nil, fmt.Errorf("**** ALERT ****\n"+
+			return nil, nil, fmt.Errorf("**** ALERT ****\n"+
 				"The following validator pubkey is already in use on the Beacon chain:\n\t%s\n"+
 				"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
 				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
@@ -437,9 +550,9 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 		}
 
 		// Do a final sanity check
-		err = validateDepositInfo(eth2Config, depositAmount, pubKey, withdrawalCredentials, signature)
+		err = deps.validateDeposit(deps.eth2Config, depositAmount, pubKey, deps.withdrawalCreds, signature)
 		if err != nil {
-			return nil, fmt.Errorf("Your deposit %d/%d failed the validation safety check: %w\n"+
+			return nil, nil, fmt.Errorf("Your deposit %d/%d failed the validation safety check: %w\n"+
 				"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
 				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS and include the following information:\n"+
 				"\tDomain Type: 0x%s\n"+
@@ -451,11 +564,11 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 				"\tSignature: %s\n",
 				i+1, count, err,
 				hex.EncodeToString(eth2types.DomainDeposit[:]),
-				hex.EncodeToString(eth2Config.GenesisForkVersion),
+				hex.EncodeToString(deps.eth2Config.GenesisForkVersion),
 				hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
 				depositAmount,
 				pubKey.Hex(),
-				withdrawalCredentials.Hex(),
+				deps.withdrawalCreds.Hex(),
 				signature.Hex(),
 			)
 		}
@@ -468,7 +581,7 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 			DepositDataRoot:    depositDataRoot,
 		}
 
-		response.ValidatorPubkeys[i] = pubKey
+		validatorPubkeys[i] = pubKey
 		expressTicketsRequested--
 	}
 
@@ -476,29 +589,30 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 	opts.NoSend = !submit
 
 	// Make multiple deposits in a single transaction
-	tx, err := node.DepositMulti(rp, deposits, opts)
+	tx, err = deps.submitDeposits(deposits, opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	// Mark deposit succeeded immediately once DepositMulti succeeds so live
+	// validator keys are never deleted after broadcast.
+	depositSucceeded = true
 
 	// Print transaction if requested
 	if !submit {
 		b, err := tx.MarshalBinary()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		fmt.Printf("%x\n", b)
 	} else {
 		// Save wallet
-		if err := w.Save(); err != nil {
-			return nil, err
+		if err := deps.wallet.Save(); err != nil {
+			return nil, nil, err
 		}
 	}
 
-	response.TxHash = tx.Hash()
-
-	// Return response
-	return &response, nil
+	return validatorPubkeys, tx, nil
 
 }
 

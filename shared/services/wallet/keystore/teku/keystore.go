@@ -1,6 +1,7 @@
 package teku
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -178,5 +179,26 @@ func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.B
 	}
 
 	return privateKey, nil
+
+}
+
+// Delete a validator key and its password file if present
+func (ks *Keystore) DeleteValidatorKey(pubkey types.ValidatorPubkey) error {
+
+	pubkeyHex := hexutil.AddPrefix(pubkey.Hex())
+	keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, pubkeyHex+".json")
+	secretFilePath := filepath.Join(ks.keystorePath, KeystoreDir, SecretsDir, pubkeyHex+".txt")
+
+	var keyErr error
+	if err := os.Remove(keyFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		keyErr = fmt.Errorf("could not delete Teku validator key for %s: %w", pubkey.Hex(), err)
+	}
+
+	var secretErr error
+	if err := os.Remove(secretFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		secretErr = fmt.Errorf("could not delete Teku validator secret for %s: %w", pubkey.Hex(), err)
+	}
+
+	return errors.Join(keyErr, secretErr)
 
 }

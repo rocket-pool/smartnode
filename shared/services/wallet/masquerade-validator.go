@@ -41,6 +41,12 @@ func (w *masqueradeWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2
 
 }
 
+// Deletes a single validator key across all keystores
+func (w *masqueradeWallet) DeleteValidatorKey(pubkey types.ValidatorPubkey) error {
+	return ErrIsMasquerading
+
+}
+
 // Deletes all of the keystore directories and persistent VC storage
 func (w *masqueradeWallet) DeleteValidatorStores() error {
 	return ErrIsMasquerading
