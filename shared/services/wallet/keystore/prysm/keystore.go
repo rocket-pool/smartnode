@@ -268,3 +268,75 @@ func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.B
 	return nil, nil
 
 }
+
+// Delete a validator key from the encrypted Prysm account store if present
+func (ks *Keystore) DeleteValidatorKey(pubkey types.ValidatorPubkey) error {
+
+	keystoreFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName)
+	if _, err := os.Stat(keystoreFilePath); errors.Is(err, os.ErrNotExist) {
+		ks.as = nil
+		return nil
+	}
+
+	// Reload the account store from disk before mutating
+	ks.as = nil
+	if err := ks.initialize(); err != nil {
+		return err
+	}
+
+	// Filter out any matching validator key while preserving order
+	filteredPrivateKeys := make([][]byte, 0, len(ks.as.PrivateKeys))
+	filteredPublicKeys := make([][]byte, 0, len(ks.as.PublicKeys))
+	removed := false
+	for ki := 0; ki < len(ks.as.PublicKeys); ki++ {
+		if bytes.Equal(pubkey.Bytes(), ks.as.PublicKeys[ki]) {
+			removed = true
+			continue
+		}
+		filteredPrivateKeys = append(filteredPrivateKeys, ks.as.PrivateKeys[ki])
+		filteredPublicKeys = append(filteredPublicKeys, ks.as.PublicKeys[ki])
+	}
+	if !removed {
+		return nil
+	}
+
+	ks.as.PrivateKeys = filteredPrivateKeys
+	ks.as.PublicKeys = filteredPublicKeys
+
+	// Encode updated account store
+	asBytes, err := json.Marshal(ks.as)
+	if err != nil {
+		return fmt.Errorf("Could not encode validator account store: %w", err)
+	}
+
+	// Read the keystore account password
+	passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
+	passwordBytes, err := os.ReadFile(passwordFilePath)
+	if err != nil {
+		return fmt.Errorf("Error reading account password file: %w", err)
+	}
+
+	// Re-encrypt account store
+	asEncrypted, err := ks.encryptor.Encrypt(asBytes, string(passwordBytes))
+	if err != nil {
+		return fmt.Errorf("Could not encrypt validator account store: %w", err)
+	}
+
+	keystore := validatorKeystore{
+		Crypto:  asEncrypted,
+		Name:    ks.encryptor.Name(),
+		Version: ks.encryptor.Version(),
+		UUID:    uuid.New(),
+	}
+	ksBytes, err := json.Marshal(keystore)
+	if err != nil {
+		return fmt.Errorf("Could not encode validator keystore: %w", err)
+	}
+
+	if err := os.WriteFile(keystoreFilePath, ksBytes, FileMode); err != nil {
+		return fmt.Errorf("Could not write keystore to disk: %w", err)
+	}
+
+	return nil
+
+}

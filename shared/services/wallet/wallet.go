@@ -38,6 +38,7 @@ type Wallet interface {
 	AddKeystore(name string, ks keystore.Keystore)
 	CreateValidatorKey() (*eth2types.BLSPrivateKey, error)
 	Delete() error
+	DeleteValidatorKey(pubkey rptypes.ValidatorPubkey) error
 	DeleteValidatorStores() error
 	GetChainID() *big.Int
 	GetInitialized() (bool, error)
