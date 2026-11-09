@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -24,7 +25,7 @@ func WaitForTransactionWithContext(ctx context.Context, client rocketpool.Execut
 		if err == nil {
 			break
 		}
-		if err.Error() != "not found" {
+		if !errors.Is(err, ethereum.NotFound) {
 			return nil, err
 		}
 		select {
