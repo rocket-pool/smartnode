@@ -84,13 +84,14 @@ func MilliEthToWei(milliEth float64) *big.Int {
 
 // Converts float amount to big.Int considering a token's decimals
 func EthToWeiWithDecimals(amountRaw float64, decimals uint8) *big.Int {
-	var ethFloat big.Float
-	var weiFloat big.Float
-	var wei big.Int
-	ethFloat.SetString(strconv.FormatFloat(amountRaw, 'f', -1, 64))
-	weiFloat.Mul(&ethFloat, big.NewFloat(math.Pow(10, float64(decimals))))
-	weiFloat.Int(&wei)
-	return &wei
+	amount, ok := new(big.Rat).SetString(strconv.FormatFloat(amountRaw, 'f', -1, 64))
+	if !ok {
+		return new(big.Int)
+	}
+	// Keep the decimal scale exact, including values too large for float64.
+	scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	units := new(big.Int).Mul(amount.Num(), scale)
+	return units.Quo(units, amount.Denom())
 }
 
 // Converts big.Int to float64 considering a token's decimals
