@@ -35,6 +35,7 @@ const (
 	GlobalFeeRecipientFilename         string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 	PerKeyFeeRecipientFilename         string = "rp-fee-recipient-per-key"
+	KeymanagerTokenFilename            string = "keymanager-token.txt"
 )
 
 // Defaults
@@ -610,6 +611,10 @@ func (cfg *SmartnodeConfig) GetPerKeyFeeRecipientFilePath() string {
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", PerKeyFeeRecipientFilename)
+}
+
+func (cfg *SmartnodeConfig) GetKeymanagerTokenFilePath() string {
+	return filepath.Join(cfg.GetValidatorKeychainPath(), KeymanagerTokenFilename)
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {

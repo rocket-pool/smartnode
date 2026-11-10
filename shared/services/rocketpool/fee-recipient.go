@@ -20,8 +20,7 @@ import (
 
 // Config
 const (
-	FileMode        fs.FileMode = 0644
-	KeymanagerToken             = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	FileMode fs.FileMode = 0644
 )
 
 // Checks if the fee recipient file exists and has the correct distributor address in it.
@@ -88,6 +87,11 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 	}
 	keymanagerURL := fmt.Sprintf("http://%s:%d", keymanagerHost, keymanagerPort)
 
+	token, err := readKeymanagerToken(cfg)
+	if err != nil {
+		return err
+	}
+
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -107,7 +111,7 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 				return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
 			}
 
-			getRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
+			getRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 			resp, err := client.Do(getRequest)
 			if err != nil {
@@ -150,7 +154,7 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 				}
 
 				postRequest.Header.Set("Content-Type", "application/json")
-				postRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
+				postRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 				resp, err := client.Do(postRequest)
 				if err != nil {
@@ -173,6 +177,20 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 		return err
 	}
 	return nil
+}
+
+// readKeymanagerToken reads the bearer token written by start-vc.sh.
+func readKeymanagerToken(cfg *config.RocketPoolConfig) (string, error) {
+	path := cfg.Smartnode.GetKeymanagerTokenFilePath()
+	tokenBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("error reading keymanager token file: %w", err)
+	}
+	token := strings.TrimSpace(string(tokenBytes))
+	if token == "" {
+		return "", fmt.Errorf("keymanager token file %s is empty", path)
+	}
+	return token, nil
 }
 
 // Gets the expected contents of the fee recipient file
