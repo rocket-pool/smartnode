@@ -2,7 +2,12 @@
 # This script launches ETH2 validator clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
 
 GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
-echo -n "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
+
+# Create the keymanager API token
+KEYMANAGER_TOKEN_FILE="/validators/keymanager-token.txt"
+if [ ! -s "$KEYMANAGER_TOKEN_FILE" ]; then
+    echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > "$KEYMANAGER_TOKEN_FILE"
+fi
 
 # Set up the network-based flags
 if [ -z "$BEACON_NETWORK" ]; then
@@ -43,7 +48,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --http \
         --http-address 0.0.0.0 \
         --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
-        --http-token-path  /validators/token-file.txt \
+        --http-token-path  $KEYMANAGER_TOKEN_FILE \
         --unencrypted-http-transport \
         --graffiti-append false \
         --logfile-max-number 0 \
@@ -135,7 +140,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         --keymanager true \
         --keymanager.port ${VC_KEYMANAGER_API_PORT:-5062} \
         --keymanager.address 0.0.0.0 \
-        --keymanager.tokenFile /validators/token-file.txt \
+        --keymanager.tokenFile $KEYMANAGER_TOKEN_FILE \
         $VC_ADDITIONAL_FLAGS"
 
 if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
@@ -202,7 +207,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --keymanager \
         --keymanager-port=${VC_KEYMANAGER_API_PORT:-5062} \
         --keymanager-address=0.0.0.0 \
-        --keymanager-token-file=/validators/token-file.txt \
+        --keymanager-token-file=$KEYMANAGER_TOKEN_FILE \
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
         --suggested-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         --block-monitor-type=event \
@@ -268,7 +273,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         --rpc \
         --http-host 0.0.0.0 \
         --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
-        --keymanager-token-file /validators/token-file.txt \
+        --keymanager-token-file $KEYMANAGER_TOKEN_FILE \
         --wallet-password-file /validators/prysm-non-hd/direct/accounts/secret \
         --beacon-rpc-provider $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
@@ -342,7 +347,7 @@ if [ "$CC_CLIENT" = "teku" ]; then
         --validator-api-port=${VC_KEYMANAGER_API_PORT:-5062} \
         --validator-api-interface=0.0.0.0 \
         --validator-api-host-allowlist=* \
-        --validator-api-bearer-file=/validators/token-file.txt \
+        --validator-api-bearer-file=$KEYMANAGER_TOKEN_FILE \
         --Xvalidator-api-ssl-enabled=false \
         --Xvalidator-api-unsafe-hosts-enabled=true \
         --validators-proposer-default-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
