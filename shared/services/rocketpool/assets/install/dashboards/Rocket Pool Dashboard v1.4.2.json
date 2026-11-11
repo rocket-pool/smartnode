@@ -667,7 +667,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "(sum(rate(vc_signed_beacon_blocks_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_block_published_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_blocks_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_proposals{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed{job=\"validator\", type=\"block\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
+          "expr": "(sum(rate(vc_signed_beacon_blocks_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_block_published_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_blocks_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_proposals{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed_total{job=\"validator\", type=\"block\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
           "hide": false,
           "interval": "",
           "legendFormat": "Proposal",
@@ -677,7 +677,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "(sum(rate(vc_signed_attestations_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_published_attestations_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_attestations_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_attestations{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed{job=\"validator\", type=\"attestation\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
+          "expr": "(sum(rate(vc_signed_attestations_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_published_attestations_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_attestations_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_attestations{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed_total{job=\"validator\", type=\"attestation\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
           "hide": false,
           "interval": "",
           "legendFormat": "Attestation",
