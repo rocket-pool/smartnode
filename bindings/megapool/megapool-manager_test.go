@@ -89,22 +89,7 @@ func TestUnpackValidatorPrestakeInfo(t *testing.T) {
 	signature[0] = 0xcd
 	megapoolAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
 	deadline := big.NewInt(43200)
-	info := struct {
-		LastAssignmentTime uint32
-		LastRequestedValue uint32
-		LastRequestedBond  uint32
-		DepositValue       uint32
-		Staked             bool
-		Exited             bool
-		InQueue            bool
-		InPrestake         bool
-		ExpressUsed        bool
-		Dissolved          bool
-		Exiting            bool
-		Locked             bool
-		ExitBalance        uint64
-		LockedTime         uint64
-	}{
+	info := ValidatorInfo{
 		LastAssignmentTime: 10,
 		LastRequestedValue: 32000,
 		LastRequestedBond:  4000,
