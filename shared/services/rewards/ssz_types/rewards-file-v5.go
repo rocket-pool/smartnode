@@ -333,7 +333,7 @@ func NewNodeReward_v2(network Layer, address Address) *NodeReward_v2 {
 	}
 }
 
-// NodeRewards should implement sort.Interface to make it easier to sort.
+// NodeRewards_v2 should implement sort.Interface to make it easier to sort.
 func (n NodeRewards_v2) Len() int {
 	return len(n)
 }

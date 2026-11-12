@@ -79,7 +79,7 @@ func (b *Bundle) AddTransactions(txs []*types.Transaction) {
 	b.transactions = append(b.transactions, txs...)
 }
 
-// SetBlockNumber sets the block number for which this bundle is valid
+// SetTargetBlockNumber sets the block number for which this bundle is valid
 // If set to 0, the bundle is valid for the next block
 func (b *Bundle) SetTargetBlockNumber(blocknumber uint64) error {
 	if b.targetBlocknumber != 0 {
