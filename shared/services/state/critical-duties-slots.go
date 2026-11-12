@@ -14,7 +14,7 @@ type CriticalDutiesSlots struct {
 	CriticalDuties map[string][]uint64
 }
 
-// Gets the critical duties slots for a given state as if it were the final state in a epochs epoch interval
+// Gets the critical duties epochs for a given state as if it were the final state in the given epoch interval
 func NewCriticalDutiesEpochs(epochs uint64, state *NetworkStateIndex) *CriticalDutiesEpochs {
 	criticalDuties := &CriticalDutiesEpochs{
 		CriticalDuties: make(map[uint64][]string),
