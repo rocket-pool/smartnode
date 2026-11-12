@@ -30,6 +30,21 @@ type SlotProof struct {
 	Witnesses [][32]byte `json:"witnesses"`
 }
 
+type ProvedPendingDeposit struct {
+	Pubkey                []byte   `json:"pubkey"`
+	WithdrawalCredentials [32]byte `json:"withdrawalCredentials"`
+	AmountInGwei          uint64   `json:"amountInGwei"`
+	Signature             []byte   `json:"signature"`
+	Slot                  uint64   `json:"slot"`
+}
+
+type PendingDepositProof struct {
+	StateSlot    uint64               `json:"stateSlot"`
+	DepositIndex uint64               `json:"depositIndex"`
+	Deposit      ProvedPendingDeposit `json:"deposit"`
+	Witnesses    [][32]byte           `json:"witnesses"`
+}
+
 type ValidatorProof struct {
 	ValidatorIndex *big.Int        `json:"validatorIndex"`
 	Validator      ProvedValidator `json:"validator"`

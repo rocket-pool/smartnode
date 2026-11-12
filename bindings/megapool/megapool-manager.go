@@ -248,6 +248,28 @@ func EstimateChallengeInvalidSignatureGas(rp *rocketpool.RocketPool, megapoolAdd
 	return megapoolManager.GetTransactionGasInfo(opts, "challengeInvalidSignature", megapoolAddress, validatorId)
 }
 
+// Estimate the gas of DissolvePendingDeposit
+func EstimateDissolvePendingDepositGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "dissolvePendingDeposit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
+}
+
+// Dissolve a prestaked validator whose pending deposit is signed to withdrawal credentials other than its megapool
+func DissolvePendingDeposit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "dissolvePendingDeposit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
+	if err != nil {
+		return nil, fmt.Errorf("error dissolving pending deposit for megapool %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
+	}
+	return tx, nil
+}
+
 // Challenge a prestaked validator whose retained deposit signature is invalid
 func ChallengeInvalidSignature(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)

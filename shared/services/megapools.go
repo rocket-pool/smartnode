@@ -146,6 +146,51 @@ func GetValidatorProofFromState(bc beacon.Client, validatorPubkey types.Validato
 	return proof, slotProof, nil
 }
 
+// PendingDepositProofsFromState builds version-1 pending deposit proofs for the
+// given indices. StateSlot matches the anchor slot
+func PendingDepositProofsFromState(beaconState eth2.BeaconState, indices []uint64) ([]megapool.PendingDepositProof, megapool.SlotProof, error) {
+	if beaconState == nil {
+		return nil, megapool.SlotProof{}, fmt.Errorf("beacon state is required")
+	}
+	deposits := beaconState.GetPendingDeposits()
+	proofBytes, slotProofBytes, err := beaconState.PendingDepositProofs(indices)
+	if err != nil {
+		return nil, megapool.SlotProof{}, err
+	}
+	if len(proofBytes) != len(indices) {
+		return nil, megapool.SlotProof{}, fmt.Errorf("pending deposit proof count %d does not match %d indices", len(proofBytes), len(indices))
+	}
+	slot := beaconState.GetSlot()
+	proofs := make([]megapool.PendingDepositProof, len(indices))
+	for i, index := range indices {
+		if index >= uint64(len(deposits)) || deposits[index] == nil {
+			return nil, megapool.SlotProof{}, fmt.Errorf("pending deposit %d is not in the beacon state", index)
+		}
+		deposit := deposits[index]
+		if len(deposit.WithdrawalCredentials) != 32 {
+			return nil, megapool.SlotProof{}, fmt.Errorf("pending deposit %d has withdrawal credentials of length %d", index, len(deposit.WithdrawalCredentials))
+		}
+		var credentials [32]byte
+		copy(credentials[:], deposit.WithdrawalCredentials)
+		proofs[i] = megapool.PendingDepositProof{
+			StateSlot:    slot,
+			DepositIndex: index,
+			Deposit: megapool.ProvedPendingDeposit{
+				Pubkey:                deposit.Pubkey,
+				WithdrawalCredentials: credentials,
+				AmountInGwei:          deposit.Amount,
+				Signature:             deposit.Signature,
+				Slot:                  deposit.Slot,
+			},
+			Witnesses: ConvertToFixedSize(proofBytes[i]),
+		}
+	}
+	return proofs, megapool.SlotProof{
+		Slot:      slot,
+		Witnesses: ConvertToFixedSize(slotProofBytes),
+	}, nil
+}
+
 // PerformanceDefenseProofs bundles everything the RespondWithParticipation
 // call of a megapool performance challenge needs.
 type PerformanceDefenseProofs struct {

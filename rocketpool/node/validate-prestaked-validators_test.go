@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"math/big"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 func TestClassifyPrestake(t *testing.T) {
@@ -83,6 +85,79 @@ func TestPrestakeSignatureValid(t *testing.T) {
 	}
 	if prestakeSignatureValid(pubkey, nil, credentials, domain) {
 		t.Fatal("expected an empty signature to be invalid")
+	}
+}
+
+func TestWrongCredentialPendingDeposits(t *testing.T) {
+	secret, err := bls.RandKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubkey := secret.PublicKey().Marshal()
+	megapoolAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	megapoolCredentials := services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
+	wrongCredentials := services.CalculateMegapoolWithdrawalCredentials(common.HexToAddress("0x2222222222222222222222222222222222222222"))
+	domain, err := signing.ComputeDomain(eth2types.DomainDeposit, []byte{0, 0, 0, 0}, eth2types.ZeroGenesisValidatorsRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const amount = uint64(2_000_000_000)
+	signature, err := signDeposit(secret, pubkey, wrongCredentials, amount, domain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deposit := &generic.PendingDeposit{
+		Pubkey:                pubkey,
+		WithdrawalCredentials: append([]byte(nil), wrongCredentials.Bytes()...),
+		Amount:                amount,
+		Signature:             signature,
+		Slot:                  3,
+	}
+	info := megapool.ValidatorPrestakeInfo{
+		Pubkey:          pubkey,
+		MegapoolAddress: megapoolAddress,
+		ValidatorId:     4,
+		ValidatorInfo:   megapool.ValidatorInfo{InPrestake: true},
+	}
+
+	matches := wrongCredentialPendingDeposits([]*generic.PendingDeposit{deposit}, []megapool.ValidatorPrestakeInfo{info}, domain)
+	if len(matches) != 1 || matches[0].depositIndex != 0 || matches[0].info.ValidatorId != 4 {
+		t.Fatalf("expected the wrong-credential deposit to dissolve validator 4, got %+v", matches)
+	}
+
+	goodSignature, err := signDeposit(secret, pubkey, megapoolCredentials, amount, domain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	correct := *deposit
+	correct.WithdrawalCredentials = append([]byte(nil), megapoolCredentials.Bytes()...)
+	correct.Signature = goodSignature
+	if got := wrongCredentialPendingDeposits([]*generic.PendingDeposit{&correct}, []megapool.ValidatorPrestakeInfo{info}, domain); len(got) != 0 {
+		t.Fatalf("megapool credentials were treated as invalid: %+v", got)
+	}
+
+	wrongAmount := *deposit
+	wrongAmount.Amount = amount + 1
+	if got := wrongCredentialPendingDeposits([]*generic.PendingDeposit{&wrongAmount}, []megapool.ValidatorPrestakeInfo{info}, domain); len(got) != 0 {
+		t.Fatalf("an invalid signature was selected: %+v", got)
+	}
+
+	otherPubkey := *deposit
+	otherPubkey.Pubkey = bytes.Repeat([]byte{9}, 48)
+	if got := wrongCredentialPendingDeposits([]*generic.PendingDeposit{&otherPubkey}, []megapool.ValidatorPrestakeInfo{info}, domain); len(got) != 0 {
+		t.Fatalf("a different pubkey was selected: %+v", got)
+	}
+
+	notPrestake := info
+	notPrestake.ValidatorInfo.InPrestake = false
+	if got := wrongCredentialPendingDeposits([]*generic.PendingDeposit{deposit}, []megapool.ValidatorPrestakeInfo{notPrestake}, domain); len(got) != 0 {
+		t.Fatalf("a validator that is not prestaked was selected: %+v", got)
+	}
+
+	second := *deposit
+	matches = wrongCredentialPendingDeposits([]*generic.PendingDeposit{deposit, &second}, []megapool.ValidatorPrestakeInfo{info}, domain)
+	if len(matches) != 1 || matches[0].depositIndex != 0 {
+		t.Fatalf("expected one dissolve for the first matching deposit, got %+v", matches)
 	}
 }
 
