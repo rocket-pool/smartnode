@@ -1,6 +1,7 @@
 package nimbus
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -179,5 +180,26 @@ func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.B
 	}
 
 	return privateKey, nil
+
+}
+
+// Delete a validator key and its secret file if present
+func (ks *Keystore) DeleteValidatorKey(pubkey types.ValidatorPubkey) error {
+
+	pubkeyHex := hexutil.AddPrefix(pubkey.Hex())
+	keyDirPath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, pubkeyHex)
+	secretFilePath := filepath.Join(ks.keystorePath, KeystoreDir, SecretsDir, pubkeyHex)
+
+	var keyErr error
+	if err := os.RemoveAll(keyDirPath); err != nil {
+		keyErr = fmt.Errorf("could not delete Nimbus validator key directory for %s: %w", pubkey.Hex(), err)
+	}
+
+	var secretErr error
+	if err := os.Remove(secretFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		secretErr = fmt.Errorf("could not delete Nimbus validator secret for %s: %w", pubkey.Hex(), err)
+	}
+
+	return errors.Join(keyErr, secretErr)
 
 }
