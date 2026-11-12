@@ -129,12 +129,12 @@ type PrestakedValidatorIndices struct {
 
 // ValidatorPrestakeInfo is the RocketMegapoolManager.getValidatorPrestakeInfo return value.
 type ValidatorPrestakeInfo struct {
-	Pubkey            []byte
-	ValidatorInfo     ValidatorInfo
-	MegapoolAddress   common.Address
-	ValidatorId       uint32
-	Signature         []byte
-	ChallengeDeadline *big.Int
+	Pubkey            []byte         `abi:"pubkey"`
+	ValidatorInfo     ValidatorInfo  `abi:"validatorInfo"`
+	MegapoolAddress   common.Address `abi:"megapool"`
+	ValidatorId       uint32         `abi:"validatorId"`
+	Signature         []byte         `abi:"signature"`
+	ChallengeDeadline *big.Int       `abi:"challengeDeadline"`
 }
 
 // GetPrestakedValidatorIndices returns prestaked global indices in [offset, offset+limit).
@@ -213,58 +213,14 @@ func GetValidatorPrestakeInfo(rp *rocketpool.RocketPool, index *big.Int, opts *b
 }
 
 func unpackValidatorPrestakeInfo(contractABI *abi.ABI, data []byte) (ValidatorPrestakeInfo, error) {
-	iface, err := contractABI.Unpack("getValidatorPrestakeInfo", data)
-	if err != nil {
+	var info ValidatorPrestakeInfo
+	if err := contractABI.UnpackIntoInterface(&info, "getValidatorPrestakeInfo", data); err != nil {
 		return ValidatorPrestakeInfo{}, err
 	}
-	if len(iface) != 6 {
-		return ValidatorPrestakeInfo{}, fmt.Errorf("expected 6 return values, got %d", len(iface))
+	if info.ChallengeDeadline == nil {
+		return ValidatorPrestakeInfo{}, fmt.Errorf("challengeDeadline is nil")
 	}
-	src := iface[1].(struct {
-		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
-		LastRequestedValue uint32 `json:"lastRequestedValue"`
-		LastRequestedBond  uint32 `json:"lastRequestedBond"`
-		DepositValue       uint32 `json:"depositValue"`
-
-		Staked      bool `json:"staked"`
-		Exited      bool `json:"exited"`
-		InQueue     bool `json:"inQueue"`
-		InPrestake  bool `json:"inPrestake"`
-		ExpressUsed bool `json:"expressUsed"`
-		Dissolved   bool `json:"dissolved"`
-		Exiting     bool `json:"exiting"`
-		Locked      bool `json:"locked"`
-
-		ExitBalance uint64 `json:"exitBalance"`
-		LockedTime  uint64 `json:"lockedTime"`
-	})
-	deadline, ok := iface[5].(*big.Int)
-	if !ok || deadline == nil {
-		return ValidatorPrestakeInfo{}, fmt.Errorf("challengeDeadline has type %T", iface[5])
-	}
-	return ValidatorPrestakeInfo{
-		Pubkey: iface[0].([]byte),
-		ValidatorInfo: ValidatorInfo{
-			LastAssignmentTime: src.LastAssignmentTime,
-			LastRequestedValue: src.LastRequestedValue,
-			LastRequestedBond:  src.LastRequestedBond,
-			DepositValue:       src.DepositValue,
-			Staked:             src.Staked,
-			Exited:             src.Exited,
-			InQueue:            src.InQueue,
-			InPrestake:         src.InPrestake,
-			ExpressUsed:        src.ExpressUsed,
-			Dissolved:          src.Dissolved,
-			Exiting:            src.Exiting,
-			Locked:             src.Locked,
-			ExitBalance:        src.ExitBalance,
-			LockedTime:         src.LockedTime,
-		},
-		MegapoolAddress:   iface[2].(common.Address),
-		ValidatorId:       iface[3].(uint32),
-		Signature:         iface[4].([]byte),
-		ChallengeDeadline: deadline,
-	}, nil
+	return info, nil
 }
 
 func uint256Slice(value interface{}) ([]*big.Int, error) {
