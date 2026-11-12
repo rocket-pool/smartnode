@@ -198,6 +198,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 			response.Megapool.ExitDeficit, err = protocol.GetMegapoolExitDeficit(rp, nil)
 			return err
 		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.PrestakeChallengePeriod, err = protocol.GetPrestakeChallengePeriod(rp, nil)
+			return err
+		})
 	}
 
 	// === Performance ===

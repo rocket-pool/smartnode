@@ -164,6 +164,7 @@ func getSettings() error {
 	fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", math.WeiToEth(response.Megapool.PenaltyThreshold)*100)
 	if response.Saturn2Deployed {
 		fmt.Printf("\tExit Deficit:                           %.6f ETH\n", math.WeiToEth(response.Megapool.ExitDeficit))
+		fmt.Printf("\tPrestake Challenge Period:              %s\n", response.Megapool.PrestakeChallengePeriod)
 	}
 
 	return nil

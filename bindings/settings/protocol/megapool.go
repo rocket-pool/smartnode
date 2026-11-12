@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,6 +27,7 @@ const (
 	MegapoolUserDistributeDelayShortfallPath string = "user.distribute.delay.shortfall"
 	MegapoolPenaltyThreshold                 string = "megapool.penalty.threshold"
 	MegapoolExitDeficitPath                  string = "megapool.exit.deficit"
+	MegapoolPrestakeChallengePeriodPath      string = "megapool.prestake.challenge.period"
 )
 
 // Get the deficit threshold in wei for permissionless megapool exits (Saturn 2).
@@ -46,6 +48,26 @@ func ProposeMegapoolExitDeficit(rp *rocketpool.RocketPool, value *big.Int, block
 }
 func EstimateProposeMegapoolExitDeficitGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolExitDeficitPath), MegapoolSettingsContractName, MegapoolExitDeficitPath, value, blockNumber, treeNodes, opts)
+}
+
+// How long a new prestake can be challenged before staking without a state proof is allowed (stored on-chain in seconds)
+func GetPrestakeChallengePeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getPrestakeChallengePeriod"); err != nil {
+		return 0, fmt.Errorf("error getting megapool prestake challenge period value: %w", err)
+	}
+	return time.Duration((*value).Int64()) * time.Second, nil
+}
+
+func ProposePrestakeChallengePeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolPrestakeChallengePeriodPath), MegapoolSettingsContractName, MegapoolPrestakeChallengePeriodPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposePrestakeChallengePeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolPrestakeChallengePeriodPath), MegapoolSettingsContractName, MegapoolPrestakeChallengePeriodPath, value, blockNumber, treeNodes, opts)
 }
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
