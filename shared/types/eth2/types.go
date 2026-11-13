@@ -33,6 +33,10 @@ type BeaconState interface {
 	StateRootProof(slot uint64) ([][]byte, error)
 	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
+	GetPendingDeposits() []*generic.PendingDeposit
+	// PendingDepositProofs proves each pending deposit and the state slot.
+	// depositProofs[i] corresponds to indices[i]. The slot proof is shared.
+	PendingDepositProofs(indices []uint64) (depositProofs [][][]byte, slotProof [][]byte, err error)
 	GetPreviousEpochParticipation() []byte
 	// PreviousEpochParticipationChunkProof proves the previous_epoch_participation
 	// chunk containing validatorIndex's flags up to the state root (no

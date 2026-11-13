@@ -12,11 +12,12 @@ import (
 
 // Proof versions accepted by BeaconStateVerifier
 var (
-	ValidatorProofVersion1     = big.NewInt(1)
-	SlotProofVersion1          = big.NewInt(1)
-	ParticipationProofVersion1 = big.NewInt(1)
-	FinalBalanceProofVersion1  = big.NewInt(1)
-	FinalBalanceProofVersion2  = big.NewInt(2)
+	ValidatorProofVersion1      = big.NewInt(1)
+	SlotProofVersion1           = big.NewInt(1)
+	ParticipationProofVersion1  = big.NewInt(1)
+	FinalBalanceProofVersion1   = big.NewInt(1)
+	FinalBalanceProofVersion2   = big.NewInt(2)
+	PendingDepositProofVersion1 = big.NewInt(1)
 )
 
 type ValidatorProofBundleV1 struct {
@@ -32,6 +33,11 @@ type ParticipationProofBundleV1 struct {
 	ValidatorProof     ValidatorProof     `json:"validatorProof"`
 	ParticipationProof ParticipationProof `json:"participationProof"`
 	SlotProof          SlotProof          `json:"slotProof"`
+}
+
+type PendingDepositProofBundleV1 struct {
+	PendingDepositProof PendingDepositProof `json:"pendingDepositProof"`
+	SlotProof           SlotProof           `json:"slotProof"`
 }
 
 type FinalBalanceProofBundleV1 struct {
@@ -114,6 +120,19 @@ var (
 		{Name: "balanceChunk", Type: "bytes32"},
 		{Name: "witnesses", Type: "bytes32[]"},
 	}
+	pendingDepositComponents = []abi.ArgumentMarshaling{
+		{Name: "pubkey", Type: "bytes"},
+		{Name: "withdrawalCredentials", Type: "bytes32"},
+		{Name: "amountInGwei", Type: "uint64"},
+		{Name: "signature", Type: "bytes"},
+		{Name: "slot", Type: "uint64"},
+	}
+	pendingDepositProofComponents = []abi.ArgumentMarshaling{
+		{Name: "stateSlot", Type: "uint64"},
+		{Name: "depositIndex", Type: "uint64"},
+		{Name: "deposit", Type: "tuple", Components: pendingDepositComponents},
+		{Name: "witnesses", Type: "bytes32[]"},
+	}
 )
 
 func EncodeValidatorProofBundleV1(validatorProof ValidatorProof, slotProof SlotProof) ([]byte, error) {
@@ -130,6 +149,16 @@ func EncodeSlotProofBundleV1(slotProof SlotProof) ([]byte, error) {
 	return encodeTuple([]abi.ArgumentMarshaling{
 		{Name: "slotProof", Type: "tuple", Components: slotProofComponents},
 	}, SlotProofBundleV1{SlotProof: slotProof})
+}
+
+func EncodePendingDepositProofBundleV1(pendingDepositProof PendingDepositProof, slotProof SlotProof) ([]byte, error) {
+	return encodeTuple([]abi.ArgumentMarshaling{
+		{Name: "pendingDepositProof", Type: "tuple", Components: pendingDepositProofComponents},
+		{Name: "slotProof", Type: "tuple", Components: slotProofComponents},
+	}, PendingDepositProofBundleV1{
+		PendingDepositProof: pendingDepositProof,
+		SlotProof:           slotProof,
+	})
 }
 
 func EncodeParticipationProofBundleV1(validatorProof ValidatorProof, participationProof ParticipationProof, slotProof SlotProof) ([]byte, error) {

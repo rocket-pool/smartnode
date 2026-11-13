@@ -3311,6 +3311,72 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 									},
 
 									{
+										Name:      "prestake-challenge-period",
+										Aliases:   []string{"pcp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting (requires Saturn 2); %s", protocol.MegapoolPrestakeChallengePeriodPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting megapool prestake-challenge-period value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolPrestakeChallengePeriod(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
+										Name:      "is-stake-without-proof-enabled",
+										Aliases:   []string{"swpe"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting (requires Saturn 2); %s", protocol.MegapoolStakeWithoutProofEnabledPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting megapool is-stake-without-proof-enabled value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+											&cli.StringFlag{
+												Name:  "to-json",
+												Usage: "Write this setting to a JSON file instead of submitting a proposal (creates the file or appends to it)",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolStakeWithoutProofEnabled(value, c.Bool("yes"), c.String("to-json"))
+
+										},
+									},
+
+									{
 										Name:      "penalty-threshold",
 										Aliases:   []string{"pt"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolPenaltyThreshold, percentUsage),

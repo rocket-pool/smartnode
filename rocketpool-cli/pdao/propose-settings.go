@@ -370,6 +370,16 @@ func proposeSettingMegapoolExitDeficit(value *big.Int, yes bool, toJson string) 
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolExitDeficitPath, trueValue, yes, toJson)
 }
 
+func proposeSettingMegapoolPrestakeChallengePeriod(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolPrestakeChallengePeriodPath, trueValue, yes, toJson)
+}
+
+func proposeSettingMegapoolStakeWithoutProofEnabled(value bool, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolStakeWithoutProofEnabledPath, trueValue, yes, toJson)
+}
+
 func proposeSettingPerformanceExitsEnabled(value bool, yes bool, toJson string) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes, toJson)

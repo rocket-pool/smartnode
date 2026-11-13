@@ -275,6 +275,15 @@ func (state *BeaconState) GetValidators() []*generic.Validator {
 	return state.Validators
 }
 
+func (state *BeaconState) GetPendingDeposits() []*generic.PendingDeposit {
+	return state.PendingDeposits
+}
+
+// Pending deposit proofs are generated from Gloas progressive lists only.
+func (state *BeaconState) PendingDepositProofs([]uint64) ([][][]byte, [][]byte, error) {
+	return nil, nil, generic.ErrPendingDepositProofUnsupported
+}
+
 func (state *BeaconState) GetSlot() uint64 {
 	return state.Slot
 }

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -117,6 +118,169 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 	validator.ValidatorId = iface[3].(uint32)
 
 	return *validator, nil
+}
+
+// PrestakedValidatorIndices is one page of RocketMegapoolManager.getPrestakedValidatorIndices.
+type PrestakedValidatorIndices struct {
+	Indices       []*big.Int
+	NextIndex     *big.Int
+	FailedIndices []*big.Int
+}
+
+// ValidatorPrestakeInfo is the RocketMegapoolManager.getValidatorPrestakeInfo return value.
+type ValidatorPrestakeInfo struct {
+	Pubkey            []byte         `abi:"pubkey"`
+	ValidatorInfo     ValidatorInfo  `abi:"validatorInfo"`
+	MegapoolAddress   common.Address `abi:"megapool"`
+	ValidatorId       uint32         `abi:"validatorId"`
+	Signature         []byte         `abi:"signature"`
+	ChallengeDeadline *big.Int       `abi:"challengeDeadline"`
+}
+
+// GetPrestakedValidatorIndices returns prestaked global indices in [offset, offset+limit).
+func GetPrestakedValidatorIndices(rp *rocketpool.RocketPool, offset, limit *big.Int, opts *bind.CallOpts) (PrestakedValidatorIndices, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, opts)
+	if err != nil {
+		return PrestakedValidatorIndices{}, err
+	}
+	callData, err := megapoolManager.ABI.Pack("getPrestakedValidatorIndices", offset, limit)
+	if err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("error creating calldata for getPrestakedValidatorIndices: %w", err)
+	}
+	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{
+		To:   megapoolManager.Address,
+		Data: callData,
+	}, callBlockNumber(opts))
+	if err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("error calling getPrestakedValidatorIndices: %w", err)
+	}
+	page, err := unpackPrestakedValidatorIndices(megapoolManager.ABI, response)
+	if err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("error unpacking getPrestakedValidatorIndices response: %w", err)
+	}
+	return page, nil
+}
+
+func unpackPrestakedValidatorIndices(contractABI *abi.ABI, data []byte) (PrestakedValidatorIndices, error) {
+	iface, err := contractABI.Unpack("getPrestakedValidatorIndices", data)
+	if err != nil {
+		return PrestakedValidatorIndices{}, err
+	}
+	if len(iface) != 3 {
+		return PrestakedValidatorIndices{}, fmt.Errorf("expected 3 return values, got %d", len(iface))
+	}
+	indices, err := uint256Slice(iface[0])
+	if err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("indices: %w", err)
+	}
+	nextIndex, ok := iface[1].(*big.Int)
+	if !ok || nextIndex == nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("nextIndex has type %T", iface[1])
+	}
+	failed, err := uint256Slice(iface[2])
+	if err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("failedIndices: %w", err)
+	}
+	return PrestakedValidatorIndices{
+		Indices:       indices,
+		NextIndex:     nextIndex,
+		FailedIndices: failed,
+	}, nil
+}
+
+// GetValidatorPrestakeInfo returns the prestake watcher data for one global validator index.
+func GetValidatorPrestakeInfo(rp *rocketpool.RocketPool, index *big.Int, opts *bind.CallOpts) (ValidatorPrestakeInfo, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, opts)
+	if err != nil {
+		return ValidatorPrestakeInfo{}, err
+	}
+	callData, err := megapoolManager.ABI.Pack("getValidatorPrestakeInfo", index)
+	if err != nil {
+		return ValidatorPrestakeInfo{}, fmt.Errorf("error creating calldata for getValidatorPrestakeInfo: %w", err)
+	}
+	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{
+		To:   megapoolManager.Address,
+		Data: callData,
+	}, callBlockNumber(opts))
+	if err != nil {
+		return ValidatorPrestakeInfo{}, fmt.Errorf("error calling getValidatorPrestakeInfo: %w", err)
+	}
+	info, err := unpackValidatorPrestakeInfo(megapoolManager.ABI, response)
+	if err != nil {
+		return ValidatorPrestakeInfo{}, fmt.Errorf("error unpacking getValidatorPrestakeInfo response: %w", err)
+	}
+	return info, nil
+}
+
+func unpackValidatorPrestakeInfo(contractABI *abi.ABI, data []byte) (ValidatorPrestakeInfo, error) {
+	var info ValidatorPrestakeInfo
+	if err := contractABI.UnpackIntoInterface(&info, "getValidatorPrestakeInfo", data); err != nil {
+		return ValidatorPrestakeInfo{}, err
+	}
+	if info.ChallengeDeadline == nil {
+		return ValidatorPrestakeInfo{}, fmt.Errorf("challengeDeadline is nil")
+	}
+	return info, nil
+}
+
+func uint256Slice(value interface{}) ([]*big.Int, error) {
+	switch values := value.(type) {
+	case []*big.Int:
+		return values, nil
+	default:
+		return nil, fmt.Errorf("unexpected type %T", value)
+	}
+}
+
+func callBlockNumber(opts *bind.CallOpts) *big.Int {
+	if opts == nil {
+		return nil
+	}
+	return opts.BlockNumber
+}
+
+// Estimate the gas of ChallengeInvalidSignature
+func EstimateChallengeInvalidSignatureGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "challengeInvalidSignature", megapoolAddress, validatorId)
+}
+
+// Estimate the gas of DissolvePendingDeposit
+func EstimateDissolvePendingDepositGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "dissolvePendingDeposit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
+}
+
+// Dissolve a prestaked validator whose pending deposit is signed to withdrawal credentials other than its megapool
+func DissolvePendingDeposit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, proofVersion *big.Int, proofData []byte, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "dissolvePendingDeposit", megapoolAddress, validatorId, slotTimestamp, proofVersion, proofData)
+	if err != nil {
+		return nil, fmt.Errorf("error dissolving pending deposit for megapool %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
+	}
+	return tx, nil
+}
+
+// Challenge a prestaked validator whose retained deposit signature is invalid
+func ChallengeInvalidSignature(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "challengeInvalidSignature", megapoolAddress, validatorId)
+	if err != nil {
+		return nil, fmt.Errorf("error challenging invalid prestake signature for megapool %s validator %d: %w", megapoolAddress.Hex(), validatorId, err)
+	}
+	return tx, nil
 }
 
 // Estimate the gas of Stake

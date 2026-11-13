@@ -2,6 +2,7 @@ package gloas
 
 import (
 	"bytes"
+	"encoding/binary"
 	"testing"
 
 	"github.com/pk910/dynamic-ssz/treeproof"
@@ -32,6 +33,80 @@ func TestGloasFieldGindices(t *testing.T) {
 		if tc.got != tc.want {
 			t.Errorf("%s: got %d want %d", tc.name, tc.got, tc.want)
 		}
+	}
+}
+
+func TestPendingDepositGindices(t *testing.T) {
+	cases := []struct {
+		name string
+		got  uint64
+		want uint64
+	}{
+		{"pending_deposits", GetGeneralizedIndexForPendingDeposits(), 2957},
+		{"pending_deposits[0]", GetGeneralizedIndexForPendingDeposit(0), 11828},
+		{"pending_deposits[1]", GetGeneralizedIndexForPendingDeposit(1), 94632},
+	}
+	for _, tc := range cases {
+		if tc.got != tc.want {
+			t.Errorf("%s: got %d want %d", tc.name, tc.got, tc.want)
+		}
+	}
+}
+
+func TestPendingDepositProof(t *testing.T) {
+	state := minimalBeaconState()
+	state.Slot = 100
+	state.PendingDeposits = []*generic.PendingDeposit{
+		{
+			Pubkey:                bytes.Repeat([]byte{0x11}, 48),
+			WithdrawalCredentials: bytes.Repeat([]byte{0x22}, 32),
+			Amount:                1_000_000_000,
+			Signature:             bytes.Repeat([]byte{0x33}, 96),
+			Slot:                  90,
+		},
+		{
+			Pubkey:                bytes.Repeat([]byte{0x44}, 48),
+			WithdrawalCredentials: bytes.Repeat([]byte{0x55}, 32),
+			Amount:                32_000_000_000,
+			Signature:             bytes.Repeat([]byte{0x66}, 96),
+			Slot:                  91,
+		},
+	}
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		t.Fatalf("GetTree: %v", err)
+	}
+	proof, err := stateTree.Prove(int(GetGeneralizedIndexForPendingDeposit(0)))
+	if err != nil {
+		t.Fatalf("Prove: %v", err)
+	}
+	leaf, err := generic.SSZ.HashTreeRoot(state.PendingDeposits[0])
+	if err != nil {
+		t.Fatalf("deposit HTR: %v", err)
+	}
+	if !bytes.Equal(proof.Leaf, leaf[:]) {
+		t.Fatal("proof leaf does not match the pending deposit")
+	}
+	if ok, err := treeproof.VerifyProof(stateTree.Hash(), proof); err != nil || !ok {
+		t.Fatalf("verify pending deposit proof: ok=%v err=%v", ok, err)
+	}
+	// intoProgressive(0) is two steps. The step nearer the list root mixes in the length.
+	var length [32]byte
+	binary.LittleEndian.PutUint64(length[:8], uint64(len(state.PendingDeposits)))
+	if len(proof.Hashes) < 2 || !bytes.Equal(proof.Hashes[1], length[:]) {
+		t.Fatalf("expected the list length at witness 1, got %x", proof.Hashes)
+	}
+
+	depositProofs, slotProof, err := state.PendingDepositProofs([]uint64{0, 1})
+	if err != nil {
+		t.Fatalf("PendingDepositProofs: %v", err)
+	}
+	if len(depositProofs) != 2 || len(depositProofs[0]) <= len(proof.Hashes) || len(slotProof) == 0 {
+		t.Fatalf("expected header-capped proofs, deposits=%d slot=%d", len(depositProofs), len(slotProof))
+	}
+	if !bytes.Equal(depositProofs[0][1], length[:]) {
+		t.Fatalf("header extension moved the length witness: %x", depositProofs[0][1])
 	}
 }
 

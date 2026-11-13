@@ -22,6 +22,7 @@ const (
 	beaconStateHistoricalSummariesFieldIndex = generic.BeaconStateHistoricalSummariesFieldIndex // 27
 
 	beaconStatePreviousEpochParticipationFieldIndex = generic.BeaconStatePreviousEpochParticipationFieldIndex // 15
+	beaconStatePendingDepositsFieldIndex            = generic.BeaconStatePendingDepositsFieldIndex            // 34
 	// New in Gloas (EIP-7732): payload_expected_withdrawals commits to the
 	// withdrawals of the execution payload bid on at this slot.
 	beaconStatePayloadExpectedWithdrawalsFieldIndex = 44
@@ -207,6 +208,22 @@ func GetGeneralizedIndexForParticipationChunk(chunkIndex uint64) uint64 {
 	)
 }
 
+// GetGeneralizedIndexForPendingDeposits returns the gindex of the
+// pending_deposits field root inside the Gloas ProgressiveContainer.
+func GetGeneralizedIndexForPendingDeposits() uint64 {
+	return generic.ProgressiveContainerFieldGindex(beaconStatePendingDepositsFieldIndex)
+}
+
+// GetGeneralizedIndexForPendingDeposit returns the gindex of
+// pending_deposits[index]. PendingDeposit is a composite element, so each
+// list entry is one progressive chunk.
+func GetGeneralizedIndexForPendingDeposit(index uint64) uint64 {
+	return generic.GetGeneralizedIndexForProgressiveListElement(
+		GetGeneralizedIndexForPendingDeposits(),
+		index,
+	)
+}
+
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
 // for the state's current slot, using EIP-7688 progressive g-indices.
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
@@ -261,6 +278,70 @@ func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte
 	slotProof = append(slotProof, blockHeaderProof.Hashes...)
 
 	return validatorProof, slotProof, nil
+}
+
+// PendingDepositProofs proves pending_deposits[index] for each index, plus the
+// state slot.
+func (state *BeaconState) PendingDepositProofs(indices []uint64) ([][][]byte, [][]byte, error) {
+	if len(indices) == 0 {
+		return nil, nil, nil
+	}
+	for _, index := range indices {
+		if index >= uint64(len(state.PendingDeposits)) || state.PendingDeposits[index] == nil {
+			return nil, nil, fmt.Errorf("pending deposit index %d out of bounds", index)
+		}
+	}
+
+	stateTree, err := generic.SSZ.GetTree(state)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	leafProofs := make([][][]byte, len(indices))
+	for i, index := range indices {
+		proof, err := stateTree.Prove(int(GetGeneralizedIndexForPendingDeposit(index)))
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not get proof for pending deposit %d: %w", index, err)
+		}
+		leaf, err := generic.SSZ.HashTreeRoot(state.PendingDeposits[index])
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not get hash tree root for pending deposit %d: %w", index, err)
+		}
+		if !bytes.Equal(proof.Leaf, leaf[:]) {
+			return nil, nil, fmt.Errorf("proof leaf does not match pending deposit %d", index)
+		}
+		leafProofs[i] = proof.Hashes
+	}
+
+	slotStateProof, err := stateTree.Prove(int(GetGeneralizedIndexForSlot()))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get proof for slot: %w", err)
+	}
+	// Drop the state tree before doing more work so the GC can reclaim it.
+	stateTree = nil
+
+	if state.LatestBlockHeader == nil {
+		return nil, nil, fmt.Errorf("latest block header is required")
+	}
+	bhTree, err := generic.SSZ.GetTree(state.LatestBlockHeader)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := bhTree.Prove(int(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	for i := range leafProofs {
+		combined := make([][]byte, 0, len(leafProofs[i])+len(blockHeaderProof.Hashes))
+		combined = append(combined, leafProofs[i]...)
+		combined = append(combined, blockHeaderProof.Hashes...)
+		leafProofs[i] = combined
+	}
+	slotProof := make([][]byte, 0, len(slotStateProof.Hashes)+len(blockHeaderProof.Hashes))
+	slotProof = append(slotProof, slotStateProof.Hashes...)
+	slotProof = append(slotProof, blockHeaderProof.Hashes...)
+	return leafProofs, slotProof, nil
 }
 
 func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
@@ -543,6 +624,10 @@ func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 
 func (state *BeaconState) GetValidators() []*generic.Validator {
 	return state.Validators
+}
+
+func (state *BeaconState) GetPendingDeposits() []*generic.PendingDeposit {
+	return state.PendingDeposits
 }
 
 func (state *BeaconState) GetSlot() uint64 {

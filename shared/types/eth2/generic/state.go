@@ -1,5 +1,9 @@
 package generic
 
+import "errors"
+
+var ErrPendingDepositProofUnsupported = errors.New("pending deposit proofs are not supported before gloas")
+
 // Shared BeaconState field offsets. These offsets are stable from Capella through
 // Gloas for the fields Smart Node proves against; only the *merkleization* of the
 // parent container changes in Gloas
@@ -28,6 +32,9 @@ const BeaconStateStateRootsFieldIndex uint64 = 6
 // BeaconStatePreviousEpochParticipationFieldIndex is the field offset of the
 // PreviousEpochParticipation field in the BeaconState struct
 const BeaconStatePreviousEpochParticipationFieldIndex uint64 = 15
+
+// BeaconStatePendingDepositsFieldIndex is the field offset of pending_deposits.
+const BeaconStatePendingDepositsFieldIndex uint64 = 34
 
 // BeaconStateParticipationMaxChunks is the chunk count of the epoch
 // participation byte lists: VALIDATOR_REGISTRY_LIMIT (2^40) one-byte flags
