@@ -28,6 +28,7 @@ const (
 	MegapoolPenaltyThreshold                 string = "megapool.penalty.threshold"
 	MegapoolExitDeficitPath                  string = "megapool.exit.deficit"
 	MegapoolPrestakeChallengePeriodPath      string = "megapool.prestake.challenge.period"
+	MegapoolStakeWithoutProofEnabledPath     string = "megapool.stake.without.proof.enabled"
 )
 
 // Get the deficit threshold in wei for permissionless megapool exits (Saturn 2).
@@ -61,6 +62,26 @@ func GetPrestakeChallengePeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 		return 0, fmt.Errorf("error getting megapool prestake challenge period value: %w", err)
 	}
 	return time.Duration((*value).Int64()) * time.Second, nil
+}
+
+// Proofless staking is only accepted by the megapool delegate when this is true.
+func GetStakeWithoutProofEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := megapoolSettingsContract.Call(opts, value, "getStakeWithoutProofEnabled"); err != nil {
+		return false, fmt.Errorf("error getting megapool stake without proof enabled: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeStakeWithoutProofEnabled(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetBool(rp, fmt.Sprintf("set %s", MegapoolStakeWithoutProofEnabledPath), MegapoolSettingsContractName, MegapoolStakeWithoutProofEnabledPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeStakeWithoutProofEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", MegapoolStakeWithoutProofEnabledPath), MegapoolSettingsContractName, MegapoolStakeWithoutProofEnabledPath, value, blockNumber, treeNodes, opts)
 }
 
 func ProposePrestakeChallengePeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum"
@@ -644,6 +645,99 @@ func (mp *megapoolV1) GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.Validat
 	return pubkeys, nil
 }
 
+// The encoded megapool ABIs predate proofless staking. These are the delegate methods
+// a node operator calls directly once a prestake's challenge deadline has passed.
+const prooflessStakeABI = `[
+	{
+		"name": "stakeWithoutProof",
+		"type": "function",
+		"stateMutability": "nonpayable",
+		"inputs": [
+			{"name": "_validatorId", "type": "uint32"}
+		],
+		"outputs": []
+	},
+	{
+		"name": "getValidatorChallengeDeadline",
+		"type": "function",
+		"stateMutability": "view",
+		"inputs": [
+			{"name": "_validatorId", "type": "uint32"}
+		],
+		"outputs": [
+			{"name": "", "type": "uint256"}
+		]
+	},
+	{
+		"name": "getValidatorPrestakeSignature",
+		"type": "function",
+		"stateMutability": "view",
+		"inputs": [
+			{"name": "_validatorId", "type": "uint32"}
+		],
+		"outputs": [
+			{"name": "", "type": "bytes"}
+		]
+	}
+]`
+
+// withProoflessStakeMethods returns a copy of parsed whose method set includes proofless staking.
+// Methods already present are left alone so a newer encoded ABI is not overwritten.
+func withProoflessStakeMethods(parsed *abi.ABI) (*abi.ABI, error) {
+	if parsed == nil {
+		return nil, fmt.Errorf("megapool ABI is nil")
+	}
+	extra, err := abi.JSON(strings.NewReader(prooflessStakeABI))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing proofless stake ABI: %w", err)
+	}
+	methods := make(map[string]abi.Method, len(parsed.Methods)+len(extra.Methods))
+	for name, method := range parsed.Methods {
+		methods[name] = method
+	}
+	for name, method := range extra.Methods {
+		if _, exists := methods[name]; exists {
+			continue
+		}
+		methods[name] = method
+	}
+	cloned := *parsed
+	cloned.Methods = methods
+	return &cloned, nil
+}
+
+// Fixed challenge deadline stored for this validator, or zero when none was snapshotted
+func (mp *megapoolV1) GetValidatorChallengeDeadline(validatorId uint32, opts *bind.CallOpts) (*big.Int, error) {
+	deadline := new(*big.Int)
+	if err := mp.Contract.Call(opts, deadline, "getValidatorChallengeDeadline", validatorId); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s validator %d challenge deadline: %w", mp.Address.Hex(), validatorId, err)
+	}
+	return *deadline, nil
+}
+
+// Signature retained from the validator's initial deposit. Empty for legacy prestakes.
+func (mp *megapoolV1) GetValidatorPrestakeSignature(validatorId uint32, opts *bind.CallOpts) ([]byte, error) {
+	signature := new([]byte)
+	if err := mp.Contract.Call(opts, signature, "getValidatorPrestakeSignature", validatorId); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s validator %d prestake signature: %w", mp.Address.Hex(), validatorId, err)
+	}
+	return *signature, nil
+}
+
+// Estimate the gas required to stake a prestaked validator after its challenge period without a beacon state proof
+func (mp *megapoolV1) EstimateStakeWithoutProofGas(validatorId uint32, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "stakeWithoutProof", validatorId)
+}
+
+// Stake a prestaked validator after its challenge period without a beacon state proof
+func (mp *megapoolV1) StakeWithoutProof(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "stakeWithoutProof", validatorId)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error staking validator ID %d without a proof: %w", validatorId, err)
+	}
+	return tx.Hash(), nil
+}
+
 // Create a megapool contract directly from its ABI
 func createMegapoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, abi *abi.ABI) (*rocketpool.Contract, error) {
 	// Create and return
@@ -658,16 +752,15 @@ func createMegapoolContractFromAbi(rp *rocketpool.RocketPool, address common.Add
 // Create a megapool contract directly from its ABI, encoded in string form
 func createMegapoolContractFromEncodedAbi(rp *rocketpool.RocketPool, address common.Address, encodedAbi string) (*rocketpool.Contract, error) {
 	// Decode ABI
-	abi, err := rocketpool.DecodeAbi(encodedAbi)
+	decoded, err := rocketpool.DecodeAbi(encodedAbi)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding megapool %s ABI: %w", address, err)
 	}
+	decoded, err = withProoflessStakeMethods(decoded)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create and return
-	return &rocketpool.Contract{
-		Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
-		Address:  &address,
-		ABI:      abi,
-		Client:   rp.Client,
-	}, nil
+	return createMegapoolContractFromAbi(rp, address, decoded)
 }

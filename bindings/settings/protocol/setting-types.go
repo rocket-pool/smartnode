@@ -140,6 +140,7 @@ var pdaoSettingKinds = map[string]map[string]settingKind{
 		MegapoolPenaltyThreshold:                 settingKindUint256,
 		MegapoolExitDeficitPath:                  settingKindUint256,
 		MegapoolPrestakeChallengePeriodPath:      settingKindUint256,
+		MegapoolStakeWithoutProofEnabledPath:     settingKindBool,
 	},
 }
 
