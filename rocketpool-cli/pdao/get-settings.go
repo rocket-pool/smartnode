@@ -165,6 +165,7 @@ func getSettings() error {
 	if response.Saturn2Deployed {
 		fmt.Printf("\tExit Deficit:                           %.6f ETH\n", math.WeiToEth(response.Megapool.ExitDeficit))
 		fmt.Printf("\tPrestake Challenge Period:              %s\n", response.Megapool.PrestakeChallengePeriod)
+		fmt.Printf("\tStake Without Proof Enabled:            %t\n", response.Megapool.StakeWithoutProofEnabled)
 	}
 
 	return nil

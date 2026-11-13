@@ -1111,6 +1111,16 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing PrestakeChallengePeriod: %w", err)
 			}
+		// StakeWithoutProofEnabled
+		case protocol.MegapoolStakeWithoutProofEnabledPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = protocol.EstimateProposeStakeWithoutProofEnabledGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing StakeWithoutProofEnabled: %w", err)
+			}
 		}
 
 	}
@@ -2130,6 +2140,16 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposePrestakeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing PrestakeChallengePeriod: %w", err)
+			}
+		// StakeWithoutProofEnabled
+		case protocol.MegapoolStakeWithoutProofEnabledPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeStakeWithoutProofEnabled(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing StakeWithoutProofEnabled: %w", err)
 			}
 		}
 

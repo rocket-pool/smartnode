@@ -204,6 +204,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 			response.Megapool.PrestakeChallengePeriod, err = protocol.GetPrestakeChallengePeriod(rp, nil)
 			return err
 		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.StakeWithoutProofEnabled, err = protocol.GetStakeWithoutProofEnabled(rp, nil)
+			return err
+		})
 	}
 
 	// === Performance ===

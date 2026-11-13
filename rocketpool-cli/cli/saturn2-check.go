@@ -24,7 +24,8 @@ func IsSaturn2OnlySetting(contract, setting string) bool {
 		return false
 	case protocol.MegapoolSettingsContractName:
 		switch setting {
-		case protocol.MegapoolExitDeficitPath, protocol.MegapoolPrestakeChallengePeriodPath:
+		case protocol.MegapoolExitDeficitPath, protocol.MegapoolPrestakeChallengePeriodPath,
+			protocol.MegapoolStakeWithoutProofEnabledPath:
 			return true
 		}
 		return false
