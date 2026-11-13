@@ -214,6 +214,20 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			}
 		}
 
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// StakeWithoutProofEnabled
+		case protocol.MegapoolStakeWithoutProofEnabledPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasLimits, err = security.EstimateProposeStakeWithoutProofEnabledGas(rp, newValue, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing StakeWithoutProofEnabled: %w", err)
+			}
+		}
+
 	}
 
 	// Make sure a setting was actually hit
@@ -415,6 +429,20 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 			proposalID, hash, err = security.ProposeVacantMinipoolsEnabled(rp, newValue, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing VacantMinipoolsEnabled: %w", err)
+			}
+		}
+
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// StakeWithoutProofEnabled
+		case protocol.MegapoolStakeWithoutProofEnabledPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = security.ProposeStakeWithoutProofEnabled(rp, newValue, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing StakeWithoutProofEnabled: %w", err)
 			}
 		}
 

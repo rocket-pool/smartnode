@@ -87,6 +87,11 @@ func proposeSettingPerformanceExitsEnabled(value bool, yes bool) error {
 	return proposeSetting(protocol.NetworkSettingsContractName, protocol.PerformanceExitsEnabledSettingPath, trueValue, yes)
 }
 
+func proposeSettingMegapoolStakeWithoutProofEnabled(value bool, yes bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolStakeWithoutProofEnabledPath, trueValue, yes)
+}
+
 // Master general proposal function
 func proposeSetting(contract string, setting string, value string, yes bool) error {
 	// Get RP client
