@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum"
@@ -127,7 +126,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWktv2zgQ/isLnY09pN0ccnPjtAiQZt0k7h6KwBiLY5sITbLk0I5Q9L8vJMuyZMmRFEuGUueYyBx+8+DHefDHLw+kksFCOetdTEFY7HlcakfWu/jxy+OS4TOy1CdCI0E8BBq9C89xSWf/nHs9T8Ii/AcslJPk9TzK/uB3r74s4gsskPSY/OArzkArJT4pye6QOR/Z9ve4REnRvm9fwQFO6Fr6BsH+ySr+0T4cogRBQV9rwQ/RkYyrAGsJgjMgZa7ZkfX8vtm5by2fyZNQdYA/HbrTUJVbq8TyJHS9kq259cNZBU0/nB1L0WdOp+HRZ05czk5A0xvlP52ES+8JTkPRkRQH+rSL6dEdrsAweymAL46gm1QM+w3qt1SEpkmBBmnepDxtFClfiQGoJsVW9euAWzJ84vZcLxlPvrzjeG9YbjcFrUUQJ9pez1OOYvGPPc8SEH51BBMuOAVRLEgNAUxESpOpkz5xJSugS1/h4xfv8BTAKCf+7CSz5fgqgttK90H4TgDhECXjchb7ILNTuaHDI7JdWRgrFc7EQRKSoO3/e5Cc8DDtF1Bo9CXH1avCoXawJt56d9MR3fSaU+vPQQiUMwzTxyZ5JbVFeP+1I5qhNugDYScZka1L525ii2vdJAVryUHJHdmO/BlS3yee0uMyJqcSvknbrNBOrzuXWWRxl+g7iJ0oKOeNJskiAypsRnYFS1yydtF3V8+aGwh/9LBOBzthsBuwlKSdXcMWVXBd9OUtrhJY63nKT8cNLrAKwOMY7zas3RgzaEtyJUh+lIO0+dQgpNBaXTLRt6hn2SVUB5UjraG6w6mT3bp3RhbNJWhOILoEaR1RHQPWERJtLNlMq3Qtp2pHI18ttJIoq20qwMaZVUjgD7lmTTJZKJUS3gNoaZugHSYlpqXaQhhqZTlVBjFRSmxX250ecfS1dBXuTEWqreLyW1zQ1Fw2NBjhrA9Th1fayNbHyvLDvOqmycxRqi3bbWDvWxX69fxjdrtPIED6O84//1hl+Xrb/CkIVz/mep2WjPPpr7twEW268PekDMzwBgLl6O/dg5qjFXJaYBdZpS/Z0E2eMHinl3d6eaeXN0UvfP1XlmIKbBIQpmofvTnulP7cMWoq5KSX9WpOowyk/zjNmYEViEuDDCVxECUlS7R/cXq5+dTqrGGiJHt5tvfCmRk7i1frI/7Aw5CscOiyjtj6e1gcajUk3POZBHIGqwrJBF7M4gMguFOKit2wGZ+k+h0daj6Xs814tYnQicArrfz5azhrbNBHSXvWp8ykiE+Dpuce7RtpPX+7ll9WyKvYJ9cyGvvhzMcUdI7quEgcyUGfuQSxvcLekKOsUFECaQkWulzRW0VHCcba01wTvV3Odd0aG+IY1BDk5hKHvBto7CLfpJUtaL1EY8PPR+85HfLoKMclSrABCpytZ7CFfFJPoMTVQQLrP+fZbDfSMwOs8fd2OQ2nRi2aUe2or9muaB6+qfCRH/RCuhhOruik4mKuYZ1GFm+A0NJIM9jzjqsKCYEQE/Cf9j9TyERYa6Pw1MHpxAhpgycapmLJzCYbArveb2iqO51i9Fyga5ZKArEasJZsVSF1lJlBZYExkoKeh+Ult+3mbDsFXyFxpG7zMkO/Dl4FhjBr3vR+P/4PdOc9cw=="
+	megapoolV1EncodedAbi string = "eJzsWktv4kgQ/isrn9EeyGwOuTGBWUXKZDNJmD2MIlS4C9JK0+3pruahUf77ysZgNzbYYMN6Qo7grqqv3tWPH788kEouJsoa72oEwmDL4zKwZLyrH788LhnOkaU+EWoJ4mkRoHflWS6p/del1/IkTMI/YKKsJK/lkbvgrbU/L+ITzOH0vF7wFccQKCU+K8kekFkfWbIepyjJe2u9BwW7OKQb6WsE855VfNc+vEcJghadIBC8io6kbQlYUxCcASl9w3LQHVPP7yvJHWP4WJ6Fql38adGeh6rcGCWmZ6FrTx7NrRftEppetE+l6JzTeXh0zonL8Rloeqv817Nw6SPBeSjal6KiT5s4Hj3gDDQz1wL45AS6ScWwU6N+U0Wo62SokV7q5BdoRcpXoguq8z/4tcsNaT60W9qL48ndEgdbwzIRCkEgFvGg7bU8ZSlm/9zyDAHhV0sw5ILTIooFGcAChiKlychKn7iSJdClW/hga324aDsAo5n4i5XMFOMrCS7h7oPwrQDCe5SMy3HsA0dSsaHDFEkoc2NlN4MoJypxWAdt559KfMJk2s4g1+hTjrMii9cTrGtvfbjphG46JGv9FxAC5Rh7c06Om3Kxla8rKRFh/zsOa4aBRh8I62Rfm23ZcuvcTGzxXnc9gtWJ0hET98jj8B8jdXziKT2u4+KUCCu0Wa6dDstLF1l8SvQdhMViSE7dqLNYOKDCw8imYIm3rE30XW8ecA2hLZ+WY34jDHYLhtZjZ9OwRTu4JvryDmdrWMv7lJ+Wa5ygpKYY7y7cuzGm0RTMSrBelIG0+lQjpNBaTTLRt7CfsiahqrQdORqqBxxZ2ay+0zeoryHgBKJJkJYR1TBgDSmitQ2baZVu5EhtaOSrSaAkynJCBZh4sgoLeNwBN0S3SnEJ+wAaSga0alzisrQ3E4aBMpxKgxgqJRJqs3FGHH0tpMKNW5FyVFx+izc0e5Lda4xw7kuJ8yDsdn3naUA50tUGZ29C3LxHKUe2eYC9jSr06+UnV9xnECD9DedffipDvhSbzYKQ+jlz1mlIW5/+eAiJaHUK/0hKwxhvYaEs/bmZqLGchDvZQGATq0pHsns7fMXFR3n5KC8f5eW3Ki98+cstMVl4wwVhau8TrNI9plt+blhpyq1Ju/WqTyMH0r+cXpiGGYhrjQwlcRAFW5ZI/kV7K7SLdgVwxRP2YKgk2323tyNnBtZgb5niTzwMyeL02XDEYJrx4opBtHAfDo98LIGsxrJMnMCLq3gXCB6Uonw3xItl6rzDcW/FY9eK6VFcbQazVYQOBfYC5b8cUrMGGn2UtIU+ZSZFfLSo+97j+EZaXhbfyL9nyMvYJ3NkNPDDOx+dc3K0j4vEiRz0hUsQSQv7jRxlhIoGSEMwCYoVvVN0kmDc+zZXR2+X4/mzNmxp/gEsMvcSuexP49sE2mqsPK5HDkYWdnRl6V4rNWokyvQgdL26au4iMMGla9fiUM2P0RpHj6oKrrYh6U6/Q8GNSSEzFhysXIJuitqEn09u6CoP2zL9SgnWRYHj5T0/uaveWvszlDirxHD/J2Mrcf1grIHlPxir8KYzo+FIq0k9qm3tD8cwU49ewnc7PvJpFRvlw3E3B1E4524Iatapb/AWCA31AwaUr1Y2t7KFGoQYgv8ag4yVTsQwN8KclK/YDRIh0fuBdeLsqCmZgMwJxn1rym480YU9FtwLuiGQyIn+rwlQbzTC6ElK0yy1DsRywI5kq2IDDKRzGU7uslRmccnDIwxuXE0qRnuBIQa5hSMBZYoMfRi8LElmvUYf+RS9t+f/BgA++g/O"
 )
 
 // The decoded ABI for megapools
@@ -645,67 +644,6 @@ func (mp *megapoolV1) GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.Validat
 	return pubkeys, nil
 }
 
-// The encoded megapool ABIs predate proofless staking. These are the delegate methods
-// a node operator calls directly once a prestake's challenge deadline has passed.
-const prooflessStakeABI = `[
-	{
-		"name": "stakeWithoutProof",
-		"type": "function",
-		"stateMutability": "nonpayable",
-		"inputs": [
-			{"name": "_validatorId", "type": "uint32"}
-		],
-		"outputs": []
-	},
-	{
-		"name": "getValidatorChallengeDeadline",
-		"type": "function",
-		"stateMutability": "view",
-		"inputs": [
-			{"name": "_validatorId", "type": "uint32"}
-		],
-		"outputs": [
-			{"name": "", "type": "uint256"}
-		]
-	},
-	{
-		"name": "getValidatorPrestakeSignature",
-		"type": "function",
-		"stateMutability": "view",
-		"inputs": [
-			{"name": "_validatorId", "type": "uint32"}
-		],
-		"outputs": [
-			{"name": "", "type": "bytes"}
-		]
-	}
-]`
-
-// withProoflessStakeMethods returns a copy of parsed whose method set includes proofless staking.
-// Methods already present are left alone so a newer encoded ABI is not overwritten.
-func withProoflessStakeMethods(parsed *abi.ABI) (*abi.ABI, error) {
-	if parsed == nil {
-		return nil, fmt.Errorf("megapool ABI is nil")
-	}
-	extra, err := abi.JSON(strings.NewReader(prooflessStakeABI))
-	if err != nil {
-		return nil, fmt.Errorf("error parsing proofless stake ABI: %w", err)
-	}
-	methods := make(map[string]abi.Method, len(parsed.Methods)+len(extra.Methods))
-	for name, method := range parsed.Methods {
-		methods[name] = method
-	}
-	for name, method := range extra.Methods {
-		if _, exists := methods[name]; exists {
-			continue
-		}
-		methods[name] = method
-	}
-	cloned := *parsed
-	cloned.Methods = methods
-	return &cloned, nil
-}
-
 // Fixed challenge deadline stored for this validator, or zero when none was snapshotted
 func (mp *megapoolV1) GetValidatorChallengeDeadline(validatorId uint32, opts *bind.CallOpts) (*big.Int, error) {
 	deadline := new(*big.Int)
@@ -752,15 +690,16 @@ func createMegapoolContractFromAbi(rp *rocketpool.RocketPool, address common.Add
 // Create a megapool contract directly from its ABI, encoded in string form
 func createMegapoolContractFromEncodedAbi(rp *rocketpool.RocketPool, address common.Address, encodedAbi string) (*rocketpool.Contract, error) {
 	// Decode ABI
-	decoded, err := rocketpool.DecodeAbi(encodedAbi)
+	abi, err := rocketpool.DecodeAbi(encodedAbi)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding megapool %s ABI: %w", address, err)
 	}
-	decoded, err = withProoflessStakeMethods(decoded)
-	if err != nil {
-		return nil, err
-	}
 
 	// Create and return
-	return createMegapoolContractFromAbi(rp, address, decoded)
+	return &rocketpool.Contract{
+		Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
+		Address:  &address,
+		ABI:      abi,
+		Client:   rp.Client,
+	}, nil
 }
