@@ -66,8 +66,8 @@ func TestUnpackPrestakedValidatorIndices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page, err := unpackPrestakedValidatorIndices(&parsed, packed)
-	if err != nil {
+	var page PrestakedValidatorIndices
+	if err := parsed.UnpackIntoInterface(&page, "getPrestakedValidatorIndices", packed); err != nil {
 		t.Fatal(err)
 	}
 	if len(page.Indices) != 2 || page.Indices[0].Cmp(indices[0]) != 0 || page.Indices[1].Cmp(indices[1]) != 0 {

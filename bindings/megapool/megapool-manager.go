@@ -122,9 +122,9 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 
 // PrestakedValidatorIndices is one page of RocketMegapoolManager.getPrestakedValidatorIndices.
 type PrestakedValidatorIndices struct {
-	Indices       []*big.Int
-	NextIndex     *big.Int
-	FailedIndices []*big.Int
+	Indices       []*big.Int `abi:"indices"`
+	NextIndex     *big.Int   `abi:"nextIndex"`
+	FailedIndices []*big.Int `abi:"failedIndices"`
 }
 
 // ValidatorPrestakeInfo is the RocketMegapoolManager.getValidatorPrestakeInfo return value.
@@ -143,49 +143,11 @@ func GetPrestakedValidatorIndices(rp *rocketpool.RocketPool, offset, limit *big.
 	if err != nil {
 		return PrestakedValidatorIndices{}, err
 	}
-	callData, err := megapoolManager.ABI.Pack("getPrestakedValidatorIndices", offset, limit)
-	if err != nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("error creating calldata for getPrestakedValidatorIndices: %w", err)
+	page := new(PrestakedValidatorIndices)
+	if err := megapoolManager.Call(opts, page, "getPrestakedValidatorIndices", offset, limit); err != nil {
+		return PrestakedValidatorIndices{}, fmt.Errorf("error getting prestaked validator indices: %w", err)
 	}
-	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{
-		To:   megapoolManager.Address,
-		Data: callData,
-	}, callBlockNumber(opts))
-	if err != nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("error calling getPrestakedValidatorIndices: %w", err)
-	}
-	page, err := unpackPrestakedValidatorIndices(megapoolManager.ABI, response)
-	if err != nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("error unpacking getPrestakedValidatorIndices response: %w", err)
-	}
-	return page, nil
-}
-
-func unpackPrestakedValidatorIndices(contractABI *abi.ABI, data []byte) (PrestakedValidatorIndices, error) {
-	iface, err := contractABI.Unpack("getPrestakedValidatorIndices", data)
-	if err != nil {
-		return PrestakedValidatorIndices{}, err
-	}
-	if len(iface) != 3 {
-		return PrestakedValidatorIndices{}, fmt.Errorf("expected 3 return values, got %d", len(iface))
-	}
-	indices, err := uint256Slice(iface[0])
-	if err != nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("indices: %w", err)
-	}
-	nextIndex, ok := iface[1].(*big.Int)
-	if !ok || nextIndex == nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("nextIndex has type %T", iface[1])
-	}
-	failed, err := uint256Slice(iface[2])
-	if err != nil {
-		return PrestakedValidatorIndices{}, fmt.Errorf("failedIndices: %w", err)
-	}
-	return PrestakedValidatorIndices{
-		Indices:       indices,
-		NextIndex:     nextIndex,
-		FailedIndices: failed,
-	}, nil
+	return *page, nil
 }
 
 // GetValidatorPrestakeInfo returns the prestake watcher data for one global validator index.
@@ -221,15 +183,6 @@ func unpackValidatorPrestakeInfo(contractABI *abi.ABI, data []byte) (ValidatorPr
 		return ValidatorPrestakeInfo{}, fmt.Errorf("challengeDeadline is nil")
 	}
 	return info, nil
-}
-
-func uint256Slice(value interface{}) ([]*big.Int, error) {
-	switch values := value.(type) {
-	case []*big.Int:
-		return values, nil
-	default:
-		return nil, fmt.Errorf("unexpected type %T", value)
-	}
 }
 
 func callBlockNumber(opts *bind.CallOpts) *big.Int {
