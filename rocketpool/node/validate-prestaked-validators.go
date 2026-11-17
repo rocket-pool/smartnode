@@ -464,8 +464,8 @@ func megapoolForValidatorIndex(rp *rocketpool.RocketPool, index uint64, opts *bi
 
 // wrongCredentialPendingDeposits returns prestaked validators whose pubkey appears
 // in a pending deposit that is validly signed to withdrawal credentials other than
-// that validator's megapool. One deposit dissolves a validator, so later deposits
-// for the same validator are skipped.
+// that validator's megapool.
+// One deposit dissolves a validator, so later deposits for the same validator are skipped.
 func wrongCredentialPendingDeposits(deposits []*generic.PendingDeposit, prestaked []megapool.ValidatorPrestakeInfo, depositDomain []byte) []pendingDepositDissolve {
 	byPubkey := make(map[string][]megapool.ValidatorPrestakeInfo, len(prestaked))
 	for _, info := range prestaked {
@@ -477,10 +477,14 @@ func wrongCredentialPendingDeposits(deposits []*generic.PendingDeposit, prestake
 	seen := make(map[string]struct{})
 	var matches []pendingDepositDissolve
 	for index, deposit := range deposits {
-		if deposit == nil || len(deposit.Pubkey) == 0 || !pendingDepositSignatureValid(deposit, depositDomain) {
+		if deposit == nil || len(deposit.Pubkey) == 0 {
 			continue
 		}
-		for _, info := range byPubkey[string(deposit.Pubkey)] {
+		candidates := byPubkey[string(deposit.Pubkey)]
+		if len(candidates) == 0 || !pendingDepositSignatureValid(deposit, depositDomain) {
+			continue
+		}
+		for _, info := range candidates {
 			key := fmt.Sprintf("%s:%d", info.MegapoolAddress.Hex(), info.ValidatorId)
 			if _, ok := seen[key]; ok {
 				continue
