@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
@@ -125,27 +126,19 @@ func (t *validatePrestakedValidators) run(state *state.NetworkStateIndex) error 
 	if err != nil {
 		return err
 	}
-	indices = append(indices, failed...)
-
-	var prestaked []megapool.ValidatorPrestakeInfo
-	var invalid []megapool.ValidatorPrestakeInfo
-	for _, index := range indices {
-		info, err := megapool.GetValidatorPrestakeInfo(t.rp, new(big.Int).SetUint64(index), opts)
-		if err != nil {
-			t.log.Printlnf("Error reading prestake info for global index %d: %v", index, err)
-			continue
-		}
-		if !info.ValidatorInfo.InPrestake {
-			continue
-		}
-		prestaked = append(prestaked, info)
-		credentials := services.CalculateMegapoolWithdrawalCredentials(info.MegapoolAddress)
-		valid := prestakeSignatureValid(info.Pubkey, info.Signature, credentials, depositDomain)
-		if classifyPrestake(info, valid) == prestakeInvalidSignature {
-			t.log.Printlnf("Invalid prestake signature for megapool %s validator %d (global index %d)", info.MegapoolAddress.Hex(), info.ValidatorId, index)
-			invalid = append(invalid, info)
-		}
+	// getPrestakedValidatorIndices parks an expired pinned proxy in failedIndices.
+	// GetValidatorPrestakeInfo reverts on that proxy, so upgrade it before the read.
+	// The upgrade is applied at head, so those reads cannot use the snapshot block.
+	failedReadOpts := opts
+	if canChallenge {
+		t.upgradeExpiredMegapools(failed, opts)
+		failedReadOpts = nil
 	}
+
+	prestaked, invalid := t.readPrestaked(indices, opts, depositDomain)
+	failedPrestaked, failedInvalid := t.readPrestaked(failed, failedReadOpts, depositDomain)
+	prestaked = append(prestaked, failedPrestaked...)
+	invalid = append(invalid, failedInvalid...)
 	if !canChallenge {
 		if len(invalid) > 0 {
 			t.log.Printlnf("%d prestaked validators have invalid signatures. This node cannot challenge until its megapool is deployed.", len(invalid))
@@ -327,6 +320,141 @@ func (t *validatePrestakedValidators) dissolvePendingDeposit(info megapool.Valid
 	}
 	t.log.Printlnf("Dissolved megapool %s validator %d for a pending deposit with invalid withdrawal credentials", info.MegapoolAddress.Hex(), info.ValidatorId)
 	return true, nil
+}
+
+func (t *validatePrestakedValidators) readPrestaked(indices []uint64, opts *bind.CallOpts, depositDomain []byte) (prestaked, invalid []megapool.ValidatorPrestakeInfo) {
+	for _, index := range indices {
+		info, err := megapool.GetValidatorPrestakeInfo(t.rp, new(big.Int).SetUint64(index), opts)
+		if err != nil {
+			t.log.Printlnf("Error reading prestake info for global index %d: %v", index, err)
+			continue
+		}
+		if !info.ValidatorInfo.InPrestake {
+			continue
+		}
+		prestaked = append(prestaked, info)
+		credentials := services.CalculateMegapoolWithdrawalCredentials(info.MegapoolAddress)
+		valid := prestakeSignatureValid(info.Pubkey, info.Signature, credentials, depositDomain)
+		if classifyPrestake(info, valid) == prestakeInvalidSignature {
+			t.log.Printlnf("Invalid prestake signature for megapool %s validator %d (global index %d)", info.MegapoolAddress.Hex(), info.ValidatorId, index)
+			invalid = append(invalid, info)
+		}
+	}
+	return prestaked, invalid
+}
+
+// upgradeExpiredMegapools upgrades each distinct megapool behind a failed prestake index.
+// The manager does not return the megapool address for those indices, and the view that
+// would return it reverts, so the address comes from the validator-set storage entry.
+func (t *validatePrestakedValidators) upgradeExpiredMegapools(failed []uint64, opts *bind.CallOpts) {
+	seen := make(map[common.Address]struct{}, len(failed))
+	for _, index := range failed {
+		address, err := megapoolForValidatorIndex(t.rp, index, opts)
+		if err != nil {
+			t.log.Printlnf("Error reading megapool for global index %d: %v", index, err)
+			continue
+		}
+		if _, ok := seen[address]; ok {
+			continue
+		}
+		seen[address] = struct{}{}
+		ready, err := t.upgradeExpiredDelegate(address)
+		if err != nil {
+			t.log.Printlnf("Error upgrading megapool %s delegate: %v", address.Hex(), err)
+			continue
+		}
+		if !ready {
+			return
+		}
+	}
+}
+
+// upgradeExpiredDelegate calls delegateUpgrade when a pinned megapool delegate has expired.
+func (t *validatePrestakedValidators) upgradeExpiredDelegate(megapoolAddress common.Address) (bool, error) {
+	mp, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
+	if err != nil {
+		return false, err
+	}
+	expired, err := mp.GetDelegateExpired(t.rp, nil)
+	if err != nil {
+		return false, err
+	}
+	useLatest := false
+	if expired {
+		useLatest, err = mp.GetUseLatestDelegate(nil)
+		if err != nil {
+			return false, err
+		}
+	}
+	if !megapoolDelegateNeedsUpgrade(useLatest, expired) {
+		return true, nil
+	}
+
+	t.log.Printlnf("Megapool %s delegate has expired. Upgrading it before getValidatorInfo.", megapoolAddress.Hex())
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return false, err
+	}
+	gasLimits, err := mp.EstimateDelegateUpgradeGas(opts)
+	if err != nil {
+		return false, err
+	}
+	maxFee := t.maxFee
+	if maxFee == nil || maxFee.Sign() == 0 {
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
+		if err != nil {
+			return false, err
+		}
+	}
+	if !gasLimits.PrintAndCheck(true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+		return false, nil
+	}
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
+	opts.GasLimit = gasLimits.Safe
+
+	txHash, err := mp.DelegateUpgrade(opts)
+	if err != nil {
+		return false, err
+	}
+	if err := transactions.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log); err != nil {
+		return false, err
+	}
+	t.log.Printlnf("Upgraded the delegate for megapool %s", megapoolAddress.Hex())
+	return true, nil
+}
+
+// megapoolDelegateNeedsUpgrade reports whether getValidatorInfo would revert because
+// the proxy is pinned to an expired delegate.
+func megapoolDelegateNeedsUpgrade(useLatest, expired bool) bool {
+	return expired && !useLatest
+}
+
+// megapoolValidatorSetKey is the rocket storage key for one global megapool validator.
+// The manager stores it with abi.encodePacked("megapool.validator.set", uint256(index)).
+func megapoolValidatorSetKey(index uint64) common.Hash {
+	return crypto.Keccak256Hash([]byte("megapool.validator.set"), common.LeftPadBytes(new(big.Int).SetUint64(index).Bytes(), 32))
+}
+
+// decodeMegapoolValidatorSetEntry returns the megapool address packed into a validator-set entry.
+// The entry is (uint160(megapool) << 96) | validatorId.
+func decodeMegapoolValidatorSetEntry(encoded *big.Int) (common.Address, error) {
+	if encoded == nil || encoded.Sign() <= 0 || encoded.BitLen() > 256 {
+		return common.Address{}, fmt.Errorf("value %v is not a megapool validator set entry", encoded)
+	}
+	return common.BigToAddress(new(big.Int).Rsh(encoded, 96)), nil
+}
+
+func megapoolForValidatorIndex(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
+	encoded, err := rp.RocketStorage.GetUint(opts, megapoolValidatorSetKey(index))
+	if err != nil {
+		return common.Address{}, fmt.Errorf("error reading megapool validator set index %d: %w", index, err)
+	}
+	address, err := decodeMegapoolValidatorSetEntry(encoded)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("megapool validator set index %d: %w", index, err)
+	}
+	return address, nil
 }
 
 // wrongCredentialPendingDeposits returns prestaked validators whose pubkey appears

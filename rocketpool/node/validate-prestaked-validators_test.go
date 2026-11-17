@@ -16,6 +16,43 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
+func TestMegapoolValidatorSetEntry(t *testing.T) {
+	if got := megapoolValidatorSetKey(4); got != common.HexToHash("0x940489ed09426b7e471541a102b1e86fb32c606af546fb7053e52a499aa4d580") {
+		t.Fatalf("validator set key = %s", got.Hex())
+	}
+	address := common.HexToAddress("0x0DFB735d953453198D0Cd79546464455b40D3645")
+	encoded := new(big.Int).Lsh(new(big.Int).SetBytes(address.Bytes()), 96)
+	encoded.Or(encoded, big.NewInt(7))
+	got, err := decodeMegapoolValidatorSetEntry(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != address {
+		t.Fatalf("decoded megapool = %s", got.Hex())
+	}
+	if _, err := decodeMegapoolValidatorSetEntry(nil); err == nil {
+		t.Fatal("nil entry decoded")
+	}
+	if _, err := decodeMegapoolValidatorSetEntry(big.NewInt(0)); err == nil {
+		t.Fatal("empty entry decoded")
+	}
+}
+
+func TestMegapoolDelegateNeedsUpgrade(t *testing.T) {
+	if megapoolDelegateNeedsUpgrade(false, false) {
+		t.Fatal("a current delegate does not need an upgrade")
+	}
+	if megapoolDelegateNeedsUpgrade(true, false) {
+		t.Fatal("use-latest with a current delegate does not need an upgrade")
+	}
+	if megapoolDelegateNeedsUpgrade(true, true) {
+		t.Fatal("use-latest does not pin an expired delegate")
+	}
+	if !megapoolDelegateNeedsUpgrade(false, true) {
+		t.Fatal("an expired pinned delegate must be upgraded before getValidatorInfo")
+	}
+}
+
 func TestClassifyPrestake(t *testing.T) {
 	info := megapool.ValidatorPrestakeInfo{
 		ValidatorInfo: megapool.ValidatorInfo{InPrestake: true},
