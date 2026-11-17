@@ -102,6 +102,11 @@ func (t *validatePrestakedValidators) run(state *state.NetworkStateIndex) error 
 		return nil
 	}
 
+	if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+		t.log.Println("Skipping checks on prestaked megapool validators as the enforcer role is not enabled")
+		return nil
+	}
+
 	t.log.Println("Checking prestaked megapool validators...")
 
 	nodeAccount, err := t.w.GetNodeAccount()
