@@ -66,8 +66,7 @@ func chooseMegapoolStake(c megapoolStakeChoice) megapoolStakeAction {
 	return stakeWithoutProof
 }
 
-// stakeWithoutProof reverts until the execution block timestamp reaches the validator's stored deadline.
-// A zero deadline means this prestake never received one.
+// challengeDeadlineElapsed reports whether the execution block timestamp has reached the validator's stored deadline.
 func challengeDeadlineElapsed(deadline *big.Int, headTimestamp uint64) bool {
 	if deadline == nil || deadline.Sign() <= 0 {
 		return false

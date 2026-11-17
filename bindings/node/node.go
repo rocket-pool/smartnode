@@ -722,6 +722,28 @@ func GetExpressTicketCount(rp *rocketpool.RocketPool, nodeAddress common.Address
 	return (*expressTicketCount).Uint64(), nil
 }
 
+// Estimate the gas of deploying the node's megapool
+func EstimateDeployMegapoolGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (gaslimit.Limits, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return gaslimit.Limits{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "deployMegapool")
+}
+
+// Deploy the node's megapool
+func DeployMegapool(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeManager.Transact(opts, "deployMegapool")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error deploying megapool: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get the megapool address for the given node operator
 func GetMegapoolAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)

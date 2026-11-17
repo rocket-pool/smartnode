@@ -14,6 +14,19 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
+type CanDeployMegapoolResponse struct {
+	APIResponse
+	CanDeploy       bool            `json:"canDeploy"`
+	AlreadyDeployed bool            `json:"alreadyDeployed"`
+	MegapoolAddress common.Address  `json:"megapoolAddress"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
+}
+
+type DeployMegapoolResponse struct {
+	APIResponse
+	TxHash common.Hash `json:"txHash"`
+}
+
 type MegapoolDeficitResponse struct {
 	APIResponse
 	Saturn2Deployed          bool     `json:"saturn2Deployed"`
