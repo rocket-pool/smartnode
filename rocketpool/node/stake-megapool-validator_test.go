@@ -41,6 +41,16 @@ func TestChooseMegapoolStake(t *testing.T) {
 		t.Fatalf("validator in the beacon state with proofless staking disabled chose %d", got)
 	}
 
+	pastDeadline := eligible
+	pastDeadline.inBeaconState = true
+	if got := chooseMegapoolStake(pastDeadline); got != stakeWithoutProof {
+		t.Fatalf("validator in the beacon state after the deadline chose %d", got)
+	}
+	pastDeadline.prooflessEnabled = false
+	if got := chooseMegapoolStake(pastDeadline); got != stakeWithProof {
+		t.Fatalf("validator in the beacon state after the deadline with proofless staking disabled chose %d", got)
+	}
+
 	notPrestake := eligible
 	notPrestake.inPrestake = false
 	notPrestake.inBeaconState = true
@@ -76,6 +86,46 @@ func TestChooseMegapoolStake(t *testing.T) {
 	huge := new(big.Int).Lsh(big.NewInt(1), 64)
 	if challengeDeadlineElapsed(huge, ^uint64(0)) {
 		t.Fatal("deadline above uint64 was treated as elapsed")
+	}
+}
+
+func TestValidatorNeedsStakeProof(t *testing.T) {
+	deadline := big.NewInt(1_000)
+	choice := megapoolStakeChoice{
+		inPrestake:        true,
+		inBeaconState:     true,
+		prooflessEnabled:  true,
+		signatureRetained: true,
+		deadline:          deadline,
+		headTimestamp:     1_000,
+	}
+	if validatorNeedsStakeProof(choice, true) {
+		t.Fatal("a validator past the deadline needs a beacon state")
+	}
+	if validatorNeedsStakeProof(choice, false) {
+		t.Fatal("a validator the beacon has not listed needs a beacon state")
+	}
+
+	choice.headTimestamp = 999
+	if !validatorNeedsStakeProof(choice, true) {
+		t.Fatal("a validator before the deadline with a beacon index does not need a beacon state")
+	}
+	if validatorNeedsStakeProof(choice, false) {
+		t.Fatal("a validator before the deadline and not listed by the beacon needs a beacon state")
+	}
+
+	choice.headTimestamp = 1_000
+	choice.signatureRetained = false
+	if !validatorNeedsStakeProof(choice, true) {
+		t.Fatal("a validator with no retained signature does not need a beacon state")
+	}
+	choice.signatureRetained = true
+	choice.prooflessEnabled = false
+	if !validatorNeedsStakeProof(choice, true) {
+		t.Fatal("a listed validator with proofless staking disabled does not need a beacon state")
+	}
+	if validatorNeedsStakeProof(choice, false) {
+		t.Fatal("an unlisted validator with proofless staking disabled needs a beacon state")
 	}
 }
 

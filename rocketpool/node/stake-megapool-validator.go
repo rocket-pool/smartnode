@@ -50,20 +50,32 @@ type prestakeStakeCandidate struct {
 	beaconIndex string
 }
 
-// chooseMegapoolStake keeps proof staking whenever the validator is in the selected beacon state,
-// including before the challenge deadline. stakeWithoutProof is only for a prestake the state does
-// not contain yet, after the stored deadline, when the protocol still has the signature.
+// chooseMegapoolStake prefers stakeWithoutProof once the challenge deadline has
+// passed. A proof is only required while that deadline is still running and the
+// validator is already in the beacon state.
 func chooseMegapoolStake(c megapoolStakeChoice) megapoolStakeAction {
 	if !c.inPrestake {
 		return stakeSkip
 	}
+	if c.prooflessEnabled && c.signatureRetained && challengeDeadlineElapsed(c.deadline, c.headTimestamp) {
+		return stakeWithoutProof
+	}
 	if c.inBeaconState {
 		return stakeWithProof
 	}
-	if !c.prooflessEnabled || !c.signatureRetained || !challengeDeadlineElapsed(c.deadline, c.headTimestamp) {
-		return stakeSkip
+	return stakeSkip
+}
+
+// validatorNeedsStakeProof reports whether staking this validator requires the
+// beacon state. Membership in that state is unknown here: the deadline is
+// checked first, and a validator that can stake without a proof does not need it.
+func validatorNeedsStakeProof(c megapoolStakeChoice, hasBeaconIndex bool) bool {
+	if !hasBeaconIndex {
+		return false
 	}
-	return stakeWithoutProof
+	withoutState := c
+	withoutState.inBeaconState = false
+	return chooseMegapoolStake(withoutState) != stakeWithoutProof
 }
 
 // challengeDeadlineElapsed reports whether the execution block timestamp has reached the validator's stored deadline.
@@ -217,84 +229,147 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 		return nil
 	}
 
-	// Proofs need the beacon state. A prestake the beacon has not seen only needs the execution
-	// head timestamp, which is the earliest block.timestamp the contract can observe next.
-	var beaconState eth2.BeaconState
+	// The deadline uses the execution head timestamp. The beacon state is downloaded
+	// only for validators that still need a proof, after proofless stakes are sent.
 	var headTimestamp uint64
-	if candidatesHaveBeaconIndex(validatorsToStake) {
-		beaconState, headTimestamp, err = services.GetHeadBeaconState(t.bc, t.rp.Client)
+	if prooflessEnabled {
+		headTimestamp, err = t.executionHeadTimestamp()
 		if err != nil {
 			return err
 		}
-	} else {
-		header, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			return fmt.Errorf("error getting execution head: %w", err)
-		}
-		if header == nil {
-			return fmt.Errorf("execution head is not available")
-		}
-		headTimestamp = header.Time
 	}
-	stateValidatorCount := 0
-	if beaconState != nil {
-		stateValidatorCount = len(beaconState.GetValidators())
+
+	type proofStake struct {
+		id                uint32
+		candidate         prestakeStakeCandidate
+		deadline          *big.Int
+		signatureRetained bool
 	}
 
 	stakedValidators := 0
 	validatorsProcessed := 0
 	const batchSize = 6
 	var stakeErr error
+	var proofQueue []proofStake
 	for validatorId, candidate := range validatorsToStake {
 		if validatorsProcessed >= batchSize {
 			break
 		}
-
-		inState, beaconIndex, err := t.validatorInBeaconState(candidate, stateValidatorCount)
-		if err != nil {
-			stakeErr = err
-			break
-		}
-
-		var action megapoolStakeAction
-		if inState {
-			action = stakeWithProof
-		} else {
-			action, err = t.prooflessStakeAction(mp, opts, validatorId, prooflessEnabled, headTimestamp)
-			if err != nil {
-				stakeErr = err
-				break
-			}
-		}
-		if action == stakeSkip {
-			// prooflessStakeAction already logged why this prestake is waiting.
-			// With proofless staking disabled, keep the previous retry for validators the beacon already lists.
-			if !prooflessEnabled && beaconIndex != "" {
-				t.log.Printlnf("Validator id %d (beacon index %s) is not yet included in the selected beacon state. Will retry on next cycle.", validatorId, beaconIndex)
+		if !prooflessEnabled {
+			if candidate.beaconIndex != "" {
+				proofQueue = append(proofQueue, proofStake{id: validatorId, candidate: candidate})
 			}
 			continue
 		}
 
-		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
-		if action == stakeWithoutProof {
-			err = t.stakeValidatorWithoutProof(mp, validatorId)
-		} else {
-			err = t.stakeValidator(t.rp, beaconState, headTimestamp, mp, validatorId, candidate.pubkey)
-		}
+		deadline, signatureRetained, err := t.prestakeStakeInputs(mp, opts, validatorId)
 		if err != nil {
-			t.log.Printlnf("Error staking validator %d: %v", validatorId, err)
+			stakeErr = err
 			break
 		}
-		stakedValidators++
-		validatorsProcessed++
+		choice := megapoolStakeChoice{
+			inPrestake:        true,
+			prooflessEnabled:  true,
+			signatureRetained: signatureRetained,
+			deadline:          deadline,
+			headTimestamp:     headTimestamp,
+		}
+		if chooseMegapoolStake(choice) == stakeWithoutProof {
+			if err = t.submitStake(mp, nil, 0, validatorId, candidate, stakeWithoutProof); err != nil {
+				stakeErr = err
+				break
+			}
+			stakedValidators++
+			validatorsProcessed++
+			continue
+		}
+		if validatorNeedsStakeProof(choice, candidate.beaconIndex != "") {
+			proofQueue = append(proofQueue, proofStake{
+				id:                validatorId,
+				candidate:         candidate,
+				deadline:          deadline,
+				signatureRetained: signatureRetained,
+			})
+			continue
+		}
+		t.logProoflessSkip(validatorId, deadline, signatureRetained, headTimestamp)
 	}
 
+	if stakeErr == nil && validatorsProcessed < batchSize && len(proofQueue) > 0 {
+		beaconState, proofTimestamp, err := services.GetHeadBeaconState(t.bc, t.rp.Client)
+		if err != nil {
+			stakeErr = err
+		} else {
+			stateValidatorCount := len(beaconState.GetValidators())
+			for _, item := range proofQueue {
+				if validatorsProcessed >= batchSize {
+					break
+				}
+				inState, beaconIndex, err := t.validatorInBeaconState(item.candidate, stateValidatorCount)
+				if err != nil {
+					stakeErr = err
+					break
+				}
+				action := chooseMegapoolStake(megapoolStakeChoice{
+					inPrestake:        true,
+					inBeaconState:     inState,
+					prooflessEnabled:  prooflessEnabled,
+					signatureRetained: item.signatureRetained,
+					deadline:          item.deadline,
+					headTimestamp:     headTimestamp,
+				})
+				if action == stakeSkip {
+					if prooflessEnabled {
+						t.logProoflessSkip(item.id, item.deadline, item.signatureRetained, headTimestamp)
+					} else if beaconIndex != "" {
+						t.log.Printlnf("Validator id %d (beacon index %s) is not yet included in the selected beacon state. Will retry on next cycle.", item.id, beaconIndex)
+					}
+					continue
+				}
+				if err = t.submitStake(mp, beaconState, proofTimestamp, item.id, item.candidate, action); err != nil {
+					stakeErr = err
+					break
+				}
+				stakedValidators++
+				validatorsProcessed++
+			}
+		}
+	}
+
+	return t.finishStake(stakedValidators, stakeErr)
+}
+
+func (t *stakeMegapoolValidator) executionHeadTimestamp() (uint64, error) {
+	header, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return 0, fmt.Errorf("error getting execution head: %w", err)
+	}
+	if header == nil {
+		return 0, fmt.Errorf("execution head is not available")
+	}
+	return header.Time, nil
+}
+
+func (t *stakeMegapoolValidator) submitStake(mp megapool.Megapool, beaconState eth2.BeaconState, slotTimestamp uint64, validatorId uint32, candidate prestakeStakeCandidate, action megapoolStakeAction) error {
+	t.log.Printlnf("The validator id %d needs to be staked", validatorId)
+	var err error
+	if action == stakeWithoutProof {
+		err = t.stakeValidatorWithoutProof(mp, validatorId)
+	} else {
+		err = t.stakeValidator(t.rp, beaconState, slotTimestamp, mp, validatorId, candidate.pubkey)
+	}
+	if err != nil {
+		t.log.Printlnf("Error staking validator %d: %v", validatorId, err)
+	}
+	return err
+}
+
+func (t *stakeMegapoolValidator) finishStake(stakedValidators int, stakeErr error) error {
 	if stakedValidators > 0 {
 		if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
 			return err
 		}
 	}
-
 	return stakeErr
 }
 
@@ -374,30 +449,16 @@ func (t *stakeMegapoolValidator) validatorInBeaconState(candidate prestakeStakeC
 	return included, index, err
 }
 
-func (t *stakeMegapoolValidator) prooflessStakeAction(mp megapool.Megapool, opts *bind.CallOpts, validatorId uint32, prooflessEnabled bool, headTimestamp uint64) (megapoolStakeAction, error) {
-	if !prooflessEnabled {
-		return stakeSkip, nil
-	}
+func (t *stakeMegapoolValidator) prestakeStakeInputs(mp megapool.Megapool, opts *bind.CallOpts, validatorId uint32) (*big.Int, bool, error) {
 	deadline, err := mp.GetValidatorChallengeDeadline(validatorId, opts)
 	if err != nil {
-		return stakeSkip, fmt.Errorf("error getting validator %d challenge deadline: %w", validatorId, err)
+		return nil, false, fmt.Errorf("error getting validator %d challenge deadline: %w", validatorId, err)
 	}
 	signature, err := mp.GetValidatorPrestakeSignature(validatorId, opts)
 	if err != nil {
-		return stakeSkip, fmt.Errorf("error getting validator %d prestake signature: %w", validatorId, err)
+		return nil, false, fmt.Errorf("error getting validator %d prestake signature: %w", validatorId, err)
 	}
-	action := chooseMegapoolStake(megapoolStakeChoice{
-		inPrestake:        true,
-		inBeaconState:     false,
-		prooflessEnabled:  true,
-		signatureRetained: len(signature) != 0,
-		deadline:          deadline,
-		headTimestamp:     headTimestamp,
-	})
-	if action == stakeSkip {
-		t.logProoflessSkip(validatorId, deadline, len(signature) != 0, headTimestamp)
-	}
-	return action, nil
+	return deadline, len(signature) != 0, nil
 }
 
 func (t *stakeMegapoolValidator) logProoflessSkip(validatorId uint32, deadline *big.Int, signatureRetained bool, headTimestamp uint64) {
@@ -414,7 +475,7 @@ func (t *stakeMegapoolValidator) stakeValidatorWithoutProof(mp megapool.Megapool
 		return err
 	}
 
-	t.log.Printlnf("Staking validator %d without a beacon state proof. The challenge period has elapsed and the validator is not in the selected beacon state.", validatorId)
+	t.log.Printlnf("Staking validator %d without a beacon state proof. The challenge period has elapsed.", validatorId)
 
 	gasLimits, err := mp.EstimateStakeWithoutProofGas(validatorId, opts)
 	if err != nil {
