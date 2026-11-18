@@ -192,7 +192,6 @@ func EncodeFinalBalanceProofBundleV2(
 		{Name: "validatorProof", Type: "tuple", Components: validatorProofComponents},
 		{Name: "slotProof", Type: "tuple", Components: slotProofComponents},
 		{Name: "previousNextWithdrawalIndexProof", Type: "tuple", Components: nextWithdrawalIndexProofComponents},
-		{Name: "validatorBalanceProof", Type: "tuple", Components: validatorBalanceProofComponents},
 	}, FinalBalanceProofBundleV2{
 		WithdrawalProof:                  withdrawalProof,
 		ValidatorProof:                   validatorProof,
