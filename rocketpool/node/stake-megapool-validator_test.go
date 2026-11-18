@@ -89,6 +89,15 @@ func TestChooseMegapoolStake(t *testing.T) {
 	}
 }
 
+func TestProoflessStakeSupported(t *testing.T) {
+	if prooflessStakeSupported(1) {
+		t.Fatal("delegate version 1 was treated as supporting proofless staking")
+	}
+	if !prooflessStakeSupported(2) {
+		t.Fatal("delegate version 2 was treated as missing proofless staking")
+	}
+}
+
 func TestValidatorNeedsStakeProof(t *testing.T) {
 	deadline := big.NewInt(1_000)
 	choice := megapoolStakeChoice{

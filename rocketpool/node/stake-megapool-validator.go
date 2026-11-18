@@ -66,6 +66,12 @@ func chooseMegapoolStake(c megapoolStakeChoice) megapoolStakeAction {
 	return stakeSkip
 }
 
+// prooflessStakeSupported reports whether the megapool delegate implements the
+// proofless stake getters. Delegate version 1 reverts on those calls.
+func prooflessStakeSupported(delegateVersion uint8) bool {
+	return delegateVersion >= 2
+}
+
 // validatorNeedsStakeProof reports whether staking this validator requires the
 // beacon state. Membership in that state is unknown here: the deadline is
 // checked first, and a validator that can stake without a proof does not need it.
@@ -223,6 +229,16 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkStateIndex) error {
 		prooflessEnabled, err = protocol.GetStakeWithoutProofEnabled(t.rp, opts)
 		if err != nil {
 			return err
+		}
+	}
+	if prooflessEnabled {
+		delegateVersion, err := rocketpool.GetContractVersion(t.rp, megapoolAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting megapool %s delegate version: %w", megapoolAddress.Hex(), err)
+		}
+		if !prooflessStakeSupported(delegateVersion) {
+			t.log.Printlnf("Megapool %s delegate version %d stakes with a beacon proof.", megapoolAddress.Hex(), delegateVersion)
+			prooflessEnabled = false
 		}
 	}
 	if !prooflessEnabled && !candidatesHaveBeaconIndex(validatorsToStake) {
