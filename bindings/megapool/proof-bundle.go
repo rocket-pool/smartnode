@@ -116,10 +116,6 @@ var (
 		{Name: "nextWithdrawalIndex", Type: "uint64"},
 		{Name: "witnesses", Type: "bytes32[]"},
 	}
-	validatorBalanceProofComponents = []abi.ArgumentMarshaling{
-		{Name: "balanceChunk", Type: "bytes32"},
-		{Name: "witnesses", Type: "bytes32[]"},
-	}
 	pendingDepositComponents = []abi.ArgumentMarshaling{
 		{Name: "pubkey", Type: "bytes"},
 		{Name: "withdrawalCredentials", Type: "bytes32"},
