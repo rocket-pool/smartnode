@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 
@@ -85,7 +86,7 @@ func getStatus() error {
 	} else {
 		fmt.Println("The megapool has automatic delegate upgrades disabled. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
 		if status.Megapool.DelegateExpiry > 0 {
-			fmt.Printf("Your current megapool delegate expires at %s.\n", color.LightBlueSprintf("block %d", status.Megapool.DelegateExpiry))
+			fmt.Printf("Your current megapool delegate %s.\n", color.LightBlue(formatDelegateExpiry(status.Megapool.DelegateExpiry, time.Now())))
 		}
 	}
 	fmt.Println()
@@ -211,6 +212,15 @@ func getValidatorStatus() error {
 
 	return nil
 
+}
+
+// formatDelegateExpiry describes how long remains until a delegate expiry timestamp.
+func formatDelegateExpiry(expiry uint64, now time.Time) string {
+	remaining := time.Unix(int64(expiry), 0).Sub(now).Round(time.Second)
+	if remaining >= 0 {
+		return fmt.Sprintf("expires in %s", remaining)
+	}
+	return fmt.Sprintf("expired %s ago", -remaining)
 }
 
 func printValidatorDetails(validator api.MegapoolValidatorDetails, status string) {

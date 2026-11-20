@@ -180,6 +180,8 @@ type GetPDAOSettingsResponse struct {
 		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
 		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
 		ExitDeficit                      *big.Int      `json:"exitDeficit"`
+		PrestakeChallengePeriod          time.Duration `json:"prestakeChallengePeriod"`
+		StakeWithoutProofEnabled         bool          `json:"stakeWithoutProofEnabled"`
 	} `json:"megapool"`
 
 	Performance struct {

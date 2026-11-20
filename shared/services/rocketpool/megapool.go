@@ -118,6 +118,16 @@ func (c *Client) ExitMegapoolDeficit(megapoolAddress common.Address, validatorId
 	}, "Could not submit megapool deficit exit")
 }
 
+// Check whether the node can deploy a megapool
+func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
+	return c.callAPI[api.CanDeployMegapoolResponse]("GET", "/api/megapool/can-deploy", nil, "Could not get can deploy megapool status")
+}
+
+// Deploy the node's megapool
+func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
+	return c.callAPI[api.DeployMegapoolResponse]("POST", "/api/megapool/deploy", nil, "Could not deploy megapool")
+}
+
 // Get megapool status
 func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {
 	finalizedStr := "false"

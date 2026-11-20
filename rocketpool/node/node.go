@@ -42,27 +42,28 @@ const (
 	// Keep exit requests in the scan for seven days after the cooperative phase.
 	exitRequestEnforcementWindow = 7 * 24 * time.Hour
 
-	DownloadRewardsTreesColor       = color.FgGreen
-	MetricsColor                    = color.FgHiYellow
-	ManageFeeRecipientColor         = color.FgHiCyan
-	DefendPdaoPropsColor            = color.FgYellow
-	VerifyPdaoPropsColor            = color.FgYellow
-	DistributeMinipoolsColor        = color.FgHiGreen
-	ErrorColor                      = color.FgRed
-	WarningColor                    = color.FgYellow
-	ObserveWarningColor             = color.FgHiRed
-	UpdateColor                     = color.FgHiWhite
-	PrestakeMegapoolValidatorColor  = color.FgHiGreen
-	StakeMegapoolValidatorColor     = color.FgHiBlue
-	NotifyValidatorExitColor        = color.FgHiYellow
-	NotifyFinalBalanceColor         = color.FgHiMagenta
-	CheckMinipoolExitRequestsColor  = color.FgHiCyan
-	CheckMegapoolExitRequestsColor  = color.FgCyan
-	DefendChallengeExitColor        = color.FgHiGreen
-	DefendChallengePerformanceColor = color.FgHiBlue
-	ProvisionExpressTickets         = color.FgMagenta
-	SetUseLatestDelegateColor       = color.FgBlue
-	CheckPortConnectivityColor      = color.FgHiYellow
+	DownloadRewardsTreesColor        = color.FgGreen
+	MetricsColor                     = color.FgHiYellow
+	ManageFeeRecipientColor          = color.FgHiCyan
+	DefendPdaoPropsColor             = color.FgYellow
+	VerifyPdaoPropsColor             = color.FgYellow
+	DistributeMinipoolsColor         = color.FgHiGreen
+	ErrorColor                       = color.FgRed
+	WarningColor                     = color.FgYellow
+	ObserveWarningColor              = color.FgHiRed
+	UpdateColor                      = color.FgHiWhite
+	PrestakeMegapoolValidatorColor   = color.FgHiGreen
+	ValidatePrestakedValidatorsColor = color.FgWhite
+	StakeMegapoolValidatorColor      = color.FgHiBlue
+	NotifyValidatorExitColor         = color.FgHiYellow
+	NotifyFinalBalanceColor          = color.FgHiMagenta
+	CheckMinipoolExitRequestsColor   = color.FgHiCyan
+	CheckMegapoolExitRequestsColor   = color.FgCyan
+	DefendChallengeExitColor         = color.FgHiGreen
+	DefendChallengePerformanceColor  = color.FgHiBlue
+	ProvisionExpressTickets          = color.FgMagenta
+	SetUseLatestDelegateColor        = color.FgBlue
+	CheckPortConnectivityColor       = color.FgHiYellow
 )
 
 // Register node command
@@ -285,6 +286,10 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	validatePrestakedValidators, err := newValidatePrestakedValidators(c, log.NewColorLogger(ValidatePrestakedValidatorsColor))
+	if err != nil {
+		return err
+	}
 	var checkPorts *connectivity.CheckPortConnectivity
 	checkPorts, err = connectivity.NewCheckPortConnectivity(c, cfg, log.NewColorLogger(CheckPortConnectivityColor))
 	if err != nil {
@@ -438,6 +443,14 @@ func run(c *cli.Command) error {
 				if !sleepWithContext(ctx, taskCooldown) {
 					return
 				}
+			}
+
+			// Run the prestaked validator signature check
+			if err := validatePrestakedValidators.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
 			}
 
 			// Run the megapool stake check

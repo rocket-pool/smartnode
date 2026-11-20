@@ -13,6 +13,8 @@ import (
 // RegisterRoutes registers the megapool module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/megapool/status", statusHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-deploy", canDeployHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/deploy", deployHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/validator-map-and-balances", validatorMapAndBalancesHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/can-claim-refund", canClaimRefundHandler).RegisterTo(router)
 	snroute.Write("/api/megapool/claim-refund", claimRefundHandler).RegisterTo(router)

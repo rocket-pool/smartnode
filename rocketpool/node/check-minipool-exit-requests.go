@@ -224,6 +224,7 @@ func (t *checkMinipoolExitRequests) run(state *state.NetworkStateIndex) error {
 
 		// Enforcing other operators' exit requests is an opt-in duty.
 		if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+			t.log.Println("Skipping checks on minipool exit requests as the enforcer role is not enabled")
 			continue
 		}
 

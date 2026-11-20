@@ -17,6 +17,24 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Commands: []*cli.Command{
 			{
+				Name:      "deploy",
+				Usage:     "Deploy the node's megapool",
+				UsageText: "rocketpool megapool deploy",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm the deployment",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					return deployMegapool(c.Bool("yes"))
+				},
+			},
+			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a new validator on the megapool. Optionally specify count to make multiple deposits.",
