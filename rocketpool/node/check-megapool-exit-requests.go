@@ -221,10 +221,6 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 			continue
 		}
 
-		if mp.GetVersion() < 2 {
-			continue
-		}
-
 		validatorInfo, err := mp.GetValidatorInfo(request.ValidatorId, nil)
 		if err != nil {
 			t.log.Printlnf("Error getting megapool %s validator %d: %s", request.MegapoolAddress.Hex(), request.ValidatorId, err.Error())
@@ -243,6 +239,11 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 		now := time.Unix(int64(header.Time), 0)
 		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
 		if now.Before(deadline) {
+			continue
+		}
+
+		if mp.GetVersion() < 2 {
+			t.log.Printlnf("Validator %d has an expired exit request but cannot be forced to exit because megapool %s is on delegate version %d.", validatorIndex, request.MegapoolAddress.Hex(), mp.GetVersion())
 			continue
 		}
 
