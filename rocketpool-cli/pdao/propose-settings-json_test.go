@@ -52,6 +52,72 @@ func TestExitDeficitCommandToBatchJSON(t *testing.T) {
 	}
 }
 
+func TestPrestakeChallengePeriodCommandToBatchJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name, command, value, want string
+	}{
+		{"hours", "prestake-challenge-period", "12h", "43200"},
+		{"duration", "prestake-challenge-period", "12h30m", "45000"},
+		{"alias", "pcp", "36h", "129600"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "batch.json")
+			app := &cli.Command{Name: "rocketpool"}
+			RegisterCommands(app, "pdao", nil)
+			args := []string{"rocketpool", "pdao", "propose", "setting", "megapool", tt.command, "--yes", "--to-json", path, tt.value}
+			if err := app.Run(context.Background(), args); err != nil {
+				t.Fatal(err)
+			}
+			settings, err := readBatchSettingsFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := api.PDAOBatchSetting{
+				Contract: protocol.MegapoolSettingsContractName,
+				Setting:  protocol.MegapoolPrestakeChallengePeriodPath,
+				Type:     protocol.ProposalSettingTypeNameUint256,
+				Value:    tt.want,
+			}
+			if len(settings) != 1 || settings[0] != want {
+				t.Fatalf("got %+v, want %+v", settings, want)
+			}
+		})
+	}
+}
+
+func TestStakeWithoutProofEnabledCommandToBatchJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name, command, value, want string
+	}{
+		{"true", "is-stake-without-proof-enabled", "true", "true"},
+		{"yes", "is-stake-without-proof-enabled", "yes", "true"},
+		{"false", "swpe", "no", "false"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "batch.json")
+			app := &cli.Command{Name: "rocketpool"}
+			RegisterCommands(app, "pdao", nil)
+			args := []string{"rocketpool", "pdao", "propose", "setting", "megapool", tt.command, "--yes", "--to-json", path, tt.value}
+			if err := app.Run(context.Background(), args); err != nil {
+				t.Fatal(err)
+			}
+			settings, err := readBatchSettingsFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := api.PDAOBatchSetting{
+				Contract: protocol.MegapoolSettingsContractName,
+				Setting:  protocol.MegapoolStakeWithoutProofEnabledPath,
+				Type:     protocol.ProposalSettingTypeNameBool,
+				Value:    tt.want,
+			}
+			if len(settings) != 1 || settings[0] != want {
+				t.Fatalf("got %+v, want %+v", settings, want)
+			}
+		})
+	}
+}
+
 func TestWriteSettingToBatchJSON_CreateAndAppend(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "batch.json")
@@ -110,7 +176,7 @@ func TestWriteSettingToBatchJSON_RejectsUnsupportedSettings(t *testing.T) {
 		wantErr                        error
 	}{
 		{"address list", protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, "0x1", protocol.ErrUnsupportedBatchSetting},
-		{"removed prestake period", protocol.MegapoolSettingsContractName, "prestake.challenge.period", "36", protocol.ErrUnknownPDAOSetting},
+		{"unprefixed prestake path", protocol.MegapoolSettingsContractName, "prestake.challenge.period", "36", protocol.ErrUnknownPDAOSetting},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "batch.json")

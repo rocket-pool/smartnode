@@ -13,6 +13,8 @@ import (
 // RegisterRoutes registers the megapool module's HTTP routes onto router.
 func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/megapool/status", statusHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/can-deploy", canDeployHandler).RegisterTo(router)
+	snroute.Write("/api/megapool/deploy", deployHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/validator-map-and-balances", validatorMapAndBalancesHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/can-claim-refund", canClaimRefundHandler).RegisterTo(router)
 	snroute.Write("/api/megapool/claim-refund", claimRefundHandler).RegisterTo(router)
@@ -49,8 +51,6 @@ func RegisterRoutes(router *snroute.Router) {
 	snroute.Write("/api/megapool/set-use-latest-delegate", setUseLatestDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/get-delegate", getDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/get-effective-delegate", getEffectiveDelegateHandler).RegisterTo(router)
-	snroute.Read("/api/megapool/latest-block-withdrawals", latestBlockWithdrawalsHandler).RegisterTo(router)
-	snroute.Read("/api/megapool/beacon-withdrawal-queue-estimate", beaconWithdrawalQueueEstimateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/verify-performance", verifyPerformanceHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/can-challenge-performance", canChallengePerformanceHandler).RegisterTo(router)
 	snroute.Write("/api/megapool/challenge-performance", challengePerformanceHandler).RegisterTo(router)

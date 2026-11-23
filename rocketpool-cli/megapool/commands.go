@@ -17,6 +17,24 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Commands: []*cli.Command{
 			{
+				Name:      "deploy",
+				Usage:     "Deploy the node's megapool",
+				UsageText: "rocketpool megapool deploy",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm the deployment",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					return deployMegapool(c.Bool("yes"))
+				},
+			},
+			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a new validator on the megapool. Optionally specify count to make multiple deposits.",
@@ -305,10 +323,6 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.BoolFlag{
-						Name:  "estimate-exit",
-						Usage: "Fetch an estimate of the beacon chain exit queue time",
-					},
 					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
@@ -325,7 +339,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					if !c.IsSet("validator-id") {
 						var err error
 						var found bool
-						validatorId, found, err = getExitableValidator(c.Bool("estimate-exit"))
+						validatorId, found, err = getExitableValidator()
 						if err != nil {
 							return err
 						}

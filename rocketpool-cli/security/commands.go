@@ -301,6 +301,43 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 							},
 
 							{
+								Name:    "megapool",
+								Aliases: []string{"g"},
+								Usage:   "Megapool settings",
+								Commands: []*cli.Command{
+
+									{
+										Name:      "is-stake-without-proof-enabled",
+										Aliases:   []string{"swpe"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting (requires Saturn 2); %s", protocol.MegapoolStakeWithoutProofEnabledPath, boolUsage),
+										UsageText: "rocketpool security propose setting megapool is-stake-without-proof-enabled value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolStakeWithoutProofEnabled(value, c.Bool("yes"))
+
+										},
+									},
+								},
+							},
+
+							{
 								Name:    "network",
 								Aliases: []string{"ne"},
 								Usage:   "Network settings",

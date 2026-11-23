@@ -37,17 +37,17 @@ func GetMegapoolExpectedAddress(rp *rocketpool.RocketPool, nodeAddress common.Ad
 	return expectedAddress, nil
 }
 
-// Get a megapool delegate expiration block
+// Get a megapool delegate expiration timestamp
 func GetMegapoolDelegateExpiry(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.CallOpts) (uint64, error) {
 	rocketMegapoolFactory, err := getRocketMegapoolFactory(rp, opts)
 	if err != nil {
 		return 0, err
 	}
-	expiryBlock := new(*big.Int)
-	if err := rocketMegapoolFactory.Call(opts, expiryBlock, "getDelegateExpiry", delegateAddress); err != nil {
-		return 0, fmt.Errorf("error getting expiration block for delegate address %s: %w", delegateAddress, err)
+	expiry := new(*big.Int)
+	if err := rocketMegapoolFactory.Call(opts, expiry, "getDelegateExpiry", delegateAddress); err != nil {
+		return 0, fmt.Errorf("error getting expiration time for delegate address %s: %w", delegateAddress, err)
 	}
-	return (*expiryBlock).Uint64(), nil
+	return (*expiry).Uint64(), nil
 }
 
 // Get contracts

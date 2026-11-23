@@ -118,6 +118,16 @@ func (c *Client) ExitMegapoolDeficit(megapoolAddress common.Address, validatorId
 	}, "Could not submit megapool deficit exit")
 }
 
+// Check whether the node can deploy a megapool
+func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
+	return c.callAPI[api.CanDeployMegapoolResponse]("GET", "/api/megapool/can-deploy", nil, "Could not get can deploy megapool status")
+}
+
+// Deploy the node's megapool
+func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
+	return c.callAPI[api.DeployMegapoolResponse]("POST", "/api/megapool/deploy", nil, "Could not deploy megapool")
+}
+
 // Get megapool status
 func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {
 	finalizedStr := "false"
@@ -298,16 +308,6 @@ func (c *Client) CanDistributeMegapool() (api.CanDistributeMegapoolResponse, err
 // Distribute megapool rewards
 func (c *Client) DistributeMegapool() (api.DistributeMegapoolResponse, error) {
 	return c.callAPI[api.DistributeMegapoolResponse]("POST", "/api/megapool/distribute", nil, "Could not get distribute-megapool response")
-}
-
-// Get the validator withdrawals processed in the latest beacon block (with execution payload)
-func (c *Client) GetLatestBlockWithdrawals() (api.LatestBlockWithdrawalsResponse, error) {
-	return c.callAPI[api.LatestBlockWithdrawalsResponse]("GET", "/api/megapool/latest-block-withdrawals", nil, "Could not get latest block withdrawals")
-}
-
-// Get an estimate of the beacon chain withdrawal-sweep cycle time
-func (c *Client) GetBeaconWithdrawalQueueEstimate() (api.BeaconWithdrawalQueueEstimateResponse, error) {
-	return c.callAPI[api.BeaconWithdrawalQueueEstimateResponse]("GET", "/api/megapool/beacon-withdrawal-queue-estimate", nil, "Could not get beacon withdrawal queue estimate")
 }
 
 // Get the bond amount required for the megapool's next validator

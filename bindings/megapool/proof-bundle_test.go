@@ -53,6 +53,27 @@ func TestEncodeValidatorProofBundleV1(t *testing.T) {
 	}
 }
 
+func TestEncodePendingDepositProofBundleV1(t *testing.T) {
+	encoded, err := EncodePendingDepositProofBundleV1(PendingDepositProof{
+		StateSlot:    10,
+		DepositIndex: 2,
+		Deposit: ProvedPendingDeposit{
+			Pubkey:                make([]byte, 48),
+			WithdrawalCredentials: [32]byte{0x01},
+			AmountInGwei:          2_000_000_000,
+			Signature:             make([]byte, 96),
+			Slot:                  8,
+		},
+		Witnesses: [][32]byte{{0x11}, {0x22}},
+	}, sampleSlotProof())
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if len(encoded) == 0 {
+		t.Fatal("expected non-empty encoding")
+	}
+}
+
 func TestEncodeFinalBalanceProofBundleV1(t *testing.T) {
 	encoded, err := EncodeFinalBalanceProofBundleV1(sampleWithdrawalProof(), sampleValidatorProof(), sampleSlotProof())
 	if err != nil {

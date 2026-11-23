@@ -211,16 +211,13 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 
 		// Enforcing other operators' exit requests is an opt-in duty.
 		if !t.cfg.Smartnode.EnableEnforcerTasks.Value.(bool) {
+			t.log.Println("Skipping checks on megapool exit requests as the enforcer role is not enabled")
 			continue
 		}
 
 		mp, err := megapool.NewMegapool(t.rp, request.MegapoolAddress, opts)
 		if err != nil {
 			t.log.Printlnf("Error creating a binding for megapool %s: %s", request.MegapoolAddress.Hex(), err.Error())
-			continue
-		}
-
-		if mp.GetVersion() < 2 {
 			continue
 		}
 
@@ -242,6 +239,11 @@ func (t *checkMegapoolExitRequests) run(state *state.NetworkStateIndex) error {
 		now := time.Unix(int64(header.Time), 0)
 		deadline := time.Unix(int64(request.RequestTimestamp), 0).Add(cooperativeExitPhase)
 		if now.Before(deadline) {
+			continue
+		}
+
+		if mp.GetVersion() < 2 {
+			t.log.Printlnf("Validator %d has an expired exit request but cannot be forced to exit because megapool %s is on delegate version %d.", validatorIndex, request.MegapoolAddress.Hex(), mp.GetVersion())
 			continue
 		}
 

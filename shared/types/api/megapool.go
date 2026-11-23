@@ -14,6 +14,19 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
+type CanDeployMegapoolResponse struct {
+	APIResponse
+	CanDeploy       bool            `json:"canDeploy"`
+	AlreadyDeployed bool            `json:"alreadyDeployed"`
+	MegapoolAddress common.Address  `json:"megapoolAddress"`
+	GasLimits       gaslimit.Limits `json:"gasLimits"`
+}
+
+type DeployMegapoolResponse struct {
+	APIResponse
+	TxHash common.Hash `json:"txHash"`
+}
+
 type MegapoolDeficitResponse struct {
 	APIResponse
 	Saturn2Deployed          bool     `json:"saturn2Deployed"`
@@ -194,20 +207,4 @@ type GetNewValidatorBondRequirementResponse struct {
 type GetNodeMegapoolEthBondedResponse struct {
 	APIResponse
 	EthBonded *big.Int `json:"ethBonded"`
-}
-
-type LatestBlockWithdrawalsResponse struct {
-	APIResponse
-	Slot        uint64                  `json:"slot"`
-	BlockNumber uint64                  `json:"blockNumber"`
-	Withdrawals []beacon.WithdrawalInfo `json:"withdrawals"`
-}
-
-type BeaconWithdrawalQueueEstimateResponse struct {
-	APIResponse
-	ExitQueueGwei         uint64 `json:"exitQueueGwei"`
-	ChurnPerEpochGwei     uint64 `json:"churnPerEpochGwei"`
-	SecondsPerEpoch       uint64 `json:"secondsPerEpoch"`
-	EstimatedQueueEpochs  uint64 `json:"estimatedQueueEpochs"`
-	EstimatedQueueSeconds uint64 `json:"estimatedQueueSeconds"`
 }
