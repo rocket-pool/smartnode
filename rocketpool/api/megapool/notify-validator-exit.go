@@ -20,6 +20,9 @@ import (
 
 var errExitNotReady = errors.New("validator exit not yet visible in the proof state")
 
+// farFutureEpoch is the spec FAR_FUTURE_EPOCH sentinel.
+const farFutureEpoch uint64 = ^uint64(0)
+
 func ensureExitReady(bc beacon.Client, ec rocketpool.ExecutionClient, pubkey types.ValidatorPubkey) (eth2.BeaconState, uint64, error) {
 	beaconState, slotTimestamp, err := services.GetHeadBeaconState(bc, ec)
 	if err != nil {

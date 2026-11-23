@@ -51,8 +51,6 @@ func RegisterRoutes(router *snroute.Router) {
 	snroute.Write("/api/megapool/set-use-latest-delegate", setUseLatestDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/get-delegate", getDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/get-effective-delegate", getEffectiveDelegateHandler).RegisterTo(router)
-	snroute.Read("/api/megapool/latest-block-withdrawals", latestBlockWithdrawalsHandler).RegisterTo(router)
-	snroute.Read("/api/megapool/beacon-withdrawal-queue-estimate", beaconWithdrawalQueueEstimateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/verify-performance", verifyPerformanceHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/can-challenge-performance", canChallengePerformanceHandler).RegisterTo(router)
 	snroute.Write("/api/megapool/challenge-performance", challengePerformanceHandler).RegisterTo(router)

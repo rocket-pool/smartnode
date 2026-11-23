@@ -323,10 +323,6 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.BoolFlag{
-						Name:  "estimate-exit",
-						Usage: "Fetch an estimate of the beacon chain exit queue time",
-					},
 					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
@@ -343,7 +339,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					if !c.IsSet("validator-id") {
 						var err error
 						var found bool
-						validatorId, found, err = getExitableValidator(c.Bool("estimate-exit"))
+						validatorId, found, err = getExitableValidator()
 						if err != nil {
 							return err
 						}

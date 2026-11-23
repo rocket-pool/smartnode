@@ -144,6 +144,27 @@ func printPendingFinalBalanceValidator(v api.MegapoolValidatorDetails, currentEp
 	fmt.Println()
 }
 
+// formatDaysHours formats a duration as a "Xd Yh" string. Sub-hour values are
+// rendered in minutes; sub-minute values fall back to "<1m".
+func formatDaysHours(d time.Duration) string {
+	totalSeconds := int64(d.Seconds())
+	if totalSeconds < 60 {
+		return "<1m"
+	}
+	const secondsPerHour = 3600
+	const secondsPerDay = 24 * secondsPerHour
+	days := totalSeconds / secondsPerDay
+	hours := (totalSeconds % secondsPerDay) / secondsPerHour
+	if days > 0 {
+		return fmt.Sprintf("%dd %dh", days, hours)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	minutes := totalSeconds / 60
+	return fmt.Sprintf("%dm", minutes)
+}
+
 func epochTimingSuffix(targetEpoch, currentEpoch, secondsPerEpoch uint64) string {
 	if targetEpoch <= currentEpoch {
 		return " (reached)"

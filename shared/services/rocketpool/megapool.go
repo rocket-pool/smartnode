@@ -310,16 +310,6 @@ func (c *Client) DistributeMegapool() (api.DistributeMegapoolResponse, error) {
 	return c.callAPI[api.DistributeMegapoolResponse]("POST", "/api/megapool/distribute", nil, "Could not get distribute-megapool response")
 }
 
-// Get the validator withdrawals processed in the latest beacon block (with execution payload)
-func (c *Client) GetLatestBlockWithdrawals() (api.LatestBlockWithdrawalsResponse, error) {
-	return c.callAPI[api.LatestBlockWithdrawalsResponse]("GET", "/api/megapool/latest-block-withdrawals", nil, "Could not get latest block withdrawals")
-}
-
-// Get an estimate of the beacon chain withdrawal-sweep cycle time
-func (c *Client) GetBeaconWithdrawalQueueEstimate() (api.BeaconWithdrawalQueueEstimateResponse, error) {
-	return c.callAPI[api.BeaconWithdrawalQueueEstimateResponse]("GET", "/api/megapool/beacon-withdrawal-queue-estimate", nil, "Could not get beacon withdrawal queue estimate")
-}
-
 // Get the bond amount required for the megapool's next validator
 func (c *Client) GetNewValidatorBondRequirement() (api.GetNewValidatorBondRequirementResponse, error) {
 	return c.callAPI[api.GetNewValidatorBondRequirementResponse]("GET", "/api/megapool/get-new-validator-bond-requirement", nil, "Could not get new validator bond requirement")
