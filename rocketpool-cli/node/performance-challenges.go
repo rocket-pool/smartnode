@@ -35,7 +35,7 @@ func getPerformanceChallenges(id *big.Int) error {
 		return nil
 	}
 	if len(response.Challenges) == 0 {
-		fmt.Println("No matching performance challenges.")
+		fmt.Println("No pending performance challenges.")
 		return nil
 	}
 
@@ -43,7 +43,7 @@ func getPerformanceChallenges(id *big.Int) error {
 		challenge := details.Challenge
 		status := details.State
 		bond := new(big.Rat).SetFrac(status.BondAmount, big.NewInt(1e18)).FloatString(18)
-		deadline := time.Unix(status.ResponseDeadline.Int64(), 0).UTC().Format(time.RFC3339)
+		deadline := time.Unix(status.ResponseDeadline.Int64(), 0)
 
 		fmt.Printf("Challenge %s; start epoch %d\n", challenge.ChallengeId, challenge.StartEpoch)
 		if len(challenge.MinipoolAddresses) > 0 {
@@ -52,10 +52,21 @@ func getPerformanceChallenges(id *big.Int) error {
 			fmt.Printf("  Megapool: %s; validators: %v\n", challenge.MegapoolAddress, challenge.ValidatorIds)
 		}
 		fmt.Printf("  Proposer: %s; responder: %s\n", status.Proposer, status.Responder)
-		fmt.Printf("  Response deadline: %s\n", deadline)
+		fmt.Printf("  Response deadline: %s\n", formatResponseDeadline(deadline, time.Now()))
 		fmt.Printf("  Defeated: %t; finalised: %t; bond settled: %t; recorded bond: %s RPL\n", status.Responded, status.Finalised, status.BondSettled, bond)
 	}
 	return nil
+}
+
+// formatResponseDeadline prints the UTC deadline and how long remains, or how
+// long ago it was reached. A response is still valid at the exact deadline.
+func formatResponseDeadline(deadline time.Time, now time.Time) string {
+	stamp := deadline.UTC().Format(time.RFC3339)
+	remaining := deadline.Sub(now).Round(time.Second)
+	if remaining >= 0 {
+		return fmt.Sprintf("%s (in %s)", stamp, remaining)
+	}
+	return fmt.Sprintf("%s (reached %s ago)", stamp, -remaining)
 }
 
 func actOnPerformanceChallenge(id *big.Int, defend bool, yes bool) error {
