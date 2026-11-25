@@ -382,13 +382,13 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --builder-urls=$EPBS_BUILDER_URLS"
     fi
     if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
-        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI --p2p-builder-min-bid=$EPBS_MIN_BID_GWEI"
     fi
     if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
         CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
     fi
     if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
-        CMD="$CMD --builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
+        CMD="$CMD --builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR --p2p-builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
