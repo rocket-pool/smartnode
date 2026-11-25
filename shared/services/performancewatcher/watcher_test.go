@@ -301,6 +301,84 @@ func TestCheckpointRejectsStaleHead(t *testing.T) {
 	}
 }
 
+func TestCheckpointFollowsSyncedClient(t *testing.T) {
+	genesis := uint64(time.Now().Unix()) - 1200
+	syncing := func(head uint64) map[string]any {
+		return map[string]any{"data": map[string]any{"head_slot": fmt.Sprint(head), "is_syncing": false, "is_optimistic": false, "el_offline": false}}
+	}
+	finality := func(epoch uint64, root string) map[string]any {
+		return map[string]any{"execution_optimistic": false, "data": map[string]any{"finalized": map[string]any{"epoch": fmt.Sprint(epoch), "root": root}}}
+	}
+	onlySync := func(t *testing.T, f *fixtureRequester) {
+		t.Helper()
+		if len(f.requests) != 1 || f.requests[0] != "/eth/v1/node/syncing" {
+			t.Fatalf("client was used after failing sync: %v", f.requests)
+		}
+	}
+	t.Run("lagging primary", func(t *testing.T) {
+		b, synced, cp, _ := fixture("gloas")
+		b.GenesisTime = genesis
+		synced.put("/eth/v1/node/syncing", syncing(1000))
+		synced.put("/eth/v1/beacon/states/head/finality_checkpoints", finality(cp.Epoch, cp.Root))
+		lagging := &fixtureRequester{responses: map[string][]byte{}}
+		lagging.put("/eth/v1/node/syncing", syncing(90))
+		lagging.put("/eth/v1/beacon/states/head/finality_checkpoints", finality(1, testRoot(1)))
+		lagging.header(1, 0)
+		b.clients = []Requester{lagging, synced}
+		b.verified = []bool{true, true}
+		got, err := b.Checkpoint(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != cp {
+			t.Fatalf("checkpoint %+v", got)
+		}
+		onlySync(t, lagging)
+	})
+	t.Run("fallback skips lagging client", func(t *testing.T) {
+		b, synced, cp, _ := fixture("gloas")
+		b.GenesisTime = genesis
+		blind := &fixtureRequester{responses: map[string][]byte{}}
+		blind.put("/eth/v1/node/syncing", syncing(1000))
+		lagging := &fixtureRequester{responses: map[string][]byte{}}
+		lagging.put("/eth/v1/node/syncing", syncing(90))
+		lagging.put("/eth/v1/beacon/states/head/finality_checkpoints", finality(1, testRoot(1)))
+		lagging.header(1, 0)
+		lagging.header(6, 5)
+		synced.put("/eth/v1/node/syncing", syncing(1000))
+		synced.put("/eth/v1/beacon/states/head/finality_checkpoints", finality(cp.Epoch, cp.Root))
+		b.clients = []Requester{blind, lagging, synced}
+		b.verified = []bool{true, true, true}
+		got, err := b.Checkpoint(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != cp {
+			t.Fatalf("checkpoint %+v", got)
+		}
+		onlySync(t, lagging)
+		if len(blind.requests) != 2 || blind.requests[1] != "/eth/v1/beacon/states/head/finality_checkpoints" {
+			t.Fatalf("blind requests %v", blind.requests)
+		}
+	})
+	t.Run("header stays on synced client", func(t *testing.T) {
+		b, synced, cp, _ := fixture("gloas")
+		b.GenesisTime = genesis
+		synced.put("/eth/v1/node/syncing", syncing(1000))
+		synced.put("/eth/v1/beacon/states/head/finality_checkpoints", finality(cp.Epoch, cp.Root))
+		delete(synced.responses, "/eth/v1/beacon/headers/"+cp.Root)
+		lagging := &fixtureRequester{responses: map[string][]byte{}}
+		lagging.put("/eth/v1/node/syncing", syncing(90))
+		lagging.header(6, 5)
+		b.clients = []Requester{synced, lagging}
+		b.verified = []bool{true, true}
+		if _, err := b.Checkpoint(context.Background()); err == nil {
+			t.Fatal("accepted header from a client that failed sync")
+		}
+		onlySync(t, lagging)
+	})
+}
+
 func TestBackfillPacingPreservesLivePriority(t *testing.T) {
 	now := time.Now()
 	coverage := map[uint64]int{100: 3}

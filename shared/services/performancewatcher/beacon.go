@@ -119,51 +119,64 @@ func NewBeacon(clients []Requester) *Beacon {
 	return &Beacon{clients: clients, verified: make([]bool, len(clients)), headers: map[string]header{}, attestations: map[string]attestationsResponse{}}
 }
 
+var errDifferentGenesis = errors.New("configured beacon clients have different genesis roots")
+
+func fatalRead(ctx context.Context, err error) bool {
+	return ctx.Err() != nil || errors.Is(err, ErrFinalityConflict) || errors.Is(err, errDifferentGenesis)
+}
+
 func (b *Beacon) read(ctx context.Context, path string, parse func([]byte) error) error {
 	var errs []error
-	for i, c := range b.clients {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		if !b.verified[i] && b.GenesisRoot != "" {
-			b.Requests.Add(1)
-			raw, err := c.WatcherRequest(ctx, "/eth/v1/beacon/genesis")
-			var g struct {
-				Data struct {
-					Root common.Hash `json:"genesis_validators_root"`
-				} `json:"data"`
-			}
-			if err == nil {
-				err = json.Unmarshal(raw, &g)
-			}
-			if err == nil && g.Data.Root.Hex() != b.GenesisRoot {
-				return fmt.Errorf("configured beacon clients have different genesis roots")
-			}
-			if err != nil {
-				b.Failures.Add(1)
-				errs = append(errs, err)
-				continue
-			}
-			b.verified[i] = true
-		}
-		b.Requests.Add(1)
-		raw, err := c.WatcherRequest(ctx, path)
-		if err == nil {
-			err = parse(raw)
-		}
+	for i := range b.clients {
+		err := b.readClient(ctx, i, path, parse)
 		if err == nil {
 			return nil
 		}
-		if errors.Is(err, ErrFinalityConflict) {
+		if fatalRead(ctx, err) {
 			return err
 		}
-		b.Failures.Add(1)
 		errs = append(errs, err)
 	}
 	if len(errs) == 0 {
 		return fmt.Errorf("no beacon clients configured")
 	}
 	return errors.Join(errs...)
+}
+
+func (b *Beacon) readClient(ctx context.Context, i int, path string, parse func([]byte) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	c := b.clients[i]
+	if !b.verified[i] && b.GenesisRoot != "" {
+		b.Requests.Add(1)
+		raw, err := c.WatcherRequest(ctx, "/eth/v1/beacon/genesis")
+		var g struct {
+			Data struct {
+				Root common.Hash `json:"genesis_validators_root"`
+			} `json:"data"`
+		}
+		if err == nil {
+			err = json.Unmarshal(raw, &g)
+		}
+		if err == nil && g.Data.Root.Hex() != b.GenesisRoot {
+			return errDifferentGenesis
+		}
+		if err != nil {
+			b.Failures.Add(1)
+			return err
+		}
+		b.verified[i] = true
+	}
+	b.Requests.Add(1)
+	raw, err := c.WatcherRequest(ctx, path)
+	if err == nil {
+		err = parse(raw)
+	}
+	if err != nil && !errors.Is(err, ErrFinalityConflict) {
+		b.Failures.Add(1)
+	}
+	return err
 }
 
 func (b *Beacon) Init(ctx context.Context) error {
@@ -240,82 +253,107 @@ func (b *Beacon) Init(ctx context.Context) error {
 	})
 }
 
+func (b *Beacon) requireSynced(raw []byte) error {
+	var r struct {
+		Data struct {
+			HeadSlot   *uintString `json:"head_slot"`
+			Syncing    bool        `json:"is_syncing"`
+			Optimistic bool        `json:"is_optimistic"`
+			Offline    bool        `json:"el_offline"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return err
+	}
+	if r.Data.Syncing || r.Data.Optimistic || r.Data.Offline {
+		return ErrSyncing
+	}
+	if r.Data.HeadSlot == nil {
+		return fmt.Errorf("missing beacon head slot")
+	}
+	// Some clients briefly report is_syncing=false even after their head
+	// has stopped advancing. Avoid adding historical replay load then.
+	now := uint64(time.Now().Unix())
+	if now >= b.GenesisTime {
+		current := (now - b.GenesisTime) / b.SecondsPerSlot
+		head := uint64(*r.Data.HeadSlot)
+		if current > head && current-head > 2 {
+			return fmt.Errorf("beacon head is %d slots behind: %w", current-head, ErrSyncing)
+		}
+	}
+	return nil
+}
+
 func (b *Beacon) Checkpoint(ctx context.Context) (Checkpoint, error) {
-	err := b.read(ctx, "/eth/v1/node/syncing", func(raw []byte) error {
-		var r struct {
-			Data struct {
-				HeadSlot   *uintString `json:"head_slot"`
-				Syncing    bool        `json:"is_syncing"`
-				Optimistic bool        `json:"is_optimistic"`
-				Offline    bool        `json:"el_offline"`
-			} `json:"data"`
-		}
-		if err := json.Unmarshal(raw, &r); err != nil {
-			return err
-		}
-		if r.Data.Syncing || r.Data.Optimistic || r.Data.Offline {
-			return ErrSyncing
-		}
-		if r.Data.HeadSlot == nil {
-			return fmt.Errorf("missing beacon head slot")
-		}
-		// Some clients briefly report is_syncing=false even after their head
-		// has stopped advancing. Avoid adding historical replay load then.
-		now := uint64(time.Now().Unix())
-		if now >= b.GenesisTime {
-			current := (now - b.GenesisTime) / b.SecondsPerSlot
-			head := uint64(*r.Data.HeadSlot)
-			if current > head && current-head > 2 {
-				return fmt.Errorf("beacon head is %d slots behind: %w", current-head, ErrSyncing)
+	var errs []error
+	for i := range b.clients {
+		err := b.readClient(ctx, i, "/eth/v1/node/syncing", b.requireSynced)
+		if err != nil {
+			if fatalRead(ctx, err) {
+				return Checkpoint{}, err
 			}
+			errs = append(errs, err)
+			continue
 		}
-		return nil
-	})
-	if err != nil {
-		return Checkpoint{}, err
-	}
-	var cp Checkpoint
-	err = b.read(ctx, "/eth/v1/beacon/states/head/finality_checkpoints", func(raw []byte) error {
-		var r struct {
-			Optimistic *bool `json:"execution_optimistic"`
-			Data       struct {
-				Finalized struct {
-					Epoch uintString  `json:"epoch"`
-					Root  common.Hash `json:"root"`
-				} `json:"finalized"`
-			} `json:"data"`
+		var cp Checkpoint
+		err = b.readClient(ctx, i, "/eth/v1/beacon/states/head/finality_checkpoints", func(raw []byte) error {
+			var r struct {
+				Optimistic *bool `json:"execution_optimistic"`
+				Data       struct {
+					Finalized struct {
+						Epoch uintString  `json:"epoch"`
+						Root  common.Hash `json:"root"`
+					} `json:"finalized"`
+				} `json:"data"`
+			}
+			if err := json.Unmarshal(raw, &r); err != nil {
+				return err
+			}
+			if r.Optimistic == nil || *r.Optimistic || r.Data.Finalized.Root == (common.Hash{}) {
+				return fmt.Errorf("unavailable finalized checkpoint")
+			}
+			cp.Epoch = uint64(r.Data.Finalized.Epoch)
+			cp.Root = r.Data.Finalized.Root.Hex()
+			return nil
+		})
+		if err != nil {
+			if fatalRead(ctx, err) {
+				return cp, err
+			}
+			errs = append(errs, err)
+			continue
 		}
-		if err := json.Unmarshal(raw, &r); err != nil {
-			return err
+		h, err := b.headerFrom(ctx, i, cp.Root)
+		if err != nil {
+			if fatalRead(ctx, err) {
+				return cp, err
+			}
+			errs = append(errs, err)
+			continue
 		}
-		if r.Optimistic == nil || *r.Optimistic || r.Data.Finalized.Root == (common.Hash{}) {
-			return fmt.Errorf("unavailable finalized checkpoint")
+		cp.Slot = h.Slot
+		cp.StateRoot = h.State
+		if cp.Epoch > math.MaxUint64/b.SlotsPerEpoch || cp.Slot > cp.Epoch*b.SlotsPerEpoch {
+			return cp, fmt.Errorf("invalid finalized checkpoint slot")
 		}
-		cp.Epoch = uint64(r.Data.Finalized.Epoch)
-		cp.Root = r.Data.Finalized.Root.Hex()
-		return nil
-	})
-	if err != nil {
-		return cp, err
+		return cp, nil
 	}
-	h, err := b.header(ctx, cp.Root)
-	if err != nil {
-		return cp, err
+	if len(errs) == 0 {
+		return Checkpoint{}, fmt.Errorf("no beacon clients configured")
 	}
-	cp.Slot = h.Slot
-	cp.StateRoot = h.State
-	if cp.Epoch > math.MaxUint64/b.SlotsPerEpoch || cp.Slot > cp.Epoch*b.SlotsPerEpoch {
-		return cp, fmt.Errorf("invalid finalized checkpoint slot")
-	}
-	return cp, nil
+	return Checkpoint{}, errors.Join(errs...)
 }
 
 func (b *Beacon) header(ctx context.Context, id string) (header, error) {
+	return b.headerFrom(ctx, -1, id)
+}
+
+func (b *Beacon) headerFrom(ctx context.Context, client int, id string) (header, error) {
 	if h, ok := b.headers[id]; ok {
 		return h, nil
 	}
 	var h header
-	err := b.read(ctx, "/eth/v1/beacon/headers/"+id, func(raw []byte) error {
+	parse := func(raw []byte) error {
 		var r headerResponse
 		if err := json.Unmarshal(raw, &r); err != nil {
 			return err
@@ -337,7 +375,13 @@ func (b *Beacon) header(ctx context.Context, id string) (header, error) {
 		}
 		h = header{uint64(*r.Data.Header.Message.Slot), r.Data.Root.Hex(), r.Data.Header.Message.Parent.Hex(), r.Data.Header.Message.State.Hex()}
 		return nil
-	})
+	}
+	var err error
+	if client >= 0 {
+		err = b.readClient(ctx, client, "/eth/v1/beacon/headers/"+id, parse)
+	} else {
+		err = b.read(ctx, "/eth/v1/beacon/headers/"+id, parse)
+	}
 	if err == nil {
 		b.headers[h.Root] = h
 	}
