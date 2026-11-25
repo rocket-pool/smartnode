@@ -376,18 +376,19 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --metrics-publish-endpoint=$BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
     fi
 
-    # Set up the ePBS builder flags (amounts are in integer Gwei)
+    # ePBS builder flags (amounts are integer Gwei). One Smart Node setting
+    # covers configured builders and p2p bids; Teku takes those as two pairs.
     if [ ! -z "$EPBS_BUILDER_URLS" ]; then
-        CMD="$CMD --Xbuilder-urls=$EPBS_BUILDER_URLS"
+        CMD="$CMD --builder-urls=$EPBS_BUILDER_URLS"
     fi
     if [ ! -z "$EPBS_MIN_BID_GWEI" ]; then
-        CMD="$CMD --Xbuilder-min-bid=$EPBS_MIN_BID_GWEI"
+        CMD="$CMD --builder-min-bid=$EPBS_MIN_BID_GWEI"
     fi
     if [ ! -z "$EPBS_MAX_EXECUTION_PAYMENT_GWEI" ]; then
-        CMD="$CMD --Xbuilder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
+        CMD="$CMD --builder-max-execution-payment=$EPBS_MAX_EXECUTION_PAYMENT_GWEI"
     fi
     if [ ! -z "$EPBS_BUILDER_BOOST_FACTOR" ]; then
-        CMD="$CMD --Xbuilder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
+        CMD="$CMD --builder-boost-factor=$EPBS_BUILDER_BOOST_FACTOR"
     fi
 
     if [ "$ADDON_GWW_ENABLED" = "true" ]; then
