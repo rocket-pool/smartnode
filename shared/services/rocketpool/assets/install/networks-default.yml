@@ -182,8 +182,8 @@ networks:
     isProduction: false
     nethermindPruneThresholdMb: 51200
     addresses:
-      storage: "0xd4E96eF8eee8678dBFf4d535E033Ed1a4F7605b7"
-      rplToken: "0x762e79b27feE0C0975f9caBEa9E9976006A7aD98"
-      reth: "0x4640b8610f3eFdeb8d44834ADb3228d0E79eaa09"
+      storage: "0x016DEed88ffCf0bF3A719B57a6c9819407378213"
+      rplToken: "0xAf75D12a46DF49984e66f4AA9f8193E55c56f550"
+      reth: "0x6868Eea105aa302382b8275D95F5ed1759d95bC5"
       multicall: "0xCe085c899295aCaE769b8dbB525B5f0Ff7F2E128"
       balancebatcher: "0xA6f1DeC523211141Ff633665f951a890ed653fea"
