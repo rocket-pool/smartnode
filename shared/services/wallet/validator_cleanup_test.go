@@ -350,6 +350,48 @@ func TestCreateValidatorKeyRollsBackPartialKeystoreFailure(t *testing.T) {
 	}
 }
 
+func TestCreateValidatorKeyPreservesPreExistingKeyOnPartialFailure(t *testing.T) {
+	env := newInitializedTestWallet(t, false)
+
+	nimbusKS := nmkeystore.NewKeystore(env.keychainPath, env.pm)
+	prysmKS := prkeystore.NewKeystore(env.keychainPath, env.pm)
+	env.wallet.AddKeystore("nimbus", nimbusKS)
+	env.wallet.AddKeystore("prysm", prysmKS)
+
+	previewKeys, err := env.wallet.GetValidatorKeys(0, 1)
+	if err != nil {
+		t.Fatalf("GetValidatorKeys failed: %v", err)
+	}
+	if err := env.wallet.StoreValidatorKey(previewKeys[0].PrivateKey, previewKeys[0].DerivationPath); err != nil {
+		t.Fatalf("StoreValidatorKey failed: %v", err)
+	}
+
+	failingErr := errors.New("failing keystore write")
+	env.wallet.AddKeystore("failing", &stubKeystore{
+		dir:      filepath.Join(env.keychainPath, "failing"),
+		storeErr: failingErr,
+	})
+
+	_, err = env.wallet.CreateValidatorKey()
+	if !errors.Is(err, failingErr) {
+		t.Fatalf("expected CreateValidatorKey error wrapping %v, got %v", failingErr, err)
+	}
+
+	// Pre-existing key at index 0 must NOT be deleted when a subsequent store fails.
+	for name, ks := range map[string]keystore.Keystore{
+		"nimbus": nimbusKS,
+		"prysm":  prysmKS,
+	} {
+		loaded, loadErr := ks.LoadValidatorKey(previewKeys[0].PublicKey)
+		if loadErr != nil {
+			t.Fatalf("%s LoadValidatorKey failed: %v", name, loadErr)
+		}
+		if loaded == nil {
+			t.Fatalf("%s unexpectedly deleted pre-existing validator key %s", name, previewKeys[0].PublicKey.Hex())
+		}
+	}
+}
+
 func TestDeleteValidatorKeyContinuesAfterKeystoreError(t *testing.T) {
 	env := newInitializedTestWallet(t, false)
 

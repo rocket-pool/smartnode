@@ -86,11 +86,16 @@ func (w *hdWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 		return nil, err
 	}
 
+	pubkey := types.BytesToValidatorPubkey(key.PublicKey().Marshal())
+	existingKey, loadErr := w.LoadValidatorKey(pubkey)
+	preExisting := loadErr == nil && existingKey != nil
+
 	// Update keystores
 	err = w.StoreValidatorKey(key, path)
 	if err != nil {
-		pubkey := types.BytesToValidatorPubkey(key.PublicKey().Marshal())
-		_ = w.DeleteValidatorKey(pubkey)
+		if !preExisting {
+			_ = w.DeleteValidatorKey(pubkey)
+		}
 		return nil, err
 	}
 

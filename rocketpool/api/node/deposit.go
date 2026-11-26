@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -521,12 +522,22 @@ func executeDepositBatch(
 		// Find the bond requirement for the next validator
 		nextBondRequirement := bondRequirement.Sub(bondRequirement, bondedEth)
 
+		nextKey, err := deps.wallet.GetNextValidatorKey()
+		if err != nil {
+			return nil, nil, err
+		}
+		nextPubkey := rptypes.BytesToValidatorPubkey(nextKey.PublicKey().Marshal())
+		existingKey, loadErr := deps.wallet.LoadValidatorKey(nextPubkey)
+		preExistingKey := loadErr == nil && existingKey != nil
+
 		validatorKey, err := deps.wallet.CreateValidatorKey()
 		if err != nil {
 			return nil, nil, err
 		}
 		derivedPubkey := rptypes.BytesToValidatorPubkey(validatorKey.PublicKey().Marshal())
-		createdPubkeys = append(createdPubkeys, derivedPubkey)
+		if !preExistingKey {
+			createdPubkeys = append(createdPubkeys, derivedPubkey)
+		}
 
 		// Get validator deposit data and associated parameters
 		depositData, depositDataRoot, err := deps.getDepositData(validatorKey, deps.withdrawalCreds, deps.eth2Config, depositAmount)
@@ -542,6 +553,11 @@ func executeDepositBatch(
 			return nil, nil, fmt.Errorf("Error checking for existing validator status for deposit %d/%d: %w\nYour funds have not been deposited for your own safety.", i+1, count, err)
 		}
 		if status.Exists {
+			// Keep keystores for an already-active Beacon chain validator while still allowing
+			// earlier uncommitted batch keys to be removed and next_account to be saved.
+			createdPubkeys = slices.DeleteFunc(createdPubkeys, func(pk rptypes.ValidatorPubkey) bool {
+				return pk == derivedPubkey || pk == pubKey
+			})
 			return nil, nil, fmt.Errorf("**** ALERT ****\n"+
 				"The following validator pubkey is already in use on the Beacon chain:\n\t%s\n"+
 				"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+

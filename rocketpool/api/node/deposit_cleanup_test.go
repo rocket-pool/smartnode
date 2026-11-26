@@ -339,6 +339,7 @@ func TestExecuteDepositBatchMidLoopFailures(t *testing.T) {
 		configure            func(deps *depositBatchDeps)
 		wantErrSubstr        string
 		expectedSavedAccount uint
+		preservedIndices     map[int]bool
 	}{
 		{
 			name: "bond_requirement_fails_on_second_validator",
@@ -398,6 +399,9 @@ func TestExecuteDepositBatchMidLoopFailures(t *testing.T) {
 			},
 			wantErrSubstr:        "validator pubkey is already in use on the Beacon chain",
 			expectedSavedAccount: 2,
+			// Validator 2 (index 1) already exists on the Beacon chain so its keystores must be kept,
+			// while earlier new validator 1 (index 0) is cleaned up.
+			preservedIndices: map[int]bool{1: true},
 		},
 		{
 			name: "deposit_signature_validation_fails_on_second_validator",
@@ -433,8 +437,12 @@ func TestExecuteDepositBatchMidLoopFailures(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %v", tc.wantErrSubstr, err)
 			}
 
-			for _, vk := range preview {
-				f.assertPubkeyAbsentEverywhere(t, vk.PublicKey)
+			for idx, vk := range preview {
+				if tc.preservedIndices[idx] {
+					f.assertPubkeyPresentEverywhere(t, vk.PublicKey)
+				} else {
+					f.assertPubkeyAbsentEverywhere(t, vk.PublicKey)
+				}
 			}
 
 			reloaded := f.reloadWalletFromDisk(t)
@@ -446,6 +454,52 @@ func TestExecuteDepositBatchMidLoopFailures(t *testing.T) {
 				t.Fatalf("expected persisted next_account=%d, got %d", tc.expectedSavedAccount, gotCount)
 			}
 		})
+	}
+}
+
+func TestExecuteDepositBatchPreservesPreExistingKeyWhenNextAccountIsStale(t *testing.T) {
+	f := newDepositTestFixture(t, true)
+	preview, err := f.wallet.GetValidatorKeys(0, 2)
+	if err != nil {
+		t.Fatalf("GetValidatorKeys failed: %v", err)
+	}
+
+	// Simulate the stale next_account state (#379): index 0 is already stored in all keystores on disk,
+	// while the wallet's persisted next_account is still 0.
+	if err := f.wallet.StoreValidatorKey(preview[0].PrivateKey, preview[0].DerivationPath); err != nil {
+		t.Fatalf("StoreValidatorKey(preview[0]) failed: %v", err)
+	}
+	f.assertPubkeyPresentEverywhere(t, preview[0].PublicKey)
+
+	rpcErr := errors.New("beacon status RPC timeout")
+	deps := f.defaultDeps()
+	calls := 0
+	deps.getValidatorStatus = func(_ rptypes.ValidatorPubkey) (beacon.ValidatorStatus, error) {
+		calls++
+		if calls == 2 {
+			return beacon.ValidatorStatus{}, rpcErr
+		}
+		return beacon.ValidatorStatus{Exists: false}, nil
+	}
+
+	_, _, err = executeDepositBatch(deps, 2, 0, true, &bind.TransactOpts{})
+	if !errors.Is(err, rpcErr) {
+		t.Fatalf("expected error wrapping %v, got %v", rpcErr, err)
+	}
+
+	// Pre-existing key at index 0 must NOT be deleted when a later step in the batch fails.
+	f.assertPubkeyPresentEverywhere(t, preview[0].PublicKey)
+	// Newly derived key at index 1 in the failed batch MUST be deleted.
+	f.assertPubkeyAbsentEverywhere(t, preview[1].PublicKey)
+
+	// Persisted next_account must advance to 2 on submit == true.
+	reloaded := f.reloadWalletFromDisk(t)
+	gotCount, err := reloaded.GetValidatorKeyCount()
+	if err != nil {
+		t.Fatalf("GetValidatorKeyCount failed: %v", err)
+	}
+	if gotCount != 2 {
+		t.Fatalf("expected persisted next_account=2, got %d", gotCount)
 	}
 }
 
