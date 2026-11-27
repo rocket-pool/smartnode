@@ -520,7 +520,7 @@ func getNetworkNameFromId(networkId uint) string {
 	case 560048:
 		return "Hoodi Testnet"
 	case 7091047534:
-		return "Platåberget Testnet"
+		return "Platåberget Devnet"
 	default:
 		return "Unknown Network"
 	}
