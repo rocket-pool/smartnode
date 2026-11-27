@@ -1,7 +1,6 @@
 package math
 
 import (
-	"math"
 	"math/big"
 	"strconv"
 )
@@ -99,10 +98,7 @@ func WeiToEthWithDecimals(amount *big.Int, decimals uint8) float64 {
 	if amount == nil {
 		return 0
 	}
-	var weiFloat big.Float
-	var eth big.Float
-	weiFloat.SetInt(amount)
-	eth.Quo(&weiFloat, big.NewFloat(math.Pow(10, float64(decimals))))
-	eth64, _ := eth.Float64()
+	scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	eth64, _ := new(big.Rat).SetFrac(amount, scale).Float64()
 	return eth64
 }
