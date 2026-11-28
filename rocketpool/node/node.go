@@ -126,6 +126,11 @@ func run(c *cli.Command) error {
 		<-ctx.Done()
 		return ctx.Err()
 	}
+	stopWatcher, err := services.StartPerformanceWatcher(ctx, c)
+	if err != nil {
+		return err
+	}
+	defer stopWatcher()
 
 	for {
 		// Exit if the process received SIGINT/SIGTERM

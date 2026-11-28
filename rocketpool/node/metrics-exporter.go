@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	log "github.com/rocket-pool/smartnode/shared/logger"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/performancewatcher"
 )
 
 func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
@@ -69,6 +70,12 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()
+	registry.MustRegister(performancewatcher.NewCollector(func() performancewatcher.Status {
+		if w := services.GetPerformanceWatcher(); w != nil {
+			return w.Status()
+		}
+		return performancewatcher.DisabledStatus(false, "disabled")
+	}))
 	registry.MustRegister(demandCollector)
 	registry.MustRegister(performanceCollector)
 	registry.MustRegister(supplyCollector)

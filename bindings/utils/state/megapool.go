@@ -165,6 +165,11 @@ func unpackValidatorInfoFromGlobalIndex(contract *rocketpool.Contract, data []by
 	return validator, nil
 }
 
+// DecodeMegapoolValidatorInfo decodes a batched manager getValidatorInfo result.
+func DecodeMegapoolValidatorInfo(contract *rocketpool.Contract, data []byte) (megapool.MegapoolValidatorInfo, error) {
+	return unpackValidatorInfoFromGlobalIndex(contract, data)
+}
+
 // Get all validators for a single megapool, via its own local index -- unlike
 // GetAllMegapoolValidators, which walks the network-wide global index on RocketMegapoolManager.
 func GetNodeMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContracts, megapoolAddress common.Address) ([]megapool.MegapoolValidatorInfo, error) {
