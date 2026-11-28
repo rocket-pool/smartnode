@@ -117,29 +117,13 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 			if err != nil {
 				return fmt.Errorf("error making GET request for pubkey %s: %w", pubkeyHex, err)
 			}
-			body, err := io.ReadAll(resp.Body)
+			currentRecipient, err := readFeeRecipientResponse(resp)
 			if err != nil {
-				return fmt.Errorf("error reading GET response body for pubkey %s: %w", pubkeyHex, err)
-
-			}
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-
-			type FeeRecipientResp struct {
-				Data struct {
-					Ethaddress string `json:"ethaddress"`
-				} `json:"data"`
+				return fmt.Errorf("error reading fee recipient for pubkey %s: %w", pubkeyHex, err)
 			}
 
-			var frResp FeeRecipientResp
-			err = json.Unmarshal(body, &frResp)
-			if err != nil {
-				return fmt.Errorf("error to unmarshall fee recipient body %w", err)
-			}
-
-			if !strings.EqualFold(frResp.Data.Ethaddress, megapoolAddress.Hex()) {
-				fmt.Printf("updating fee recipient for key: %s old recipient %s\n", pubkey.Hex(), frResp.Data.Ethaddress)
+			if !strings.EqualFold(currentRecipient, megapoolAddress.Hex()) {
+				fmt.Printf("updating fee recipient for key: %s old recipient %s\n", pubkey.Hex(), currentRecipient)
 				postBody := map[string]string{
 					"ethaddress": megapoolAddress.Hex(),
 				}
@@ -191,6 +175,34 @@ func readKeymanagerToken(cfg *config.RocketPoolConfig) (string, error) {
 		return "", fmt.Errorf("keymanager token file %s is empty", path)
 	}
 	return token, nil
+}
+
+func readFeeRecipientResponse(resp *http.Response) (string, error) {
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if err != nil {
+			return "", fmt.Errorf("keymanager API returned %s; reading error body: %w", resp.Status, err)
+		}
+		return "", fmt.Errorf("keymanager API returned %s: %s", resp.Status, string(body))
+	}
+
+	var result struct {
+		Data struct {
+			Ethaddress string `json:"ethaddress"`
+		} `json:"data"`
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("reading fee recipient response: %w", err)
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("decoding fee recipient response: %w", err)
+	}
+	return result.Data.Ethaddress, nil
 }
 
 // Gets the expected contents of the fee recipient file
